@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Rapport d'activité {{ report.year }} · OpenFabLab{% endblock %}
+{% block body_class %}admin-page billing-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('admin_billing') }}">← Facturation</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading statistics-heading">
+    <div>
+        <h1>Rapport d'activité {{ report.year }}</h1>
+        <p>Les chiffres sont calculés automatiquement ; complétez ici le récit de l'année.</p>
+    </div>
+    {% if report.updated_at %}<div class="billing-create-actions"><a class="admin-button primary" href="{{ url_for('admin_activity_report_document', year=report.year, output_format='pdf') }}">PDF</a><a class="admin-button secondary" href="{{ url_for('admin_activity_report_document', year=report.year, output_format='docx') }}">DOCX</a></div>{% endif %}
+</section>
+
+<form method="post" class="admin-form">
+    <section class="form-section">
+        <div class="form-section-heading"><p class="eyebrow">Données automatiques</p><h2>Repères pour {{ report.year }}</h2></div>
+        <div class="billing-summary annual-report-summary">
+            <article><strong>{{ statistics.selected_summary.total }}</strong><span>Passages comptabilisés</span></article>
+            <article><strong>{{ statistics.selected_summary.unique_users }}</strong><span>Usagers distincts</span></article>
+            <article><strong>{{ statistics.service_statistics.animations }}</strong><span>Animations</span></article>
+            <article><strong>{{ statistics.service_statistics.reservations }}</strong><span>Créneaux réservables</span></article>
+        </div>
+    </section>
+    {% for field, title, help in (
+        ('introduction', "Présentation de l’année", "Contexte général, rôle de la structure et évolution de l'année."),
+        ('highlights', 'Temps forts et animations', 'Événements, projets remarquables, actions locales ou itinérantes.'),
+        ('new_equipment', 'Nouveaux équipements', 'Machines, outils, logiciels et améliorations du parc.'),
+        ('changes', 'Fonctionnement, changements et nouveautés', 'Horaires, offres, déménagements, nouvelles procédures ou services.'),
+        ('partnerships', 'Partenariats et projets', 'Structures associées, bénévoles, volontaires, réseau et projets communs.'),
+        ('additional_notes', 'Compléments', 'Informations utiles qui ne figurent pas dans les autres rubriques.')
+    ) %}
+    <section class="form-section">
+        <div class="form-section-heading"><h2>{{ title }}</h2><p>{{ help }}</p></div>
+        <textarea name="{{ field }}" rows="7" maxlength="12000">{{ report[field] or '' }}</textarea>
+    </section>
+    {% endfor %}
+    <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer le rapport</button><a class="admin-button secondary" href="{{ url_for('admin_billing') }}">Retour</a></div>
+</form>
+{% endblock %}

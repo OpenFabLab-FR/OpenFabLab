@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier {{ client.contact_name }} · OpenFabLab{% endblock %}
+{% block body_class %}admin-page billing-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('admin_billing') }}#annuaire-clients">← Annuaire des clients</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading">
+    <p class="eyebrow">Facturation · annuaire des clients</p>
+    <h1>Modifier la fiche client</h1>
+    <p>Les nouvelles coordonnées prérempliront les prochains devis. Les documents déjà créés conservent leur contenu historique.</p>
+</section>
+
+{% include "_admin_nav.html" %}
+
+<form method="post" class="admin-form billing-form">
+    <section class="form-section">
+        <div class="form-section-heading"><p class="eyebrow">Coordonnées de référence</p><h2>Client et facturation</h2></div>
+        <div class="form-grid two-columns">
+            <label><span>Nom du contact *</span><input name="client_contact" type="text" maxlength="160" value="{{ values.client_contact|default('') }}" autocomplete="name" required></label>
+            <label><span>Structure *</span><input name="client_structure" type="text" maxlength="180" value="{{ values.client_structure|default('') }}" required></label>
+            <label class="full-width"><span>Adresse postale *</span><input name="address_line" type="text" maxlength="220" value="{{ values.address_line|default('') }}" autocomplete="street-address" required></label>
+            <label><span>Code postal *</span><input name="postal_code" type="text" maxlength="12" value="{{ values.postal_code|default('') }}" inputmode="numeric" autocomplete="postal-code" data-postal-code data-communes-url="{{ url_for('admin_communes_api') }}" required></label>
+            <label><span>Commune *</span><input name="city" type="text" maxlength="160" value="{{ values.city|default('') }}" data-city-input list="billing-client-city-suggestions" required><datalist id="billing-client-city-suggestions" data-city-suggestions></datalist><small data-city-suggestion-status>Saisissez un code postal français à 5 chiffres pour obtenir les communes officielles.</small></label>
+            <label><span>Téléphone</span><input name="phone" type="tel" maxlength="40" value="{{ values.phone|default('') }}" autocomplete="tel"></label>
+            <label><span>Adresse e-mail</span><input name="email" type="email" maxlength="180" value="{{ values.email|default('') }}" autocomplete="email"></label>
+        </div>
+    </section>
+    <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer la fiche</button><a class="admin-button secondary" href="{{ url_for('admin_billing') }}#annuaire-clients">Annuler</a></div>
+</form>
+{% endblock %}

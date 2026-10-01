@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Exports de fréquentation · OpenFabLab{% endblock %}
+{% block body_class %}admin-page statistics-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading statistics-heading">
+    <div><h1>Exports</h1><p>Exportez la fréquentation, les publics et les activités de {{ structure.name }}.</p></div>
+    <form class="year-selector" method="get" action="{{ url_for('admin_frequency_exports') }}">
+        <label for="exports-year">Période exportée</label>
+        <div><select id="exports-year" name="year"><option value="total"{% if is_total_period %} selected{% endif %}>Total</option>{% for year in available_years %}<option value="{{ year }}"{% if year == selected_year %} selected{% endif %}>{{ year }}</option>{% endfor %}</select><button class="admin-button primary compact" type="submit">Afficher</button></div>
+    </form>
+</section>
+{% include "_admin_nav.html" %}
+{% include "_frequency_nav.html" %}
+<section class="admin-section export-section statistics-compact-section" aria-labelledby="exports-title">
+    <div class="section-heading"><div><h2 id="exports-title">Fichiers disponibles</h2></div></div>
+    <div class="export-grid">
+        <a class="export-card" href="{{ url_for('admin_export_statistics', year=selected_year) }}"><strong>Statistiques {{ selected_period_label }}</strong><span>Résumé de la période, répartitions et historique</span></a>
+        <a class="export-card" href="{{ url_for('admin_export_sessions', year=selected_year) }}"><strong>Présences {{ selected_period_label }}</strong><span>Détail des arrivées, départs et durées</span></a>
+        <a class="export-card" href="{{ url_for('admin_export_users') }}"><strong>Répertoire des usagers</strong><span>Fiches, catégories et nombre de visites</span></a>
+        <a class="export-card" href="{{ url_for('admin_export_volunteers') }}"><strong>Liste des bénévoles</strong><span>Fiches classées dans la catégorie Bénévole</span></a>
+        <a class="export-card" href="{{ url_for('admin_export_animations', year=selected_year) }}"><strong>Animations {{ selected_period_label }}</strong><span>Titres, dates et participation attendue ou réelle</span></a>
+        <a class="export-card" href="{{ url_for('admin_export_paid_services', year=selected_year) }}"><strong>Créneaux et locations {{ selected_period_label }}</strong><span>Factures, structures, participants et recettes</span></a>
+    </div>
+    <p class="export-warning">Les exports peuvent contenir des coordonnées facultatives renseignées. Ils doivent être conservés avec le même niveau de protection que la base de données.</p>
+</section>
+{% endblock %}

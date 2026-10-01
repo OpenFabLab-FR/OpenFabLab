@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Accès administration · OpenFabLab{% endblock %}
+{% block body_class %}admin-login-page{% endblock %}
+{% block header_action %}
+<a class="header-link" href="{{ url_for('index') }}">← Accueil</a>
+{% endblock %}
+
+{% block content %}
+<section class="login-card" aria-labelledby="login-title">
+    <p class="eyebrow">Espace protégé</p>
+    <h1 id="login-title">Administration ou modération</h1>
+    <p>Entrez le code PIN correspondant à votre niveau d'accès.</p>
+    <form method="post" class="pin-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label for="access-role">Accès souhaité</label>
+        <select id="access-role" name="access_role"><option value="admin">Administrateur</option><option value="moderator">Modérateur</option></select>
+        <label for="admin-pin">Code PIN</label>
+        <input id="admin-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="current-password" autofocus required>
+        <button class="admin-button primary" type="submit">Déverrouiller</button>
+    </form>
+</section>
+{% endblock %}

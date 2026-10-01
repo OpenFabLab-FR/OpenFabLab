@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des données · OpenFabLab{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading data-page-heading">
+    <p class="eyebrow">Information des usagers</p>
+    <h1>Gestion des données</h1>
+    <p>OpenFabLab accompagne la fréquentation et les activités de {{ structure.name }}.</p>
+</section>
+
+<aside class="evolution-note" role="note">
+    <strong>Une solution suivie et évolutive</strong>
+    <p>OpenFabLab est utilisé en situation réelle et continuera de s'améliorer à partir des retours des usagers et de l'équipe de {{ structure.name }}.</p>
+    <p>La protection des données personnelles et la sécurité du logiciel restent des priorités à chaque étape de son évolution.</p>
+    <p>Son code source est ouvert sous licence MIT : il peut être audité, étudié et adapté en toute transparence.</p>
+</aside>
+
+<div class="data-information-grid">
+    <section class="admin-section">
+        <h2>Responsable du traitement</h2>
+        <p><strong>{{ structure.legal_entity or structure.name }}</strong>{% if structure.address %}<br>{{ structure.address }}{% endif %}</p>
+        <p>La structure utilisatrice doit préciser ici son responsable de traitement avant toute ouverture au public.</p>
+    </section>
+    <section class="admin-section">
+        <h2>Contact pour les données personnelles</h2>
+        <p>{% if structure.email %}<a href="mailto:{{ structure.email }}">{{ structure.email }}</a>{% else %}À compléter dans Réglages → Structure et modules avant ouverture au public.{% endif %}</p>
+    </section>
+    <section class="admin-section">
+        <h2>Données et finalités</h2>
+        <p>Certaines informations sont nécessaires à la création d’un compte {{ structure.name }} afin d’assurer la gestion du service, les inscriptions aux activités, la possibilité de vous contacter en cas de besoin et la production de statistiques anonymisées permettant d’évaluer la fréquentation et les publics du FabLab. Les données collectées sont limitées aux besoins de son fonctionnement et soumises à des durées de conservation définies.</p>
+        <p>Le suivi de fréquentation conserve les heures d’arrivée et de départ. Les visiteurs anonymes sont comptabilisés sans donnée personnelle.</p>
+            {% if modules.public_reservations %}<p>Pour réserver en ligne, un plugin sur le site WordPress reçoit les coordonnées des participants. Un annuaire privé des usagers actifs contient les informations nécessaires pour vérifier leur compte et préremplir une réservation : identifiant, prénom, nom, année de naissance, e-mail, téléphone et catégorie. Ces informations ne sont accessibles au formulaire qu’après vérification de l’identifiant et d’au moins une coordonnée concordante. Elles restent modifiables pour la réservation, sans modifier la fiche usager. Les réservations et changements sont ensuite synchronisés avec OpenFabLab par des connexions HTTPS initiées par le serveur du FabLab. Aucun accès entrant au NAS n’est nécessaire.</p>{% endif %}
+    </section>
+    <section class="admin-section">
+        <h2>Stockage et accès</h2>
+        <p>Les données principales sont stockées dans une base SQLite sur le serveur de {{ structure.name }}. Elles ne sont pas confiées à un service publicitaire ni à un service de QR code externe.</p>
+        <p>L’accès aux informations nominatives, aux exports et aux opérations de sauvegarde ou de restauration est protégé par l’administration. Il est réservé au Fabmanager et, le cas échéant, aux agents expressément habilités, uniquement pour la gestion du lieu, le suivi de la fréquentation et la réalisation des bilans.</p>
+        <p>La météo affichée à l'accueil est obtenue sans transmettre de donnée personnelle. Source : <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>.</p>
+    </section>
+    <section class="admin-section">
+        <h2>Durée de conservation</h2>
+        <p>Les durées de conservation configurées par défaut sont à valider par chaque structure avec son responsable de traitement :</p>
+        <ul>
+            <li>après 2 ans sans passage, l’adresse e-mail et le numéro de téléphone sont effacés ;</li>
+            <li>après 3 ans sans passage, le compte est désactivé mais peut être réactivé si l’usager revient ;</li>
+            <li>après 5 ans sans passage, le compte est supprimé et les passages antérieurs deviennent anonymes.</li>
+        </ul>
+        <p>Les coordonnées des réservations sont également effacées après deux ans. Les statistiques de fréquentation utiles aux bilans restent conservées sans nom, identifiant public ni coordonnées permettant de retrouver l’ancien usager.</p>
+    </section>
+    <section class="admin-section">
+        <h2>Vos droits</h2>
+        <p>Vous pouvez demander l'accès à vos données, leur rectification ou, lorsque le cadre applicable le permet, leur effacement ou la limitation de leur traitement.</p>
+        <p>Adressez votre demande à {{ structure.name }} via le contact indiqué ci-dessus. Une réservation à vérifier peut être rattachée manuellement à votre compte après contrôle, sans modifier automatiquement votre fiche usager.</p>
+    </section>
+</div>
+{% endblock %}

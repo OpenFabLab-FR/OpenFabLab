@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Statistiques · OpenFabLab{% endblock %}
+{% block body_class %}admin-page statistics-page{% endblock %}
+{% block header_action %}
+<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>
+{% endblock %}
+
+{% macro distribution_list(rows, dimension, empty_message='Aucune donnée disponible.') %}
+    {% if rows %}
+        <div class="distribution-list">
+            {% for row in rows %}
+                <label class="distribution-row statistics-filter-option" data-stat-filter-option data-dimension="{{ dimension }}" data-key="{{ row.key if row.key is not none else 'unknown' }}">
+                    <input type="checkbox" data-stat-filter aria-label="Filtrer sur {{ row.label }}">
+                    <span class="distribution-label">
+                        <span>{{ row.label }}</span>
+                        <strong data-stat-count>{{ row.count }} · {{ row.percentage|string|replace('.', ',') }} %</strong>
+                    </span>
+                    <span class="distribution-track" aria-hidden="true">
+                        <span data-stat-bar style="width: {{ row.percentage }}%"></span>
+                    </span>
+                </label>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-statistics">{{ empty_message }}</p>
+    {% endif %}
+{% endmacro %}
+
+{% macro attendance_record_card(record, includes_visitors=false) %}
+    {% set peak = record.combined_peak if includes_visitors else record.peak %}
+    <article class="openlab-traffic-card traffic-record-card {{ 'traffic-record-combined' if includes_visitors else 'traffic-record-users' }}" data-record-date="{{ record.date }}" data-record-includes-visitors="{{ 1 if includes_visitors else 0 }}" data-traffic-slots="{{ record.bars|length }}">
+        <header>
+            <div>
+                <h3><strong class="traffic-record-label">Journée record d’affluence :</strong> <span class="traffic-record-date">{{ record.date_label }}</span></h3>
+                <span>{{ record.start }}–{{ record.end }}</span>
+            </div>
+            <div class="traffic-card-summary">
+                {% if includes_visitors %}
+                    <p><strong>{{ peak.display_average_people|string|replace('.', ',') }}</strong> personne{% if peak.display_average_people != 1 %}s{% endif %} au pic<small>entre {{ peak.start|replace(':', 'h') }} et {{ peak.end|replace(':', 'h') }} · {{ peak.display_average_users|string|replace('.', ',') }} usa. + {{ peak.display_average_visitors|string|replace('.', ',') }} vis.</small></p>
+                    <p class="traffic-visitor-average"><strong>{{ record.total_visitors }}</strong> visiteur{% if record.total_visitors != 1 %}s{% endif %} enregistré{% if record.total_visitors != 1 %}s{% endif %} ce jour</p>
+                {% else %}
+                    <p><strong>{{ peak.display_average_users|string|replace('.', ',') }}</strong> usager{% if peak.display_average_users != 1 %}s{% endif %} au pic<small>entre {{ peak.start|replace(':', 'h') }} et {{ peak.end|replace(':', 'h') }}</small></p>
+                {% endif %}
+            </div>
+        </header>
+        <div class="openlab-traffic-scroll">
+            <div class="openlab-traffic-chart" style="--traffic-columns: {{ record.bars|length }}; min-width: {{ record.bars|length * 30 }}px;" role="img" aria-label="Affluence enregistrée le {{ record.date_label|lower }} par créneaux de 15 minutes">
+                {% for bar in record.bars %}
+                    <div class="traffic-bar-column" data-traffic-start="{{ bar.start }}" data-traffic-average="{{ bar.average_users }}" data-traffic-average-users="{{ bar.average_users }}" data-traffic-average-visitors="{{ bar.average_visitors }}" data-traffic-average-people="{{ bar.average_people }}" aria-label="De {{ bar.start }} à {{ bar.end }} : {{ bar.average_users|string|replace('.', ',') }} usager et {{ bar.average_visitors|string|replace('.', ',') }} arrivée de visiteur" title="{{ bar.start }}–{{ bar.end }} · {{ bar.average_users|string|replace('.', ',') }} usa. + {{ bar.average_visitors|string|replace('.', ',') }} vis.">
+                        <span class="traffic-bar{% if bar.average_users > 0 %} has-user-value{% endif %}{% if bar.average_people > 0 %} has-combined-value{% endif %}{% if bar.is_daily_peak %} is-daily-peak{% endif %}{% if bar.is_weekly_peak %} is-weekly-peak{% endif %}{% if bar.is_combined_daily_peak %} is-combined-daily-peak{% endif %}{% if bar.is_combined_weekly_peak %} is-combined-weekly-peak{% endif %}" style="--traffic-day-height: {{ bar.daily_height_percentage }}%; --traffic-day-color: {{ bar.daily_color }}; --traffic-week-height: {{ bar.weekly_height_percentage }}%; --traffic-week-color: {{ bar.weekly_color }}; --traffic-combined-day-height: {{ bar.combined_daily_height_percentage }}%; --traffic-combined-day-color: {{ bar.combined_daily_color }}; --traffic-combined-week-height: {{ bar.combined_weekly_height_percentage }}%; --traffic-combined-week-color: {{ bar.combined_weekly_color }};"></span>
+                        <small><span>{{ bar.label }}</span><span>{{ bar.display_average_users|string|replace('.', ',') }} usa.</span><span class="traffic-visitor-count">{{ bar.display_average_visitors|string|replace('.', ',') }} vis.</span></small>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </article>
+{% endmacro %}
+
+{% block content %}
+<section class="content-heading statistics-heading">
+    <div>
+        <h1>Statistiques</h1>
+        <p>Indicateurs utiles au suivi et au bilan annuel de {{ structure.name }}.</p>
+    </div>
+    <form class="year-selector" method="get" action="{{ url_for('admin_statistics') }}">
+        <label for="statistics-year">Période analysée</label>
+        <div>
+            <select id="statistics-year" name="year">
+                <option value="total"{% if is_total_period %} selected{% endif %}>Total</option>
+                {% for year in available_years %}
+                    <option value="{{ year }}"{% if year == selected_year %} selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+            <button class="admin-button primary compact" type="submit">Afficher</button>
+        </div>
+    </form>
+</section>
+
+{% include "_admin_nav.html" %}
+{% include "_frequency_nav.html" %}
+
+<section class="admin-section statistics-compact-section" aria-label="Fréquentation récente">
+    <div class="period-grid">
+        {% for period in current_periods %}
+            <article class="period-card">
+                <span>{{ period.label }}</span>
+                <strong>{{ period.total }}</strong>
+                <small>passage{% if period.total != 1 %}s{% endif %} au total</small>
+                <dl>
+                    <div><dt>Usagers cumulés</dt><dd>{{ period.sessions }}</dd></div>
+                    <div><dt>Visiteurs</dt><dd>{{ period.visitors }}</dd></div>
+                    <div><dt>Usagers uniques</dt><dd>{{ period.unique_users }}</dd></div>
+                </dl>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="admin-section" aria-labelledby="annual-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Période · {{ selected_period_label }}</p>
+            <h2 id="annual-title">{% if is_total_period %}Résumé cumulé{% else %}Résumé annuel{% endif %}</h2>
+        </div>
+    </div>
+    <div class="annual-summary-grid">
+        <article><strong>{{ selected_summary.total }}</strong><span>Passages totaux</span></article>
+        <article><strong>{{ selected_summary.sessions }}</strong><span>Sessions d'usagers</span></article>
+        <article><strong>{{ selected_summary.visitors }}</strong><span>Visiteurs anonymes</span></article>
+        <article><strong>{{ selected_summary.unique_users }}</strong><span>Usagers uniques</span></article>
+        <article><strong>{{ selected_summary.hours|string|replace('.', ',') }} h</strong><span>Temps des sessions terminées</span></article>
+        <article><strong>{{ selected_summary.average_minutes }} min</strong><span>Durée moyenne d'une visite terminée</span></article>
+    </div>
+    <p class="statistics-note">Les sessions encore ouvertes ne sont ajoutées au temps cumulé qu'après l'enregistrement du départ.</p>
+</section>
+
+<section class="admin-section" aria-labelledby="busiest-weekdays-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Rythme d’ouverture · {{ selected_period_label }}</p>
+            <h2 id="busiest-weekdays-title">OpenLabs les plus fréquentés</h2>
+        </div>
+    </div>
+    {% if busiest_weekdays %}
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rang</th>
+                        <th>Jour</th>
+                        <th>OpenLabs comptabilisés</th>
+                        <th>Moyenne d’usagers</th>
+                        <th>Moyenne de visiteurs</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in busiest_weekdays %}
+                        <tr data-openlab-weekday="{{ row.weekday }}" data-average-users="{{ row.average_users }}" data-average-visitors="{{ row.average_visitors }}">
+                            <td data-label="Rang"><strong>{{ loop.index }}</strong></td>
+                            <td data-label="Jour">{{ row.label }}</td>
+                            <td data-label="OpenLabs">{{ row.open_labs }}</td>
+                            <td data-label="Moyenne d’usagers">{{ row.average_users|string|replace('.', ',') }}</td>
+                            <td data-label="Moyenne de visiteurs">{{ row.average_visitors|string|replace('.', ',') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="statistics-note">Seuls les jours comptant au moins un usager inscrit sont considérés comme des OpenLabs. Un même usager n’est compté qu’une fois par journée.</p>
+    {% else %}
+        <p class="empty-statistics">Aucun OpenLab comptabilisé pour cette période.</p>
+    {% endif %}
+</section>
+
+<section class="admin-section openlab-attendance-section includes-visitors" aria-labelledby="openlab-attendance-title" data-openlab-attendance>
+    <div class="section-heading openlab-attendance-heading">
+        <div>
+            <p class="eyebrow">Présence moyenne · {{ selected_period_label }}</p>
+            <h2 id="openlab-attendance-title">Affluence</h2>
+        </div>
+        <div class="attendance-toggle-group">
+            <label class="attendance-scale-toggle">
+                <input type="checkbox" data-attendance-visitors-toggle checked>
+                <span>
+                    <strong>Inclure les visiteurs</strong>
+                    <small>Arrivées par quart d’heure</small>
+                </span>
+            </label>
+            <label class="attendance-scale-toggle">
+                <input type="checkbox" data-attendance-scale-toggle>
+                <span>
+                    <strong>Comparer les jours ensemble</strong>
+                    <small data-attendance-scale-state>Échelle propre à chaque jour</small>
+                </span>
+            </label>
+        </div>
+    </div>
+    {% if openlab_attendance.days %}
+        <div class="openlab-traffic-grid">
+            {% for day in openlab_attendance.days %}
+                <article class="openlab-traffic-card" data-traffic-weekday="{{ day.weekday }}" data-traffic-slots="{{ day.bars|length }}">
+                    <header>
+                        <div>
+                            <h3>{{ day.label }}</h3>
+                            <span>{{ day.start }}–{{ day.end }} · {{ day.open_labs }} OpenLab{% if day.open_labs != 1 %}s{% endif %} effectué{% if day.open_labs != 1 %}s{% endif %}</span>
+                        </div>
+                        <div class="traffic-card-summary">
+                            {% if day.peak %}
+                                <p class="traffic-user-peak"><strong>{{ day.peak.display_average_users|string|replace('.', ',') }}</strong> usager{% if day.peak.display_average_users != 1 %}s{% endif %} au pic<small>entre {{ day.peak.start|replace(':', 'h') }} et {{ day.peak.end|replace(':', 'h') }}</small></p>
+                            {% else %}
+                                <p class="traffic-no-data traffic-user-peak">Aucune session terminée<br>dans cette plage</p>
+                            {% endif %}
+                            {% if day.combined_peak %}
+                                <p class="traffic-combined-peak"><strong>{{ day.combined_peak.display_average_people|string|replace('.', ',') }}</strong> personne{% if day.combined_peak.display_average_people != 1 %}s{% endif %} au pic<small>entre {{ day.combined_peak.start|replace(':', 'h') }} et {{ day.combined_peak.end|replace(':', 'h') }} · {{ day.combined_peak.display_average_users|string|replace('.', ',') }} usa. + {{ day.combined_peak.display_average_visitors|string|replace('.', ',') }} vis.</small></p>
+                            {% else %}
+                                <p class="traffic-no-data traffic-combined-peak">Aucune fréquentation mesurable<br>dans cette plage</p>
+                            {% endif %}
+                            <p class="traffic-visitor-average"><strong>{{ day.display_average_visitors|string|replace('.', ',') }}</strong> visiteur{% if day.display_average_visitors != 1 %}s{% endif %} en moyenne</p>
+                        </div>
+                    </header>
+                    <div class="openlab-traffic-scroll">
+                        <div class="openlab-traffic-chart" style="--traffic-columns: {{ day.bars|length }}; min-width: {{ day.bars|length * 30 }}px;" role="img" aria-label="Affluence moyenne du {{ day.label|lower }} par créneaux de 15 minutes">
+                            {% for bar in day.bars %}
+                                <div class="traffic-bar-column" data-traffic-start="{{ bar.start }}" data-traffic-average="{{ bar.average_users }}" data-traffic-average-users="{{ bar.average_users }}" data-traffic-average-visitors="{{ bar.average_visitors }}" data-traffic-average-people="{{ bar.average_people }}" aria-label="De {{ bar.start }} à {{ bar.end }} : {{ bar.average_users|string|replace('.', ',') }} usager et {{ bar.average_visitors|string|replace('.', ',') }} arrivée de visiteur en moyenne" title="{{ bar.start }}–{{ bar.end }} · {{ bar.average_users|string|replace('.', ',') }} usa. + {{ bar.average_visitors|string|replace('.', ',') }} vis.">
+                                    <span class="traffic-bar{% if bar.average_users > 0 %} has-user-value{% endif %}{% if bar.average_people > 0 %} has-combined-value{% endif %}{% if bar.is_daily_peak %} is-daily-peak{% endif %}{% if bar.is_weekly_peak %} is-weekly-peak{% endif %}{% if bar.is_combined_daily_peak %} is-combined-daily-peak{% endif %}{% if bar.is_combined_weekly_peak %} is-combined-weekly-peak{% endif %}" style="--traffic-day-height: {{ bar.daily_height_percentage }}%; --traffic-day-color: {{ bar.daily_color }}; --traffic-week-height: {{ bar.weekly_height_percentage }}%; --traffic-week-color: {{ bar.weekly_color }}; --traffic-combined-day-height: {{ bar.combined_daily_height_percentage }}%; --traffic-combined-day-color: {{ bar.combined_daily_color }}; --traffic-combined-week-height: {{ bar.combined_weekly_height_percentage }}%; --traffic-combined-week-color: {{ bar.combined_weekly_color }};"></span>
+                                    <small><span>{{ bar.label }}</span><span>{{ bar.display_average_users|string|replace('.', ',') }} usa.</span><span class="traffic-visitor-count">{{ bar.display_average_visitors|string|replace('.', ',') }} vis.</span></small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-statistics">Aucun OpenLab comptabilisé pour cette période.</p>
+    {% endif %}
+
+    {% if openlab_attendance.record.users or openlab_attendance.record.combined %}
+        <div class="traffic-record-grid">
+            {% if openlab_attendance.record.users %}
+                {{ attendance_record_card(openlab_attendance.record.users, false) }}
+            {% endif %}
+            {% if openlab_attendance.record.combined %}
+                {{ attendance_record_card(openlab_attendance.record.combined, true) }}
+            {% endif %}
+        </div>
+    {% endif %}
+</section>
+
+<section class="admin-section" aria-labelledby="services-statistics-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Services complémentaires · {{ selected_period_label }}</p>
+            <h2 id="services-statistics-title">Animations et réservations</h2>
+        </div>
+    </div>
+    <div class="annual-summary-grid service-summary-grid">
+        <article><strong>{{ service_statistics.animations }}</strong><span>Animations effectuées</span></article>
+        <article><strong>{{ service_statistics.animation_participants }}</strong><span>Participants aux animations</span></article>
+        <article><strong>{{ service_statistics.reservations }}</strong><span>Créneaux réservables</span></article>
+        <article><strong>{{ service_statistics.reservation_participants }}</strong><span>Participants aux réservations</span></article>
+        <article><strong>{{ service_statistics.rentals }}</strong><span>Locations de machines</span></article>
+        <article><strong>{{ service_statistics.revenue }} €</strong><span>Recettes des réservations et locations</span></article>
+    </div>
+</section>
+
+<div class="statistics-panels">
+    <section class="stat-panel" aria-labelledby="gender-title">
+        <h2 id="gender-title">Genre renseigné</h2>
+        {{ distribution_list(gender_rows, 'gender') }}
+    </section>
+
+    <section class="stat-panel" aria-labelledby="age-title">
+        <div class="stat-panel-heading">
+            <div>
+                <h2 id="age-title">Tranches d'âge</h2>
+            </div>
+            <div class="mean-stat">
+                <strong data-statistics-mean-age>{% if mean_age is not none %}{{ mean_age|string|replace('.', ',') }} ans{% else %}—{% endif %}</strong>
+                <span>âge moyen estimé</span>
+            </div>
+        </div>
+        {{ distribution_list(age_rows, 'age_group') }}
+    </section>
+
+    <section class="stat-panel" aria-labelledby="city-title">
+        <h2 id="city-title">Communes</h2>
+        {{ distribution_list(city_rows, 'city', 'Aucune commune renseignée pour cette période.') }}
+    </section>
+
+    <section class="stat-panel" aria-labelledby="nationality-title">
+        <h2 id="nationality-title">Nationalités</h2>
+        {{ distribution_list(nationality_rows, 'nationality', 'Aucune nationalité renseignée pour cette période.') }}
+    </section>
+</div>
+
+<section class="statistics-filter-toolbar" data-statistics-filters aria-labelledby="statistics-filter-title">
+    <div>
+        <p class="eyebrow">Filtres croisés · {{ selected_period_label }}</p>
+        <h2 id="statistics-filter-title">Affiner les données démographiques</h2>
+        <p>Cochez une ou plusieurs valeurs : les quatre répartitions s'adaptent ensemble. Les exports conservent toute la période sélectionnée.</p>
+    </div>
+    <div class="statistics-filter-summary">
+        <strong data-statistics-filtered-total>{{ demographic_users|length }}</strong>
+        <span>usager{% if demographic_users|length != 1 %}s{% endif %} affiché{% if demographic_users|length != 1 %}s{% endif %}</span>
+        <button class="admin-button secondary compact" type="button" data-statistics-reset disabled>Tout afficher</button>
+    </div>
+</section>
+
+<script id="demographic-statistics-data" type="application/json">{{ demographic_users|tojson }}</script>
+
+<section class="admin-section statistics-compact-section" aria-labelledby="categories-title">
+    <div class="section-heading">
+        <div>
+            <h2 id="categories-title">Fréquentation par catégorie</h2>
+        </div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>Catégorie</th>
+                    <th>Personnes distinctes</th>
+                    <th>Sessions</th>
+                    <th>Temps de présence</th>
+                    <th>Temps moyen par session</th>
+                    <th>Part des personnes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in category_rows %}
+                    <tr>
+                        <td data-label="Catégorie"><span class="category-badge category-{{ row.key }}">{{ row.label }}</span></td>
+                        <td data-label="Personnes distinctes">{{ row.count }}</td>
+                        <td data-label="Sessions">{{ row.sessions }}</td>
+                        <td data-label="Temps de présence">{{ row.hours|string|replace('.', ',') }} h</td>
+                        <td data-label="Temps moyen par session">{% if row.average_minutes is not none %}{{ row.average_minutes }} min{% else %}—{% endif %}</td>
+                        <td data-label="Part">{{ row.percentage|string|replace('.', ',') }} %</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="statistics-note">Le temps moyen utilise uniquement les sessions dont le départ a été enregistré.</p>
+</section>
+
+<section class="admin-section statistics-compact-section" aria-labelledby="history-years-title">
+    <div class="section-heading">
+        <div>
+            <h2 id="history-years-title">Historique annuel</h2>
+        </div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>Année</th>
+                    <th>Passages totaux</th>
+                    <th>Sessions d'usagers</th>
+                    <th>Visiteurs anonymes</th>
+                    <th>Usagers uniques</th>
+                    <th>OpenLabs effectués</th>
+                    <th>Heures de présence</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in history %}
+                    <tr{% if row.year == selected_year %} class="selected-year-row"{% endif %}>
+                        <td data-label="Année"><strong>{{ row.year }}</strong></td>
+                        <td data-label="Passages totaux">{{ row.total }}</td>
+                        <td data-label="Sessions">{{ row.sessions }}</td>
+                        <td data-label="Visiteurs">{{ row.visitors }}</td>
+                        <td data-label="Usagers uniques">{{ row.unique_users }}</td>
+                        <td data-label="OpenLabs effectués">{{ row.open_lab_days }}</td>
+                        <td data-label="Temps de présence">{{ row.hours|string|replace('.', ',') }} h</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Inscriptions · {{ service.title }} · OpenFabLab{% endblock %}
+{% block body_class %}admin-page services-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('admin_services') }}">← Activités</a>{% endblock %}
+{% block content %}
+<section class="content-heading"><div><h1>Inscriptions</h1><p>{{ service.title }} · {{ service.service_date|date_fr }} · {{ service.start_time }}–{{ service.end_time }}</p></div></section>
+{% include "_admin_nav.html" %}
+<section class="admin-section"><div class="section-heading reservation-summary-heading"><div><h2>Suivi de l’animation</h2><p>La présence à l’animation reste distincte de la présence dans le FabLab.</p></div>
+<div class="form-actions reservation-export-actions">{% if admin_access_role == 'admin' %}<a class="admin-button secondary compact" href="{{ url_for('admin_service_form', service_id=service.id) }}">Modifier</a>{% endif %}<a class="admin-button secondary compact" href="{{ url_for('admin_animation_bookings_csv', service_id=service.id) }}">Exporter les inscriptions CSV</a><a class="admin-button secondary compact" href="{{ url_for('admin_animation_bookings_pdf', service_id=service.id) }}">Exporter les inscriptions PDF</a></div></div>
+<p><small>Cet export contient des données personnelles : conservez-le uniquement pour l’organisation de l’animation.</small></p>
+<div class="day-summary-grid">
+<article><strong>{{ config.capacity if config else '—' }}</strong><span>Capacité</span></article>
+<article><strong>{{ counts.confirmed or 0 }}</strong><span>Confirmés</span></article>
+<article><strong>{{ counts.waitlisted or 0 }}</strong><span>Liste d’attente</span></article>
+<article><strong>{{ remaining }}</strong><span>Places restantes</span></article>
+<article><strong>{{ counts.present or 0 }}</strong><span>Présents</span></article>
+<article><strong>{{ counts.absent or 0 }}</strong><span>Absents</span></article>
+</div>
+{% if config and config.booking_mode == 'slots' %}<h3>Créneaux de l’animation</h3><div class="animation-slot-summary">{% for slot in slots %}<article><strong>{{ slot.label }}</strong><span>{{ slot.occupied }}/{{ slot.capacity }} réservé{% if slot.occupied != 1 %}s{% endif %}</span>{% if slot.waiting > 0 %}<small>{{ slot.waiting }} en attente</small>{% endif %}</article>{% endfor %}</div>{% endif %}</section>
+<section class="admin-section"><h2>Participants</h2>
+<div class="table-scroll"><table class="services-table reservation-bookings-table"><colgroup><col class="booking-person-column"><col class="booking-age-column"><col class="booking-id-column"><col class="booking-link-column"><col class="booking-status-column"><col class="booking-contact-column"><col class="booking-actions-column"></colgroup><thead><tr><th>Personne</th><th>Âge</th><th>Identifiant</th><th>Rattachement</th><th>Réservation / présence</th><th>Contact</th><th>Actions</th></tr></thead><tbody>
+{% for booking in bookings %}<tr>
+<td data-label="Personne"><strong>{{ booking.first_name }} {{ booking.last_name }}</strong>{% if booking.slot_label %}<br><strong>Créneau : {{ booking.slot_label }}</strong>{% endif %}{% if booking.group_uuid %}<br><small>Réservation liée</small>{% endif %}</td>
+<td data-label="Âge">{% if booking.birth_year %}{{ current_year - booking.birth_year }} ans en {{ current_year }}{% else %}—{% endif %}</td>
+<td data-label="Identifiant">{% if booking.user_id %}Usager #{{ booking.public_id }}{% if booking.category %}<br><small>{{ booking.category|category_label }}</small>{% endif %}{% if booking.on_site %}<br><small>Présent au FabLab</small>{% endif %}{% else %}Visiteur{% endif %}</td>
+<td data-label="Rattachement">
+{% if booking.link_status == 'matched' %}Coordonnées concordantes{% elif booking.link_status == 'manual' %}Vérifié manuellement{% elif booking.link_status in ('needs_review', 'candidate') %}À vérifier{% else %}Non rattaché{% endif %}{% if booking.verified_at %}<br><small>{{ booking.verified_at }} · {{ booking.verified_by_role }}</small>{% endif %}
+<form class="reservation-linkage-form" method="post" action="{{ url_for('admin_animation_booking_action', service_id=service.id, booking_uuid=booking.external_uuid) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+<div class="reservation-link-actions"><label class="form-field"><span>Rattacher à un usager</span><select name="public_id"><option value="">Choisir</option>{% for user in users %}<option value="{{ user.public_id }}">{{ user.first_name }} {{ user.last_name }} · #{{ user.public_id }}</option>{% endfor %}</select></label><div class="reservation-link-buttons"><button class="table-action" name="action" value="link" type="submit">Rattacher</button>{% if booking.user_id %}<button class="table-action" name="action" value="unlink" type="submit">Détacher</button>{% endif %}</div></div>
+{% if booking.link_status != 'manual' %}<button class="table-action reservation-verify-action" name="action" value="verify" type="submit">Vérifié manuellement</button>{% endif %}
+</form></td>
+{% set reservation_status = booking_reservation_status(booking) %}{% set presence = booking_presence(booking) %}
+<td data-label="Réservation / présence"><strong>Réservation :</strong> {{ {'confirmed':'Confirmée','waitlisted':'Liste d’attente','offer_pending':'Place proposée','cancelled':'Annulée','expired':'Offre expirée'}.get(reservation_status, reservation_status) }}<br><strong>Présence :</strong> {{ 'Présent' if presence is sameas true else 'Absent' if presence is sameas false and reservation_status == 'confirmed' else 'Non renseignée' }}{% if booking.source == 'walkin' %}<br><small>Sur place</small>{% endif %}{% if booking.external_uuid in pending_confirmations %}<br><small>Confirmation en attente de synchronisation</small>{% elif confirmation_errors.get(booking.external_uuid) %}<br><small class="reservation-action-error">{{ confirmation_errors[booking.external_uuid] }}</small>{% endif %}</td>
+<td data-label="Contact">{{ booking.email or '—' }}<br>{{ booking.phone or '—' }}</td>
+<td data-label="Actions"><form class="reservation-booking-actions" method="post" action="{{ url_for('admin_animation_booking_action', service_id=service.id, booking_uuid=booking.external_uuid) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="reservation-primary-actions">
+{% if reservation_status == 'confirmed' %}<button class="table-action" name="action" value="present" type="submit">Présent</button> <button class="table-action" name="action" value="absent" type="submit">Absent</button>{% endif %}
+{% if booking.external_uuid in confirmable_ids %}<button class="table-action" name="action" value="confirm" type="submit">Confirmer</button>{% endif %}
+</div>
+{% if admin_access_role == 'admin' and booking.external_uuid in confirmable_ids %}<label class="reservation-override-option"><input name="capacity_override" value="1" type="checkbox"><span>Autoriser un dépassement exceptionnel pour cette confirmation</span></label>{% endif %}
+</form>
+{% if booking.status not in ('cancelled','expired') %}<form class="reservation-cancel-form" method="post" action="{{ url_for('admin_animation_booking_action', service_id=service.id, booking_uuid=booking.external_uuid) }}" onsubmit="return confirm('Annuler cette inscription ?{% if booking.group_uuid %} Les inscriptions liées seront également annulées.{% endif %}')"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="admin-button danger compact" name="action" value="cancel" type="submit">Annuler l’inscription</button></form>{% endif %}
+</td></tr>{% else %}<tr><td colspan="7">Aucune inscription reçue pour cette animation.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% if config %}<section class="admin-section"><h2>Ajouter un participant sur place</h2><p>Une personne = une place. En cas de capacité atteinte, seul l’administrateur peut confirmer un dépassement.</p>
+<form method="post" action="{{ url_for('admin_animation_booking_walkin', service_id=service.id) }}" class="admin-form" {% if admin_access_role == 'admin' %}data-walkin-prefill-url="{{ url_for('admin_animation_booking_user', service_id=service.id, public_id='__PUBLIC_ID__') }}"{% endif %}><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="form-grid">
+<label class="form-field walkin-user-choice"><span>Usager existant (facultatif)</span><select name="public_id"><option value="">Visiteur</option>{% for user in users %}<option value="{{ user.public_id }}">{{ user.first_name }} {{ user.last_name }} · #{{ user.public_id }}</option>{% endfor %}</select></label>
+{% if config.booking_mode == 'slots' %}<label class="form-field"><span>Créneau *</span><select name="slot_uuid" required><option value="">Choisir un créneau</option>{% for slot in slots %}<option value="{{ slot.slot_uuid }}">{{ slot.label }} · {{ slot.available }} disponible(s)</option>{% endfor %}</select></label>{% endif %}
+<label class="form-field"><span>Prénom *</span><input name="first_name" required maxlength="80"></label><label class="form-field"><span>Nom *</span><input name="last_name" required maxlength="80"></label>
+<label class="form-field"><span>Année de naissance *</span><input name="birth_year" type="number" min="1900" max="{{ current_year }}" required></label>
+<label class="form-field"><span>E-mail de contact</span><input name="email" type="email"></label><label class="form-field"><span>Téléphone de contact</span><input name="phone" type="tel"></label>
+{% if admin_access_role == 'admin' %}<label class="checkbox-field reservation-checkbox"><input name="capacity_override" value="1" type="checkbox"><span><strong>Dépassement exceptionnel de capacité</strong></span></label>{% endif %}
+</div><button class="admin-button primary" type="submit">Ajouter le participant</button></form></section>{% endif %}
+{% endblock %}

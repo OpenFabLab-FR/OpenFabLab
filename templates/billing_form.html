@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{% if record %}Modifier {{ record.quote_number }}{% else %}Nouveau devis{% endif %} · OpenFabLab{% endblock %}
+{% block body_class %}admin-page billing-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('admin_billing') }}">← Facturation</a>{% endblock %}
+
+{% block content %}
+{% set billing_type = values.billing_type|default('reservation') %}
+<section class="content-heading">
+    <p class="eyebrow">Facturation · devis et facture liés</p>
+    <h1>{% if record %}Modifier le dossier {{ record.quote_number }}{% else %}Créer un devis{% endif %}</h1>
+    <p>Les montants sont calculés automatiquement depuis les tarifs de {{ structure.name }}.</p>
+</section>
+
+<form method="post" class="admin-form billing-form" data-billing-form
+      data-normal-hourly="{{ billing_tariffs.normal_hourly }}"
+      data-normal-half-day="{{ billing_tariffs.normal_half_day }}"
+      data-reduced-hourly="{{ billing_tariffs.reduced_hourly }}"
+      data-reduced-half-day="{{ billing_tariffs.reduced_half_day }}"
+      data-travel-unit="{{ billing_tariffs.travel }}"
+      data-consumable-unit="{{ billing_tariffs.consumable }}"
+      data-rental-contract="{{ billing_tariffs.rental_contract }}"
+      data-rental-delivery="{{ billing_tariffs.rental_delivery }}">
+    <section class="form-section">
+        <div class="form-section-heading"><p class="eyebrow">Type de dossier</p><h2>Prestation facturée</h2></div>
+        {% if record %}
+            <input type="hidden" name="billing_type" value="{{ billing_type }}" data-billing-type>
+            <p class="billing-type-summary"><strong>{{ 'Location de machine' if billing_type == 'rental' else 'Créneau réservable' }}</strong> · le type ne peut plus être changé après la création du dossier.</p>
+        {% else %}
+            <label class="form-field billing-type-field"><span>Type de devis *</span><select name="billing_type" data-billing-type><option value="reservation"{% if billing_type == 'reservation' %} selected{% endif %}>Créneau réservable</option><option value="rental"{% if billing_type == 'rental' %} selected{% endif %}>Location de machine</option></select></label>
+        {% endif %}
+    </section>
+
+    {% if record %}
+    <section class="form-section">
+        <div class="form-section-heading"><p class="eyebrow">Références</p><h2>Noms des documents</h2><p>Ces valeurs sont modifiables pour corriger une erreur ou reprendre une numérotation particulière.</p></div>
+        <div class="form-grid two-columns">
+            <label><span>Nom du devis *</span><input name="quote_number" type="text" maxlength="60" value="{{ values.quote_number|default(record.quote_number) }}" required></label>
+            {% if record.invoice_number %}<label><span>Nom de la facture *</span><input name="invoice_number" type="text" maxlength="60" value="{{ values.invoice_number|default(record.invoice_number) }}" required></label>{% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="form-section">
+        <div class="form-section-heading"><p class="eyebrow">Destinataire</p><h2>Client et facturation</h2></div>
+        <div class="form-grid two-columns">
+            <label><span>Nom du contact *</span><input name="client_contact" type="text" maxlength="160" value="{{ values.client_contact|default('') }}" list="billing-client-suggestions" data-billing-client-input data-clients-url="{{ url_for('admin_billing_clients_api') }}" autocomplete="off" required><datalist id="billing-client-suggestions" data-billing-client-suggestions></datalist><small>Choisissez un contact connu pour préremplir ses dernières coordonnées.</small></label>
+            <label><span>Structure *</span><input name="client_structure" type="text" maxlength="180" value="{{ values.client_structure|default('') }}" data-billing-client-field="structure" required></label>
+            <label class="full-width"><span>Adresse postale *</span><input name="address_line" type="text" maxlength="220" value="{{ values.address_line|default('') }}" data-billing-client-field="address_line" required></label>
+            <label><span>Code postal *</span><input name="postal_code" type="text" maxlength="12" value="{{ values.postal_code|default('') }}" inputmode="numeric" data-postal-code data-communes-url="{{ url_for('admin_communes_api') }}" data-billing-client-field="postal_code" required></label>
+            <label><span>Commune *</span><input name="city" type="text" maxlength="160" value="{{ values.city|default('') }}" data-city-input data-billing-client-field="city" list="billing-city-suggestions" required><datalist id="billing-city-suggestions" data-city-suggestions></datalist><small data-city-suggestion-status>Saisissez un code postal français à 5 chiffres pour obtenir les communes officielles.</small></label>
+            <label><span>Téléphone</span><input name="phone" type="tel" maxlength="40" value="{{ values.phone|default('') }}" data-billing-client-field="phone"></label>
+            <label><span>Adresse e-mail</span><input name="email" type="email" maxlength="180" value="{{ values.email|default('') }}" data-billing-client-field="email"></label>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <div class="form-section-heading"><p class="eyebrow">Dates du dossier</p><h2>Devis, signature et facture</h2></div>
+        <div class="form-grid three-columns">
+            <label><span>Date du devis *</span><input name="quote_date" type="date" value="{{ values.quote_date }}" required></label>
+            {% if record %}<label><span>Date de signature du devis</span><input name="quote_signed_date" type="date" value="{{ values.quote_signed_date|default('') }}"></label>{% endif %}
+            {% if record and record.invoice_number %}
+                <label><span>Date de la facture *</span><input name="invoice_date" type="date" value="{{ values.invoice_date|default(record.invoice_date) }}" required><small>Modifiable après création de la facture.</small></label>
+                <label><span>Date d’envoi de la facture</span><input name="invoice_sent_date" type="date" value="{{ values.invoice_sent_date|default('') }}"></label>
+                <label><span>Date de la relance 1</span><input name="reminder_one_date" type="date" value="{{ values.reminder_one_date|default('') }}"></label>
+                <label><span>Date de la relance 2</span><input name="reminder_two_date" type="date" value="{{ values.reminder_two_date|default('') }}"></label>
+                <label><span>Date de règlement</span><input name="paid_date" type="date" value="{{ values.paid_date|default('') }}"></label>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="form-section">
+        <div class="form-section-heading"><p class="eyebrow">Prestation</p><h2>{{ 'Location prévue' if billing_type == 'rental' else 'Activité prévue' }}</h2></div>
+        <div class="form-grid two-columns">
+            <label class="full-width"><span>Titre du dossier *</span><input name="title" type="text" maxlength="180" value="{{ values.title|default('') }}" required></label>
+            <label class="full-width"><span>Description et objectif *</span><textarea name="description" rows="5" maxlength="3000" required>{{ values.description|default('') }}</textarea></label>
+            <label data-billing-section="reservation"><span>Participants</span><input name="participants" type="number" min="0" max="100000" value="{{ values.participants|default(1) }}"></label>
+            <label><span data-billing-activity-date-label>{{ 'Date du début de la location *' if billing_type == 'rental' else "Date de début ou de l'activité *" }}</span><input name="activity_date" type="date" value="{{ values.activity_date }}" required></label>
+            <label class="billing-time-field"><span data-billing-start-time-label>{{ 'Heure du rdv *' if billing_type == 'rental' else 'Heure de début *' }}</span><input name="activity_start_time" type="time" step="60" value="{{ values.activity_start_time|default('') or '' }}" required></label>
+            <label class="billing-time-field"><span data-billing-end-time-label>{{ 'Heure estimée de la fin du rdv *' if billing_type == 'rental' else 'Heure de fin *' }}</span><input name="activity_end_time" type="time" step="60" value="{{ values.activity_end_time|default('') or '' }}" required></label>
+            <small class="billing-duration-help full-width">La durée, possible de 15 minutes à 8 heures, alimente les statistiques.</small>
+        </div>
+    </section>
+
+    <section class="form-section" data-billing-section="reservation">
+        <div class="form-section-heading"><p class="eyebrow">Tarification</p><h2>Calcul du créneau réservable</h2></div>
+        <div class="billing-rate-grid">
+            <label><span>Catégorie</span><select name="rate_category" data-billing-price><option value="normal"{% if values.rate_category == 'normal' %} selected{% endif %}>Tarif normal</option><option value="reduced"{% if values.rate_category == 'reduced' %} selected{% endif %}>Tarif réduit (-50 %)</option><option value="agglo"{% if values.rate_category == 'agglo' %} selected{% endif %}>Tarif structure (gratuit)</option></select></label>
+            <label><span>Tarif personnalisé (facultatif)</span><select name="custom_tariff_key" data-billing-price><option value="">Aucun · utiliser la catégorie ci-dessus</option>{% for key, tariff in custom_tariffs.items() %}{% set shown_cents = (values.rate_unit_cents|default(tariff.cents)) if record and values.custom_tariff_key == key else tariff.cents %}<option value="{{ key }}" data-cents="{{ shown_cents }}" data-unit="{{ tariff.unit }}"{% if values.custom_tariff_key == key %} selected{% endif %}>{{ (values.custom_tariff_name|default(tariff.name)) if record and values.custom_tariff_key == key else tariff.name }} · {{ '%.2f'|format(shown_cents / 100)|replace('.', ',') }} € / {{ 'heure' if tariff.unit == 'hourly' else 'demi-journée' }}{% if tariff.archived or not tariff.active %} (ancien devis uniquement){% endif %}</option>{% endfor %}</select><small>Le prix et la désignation restent figés dans le devis après sa création.</small></label>
+            <label><span>Unité</span><select name="rate_unit" data-billing-price><option value="hourly"{% if values.rate_unit == 'hourly' %} selected{% endif %}>Heure</option><option value="half_day"{% if values.rate_unit == 'half_day' %} selected{% endif %}>Demi-journée</option></select></label>
+            <label><span>Quantité</span><input name="rate_quantity" type="number" min="1" max="1000" value="{{ values.rate_quantity|default(1) }}" data-billing-price></label>
+            <label><span>Heures de déplacement hors secteur</span><input name="travel_quantity" type="number" min="0" max="1000" value="{{ values.travel_quantity|default(0) }}" data-billing-price></label>
+            <label><span>Consommables</span><select name="consumable_mode" data-billing-price><option value="included"{% if values.consumable_mode == 'included' %} selected{% endif %}>Fournis gracieusement</option><option value="client"{% if values.consumable_mode == 'client' %} selected{% endif %}>À apporter par le client</option><option value="billed"{% if values.consumable_mode == 'billed' %} selected{% endif %}>Facturés en supplément</option></select></label>
+            <label><span>Forfaits consommables à {{ '%.2f'|format(billing_tariffs.consumable / 100)|replace('.', ',') }} €</span><input name="consumable_quantity" type="number" min="0" max="1000" value="{{ values.consumable_quantity|default(0) }}" data-billing-price></label>
+        </div>
+    </section>
+
+    <section class="form-section" data-billing-section="rental">
+        <div class="form-section-heading"><p class="eyebrow">Location</p><h2>Machine, durée et caution</h2></div>
+        <div class="form-grid two-columns">
+            <label class="full-width"><span>Machine louée *</span><select name="rental_machine_key" data-billing-price>{% for key, machine in rental_catalog.items() %}<option value="{{ key }}" data-monthly-cents="{{ machine.monthly_cents }}" data-deposit-cents="{{ machine.deposit_cents }}"{% if values.rental_machine_key == key %} selected{% endif %}>{{ machine.name }} · {{ '%.2f'|format(machine.monthly_cents / 100)|replace('.', ',') }} €/mois · caution {{ '%.2f'|format(machine.deposit_cents / 100)|replace('.', ',') }} €</option>{% endfor %}</select></label>
+            <label><span>Durée en mois *</span><input name="rental_months" type="number" min="1" max="9" value="{{ values.rental_months|default(1) }}" data-billing-price></label>
+            <label><span>Date de retour prévue *</span><input name="rental_end_date" type="date" value="{{ values.rental_end_date|default('') }}"></label>
+            <label class="checkbox-card"><input name="rental_delivery" type="checkbox" value="1" data-billing-price{% if values.rental_delivery in [1, '1', 'on', true] %} checked{% endif %}><span><strong>Livraison et installation sur site</strong><small>Forfait optionnel de {{ '%.2f'|format(billing_tariffs.rental_delivery / 100)|replace('.', ',') }} €.</small></span></label>
+            <label class="checkbox-card"><input name="rental_deposit_exempt" type="checkbox" value="1"{% if values.rental_deposit_exempt in [1, '1', 'on', true] %} checked{% endif %}><span><strong>Dispense de caution</strong><small>Pour une institution ou un règlement par mandat administratif.</small></span></label>
+        </div>
+        <p>Des frais fixes de contrat et de préparation de {{ '%.2f'|format(billing_tariffs.rental_contract / 100)|replace('.', ',') }} € sont ajoutés à chaque location.</p>
+    </section>
+
+    <section class="form-section">
+        <p class="billing-live-total">Total estimé HT : <strong data-billing-total>{{ '%.2f'|format((values.amount_cents|default(0)|int) / 100)|replace('.', ',') }} €</strong></p>
+        <label class="form-field"><span>Note interne</span><textarea name="notes" rows="3" maxlength="2000">{{ values.notes|default('', true) }}</textarea><small>Cette note reste dans l'administration : elle ne figure ni sur les documents client ni dans le bilan annuel.</small></label>
+    </section>
+
+    <div class="form-actions"><button class="admin-button primary" type="submit">{% if record %}Enregistrer les modifications{% else %}Créer le devis{% endif %}</button><a class="admin-button secondary" href="{{ url_for('admin_billing_detail', record_id=record.id) if record else url_for('admin_billing') }}">Annuler</a></div>
+</form>
+{% endblock %}

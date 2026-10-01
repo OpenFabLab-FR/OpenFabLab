@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Thèmes · OpenFabLab{% endblock %}
+{% block body_class %}admin-page settings-page moderator-themes-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading">
+    <h1>Thèmes</h1>
+    <p>Choisissez l’ambiance visuelle de la borne d’accueil.</p>
+</section>
+{% include "_admin_nav.html" %}
+<form method="post" action="{{ url_for('admin_moderator_themes') }}" class="admin-form settings-save-form moderator-theme-form">
+    <section class="form-section options-section">
+        <div class="form-section-heading"><h2>Thème de la borne</h2><p>Ce choix modifie uniquement l’apparence de l’accueil, de l’accès usager et du départ.</p></div>
+        {% include "_theme_picker.html" %}
+    </section>
+    <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les options</button></div>
+</form>
+{% endblock %}

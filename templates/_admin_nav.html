@@ -1,0 +1,12 @@
+<nav class="admin-tabs" aria-label="Navigation principale de l’administration">
+    {% if modules.frequency %}<a class="admin-tab{% if request.endpoint in ('admin', 'admin_frequency_day', 'admin_statistics', 'admin_frequency_exports') %} active{% endif %}" href="{{ url_for('admin') }}">Fréquentation</a>{% endif %}
+    {% if modules.users %}<a class="admin-tab{% if request.endpoint in ('admin_users_directory', 'admin_add_user', 'admin_edit_user', 'admin_user_qr', 'admin_user_badge') %} active{% endif %}" href="{{ url_for('admin_users_directory') }}">Usagers</a>{% endif %}
+    {% if modules.activities %}<a class="admin-tab{% if request.endpoint in ('admin_services', 'admin_service_form', 'admin_delete_service', 'admin_service_calendar') %} active{% endif %}" href="{{ url_for('admin_services') }}">Activités</a>{% endif %}
+    {% if admin_access_role == 'moderator' %}
+    <a class="admin-tab{% if request.endpoint == 'admin_moderator_themes' %} active{% endif %}" href="{{ url_for('admin_moderator_themes') }}">Thèmes</a>
+    {% endif %}
+    {% if admin_access_role == 'admin' %}
+    {% if modules.billing %}<a class="admin-tab{% if request.endpoint in ('admin_billing', 'admin_billing_form', 'admin_billing_client_form', 'admin_billing_detail', 'admin_billing_sign', 'admin_billing_create_invoice', 'admin_billing_mark_sent', 'admin_billing_mark_paid', 'admin_billing_reminder', 'admin_billing_document', 'admin_billing_facdepot') %} active{% endif %}" href="{{ url_for('admin_billing') }}">Facturation</a>{% endif %}
+    <a class="admin-tab{% if request.endpoint in ('admin_database_backup', 'admin_settings_structure', 'admin_settings_reservations', 'admin_settings_display', 'admin_settings_kiosk', 'admin_settings_tariffs', 'admin_settings_data', 'admin_notifications', 'admin_export_database', 'admin_reset_database', 'admin_closure_settings', 'admin_toggle_automatic_closure', 'admin_close_all_now', 'admin_reset_today') %} active{% endif %}" href="{{ url_for('admin_database_backup') }}">Réglages</a>
+    {% endif %}
+</nav>

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Réglages · OpenFabLab{% endblock %}
+{% block body_class %}admin-page settings-page settings-view-{{ settings_view }}{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading">
+    <h1>Réglages</h1>
+    <p>Configurez la borne, les horaires, les tarifs et la protection des données.</p>
+</section>
+{% include "_admin_nav.html" %}
+{% include "_settings_nav.html" %}
+
+{% if settings_view == 'structure' %}
+<form method="post" class="admin-form structure-settings-form" enctype="multipart/form-data">
+    <section class="form-section">
+        <div class="form-section-heading"><h2>Identité de la structure</h2><p>OpenFabLab est le logiciel ; ces coordonnées décrivent le FabLab qui l’utilise.</p></div>
+        <div class="form-grid two-columns">
+            {% for key, label in (('name', 'Nom de la structure'), ('short_name', 'Nom court'), ('description', 'Description'), ('address', 'Adresse'), ('city', 'Commune'), ('postal_code', 'Code postal'), ('email', 'E-mail'), ('phone', 'Téléphone'), ('website', 'Site web'), ('privacy_policy_url', 'Page de gestion des données'), ('country', 'Pays'), ('timezone', 'Fuseau horaire'), ('latitude', 'Latitude du FabLab'), ('longitude', 'Longitude du FabLab'), ('color', 'Couleur principale')) %}
+            <label class="form-field"><span>{{ label }}</span><input name="{{ key }}" type="{% if key == 'email' %}email{% elif key in ('website', 'privacy_policy_url') %}url{% elif key == 'color' %}color{% else %}text{% endif %}" value="{{ structure_settings[key] }}" maxlength="{{ 254 if key == 'email' else 240 }}" {% if key in ('name', 'short_name', 'timezone') %}required{% endif %}></label>
+            {% endfor %}
+        </div>
+        <p class="form-help">La météo utilise les coordonnées publiques du FabLab. Sans latitude et longitude, aucun appel météo n’est effectué. Le lien de gestion des données peut être affiché dans le formulaire de réservation.</p>
+        <div class="form-grid two-columns">
+            <label class="form-field"><span>Mot-symbole de la structure (facultatif){% if structure_settings.wordmark_logo == 'wordmark.png' %} · personnalisé{% endif %}</span><input name="logo_wordmark" type="file" accept="image/png,image/jpeg,image/webp"><small>Lorsqu’il est configuré, il remplace le logo OpenFabLab dans l’en-tête. PNG, JPEG ou WebP, 2 Mo maximum.</small></label>
+            <label class="form-field"><span>Logo principal{% if structure_settings.main_logo %} · personnalisé{% endif %}</span><input name="logo_main" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP, 2 Mo maximum. Laissez vide pour conserver le logo actuel.</small></label>
+            <label class="form-field"><span>Logo institutionnel{% if structure_settings.institution_logo %} · personnalisé{% endif %}</span><input name="logo_institution" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP, 2 Mo maximum.</small></label>
+            <label class="form-field"><span>Signature des bilans{% if structure_settings.signature %} · personnalisée{% endif %}</span><input name="logo_signature" type="file" accept="image/png,image/jpeg,image/webp"><small>Utilisée pour les bilans PDF/XLSX, sans être affichée publiquement.</small></label>
+        </div>
+    </section>
+    <section class="form-section">
+        <div class="form-section-heading"><h2>Administration et facturation</h2><p>Ces valeurs alimentent les prochains documents. Les factures et devis déjà créés conservent leurs montants et leurs coordonnées client.</p></div>
+        <div class="form-grid two-columns">
+            {% for key, label in (('legal_entity', 'Entité juridique'), ('siret', 'SIRET'), ('vat_number', 'Numéro de TVA'), ('vat_note', 'Mention de TVA'), ('iban', 'IBAN'), ('bic', 'BIC'), ('account_holder', 'Titulaire du compte / régie'), ('payment_days', 'Délai de règlement en jours'), ('regie_contact', 'Coordonnées de la régie'), ('signer_name', 'Nom du signataire des bilans')) %}
+            <label class="form-field"><span>{{ label }}</span><input name="{{ key }}" type="text" value="{{ structure_settings[key] }}" maxlength="{{ 600 if key == 'payment_terms' else 240 }}"></label>
+            {% endfor %}
+        </div>
+        {% for key, label in (('billing_address', 'Adresse de facturation'), ('payment_terms', 'Conditions de règlement'), ('rental_terms', 'Conditions particulières de location')) %}
+        <label class="form-field"><span>{{ label }}</span><textarea name="{{ key }}" maxlength="{{ 8000 if key == 'rental_terms' else 600 }}" rows="{{ 6 if key == 'rental_terms' else 3 }}">{{ structure_settings[key] }}</textarea></label>
+        {% endfor %}
+        <p class="form-help">Une nouvelle installation doit compléter ces champs avant d’émettre des documents officiels. Le RIB reste réservé aux factures.</p>
+    </section>
+    <section class="form-section">
+        <div class="form-section-heading"><h2>Modules</h2><p>Un module désactivé masque ses fonctions sans effacer les données. Les réservations publiques nécessitent Activités ; les créneaux et locations nécessitent Facturation.</p></div>
+        {% for key, label in module_labels.items() %}
+        <label class="checkbox-field"><input name="module_{{ key }}" type="checkbox" value="1" {% if module_settings[key] %}checked{% endif %}><span><strong>{{ label }}</strong></span></label>
+        {% endfor %}
+        <div class="form-actions structure-save-actions"><button class="admin-button primary" type="submit">Enregistrer la structure et les modules</button></div>
+    </section>
+</form>
+{% if structure_settings.wordmark_logo == 'wordmark.png' %}<form method="post" action="{{ url_for('admin_reset_structure_wordmark') }}" class="form-actions structure-reset-wordmark-form"><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><button class="admin-button secondary" type="submit">Revenir au logo OpenFabLab</button></form>{% endif %}
+{% include '_reservation_settings.html' %}
+<section class="admin-section profile-section">
+    <h2>Profil privé de configuration</h2>
+    <p>Un seul format <code>.openfablab-profile.zip</code> sauvegarde l'identité, les logos, les modules, les tarifs, les machines et les règles de réservation, sans usagers, factures, réservations ni secrets. Il peut contenir des données administratives et bancaires : conservez-le dans un emplacement protégé.</p>
+    <a class="admin-button" href="{{ url_for('admin_export_profile') }}">Exporter le profil</a>
+    <form method="post" action="{{ url_for('admin_import_profile') }}" enctype="multipart/form-data" class="admin-form">
+        <input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}">
+        <label class="form-field"><span>Profil à importer</span><input name="profile_file" type="file" accept=".zip,application/zip" required></label>
+        {% if profile_preview %}
+        <p><strong>Profil vérifié :</strong> {{ profile_preview.name }} · {{ profile_preview.settings }} réglages · {{ profile_preview.machines }} machines · {{ profile_preview.tariffs }} tarifs supplémentaires · {{ profile_preview.assets }} ressources visuelles. Les données métier et les secrets ne seront pas importés.</p>
+        <label class="form-field"><span>Confirmation</span><input name="confirmation" type="text" autocomplete="off" placeholder="IMPORTER LE PROFIL"></label>
+        <button class="admin-button primary" type="submit" name="step" value="apply">Confirmer l’import (sélectionnez à nouveau le même fichier)</button>
+        {% else %}
+        <button class="admin-button" type="submit" name="step" value="preview">Vérifier et prévisualiser</button>
+        {% endif %}
+    </form>
+</section>
+{% elif settings_view == 'affichage' %}
+<form method="post" action="{{ url_for('admin_update_options', settings_view='affichage') }}" class="admin-form options-main-form settings-save-form">
+    <section class="form-section options-section" id="affichage">
+        <div class="form-section-heading"><h2>Affichage</h2><p>Personnalisez l’apparence de la borne et la précision visuelle des graphiques.</p></div>
+        {% include "_theme_picker.html" %}
+        <label class="checkbox-field"><input name="openlab_attendance_show_decimals" type="checkbox" value="1" {% if show_attendance_decimals %}checked{% endif %}><span><strong>Afficher les décimales dans les graphiques d’affluence</strong><small>Rétablit les valeurs détaillées, par exemple 2,8 usagers au lieu de 3 usagers.</small></span></label>
+    </section>
+    <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les options</button></div>
+</form>
+{% elif settings_view == 'borne' %}
+<form method="post" action="{{ url_for('admin_update_options', settings_view='borne') }}" class="admin-form options-main-form settings-save-form">
+    <section class="form-section options-section" id="borne-et-horaires">
+        <div class="form-section-heading"><p class="eyebrow">Tablette d’accueil</p><h2>Borne et horaires</h2></div>
+        <label class="checkbox-field"><input name="keep_screen_awake" type="checkbox" value="1" {% if keep_screen_awake %}checked{% endif %}><span><strong>Maintenir l’écran actif sur la borne</strong><small>Empêche l’assombrissement ou le verrouillage tant que la page principale est visible.</small></span></label>
+        <p class="option-state">État sur ce navigateur : <strong data-wake-lock-status data-option-enabled="{% if keep_screen_awake %}1{% else %}0{% endif %}">Vérification…</strong></p>
+        <div class="wake-lock-schedule"><label><span>Actif chaque jour à partir de</span><input name="wake_lock_start" type="time" value="{{ wake_lock.start }}" required></label><label><span>Jusqu'à</span><input name="wake_lock_end" type="time" value="{{ wake_lock.end }}" required></label></div>
+        <p class="form-help">En dehors de cette plage, la tablette peut appliquer sa mise en veille habituelle. Une plage dont les deux heures sont identiques couvre toute la journée.</p>
+        <label class="checkbox-field home-scroll-option"><input name="lock_home_scroll" type="checkbox" value="1" {% if lock_home_scroll %}checked{% endif %}><span><strong>Verrouiller le défilement de la page d’accueil</strong><small>Maintient la page fixe sur la borne en paysage.</small></span></label>
+    </section>
+    <section class="form-section attendance-options-section">
+        <div class="form-section-heading"><p class="eyebrow">Statistiques des OpenLabs</p><h2>Horaires habituels des OpenLabs</h2><p>Définit les créneaux utilisés par les calculs de fréquentation par quarts d’heure.</p></div>
+        <div class="openlab-schedule-grid">{% for day in openlab_schedule %}<div class="openlab-schedule-row"><strong>{{ day.label }}</strong><label><span>Début</span><input name="openlab_attendance_{{ day.key }}_start" type="time" step="900" value="{{ day.start }}"></label><label><span>Fin</span><input name="openlab_attendance_{{ day.key }}_end" type="time" step="900" value="{{ day.end }}"></label></div>{% endfor %}</div>
+        <p class="form-help">Pour un jour sans OpenLab, laissez ses deux heures vides. Ces horaires ne modifient pas la clôture des sessions.</p>
+    </section>
+    <section class="form-section" id="securite-identification">
+        <div class="form-section-heading"><p class="eyebrow">Sécurité de l’identification</p><h2>Identification par code</h2><p>Seule la saisie manuelle de l’ID à quatre chiffres est concernée. QR code, liste et visiteurs restent disponibles.</p></div>
+        <div class="form-grid">
+            <label class="form-field"><span>Tentatives invalides avant alerte</span><input name="invalid_id_threshold" type="number" min="2" max="50" value="{{ id_security.threshold }}" required></label>
+            <label class="form-field"><span>Fenêtre de détection (minutes)</span><input name="invalid_id_window_minutes" type="number" min="1" max="60" value="{{ id_security.window_minutes }}" required></label>
+        </div>
+        <label class="checkbox-field"><input name="invalid_id_lock_enabled" type="checkbox" value="1" {% if id_security.lock_enabled %}checked{% endif %}><span><strong>Bloquer temporairement la saisie ID après trop de tentatives</strong><small>Désactivé par défaut. Ne bloque jamais les autres méthodes d’accès.</small></span></label>
+        <div class="form-grid"><label class="form-field"><span>Durée du blocage (minutes)</span><input name="invalid_id_lock_minutes" type="number" min="1" max="120" value="{{ id_security.lock_minutes }}" required></label></div>
+        <div class="security-status" aria-label="État de sécurité">
+            <p>Tentatives invalides sur la fenêtre actuelle : <strong>{{ id_security_status.count }} / {{ id_security.threshold }}</strong></p>
+            <p>Saisie par ID : <strong>{% if id_security_status.lock_until %}Bloquée jusqu’à {{ id_security_status.lock_until.strftime('%H:%M') }}{% else %}Active{% endif %}</strong></p>
+            <p>Dernière alerte Discord déclenchée : <strong>{% if id_security_status.last_alert %}{{ id_security_status.last_alert.strftime('%d/%m/%Y à %H:%M') }}{% else %}Aucune{% endif %}</strong></p>
+        </div>
+        {% if security_events %}<details class="security-journal"><summary>Derniers événements de sécurité</summary><ul>{% for event in security_events %}<li>{{ event.at.strftime('%d/%m/%Y à %H:%M') }} — {{ event.label }}</li>{% endfor %}</ul></details>{% endif %}
+    </section>
+    <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les options</button></div>
+</form>
+<form method="post" action="{{ url_for('admin_change_admin_pin') }}" class="admin-form" id="acces-administrateur">
+    <section class="form-section"><div class="form-section-heading"><p class="eyebrow">Accès sensible</p><h2>Modifier le PIN administrateur</h2><p>Le PIN actuel n’est jamais affiché ni exporté.</p></div>
+        <input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}">
+        <div class="admin-pin-grid"><label><span>PIN actuel</span><input name="current_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="current-password" required></label><label><span>Nouveau PIN</span><input name="new_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label><label><span>Confirmer le nouveau PIN</span><input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label></div>
+        <div class="form-actions admin-pin-actions"><button class="admin-button primary" type="submit">Modifier le PIN administrateur</button></div>
+    </section>
+</form>
+<form method="post" action="{{ url_for('admin_update_moderator_pin') }}" class="admin-form" id="acces-moderateur"><section class="form-section"><div class="form-section-heading"><p class="eyebrow">Accès restreint</p><h2>Code PIN modérateur</h2><p>{% if moderator_pin_set %}Un code est configuré ; il n’est plus affichable.{% else %}Aucun code modérateur n’est encore configuré.{% endif %}</p></div><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><div class="moderator-pin-row"><input name="moderator_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" aria-label="Nouveau PIN modérateur à 4 chiffres" required><button class="admin-button primary" type="submit">Changer le code modérateur</button></div></section></form>
+{% include "_closure_options.html" %}
+{% elif settings_view == 'tarifs' %}
+<form method="post" action="{{ url_for('admin_update_billing_tariffs') }}" class="admin-form" id="tarifs-facturation"><section class="form-section"><div class="form-section-heading"><p class="eyebrow">Paramètres métier</p><h2>Tarifs des prochains devis</h2><p>Les dossiers déjà créés conservent leurs tarifs d'origine.</p></div><div class="form-grid two-columns">
+{% for name, label in (('normal_hourly', 'Créneau normal · heure'),('normal_half_day', 'Créneau normal · demi-journée'),('reduced_hourly', 'Créneau réduit · heure'),('reduced_half_day', 'Créneau réduit · demi-journée'),('travel', 'Déplacement hors secteur · heure'),('consumable', 'Forfait consommables'),('rental_contract', 'Frais fixes du contrat de location'),('rental_delivery', 'Livraison et installation sur site')) %}<label><span>{{ label }}</span><span class="number-with-unit"><input name="{{ name }}" type="number" min="0" max="1000000" step="0.01" value="{{ '%.2f'|format(billing_tariffs[name] / 100) }}" required><span>€</span></span></label>{% endfor %}
+</div><div class="form-actions settings-inline-save"><button class="admin-button primary" type="submit">Enregistrer les options</button></div></section></form>
+<form method="post" action="{{ url_for('admin_update_custom_tariffs') }}" class="admin-form" id="tarifs-personnalises"><section class="form-section"><div class="form-section-heading"><h2>Tarifs personnalisés</h2><p>Créez des tarifs complémentaires pour les prochains devis. Les devis existants conservent leur désignation et leur prix ; un tarif archivé n'est plus proposé.</p></div><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><div class="table-scroll"><table class="services-table"><thead><tr><th>Actif</th><th>Archivé</th><th>Nom</th><th>Unité</th><th>Prix</th><th>Suppression</th></tr></thead><tbody>{% for key, tariff in custom_tariffs.items() %}<tr><td><input type="checkbox" name="tariff_active_{{ key }}" value="1"{% if tariff.active %} checked{% endif %}></td><td><input type="checkbox" name="tariff_archived_{{ key }}" value="1"{% if tariff.archived %} checked{% endif %}></td><td><input name="tariff_name_{{ key }}" value="{{ tariff.name }}" maxlength="180" required></td><td><select name="tariff_unit_{{ key }}"><option value="hourly"{% if tariff.unit == 'hourly' %} selected{% endif %}>Heure</option><option value="half_day"{% if tariff.unit == 'half_day' %} selected{% endif %}>Demi-journée</option></select></td><td><input name="tariff_amount_{{ key }}" type="number" min="0" step="0.01" value="{{ '%.2f'|format(tariff.cents / 100) }}" required> €</td><td><button type="submit" class="admin-button danger" formnovalidate formaction="{{ url_for('admin_delete_custom_tariff', tariff_key=key) }}" onclick="return confirm('Supprimer ce tarif si aucun devis ne le référence ?')">Supprimer</button></td></tr>{% endfor %}<tr><td>＋</td><td>—</td><td><input name="new_tariff_name" maxlength="180" placeholder="Nouveau tarif"></td><td><select name="new_tariff_unit"><option value="hourly">Heure</option><option value="half_day">Demi-journée</option></select></td><td><input name="new_tariff_amount" type="number" min="0" step="0.01" placeholder="0,00"> €</td><td></td></tr></tbody></table></div><div class="form-actions settings-inline-save"><button class="admin-button primary" type="submit">Enregistrer les tarifs personnalisés</button></div></section></form>
+<form method="post" action="{{ url_for('admin_update_rental_catalog') }}" class="admin-form" id="catalogue-location"><section class="form-section"><div class="form-section-heading"><p class="eyebrow">Location de machines</p><h2>Catalogue, tarifs et cautions</h2><p>Une machine désactivée ou archivée disparaît des nouveaux devis. Une machine utilisée dans un dossier ne peut pas être supprimée.</p></div><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><div class="table-scroll"><table class="services-table"><thead><tr><th>Active</th><th>Archivée</th><th>Machine</th><th>Tarif mensuel</th><th>Caution</th><th>Suppression</th></tr></thead><tbody>{% for key, machine in rental_catalog.items() %}<tr><td data-label="Active"><input name="machine_active_{{ key }}" type="checkbox" value="1"{% if machine.active %} checked{% endif %}></td><td data-label="Archivée"><input name="machine_archived_{{ key }}" type="checkbox" value="1"{% if machine.archived %} checked{% endif %}></td><td data-label="Machine"><input name="machine_name_{{ key }}" type="text" maxlength="180" value="{{ machine.name }}" required></td><td data-label="Tarif mensuel"><input name="machine_monthly_{{ key }}" type="number" min="0" step="0.01" value="{{ '%.2f'|format(machine.monthly_cents / 100) }}" required> €</td><td data-label="Caution"><input name="machine_deposit_{{ key }}" type="number" min="0" step="0.01" value="{{ '%.2f'|format(machine.deposit_cents / 100) }}" required> €</td><td data-label="Suppression"><button class="admin-button danger" type="submit" formnovalidate formaction="{{ url_for('admin_delete_rental_machine', machine_key=key) }}" onclick="return confirm('Supprimer cette machine si aucun dossier ne la référence ?')">Supprimer</button></td></tr>{% endfor %}<tr><td data-label="Nouvelle">＋</td><td>—</td><td data-label="Nouvelle machine"><input name="new_machine_name" type="text" maxlength="180" placeholder="Ajouter une machine"></td><td data-label="Tarif mensuel"><input name="new_machine_monthly" type="number" min="0" step="0.01" placeholder="0,00"> €</td><td data-label="Caution"><input name="new_machine_deposit" type="number" min="0" step="0.01" placeholder="0,00"> €</td><td></td></tr></tbody></table></div><div class="form-actions settings-inline-save"><button class="admin-button primary" type="submit">Enregistrer les options</button></div></section></form>
+{% elif settings_view == 'donnees' %}
+<form method="post" action="{{ url_for('admin_update_options', settings_view='donnees') }}" class="admin-form options-main-form">
+    <section class="form-section retention-section" id="donnees-sauvegardes"><div class="form-section-heading"><p class="eyebrow">Protection des données</p><h2>Conservation automatique</h2><p>Les délais partent du dernier passage. La valeur 0 désactive uniquement la règle concernée.</p></div><div class="retention-grid"><label><span>Effacer e-mail et téléphone après</span><span class="number-with-unit"><input name="contact_years" type="number" min="0" max="50" value="{{ retention.contact_years }}" required><span>an(s)</span></span></label><label><span>Désactiver le compte après</span><span class="number-with-unit"><input name="deactivation_years" type="number" min="0" max="50" value="{{ retention.deactivation_years }}" required><span>an(s)</span></span></label><label><span>Supprimer le compte et anonymiser après</span><span class="number-with-unit"><input name="deletion_years" type="number" min="0" max="50" value="{{ retention.deletion_years }}" required><span>an(s)</span></span></label></div></section>
+    <section class="form-section automatic-backup-section"><div class="form-section-heading"><p class="eyebrow">Copie de sécurité planifiée</p><h2>Sauvegarde automatique</h2><p>Crée régulièrement un instantané cohérent de la base dans le dossier de sauvegarde du NAS.</p></div><label class="checkbox-field"><input name="automatic_backup_enabled" type="checkbox" value="1" {% if automatic_backup.enabled %}checked{% endif %}><span><strong>Activer la sauvegarde automatique</strong></span></label><div class="automatic-backup-grid"><label><span>Intervalle entre deux sauvegardes</span><span class="number-with-unit"><input name="automatic_backup_interval_days" type="number" min="1" max="365" value="{{ automatic_backup.interval_days }}" required><span>jour(s)</span></span></label><label><span>Sous-dossier des sauvegardes NAS</span><input name="automatic_backup_subdirectory" type="text" maxlength="120" value="{{ automatic_backup.subdirectory }}" required></label></div><p class="form-help">Ce sous-dossier se trouve dans le répertoire de sauvegarde monté par votre administrateur. La valeur par défaut est OpenFabLab ; vous pouvez la personnaliser.</p><p class="form-help">Dossier complet : <strong>{{ automatic_backup.display_path }}</strong></p></section>
+    <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les options</button></div>
+</form>
+<section class="admin-section backup-export-card"><div><p class="eyebrow">Retour en arrière</p><h2>Exporter la base actuelle</h2><p>Le fichier SQLite téléchargé est un instantané cohérent de toutes les données.</p></div><a class="admin-button primary" href="{{ url_for('admin_export_database') }}">Télécharger la sauvegarde complète</a></section>
+<section class="admin-section restore-section"><p class="eyebrow">Opération sensible</p><h2>Restaurer une sauvegarde</h2><p>La base actuelle sera remplacée. Une copie automatique de l'état précédent sera créée avant la restauration.</p><form method="post" action="{{ url_for('admin_settings_data') }}" enctype="multipart/form-data" class="admin-form restore-form"><div class="form-field"><label for="database-file">Fichier SQLite exporté par OpenFabLab</label><input id="database-file" name="database_file" type="file" accept=".db,.sqlite,.sqlite3,application/vnd.sqlite3" required></div><div class="form-field"><label for="confirmation">Confirmation</label><input id="confirmation" name="confirmation" type="text" autocomplete="off" placeholder="RESTAURER" required><small>Saisissez exactement RESTAURER.</small></div><button class="admin-button danger" type="submit">Importer et remplacer la base</button></form></section>
+<section class="admin-section restore-section full-reset-section"><p class="eyebrow">Remise à zéro complète</p><h2>Supprimer toutes les données</h2><p>Cette action vide définitivement les données métier et les réglages après une copie de sécurité.</p><form method="post" action="{{ url_for('admin_reset_database') }}" class="admin-form restore-form"><div class="form-field"><label for="full-reset-confirmation">Confirmation</label><input id="full-reset-confirmation" name="confirmation" type="text" autocomplete="off" placeholder="TOUT SUPPRIMER" required><small>Saisissez exactement TOUT SUPPRIMER.</small></div><button class="admin-button danger" type="submit">Supprimer toute la base active</button></form></section>
+{% endif %}
+{% endblock %}

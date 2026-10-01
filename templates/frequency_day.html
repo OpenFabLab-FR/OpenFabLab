@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Fréquentation du {{ selected_day.strftime('%d/%m/%Y') }} · OpenFabLab{% endblock %}
+{% block body_class %}admin-page frequency-day-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading statistics-heading">
+    <div><h1>Fréquentation</h1><p>Consultez une journée précise.</p></div>
+    <form class="day-selector" method="get" action="{{ url_for('admin_frequency_day') }}">
+        <label for="frequency-date">Date consultée</label>
+        <div><a class="admin-button secondary compact" href="{{ url_for('admin_frequency_day', date=previous_day) }}" aria-label="Jour précédent">←</a><input id="frequency-date" name="date" type="date" value="{{ attendance.date }}" required><a class="admin-button secondary compact" href="{{ url_for('admin_frequency_day', date=next_day) }}" aria-label="Jour suivant">→</a><button class="admin-button primary compact" type="submit">Afficher</button><a class="admin-button secondary compact" href="{{ url_for('admin_frequency_day', date=today) }}">Aujourd’hui</a></div>
+    </form>
+</section>
+{% include "_admin_nav.html" %}
+{% include "_frequency_nav.html" %}
+
+<section class="day-summary-grid" aria-label="Indicateurs de la journée">
+    <article><strong>{{ attendance.summary.unique_users }}</strong><span>Usagers distincts</span></article>
+    <article><strong>{{ attendance.summary.sessions }}</strong><span>Sessions usagers</span></article>
+    <article><strong>{{ attendance.summary.visitors }}</strong><span>Visiteurs anonymes</span></article>
+    <article><strong>{{ attendance.summary.total }}</strong><span>Passages au total</span></article>
+    <article><strong>{{ attendance.summary.duration_seconds|duration_seconds }}</strong><span>Durée cumulée terminée</span></article>
+    <article><strong>{{ attendance.summary.average_seconds|duration_seconds }}</strong><span>Durée moyenne terminée</span></article>
+    <article><strong>{{ attendance.summary.peak_users }}</strong><span>Pic simultané d’usagers</span></article>
+    <article class="peak-time-card"><strong>{{ attendance.summary.peak_period or '—' }}</strong><span>Horaire de pointe</span>{% if attendance.summary.peak_period %}<small>{% if attendance.summary.peak_weather %}{{ attendance.summary.peak_weather.temperature_c|round|int }} °C · {{ attendance.summary.peak_weather.description }}{% else %}Météo non enregistrée{% endif %}</small>{% endif %}</article>
+</section>
+
+{% set day_graph = attendance.graph %}
+<section class="admin-section openlab-attendance-section day-attendance-section includes-visitors" aria-labelledby="day-attendance-title" data-openlab-attendance>
+    <div class="section-heading openlab-attendance-heading">
+        <div>
+            <h2 id="day-attendance-title">Fréquentation de la journée</h2>
+            <p>Nombre de personnes présentes par quart d’heure</p>
+        </div>
+        <label class="attendance-scale-toggle">
+            <input type="checkbox" data-attendance-visitors-toggle checked>
+            <span>
+                <strong>Inclure les visiteurs</strong>
+                <small>Arrivées par quart d’heure</small>
+            </span>
+        </label>
+    </div>
+    {% if day_graph %}
+        <article class="openlab-traffic-card day-traffic-card" data-traffic-slots="{{ day_graph.bars|length }}">
+            <header>
+                <div>
+                    <h3>{{ selected_day.strftime('%d/%m/%Y') }}</h3>
+                    <span>{{ day_graph.start }}–{{ day_graph.end }}</span>
+                </div>
+                <div class="traffic-card-summary">
+                    {% if day_graph.peak %}
+                        <p class="traffic-user-peak"><strong>{{ day_graph.peak.display_average_users|string|replace('.', ',') }}</strong> usager{% if day_graph.peak.display_average_users != 1 %}s{% endif %} au pic<small>entre {{ day_graph.peak.start|replace(':', 'h') }} et {{ day_graph.peak.end|replace(':', 'h') }}</small></p>
+                    {% else %}
+                        <p class="traffic-no-data traffic-user-peak">Aucune présence usager mesurable</p>
+                    {% endif %}
+                    {% if day_graph.combined_peak %}
+                        <p class="traffic-combined-peak"><strong>{{ day_graph.combined_peak.display_average_people|string|replace('.', ',') }}</strong> personne{% if day_graph.combined_peak.display_average_people != 1 %}s{% endif %} au pic<small>entre {{ day_graph.combined_peak.start|replace(':', 'h') }} et {{ day_graph.combined_peak.end|replace(':', 'h') }} · {{ day_graph.combined_peak.display_average_users|string|replace('.', ',') }} usa. + {{ day_graph.combined_peak.display_average_visitors|string|replace('.', ',') }} vis.</small></p>
+                    {% else %}
+                        <p class="traffic-no-data traffic-combined-peak">Aucune fréquentation mesurable</p>
+                    {% endif %}
+                </div>
+            </header>
+            <div class="openlab-traffic-scroll">
+                <div class="openlab-traffic-chart" style="--traffic-columns: {{ day_graph.bars|length }}; min-width: {{ day_graph.bars|length * 30 }}px;" role="img" aria-label="Fréquentation du {{ selected_day.strftime('%d/%m/%Y') }} par créneaux de 15 minutes">
+                    {% for bar in day_graph.bars %}
+                        <div class="traffic-bar-column" data-traffic-start="{{ bar.start }}" data-traffic-average="{{ bar.average_users }}" data-traffic-average-users="{{ bar.average_users }}" data-traffic-average-visitors="{{ bar.average_visitors }}" data-traffic-average-people="{{ bar.average_people }}" aria-label="De {{ bar.start }} à {{ bar.end }} : {{ bar.average_users|string|replace('.', ',') }} usager et {{ bar.average_visitors|string|replace('.', ',') }} arrivée de visiteur" title="{{ bar.start }}–{{ bar.end }} · {{ bar.average_users|string|replace('.', ',') }} usa. + {{ bar.average_visitors|string|replace('.', ',') }} vis.">
+                            <span class="traffic-bar{% if bar.average_users > 0 %} has-user-value{% endif %}{% if bar.average_people > 0 %} has-combined-value{% endif %}{% if bar.is_daily_peak %} is-daily-peak{% endif %}{% if bar.is_combined_daily_peak %} is-combined-daily-peak{% endif %}" style="--traffic-day-height: {{ bar.daily_height_percentage }}%; --traffic-day-color: {{ bar.daily_color }}; --traffic-week-height: {{ bar.weekly_height_percentage }}%; --traffic-week-color: {{ bar.weekly_color }}; --traffic-combined-day-height: {{ bar.combined_daily_height_percentage }}%; --traffic-combined-day-color: {{ bar.combined_daily_color }}; --traffic-combined-week-height: {{ bar.combined_weekly_height_percentage }}%; --traffic-combined-week-color: {{ bar.combined_weekly_color }};"></span>
+                            <small><span>{{ bar.label }}</span><span>{{ bar.display_average_users|string|replace('.', ',') }} usa.</span><span class="traffic-visitor-count">{{ bar.display_average_visitors|string|replace('.', ',') }} vis.</span></small>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </article>
+    {% else %}
+        <p class="empty-statistics">Aucune fréquentation enregistrée pour cette journée.</p>
+    {% endif %}
+</section>
+
+{% if admin_access_role == 'admin' %}
+<section class="admin-section manual-attendance-section">
+    <div class="section-heading"><div><h2>Ajouter un passage</h2><p>Ces ajouts sont tracés et alimentent immédiatement les statistiques.</p></div></div>
+    <div class="manual-attendance-grid">
+        <details><summary>+ Session usager</summary>
+            <form method="post" action="{{ url_for('admin_add_historical_session') }}" class="compact-admin-form">
+                <input type="hidden" name="date" value="{{ attendance.date }}">
+                <label><span>Usager</span><select name="user_id" required><option value="">Choisir</option>{% for user in users %}<option value="{{ user.id }}">{{ user.last_name }} {{ user.first_name }} · {{ user.public_id }}{% if not user.active %} · inactif{% endif %}</option>{% endfor %}</select></label>
+                <label><span>Arrivée</span><input name="check_in_time" type="time" required></label>
+                <label><span>Date de départ</span><input name="check_out_date" type="date" value="{{ attendance.date }}"></label>
+                <label><span>Départ facultatif</span><input name="check_out_time" type="time"></label>
+                <button class="admin-button primary compact" type="submit">Ajouter la session</button>
+            </form>
+        </details>
+        <details><summary>+ Visiteur anonyme</summary>
+            <form method="post" action="{{ url_for('admin_add_historical_visitor') }}" class="compact-admin-form">
+                <input type="hidden" name="date" value="{{ attendance.date }}">
+                <label><span>Heure d’enregistrement</span><input name="time" type="time" required></label>
+                <button class="admin-button primary compact" type="submit">Ajouter le visiteur</button>
+            </form>
+        </details>
+    </div>
+</section>
+{% endif %}
+
+<section class="admin-section" aria-labelledby="day-timeline-title">
+    <div class="section-heading"><div><h2 id="day-timeline-title">Chronologie du {{ selected_day.strftime('%d/%m/%Y') }}</h2></div></div>
+    <div class="table-scroll"><table class="day-timeline-table"><thead><tr><th>Personne</th><th>Arrivée</th><th>Départ</th><th>Durée</th><th>Méthode</th>{% if admin_access_role == 'admin' %}<th>Correction</th>{% endif %}</tr></thead><tbody>
+    {% for event in attendance.timeline %}
+        {% if event.kind == 'session' %}{% set item = event.item %}<tr><td data-label="Personne"><strong>{{ item.identity }}</strong></td><td data-label="Arrivée">{{ item.check_in|paris_datetime }}</td><td data-label="Départ">{% if item.check_out %}{{ item.check_out|paris_datetime }}{% else %}<span class="table-present">Présent</span>{% endif %}</td><td data-label="Durée">{% if item.duration_seconds is not none %}{{ item.duration_seconds|duration_seconds }}{% else %}—{% endif %}</td><td data-label="Méthode">{{ item.row.entry_method|method_label }}{% if item.row.exit_method %} / {{ item.row.exit_method|method_label }}{% endif %}</td>{% if admin_access_role == 'admin' %}<td data-label="Correction"><details class="inline-edit"><summary>Modifier</summary><form method="post" action="{{ url_for('admin_edit_historical_session', session_id=item.id) }}" class="compact-admin-form"><input type="hidden" name="return_date" value="{{ attendance.date }}"><label><span>Date d’arrivée</span><input name="date" type="date" value="{{ item.check_in_date }}" required></label><label><span>Heure d’arrivée</span><input name="check_in_time" type="time" value="{{ item.check_in_time }}" required></label><label><span>Date de départ</span><input name="check_out_date" type="date" value="{{ item.check_out_date or item.check_in_date }}"></label><label><span>Heure de départ</span><input name="check_out_time" type="time" value="{{ item.check_out_time }}"></label><button class="admin-button primary compact" type="submit">Enregistrer</button></form><form method="post" action="{{ url_for('admin_delete_historical_session', session_id=item.id) }}" onsubmit="return confirm('Supprimer définitivement cette session ?');"><input type="hidden" name="date" value="{{ attendance.date }}"><input type="hidden" name="confirmation" value="SUPPRIMER"><button class="table-action danger-link" type="submit">Supprimer la session</button></form></details></td>{% endif %}</tr>
+        {% else %}{% set item = event.item %}<tr><td data-label="Personne"><strong>Visiteur anonyme</strong></td><td data-label="Arrivée">{{ item.created_at|paris_datetime }}</td><td data-label="Départ">—</td><td data-label="Durée">—</td><td data-label="Méthode">{{ 'anonymous'|method_label }}</td>{% if admin_access_role == 'admin' %}<td data-label="Correction"><form method="post" action="{{ url_for('admin_delete_historical_visitor', visitor_id=item.id) }}" onsubmit="return confirm('Supprimer définitivement ce visiteur ?');"><input type="hidden" name="date" value="{{ attendance.date }}"><input type="hidden" name="confirmation" value="SUPPRIMER"><button class="table-action danger-link" type="submit">Supprimer</button></form></td>{% endif %}</tr>{% endif %}
+    {% else %}<tr><td colspan="{{ 6 if admin_access_role == 'admin' else 5 }}" class="table-empty">Aucun passage enregistré pour cette journée.</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+
+{% if admin_access_role == 'admin' and corrections %}<section class="admin-section audit-section"><details><summary>Dernières corrections administratives</summary><div class="table-scroll"><table><thead><tr><th>Date</th><th>Action</th><th>Donnée</th><th>Identifiant</th><th>Détails techniques</th></tr></thead><tbody>{% for correction in corrections %}<tr><td data-label="Date">{{ correction.action_at|paris_datetime }}</td><td data-label="Action">{{ {'add':'Ajout','update':'Modification','delete':'Suppression'}.get(correction.action_type, correction.action_type) }}</td><td data-label="Donnée">{{ 'Session usager' if correction.record_type == 'session' else 'Visiteur' }}</td><td data-label="Identifiant">{{ correction.record_id or '—' }}</td><td data-label="Détails"><details><summary>Voir</summary><code>{{ correction.old_values_json|audit_json }}</code><br><code>{{ correction.new_values_json|audit_json }}</code></details></td></tr>{% endfor %}</tbody></table></div></details></section>{% endif %}
+{% endblock %}

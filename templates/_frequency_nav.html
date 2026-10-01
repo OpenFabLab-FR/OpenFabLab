@@ -1,0 +1,6 @@
+<nav class="admin-subtabs" aria-label="Navigation de la fréquentation">
+    <a class="admin-subtab{% if request.endpoint == 'admin' %} active{% endif %}" href="{{ url_for('admin') }}">Aperçu</a>
+    <a class="admin-subtab{% if request.endpoint == 'admin_frequency_day' %} active{% endif %}" href="{{ url_for('admin_frequency_day') }}">Journée</a>
+    <a class="admin-subtab{% if request.endpoint == 'admin_statistics' %} active{% endif %}" href="{{ url_for('admin_statistics') }}">Statistiques</a>
+    {% if admin_access_role == 'admin' %}<a class="admin-subtab{% if request.endpoint == 'admin_frequency_exports' %} active{% endif %}" href="{{ url_for('admin_frequency_exports') }}">Exports</a>{% endif %}
+</nav>

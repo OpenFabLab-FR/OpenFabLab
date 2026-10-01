@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Clôture sessions · OpenFabLab{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading">
+    <p class="eyebrow">Administration</p>
+    <h1>Clôture sessions</h1>
+    <p>Fermez automatiquement les présences oubliées, sans empêcher une nouvelle arrivée.</p>
+</section>
+{% include "_admin_nav.html" %}
+
+<section class="admin-section closure-status-card">
+    <div>
+        <p class="eyebrow">État actuel</p>
+        <h2>{% if closure.enabled %}Clôture automatique activée{% else %}Clôture automatique en pause{% endif %}</h2>
+        <p>Les horaires restent mémorisés lorsque le système est mis en pause.</p>
+    </div>
+    <form method="post" action="{{ url_for('admin_toggle_automatic_closure') }}">
+        <button class="admin-button {% if closure.enabled %}secondary{% else %}primary{% endif %}" type="submit">
+            {% if closure.enabled %}Mettre en pause{% else %}Réactiver{% endif %}
+        </button>
+    </form>
+</section>
+
+<form class="admin-form" method="post">
+    <section class="form-section">
+        <div class="form-section-heading">
+            <p class="eyebrow">Planning hebdomadaire</p>
+            <h2>Heure d'éjection quotidienne</h2>
+        </div>
+        <label class="checkbox-field">
+            <input name="enabled" type="checkbox" value="1" {% if closure.enabled %}checked{% endif %}>
+            <span><strong>Activer la clôture automatique</strong><small>Décochez pour conserver les heures sans les appliquer.</small></span>
+        </label>
+        <div class="closure-week-grid">
+            {% for day in closure.days %}
+                <label class="closure-day">
+                    <span>{{ day.label }}</span>
+                    <input type="time" name="{{ day.key }}" value="{{ day.time }}">
+                    <small>Vide = aucune clôture</small>
+                </label>
+            {% endfor %}
+        </div>
+        <p class="form-help">À l'heure prévue, les sessions encore ouvertes sont clôturées avec cette heure. Une arrivée enregistrée après la clôture reste ouverte : le compteur ne bloque jamais l'accès.</p>
+        <button class="admin-button primary" type="submit">Enregistrer les horaires</button>
+    </section>
+</form>
+
+<section class="danger-zone closure-now-zone">
+    <div>
+        <h2>Fermer le FabLab maintenant</h2>
+        <p>Clôture toutes les sessions actuellement ouvertes à l'heure réelle, sans modifier le planning.</p>
+    </div>
+    <form method="post" action="{{ url_for('admin_close_all_now') }}" onsubmit="return confirm('Clôturer maintenant toutes les sessions ouvertes ?');">
+        <button class="admin-button danger" type="submit">Éjecter tous les usagers présents</button>
+    </form>
+</section>
+
+<details class="admin-section daily-reset-section">
+    <summary>Remise à 0 du compteur d’aujourd’hui</summary>
+    <p>Cette action supprime les visiteurs et les sessions commencées aujourd'hui. Les usagers encore présents sont retirés de l'accueil sans créer de visite dans les statistiques. Une copie de sécurité est créée automatiquement.</p>
+    <form method="post" action="{{ url_for('admin_reset_today') }}" class="inline-confirmation-form">
+        <label for="daily-reset-confirmation">Saisissez exactement <strong>EFFACER AUJOURD'HUI</strong></label>
+        <input id="daily-reset-confirmation" name="confirmation" type="text" autocomplete="off" required>
+        <button class="admin-button danger" type="submit">Remettre la journée à zéro</button>
+    </form>
+</details>
+{% endblock %}

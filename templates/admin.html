@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Fréquentation · OpenFabLab{% endblock %}
+{% block body_class %}admin-page frequency-overview-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading statistics-heading"><div><h1>Fréquentation</h1><p>Vue compacte de la journée et des dernières identifications.</p></div><a class="admin-button secondary" href="{{ url_for('admin_frequency_day', date=today) }}">Voir la journée d’aujourd’hui</a></section>
+{% include "_admin_nav.html" %}
+{% include "_frequency_nav.html" %}
+<section class="admin-stats overview-stats" aria-label="Indicateurs du jour">
+    <article><strong>{{ present_count }}</strong><span>Usagers présents</span></article>
+    <article><strong>{{ visitor_count }}</strong><span>Visiteurs aujourd’hui</span></article>
+    <article><strong>{{ sessions_today }}</strong><span>Sessions commencées</span></article>
+    <article><strong>{{ passages_today }}</strong><span>Passages au total</span></article>
+</section>
+<section class="admin-section overview-history-section" aria-labelledby="history-title">
+    <div class="section-heading"><h2 id="history-title" class="eyebrow">HISTORIQUE DES 30 IDENTIFICATIONS PRÉCÉDENTES</h2></div>
+    <div class="table-scroll"><table class="history-table overview-history-table"><thead><tr><th>Identité</th><th>Catégorie</th><th>Arrivée</th><th>Départ</th><th>Durée</th><th>Méthode</th></tr></thead><tbody>
+    {% for event in recent_identifications %}{% set item = event.row %}
+        {% if event.kind == 'session' %}
+        <tr><td data-label="Identité"><strong>{{ item.first_name }} {{ item.last_name }}</strong></td><td data-label="Catégorie"><span class="category-badge category-{{ item.category }}">{{ item.category|category_label }}</span></td><td data-label="Arrivée">{{ item.check_in|paris_datetime }}</td><td data-label="Départ">{% if item.check_out %}{{ item.check_out|paris_datetime }}{% else %}<span class="table-present">Présent</span>{% endif %}</td><td data-label="Durée">{{ item.check_in|duration(item.check_out) }}</td><td data-label="Méthode">{{ item.entry_method|method_label }}{% if item.exit_method %} / {{ item.exit_method|method_label }}{% endif %}</td></tr>
+        {% else %}
+        <tr class="visitor-identification"><td data-label="Identité"><strong>Visiteur</strong></td><td data-label="Catégorie"><span class="category-badge category-visitor">Visiteur</span></td><td data-label="Arrivée">{{ item.created_at|paris_datetime }}</td><td data-label="Départ">—</td><td data-label="Durée">—</td><td data-label="Méthode">{{ 'anonymous'|method_label }}</td></tr>
+        {% endif %}
+    {% else %}<tr><td colspan="6" class="table-empty">Aucune identification enregistrée.</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+{% endblock %}

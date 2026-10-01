@@ -1,0 +1,128 @@
+.openfablab-reservations {
+  --openfablab-blue: #2d718e;
+  --openfablab-ink: #203038;
+  --openfablab-border: #d7e2e6;
+  color: var(--openfablab-ink);
+  font: inherit;
+  max-width: 1100px;
+  margin: 1.5rem auto;
+}
+.openfablab-reservations * { box-sizing: border-box; }
+.openfablab-reservations [hidden] { display: none !important; }
+.openfablab-test-label {
+  display: inline-block;
+  border: 1px solid #7b628e;
+  background: #f5f0fa;
+  color: #503561;
+  padding: .3rem .65rem;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 700;
+}
+.openfablab-animation-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 1rem; }
+.openfablab-card, .openfablab-booking-form {
+  background: #fff;
+  border: 1px solid var(--openfablab-border);
+  border-radius: 16px;
+  padding: 1.35rem;
+  box-shadow: 0 8px 25px rgba(28, 68, 82, .05);
+}
+.openfablab-card h3, .openfablab-booking-form h3 { margin: 0 0 .55rem; color: var(--openfablab-ink); }
+.openfablab-card p { margin: .45rem 0; }
+.openfablab-date { font-weight: 700; }
+.openfablab-facts { color: #51646c; }
+.openfablab-availability { color: #215e72; font-weight: 700; }
+.openfablab-button, .openfablab-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 10px;
+  padding: .65rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.openfablab-button { border: 1px solid var(--openfablab-blue); background: var(--openfablab-blue); color: #fff; }
+.openfablab-secondary { border: 1px solid var(--openfablab-border); background: #f6fafb; color: #20556a; }
+.openfablab-button:disabled { opacity: .55; cursor: not-allowed; }
+.openfablab-reservations button:focus-visible, .openfablab-reservations input:focus-visible, .openfablab-reservations a:focus-visible {
+  outline: 3px solid #d19c31;
+  outline-offset: 2px;
+}
+.openfablab-form-host { margin-top: 1.4rem; }
+.openfablab-form-host:empty { display: none; }
+.openfablab-booking-form { max-width: 780px; }
+.openfablab-choice, .openfablab-companion { border: 1px solid var(--openfablab-border); border-radius: 12px; margin: 1rem 0; padding: 1rem; }
+.openfablab-choice label { display: block; margin: .55rem 0; }
+.openfablab-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
+.openfablab-field { display: flex; flex-direction: column; gap: .3rem; margin: 0; font-weight: 600; }
+.openfablab-field input { width: 100%; min-height: 44px; border: 1px solid #aebdc3; border-radius: 9px; padding: .55rem .7rem; font: inherit; background: #fff; color: #1e2a2e; }
+.openfablab-id-block, .openfablab-companion, .openfablab-privacy, .openfablab-verification, .openfablab-hint { grid-column: 1 / -1; }
+.openfablab-hint { margin: -.4rem 0 .1rem; color: #51646c; font-size: .88rem; }
+.openfablab-id-block .openfablab-secondary { margin-top: .55rem; }
+.openfablab-companion[hidden], .openfablab-id-block[hidden], .openfablab-scanner[hidden] { display: none; }
+.openfablab-companion { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
+.openfablab-companion legend { font-weight: 700; }
+.openfablab-privacy { display: block; }
+.openfablab-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.2rem; }
+.openfablab-feedback, .openfablab-verification { min-height: 1.2em; font-weight: 600; }
+.openfablab-scanner video { display: block; width: min(100%, 420px); border-radius: 10px; margin: .6rem 0; }
+.openfablab-honeypot { position: absolute !important; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+@media (max-width: 620px) {
+  .openfablab-reservations { padding: 0 .35rem; }
+  .openfablab-fields, .openfablab-companion { grid-template-columns: 1fr; }
+  .openfablab-card, .openfablab-booking-form { padding: 1rem; }
+}
+
+.openfablab-action-body {
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100svh;
+  margin: 0;
+  padding: clamp(1rem, 4vw, 3rem);
+  display: grid;
+  place-items: center;
+  background: #f2f7f8;
+  color: #203038;
+  font: 1rem/1.5 system-ui, sans-serif;
+}
+.openfablab-action-body * { box-sizing: border-box; }
+.openfablab-action-card {
+  width: min(100%, 36rem);
+  padding: clamp(1.4rem, 4vw, 2.5rem);
+  border: 1px solid #d7e2e6;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 42px rgba(28, 68, 82, .09);
+}
+.openfablab-action-logo { display: block; width: min(100%, 240px); height: auto; margin-bottom: 2rem; }
+.openfablab-action-card h1 { margin: 0 0 1.2rem; font-size: clamp(1.65rem, 4vw, 2.1rem); line-height: 1.2; }
+.openfablab-action-summary {
+  padding: .75rem 1.1rem;
+  border-radius: 12px;
+  background: #edf5f7;
+  overflow-wrap: anywhere;
+}
+.openfablab-action-summary p { margin: .55rem 0; }
+.openfablab-action-intro { margin: 1.3rem 0 .8rem; }
+.openfablab-action-form { display: flex; flex-wrap: wrap; gap: .75rem; }
+.openfablab-action-button {
+  min-height: 46px;
+  padding: .7rem 1rem;
+  border: 1px solid #2d718e;
+  border-radius: 10px;
+  background: #2d718e;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.openfablab-action-button.is-secondary { background: #fff; color: #20556a; }
+.openfablab-action-button:focus-visible { outline: 3px solid #d19c31; outline-offset: 2px; }
+.openfablab-action-message { margin: 1.4rem 0 0; padding: 1rem; border-radius: 10px; font-weight: 600; }
+.openfablab-action-message.is-success { background: #e8f5ed; color: #17503b; }
+.openfablab-action-message.is-error { background: #fceeee; color: #792f34; }
+.openfablab-slot-choice { margin-block: 1rem; }
+.openfablab-slot-choice select { width: 100%; max-width: 34rem; min-width: 0; min-height: 44px; box-sizing: border-box; }

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil · OpenFabLab{% endblock %}
+{% block html_class %}home-document{% if lock_home_scroll %} home-scroll-locked{% endif %}{% endblock %}
+{% block body_class %}home-page home-theme-{{ home_theme }}{% if lock_home_scroll %} home-scroll-locked{% endif %}{% endblock %}
+{% block decorative_scene %}{% include "_theme_scene.html" %}{% endblock %}
+{% block header_weather %}
+{% if weather %}
+<div class="weather-status" title="{{ weather.description }} à {{ weather.location }}" aria-label="Météo à {{ weather.location }} : {{ weather.description }}, {{ weather.temperature }} degrés Celsius">
+    <span class="weather-icon" aria-hidden="true">{{ weather.icon }}</span>
+    <strong>{{ weather.temperature }}°</strong>
+</div>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div hidden data-home-live-state data-state-url="{{ url_for('home_state') }}" data-state-signature="{{ home_state_signature }}"></div>
+<section class="home-intro" aria-labelledby="today-title">
+    <h1 class="home-title" id="today-title">Aujourd’hui au FabLab</h1>
+    <time
+        class="live-clock"
+        data-paris-clock
+        datetime="{{ current_time.isoformat() }}"
+    >{{ current_time.strftime('%d/%m/%Y · %H:%M') }}</time>
+</section>
+
+<section class="counter-grid" aria-label="Fréquentation actuelle">
+    <article class="counter-card counter-primary">
+        <strong>{{ present_count }}</strong>
+        <span>Usager{% if present_count != 1 %}s{% endif %} présent{% if present_count != 1 %}s{% endif %}</span>
+    </article>
+    <article class="counter-card">
+        <strong>{{ visitor_count }}</strong>
+        <span>Visiteur{% if visitor_count != 1 %}s{% endif %} aujourd'hui</span>
+    </article>
+</section>
+
+<section class="present-section" aria-labelledby="present-title">
+    <div class="section-heading">
+        <h2 id="present-title">Personnes présentes</h2>
+        <div class="compact-occupancy present-occupancy">
+            <div
+                class="compact-gauge"
+                role="progressbar"
+                aria-label="{{ gauge_value }} usagers sur une jauge de {{ display_capacity }}"
+                aria-valuemin="0"
+                aria-valuemax="{{ display_capacity }}"
+                aria-valuenow="{{ gauge_value }}"
+            >
+                <span
+                    class="compact-gauge-fill level-{{ gauge_level }} {% if gauge_value == 0 %}is-empty{% endif %}"
+                    style="--gauge-progress: {{ gauge_percent }}%;"
+                    aria-hidden="true"
+                ></span>
+            </div>
+            <strong class="present-occupancy-value">
+                {% if present_count >= display_capacity %}Complet · {% endif %}{{ present_count }}/{{ display_capacity }}
+            </strong>
+        </div>
+    </div>
+    {% if not modules.users %}
+        <div class="empty-state"><p>Le suivi des usagers est désactivé pour cette structure.</p></div>
+    {% elif present_users %}
+        <ul class="present-list">
+            {% for user in present_users %}
+                <li>
+                    <button
+                        class="present-person-button"
+                        type="button"
+                        data-quick-departure
+                        data-user-name="{{ user.first_name }}"
+                        data-departure-url="{{ url_for('quick_departure', user_id=user.id) }}"
+                        aria-label="Enregistrer le départ de {{ user.first_name }} {{ user.last_name[0] }}."
+                    >
+                        <span class="avatar" aria-hidden="true">{{ user.first_name[0] }}{{ user.last_name[0] }}</span>
+                        <span class="present-details">
+                            <span class="present-name">{{ user.first_name }} {{ user.last_name[0] }}.</span>
+                            {% if user.category != 'user' %}
+                                <span class="category-badge category-{{ user.category }}">{{ user.category|category_label }}</span>
+                            {% endif %}
+                        </span>
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="empty-state">
+            <span class="empty-icon" aria-hidden="true">○</span>
+            <p>Aucun usager présent.</p>
+        </div>
+    {% endif %}
+</section>
+
+<section class="action-grid" aria-label="Enregistrer une présence">
+    {% if modules.users %}<a class="touch-button touch-primary" href="{{ url_for('identification') }}">
+        <span class="button-icon button-icon-text" aria-hidden="true">ID</span>
+        <span>Je suis usager</span>
+    </a>{% endif %}
+    <form method="post" action="{{ url_for('add_visitor') }}">
+        <button class="touch-button touch-visitor" type="submit">
+            <span class="button-icon" aria-hidden="true">＋</span>
+            <span>Je suis visiteur</span>
+        </button>
+    </form>
+</section>
+
+<div class="departure-dialog-backdrop" data-departure-dialog hidden>
+    <section class="departure-dialog" role="dialog" aria-modal="true" aria-labelledby="departure-dialog-title">
+        <div class="departure-theme-fill" aria-hidden="true"></div>
+        <div class="departure-snowfall" aria-hidden="true">
+            {% for _ in range(18) %}<span>❄</span>{% endfor %}
+        </div>
+        <div class="departure-theme-actor" aria-hidden="true">
+            <span class="departure-theme-thread"></span>
+            <span class="departure-theme-character"></span>
+        </div>
+        <h2 id="departure-dialog-title">
+            <span class="departure-user-line"><span data-departure-name></span>,</span>
+            <span class="departure-question-line">vous partez&nbsp;?</span>
+        </h2>
+        <div class="departure-countdown" aria-live="polite">
+            <strong data-departure-countdown>10</strong>
+            <span>secondes</span>
+        </div>
+        <p>Votre départ sera enregistré automatiquement.</p>
+        <form method="post" data-departure-form>
+            <div class="departure-actions">
+                <button class="departure-cancel" type="button" data-departure-cancel>Finalement, je reste</button>
+                <button class="departure-confirm" type="submit" data-departure-confirm>Je pars</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

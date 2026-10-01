@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications · OpenFabLab{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading">
+    <h1>Notifications</h1>
+    <p>Recevez dans le salon Discord privé une information courte lors d'un passage.</p>
+</section>
+{% include "_admin_nav.html" %}
+{% include "_settings_nav.html" %}
+
+<form method="post" class="admin-form">
+    <section class="form-section">
+        <div class="form-section-heading">
+            <p class="eyebrow">Discord</p>
+            <h2>Webhook du salon compteur</h2>
+            <p>L'adresse secrète est enregistrée dans un fichier privé du NAS. Elle n'apparaît jamais dans l'interface, la base SQLite ou ses sauvegardes.</p>
+        </div>
+        <p class="option-state">Configuration : <strong>{% if discord.configured %}Webhook enregistré{% else %}Aucun webhook enregistré{% endif %}</strong></p>
+        <div class="form-field">
+            <label for="webhook-url">Nouvelle adresse de webhook</label>
+            <input id="webhook-url" name="webhook_url" type="password" autocomplete="new-password" placeholder="Collez ici une nouvelle adresse Discord">
+            <small>Laissez vide pour conserver l'adresse déjà enregistrée.</small>
+        </div>
+        {% if discord.configured %}
+        <label class="checkbox-field compact-checkbox">
+            <input name="clear_webhook" type="checkbox" value="1">
+            <span><strong>Supprimer le webhook enregistré</strong></span>
+        </label>
+        {% endif %}
+    </section>
+
+    <section class="form-section">
+        <div class="form-section-heading"><h2>Événements notifiés</h2></div>
+        <label class="checkbox-field">
+            <input name="enabled" type="checkbox" value="1"{% if discord.enabled %} checked{% endif %}>
+            <span><strong>Activer les notifications Discord</strong><small>La désactivation conserve la configuration pour une remise en service ultérieure.</small></span>
+        </label>
+        <div class="notification-options">
+            <label class="checkbox-field"><input name="arrivals" type="checkbox" value="1"{% if discord.arrivals %} checked{% endif %}><span><strong>Arrivées des usagers</strong></span></label>
+            <label class="checkbox-field"><input name="departures" type="checkbox" value="1"{% if discord.departures %} checked{% endif %}><span><strong>Départs des usagers</strong></span></label>
+            <label class="checkbox-field"><input name="visitors" type="checkbox" value="1"{% if discord.visitors %} checked{% endif %}><span><strong>Visiteurs anonymes</strong></span></label>
+            <label class="checkbox-field"><input name="retention" type="checkbox" value="1"{% if discord.retention %} checked{% endif %}><span><strong>Conservation automatique</strong><small>Prévient une semaine avant l’effacement des coordonnées, la désactivation ou la suppression d’un compte.</small></span></label>
+            <label class="checkbox-field"><input name="invoice_overdue" type="checkbox" value="1"{% if discord.invoice_overdue %} checked{% endif %}><span><strong>Factures en attente depuis 30 jours</strong><small>Envoie un seul rappel si une facture reste impayée 30 jours après son envoi.</small></span></label>
+            <label class="checkbox-field"><input name="monthly_animations" type="checkbox" value="1"{% if discord.monthly_animations %} checked{% endif %}><span><strong>Rappel mensuel des animations et sauvegarde</strong><small>Le 1er de chaque mois, rappel de renseigner les animations réalisées le mois précédent. Pensez aussi à exporter la base de données ailleurs.</small></span></label>
+            <label class="checkbox-field"><input name="invalid_ids" type="checkbox" value="1"{% if discord.invalid_ids %} checked{% endif %}><span><strong>Alerte Discord en cas de tentatives répétées d’identifiant incorrect</strong><small>Le seuil et la fenêtre se règlent dans Borne et horaires. Aucun code saisi ni donnée personnelle n’est envoyé.</small></span></label>
+        </div>
+        <h3>Réservations des animations</h3>
+        <p>Notifications indépendantes, limitées au titre de l’animation et à son taux de remplissage ; aucune coordonnée n’est envoyée.</p>
+        <div class="notification-options">
+            {% for key, label in [
+                ('new_booking', 'Nouvelle réservation'),
+                ('waitlist_entry', 'Entrée en liste d’attente'),
+                ('cancellation', 'Annulation'),
+                ('offer_proposed', 'Place proposée'),
+                ('offer_accepted', 'Place acceptée'),
+                ('link_review', 'Rattachement à vérifier'),
+                ('animation_full', 'Animation complète'),
+                ('email_error', 'Erreur d’envoi d’un e-mail'),
+                ('sync_error', 'Erreur de synchronisation')
+            ] %}
+            <label class="checkbox-field"><input name="reservation_{{ key }}" type="checkbox" value="1"{% if discord.reservations[key] %} checked{% endif %}><span><strong>{{ label }}</strong></span></label>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="form-section">
+        <div class="form-section-heading">
+            <h2>Nom et messages</h2>
+            <p>Personnalisez les textes publiés dans le salon privé. Les variables indiquées entre accolades sont remplacées automatiquement.</p>
+        </div>
+        <div class="form-grid notification-message-grid">
+            <div class="form-field form-field-wide">
+                <label for="bot-name">Nom affiché par le bot</label>
+                <input id="bot-name" name="bot_name" type="text" maxlength="80" value="{{ discord.bot_name }}" required>
+            </div>
+            <div class="form-field">
+                <label for="arrival-message">Message d’arrivée</label>
+                <textarea id="arrival-message" name="arrival_message" maxlength="500" rows="3" required>{{ discord.arrival_message }}</textarea>
+                <small>Variable disponible : <code>{name}</code></small>
+            </div>
+            <div class="form-field">
+                <label for="departure-message">Message de départ</label>
+                <textarea id="departure-message" name="departure_message" maxlength="500" rows="3" required>{{ discord.departure_message }}</textarea>
+                <small>Variable disponible : <code>{name}</code></small>
+            </div>
+            <div class="form-field">
+                <label for="visitor-message">Message visiteur</label>
+                <textarea id="visitor-message" name="visitor_message" maxlength="500" rows="3" required>{{ discord.visitor_message }}</textarea>
+                <small>Aucune information personnelle n’est ajoutée.</small>
+            </div>
+            <div class="form-field">
+                <label for="retention-message">Alerte de conservation</label>
+                <textarea id="retention-message" name="retention_message" maxlength="500" rows="3" required>{{ discord.retention_message }}</textarea>
+                <small>Variables disponibles : <code>{name}</code>, <code>{action}</code> et <code>{date}</code></small>
+            </div>
+            <div class="form-field">
+                <label for="invoice-overdue-message">Rappel de facture impayée</label>
+                <textarea id="invoice-overdue-message" name="invoice_overdue_message" maxlength="500" rows="3" required>{{ discord.invoice_overdue_message }}</textarea>
+                <small>Variables disponibles : <code>{client}</code>, <code>{invoice_number}</code> et <code>{sent_date}</code></small>
+            </div>
+            <div class="form-field">
+                <label for="monthly-animations-message">Rappel mensuel des animations et sauvegarde</label>
+                <textarea id="monthly-animations-message" name="monthly_animations_message" maxlength="500" rows="3" required>{{ discord.monthly_animations_message }}</textarea>
+                <small>Variable disponible : <code>{month}</code> (le mois précédent).</small>
+            </div>
+        </div>
+    </section>
+
+    <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les options</button></div>
+</form>
+
+{% if discord.configured %}
+<section class="admin-section notification-test-card">
+    <div><p class="eyebrow">Vérification</p><h2>Tester la connexion</h2><p>Envoie uniquement un message de test, sans donnée d'usager.</p></div>
+    <form method="post" action="{{ url_for('admin_test_notification') }}"><button class="admin-button secondary" type="submit">Envoyer un test</button></form>
+</section>
+{% endif %}
+{% endblock %}

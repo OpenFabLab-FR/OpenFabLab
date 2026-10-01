@@ -1,0 +1,71 @@
+<!doctype html>
+<html class="{% block html_class %}{% endblock %}" lang="fr" data-service-worker-url="{{ url_for('service_worker') }}" data-keep-screen-awake="{% if keep_screen_awake|default(false) %}1{% else %}0{% endif %}" data-lock-home-scroll="{% if lock_home_scroll|default(false) %}1{% else %}0{% endif %}" data-wake-lock-start="{{ (wake_lock|default({})).start|default('09:00') }}" data-wake-lock-end="{{ (wake_lock|default({})).end|default('17:00') }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f5f7f6">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>{% block title %}OpenFabLab{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='icons/OpenFabLab-icon.svg') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='icons/OpenFabLab-favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/OpenFabLab-icon-192.png') }}">
+    <link rel="manifest" href="{{ url_for('web_app_manifest') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% if structure.color %}<style>:root { --primary: {{ structure.color }}; }</style>{% endif %}
+    {% block page_scripts %}{% endblock %}
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <header class="site-header">
+        <a class="brand" href="{{ url_for('index') }}" aria-label="Retour à l'accueil">
+            {% if structure.wordmark_logo == 'wordmark.png' %}<img class="brand-wordmark" src="{{ url_for('structure_logo', kind='wordmark') }}" alt="{{ structure.name }}">
+            {% else %}<img class="brand-wordmark" src="{{ url_for('static', filename='brand/OpenFabLab-logo-horizontal.svg') }}" alt="OpenFabLab">{% endif %}
+        </a>
+        <div class="header-tools">
+            <div class="partner-logos" aria-label="Partenaires de {{ structure.name }}">
+                {% if structure.institution_logo %}<img src="{{ url_for('structure_logo', kind='institution') }}" alt="Partenaire institutionnel">
+                {% endif %}
+            </div>
+            {% block header_weather %}{% endblock %}
+            {% block header_status %}{% endblock %}
+            {% block header_action %}{% endblock %}
+            {% if admin_access_role in ('admin', 'moderator') %}
+            <form class="header-lock-form" method="post" action="{{ url_for('admin_logout') }}">
+                <button class="header-link header-button" type="submit">Verrouiller</button>
+            </form>
+            {% endif %}
+        </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-region" aria-live="polite">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}" data-auto-dismiss>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block decorative_scene %}{% endblock %}
+
+    <main class="page-shell">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <span class="footer-group">
+            <span>{{ structure.name }} - {{ structure.description }}</span>
+            <span class="footer-version">{{ config.APP_VERSION }}</span>
+        </span>
+        <span class="footer-group footer-links">
+            <a href="{{ url_for('data_management') }}">Gestion des données</a>
+            <a href="{{ url_for('admin') }}">Administration</a>
+        </span>
+    </footer>
+</body>
+</html>

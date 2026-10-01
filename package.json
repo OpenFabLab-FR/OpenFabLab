@@ -1,0 +1,13 @@
+{
+  "name": "openfablab-development",
+  "private": true,
+  "version": "2.6.1",
+  "description": "Local browser and optional PHP test tools; never runtime dependencies",
+  "license": "MIT",
+  "engines": {"node": ">=24.18.0", "npm": ">=11.16.0"},
+  "devDependencies": {
+    "@php-wasm/cli": "3.1.56",
+    "playwright": "1.62.1"
+  },
+  "scripts": {"test": "python3 tools/run_checks.py"}
+}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Activités · OpenFabLab{% endblock %}
+{% block body_class %}admin-page services-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading statistics-heading">
+    <div>
+        <h1>Activités</h1>
+        <p>Consultez toutes les activités du FabLab ; créez ici uniquement les animations.</p>
+    </div>
+    {% if admin_access_role == 'admin' %}<a class="admin-button primary" href="{{ url_for('admin_service_form') }}">Ajouter une animation</a>{% endif %}
+</section>
+
+{% include "_admin_nav.html" %}
+
+<section class="admin-section">
+    <form class="service-filters" method="get" action="{{ url_for('admin_services') }}">
+        <label>
+            <span>Rechercher</span>
+            <input name="q" type="search" value="{{ search }}" placeholder="Titre, structure ou facture">
+        </label>
+        <label>
+            <span>Type</span>
+            <select name="type">
+                <option value="">Tous les types</option>
+                <option value="animation"{% if selected_type == 'animation' %} selected{% endif %}>Animations</option>
+                <option value="reservation"{% if selected_type == 'reservation' %} selected{% endif %}>Créneaux réservables</option>
+                <option value="rental"{% if selected_type == 'rental' %} selected{% endif %}>Locations de machines</option>
+            </select>
+        </label>
+        <label>
+            <span>Année</span>
+            <select name="year">
+                <option value="">Toutes les années</option>
+                {% for year in years %}
+                    <option value="{{ year }}"{% if selected_year == year %} selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button class="admin-button primary compact" type="submit">Filtrer</button>
+        {% if search or selected_type or selected_year %}
+            <a class="admin-button secondary compact" href="{{ url_for('admin_services') }}">Effacer</a>
+        {% endif %}
+    </form>
+</section>
+
+<section class="admin-section">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Historique chronologique</p>
+            <h2>Animations, réservations et locations enregistrées</h2>
+        </div>
+    </div>
+    <div class="table-scroll">
+        <table class="services-table">
+            <thead>
+                <tr>
+                    <th>Date et horaire</th>
+                    <th>Type</th>
+                    <th>Animation, réservation ou machine</th>
+                    <th>Structure{% if admin_access_role == 'admin' %} / facture{% endif %}</th>
+                    <th>Participants</th>
+                    {% if admin_access_role == 'admin' %}<th>Recette</th>{% endif %}<th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for service in services %}
+                    <tr>
+                        <td data-label="Date et horaire">{{ service.service_date|date_fr }}{% if service.start_time and service.end_time %}<br><small>{{ service.start_time }}–{{ service.end_time }} · {{ service.duration_minutes }} min</small>{% endif %}</td>
+                        <td data-label="Type">
+                            <span class="service-type service-type-{{ service.service_type }}">
+                                {% if service.service_type == 'animation' %}Animation{% elif service.service_type == 'reservation' %}Créneau réservable{% else %}Location{% endif %}
+                            </span>
+                        </td>
+                        <td data-label="Animation ou réservation"><strong>{{ service.title }}</strong></td>
+                        <td data-label="Structure / facture">
+                            {% if service.service_type == 'animation' %}—{% else %}{{ service.client_name }}{% if admin_access_role == 'admin' %}<br><small>{{ service.invoice_reference }}</small>{% endif %}{% endif %}
+                        </td>
+                        <td data-label="Participants">
+                            {% if service.service_type == 'animation' %}{% if service.booking_mode == 'slots' %}{{ service.slot_count }} créneau{% if service.slot_count != 1 %}x{% endif %}{% else %}{{ service.expected_participants }} place{% if service.expected_participants != 1 %}s{% endif %}{% endif %} / {{ service.registered_count }} inscrit{% if service.registered_count != 1 %}s{% endif %} / {{ service.actual_participants or 0 }} présent{% if service.actual_participants != 1 %}s{% endif %}{% if service.waiting_count > 0 %}<br><small>{{ service.waiting_count }} en attente</small>{% endif %}
+                            {% elif service.service_type == 'reservation' %}{{ service.participants }}
+                            {% else %}—{% endif %}
+                        </td>
+                        {% if admin_access_role == 'admin' %}<td data-label="Recette">{% if service.amount_cents is not none %}{{ '%.2f'|format(service.amount_cents / 100)|replace('.', ',') }} €{% else %}—{% endif %}</td>{% endif %}
+                        <td data-label="Actions" class="service-actions-cell">
+                            <div class="service-row-actions">
+                            {% if service.service_type == 'animation' and modules.public_reservations %}<a class="table-action" href="{{ url_for('admin_animation_bookings', service_id=service.id) }}">Inscriptions</a>{% endif %}
+                            {% if admin_access_role == 'admin' %}
+                            {% if service.billing_record_id %}
+                                <a class="table-action" href="{{ url_for('admin_billing_detail', record_id=service.billing_record_id) }}">Voir la facturation</a>
+                            {% else %}
+                                <a class="table-action" href="{{ url_for('admin_service_form', service_id=service.id) }}">Modifier</a>
+                            {% endif %}
+                            {% endif %}
+                            <a class="table-action" href="{{ url_for('admin_service_calendar', service_id=service.id) }}">Calendrier Apple / Outlook</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td class="table-empty" colspan="{{ 7 if admin_access_role == 'admin' else 6 }}">Aucune animation ou réservation ne correspond aux critères.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

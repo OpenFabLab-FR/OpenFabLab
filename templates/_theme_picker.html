@@ -1,0 +1,7 @@
+<fieldset class="home-theme-picker">
+    <legend>Thème de la page d’accueil</legend>
+    <p class="form-help">Le thème habille l’accueil, l’accès usager et le compte à rebours de départ.</p>
+    <div class="home-theme-grid">
+        {% for key, theme in home_themes.items() %}<label class="home-theme-choice home-theme-preview-{{ key }}"><input name="home_theme" type="radio" value="{{ key }}" {% if home_theme == key %}checked{% endif %}><span class="home-theme-miniature" aria-hidden="true"><span></span><span></span><span></span></span><span class="home-theme-copy"><strong>{{ theme.label }}</strong><small>{{ theme.description }}</small></span></label>{% endfor %}
+    </div>
+</fieldset>

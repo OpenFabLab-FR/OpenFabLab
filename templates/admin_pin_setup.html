@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Initialiser l’administration · OpenFabLab{% endblock %}
+{% block body_class %}admin-login-page{% endblock %}
+{% block content %}
+<section class="login-card" aria-labelledby="setup-title">
+    <p class="eyebrow">Première installation</p>
+    <h1 id="setup-title">Créer le PIN administrateur</h1>
+    <p>Choisissez un code privé de quatre chiffres. Aucun code par défaut n’est fourni.</p>
+    <form method="post" class="pin-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label for="new-pin">Nouveau PIN administrateur</label>
+        <input id="new-pin" name="new_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required>
+        <label for="confirm-pin">Confirmer le PIN</label>
+        <input id="confirm-pin" name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required>
+        <button class="admin-button primary" type="submit">Initialiser l’administration</button>
+    </form>
+</section>
+{% endblock %}

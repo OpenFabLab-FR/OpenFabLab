@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Accès usager · OpenFabLab{% endblock %}
+{% block body_class %}identification-page home-theme-{{ home_theme }}{% endblock %}
+{% block decorative_scene %}{% include "_theme_scene.html" %}{% endblock %}
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='vendor/jsQR-1.4.0.js') }}" defer></script>
+<script src="{{ url_for('static', filename='qr-scanner.js') }}" defer></script>
+{% if id_lock_seconds %}<script>window.setTimeout(function () { window.location.reload(); }, {{ id_lock_seconds * 1000 }});</script>{% endif %}
+{% endblock %}
+{% block header_action %}
+<a class="header-link" href="{{ url_for('index') }}">← Accueil</a>
+{% endblock %}
+
+{% block content %}
+<section class="content-heading identification-heading">
+    <p class="eyebrow">Arrivée ou départ</p>
+    <h1>Accès usager</h1>
+    <p>Identifiez-vous pour enregistrer automatiquement votre arrivée ou votre départ.</p>
+</section>
+
+<section class="identification-grid" aria-label="Méthodes d'identification">
+    <article class="identification-card qr-identification-card" data-qr-scanner>
+        <span class="identification-icon camera" aria-hidden="true">▣</span>
+        <div>
+            <p class="eyebrow">Avec votre badge ou votre téléphone</p>
+            <h2>Scanner mon QR code</h2>
+        </div>
+
+        <button class="user-action arrival" type="button" data-qr-start hidden>
+            Réessayer d'ouvrir la caméra
+        </button>
+
+        <div class="qr-camera" data-qr-camera hidden>
+            <video data-qr-video playsinline muted aria-label="Aperçu de la caméra"></video>
+            <span class="qr-camera-guide" aria-hidden="true"></span>
+        </div>
+        <canvas data-qr-canvas hidden></canvas>
+        <p class="qr-scan-status" data-qr-status aria-live="polite">
+            Ouverture automatique de la caméra avant…
+        </p>
+        <form method="post" action="{{ url_for('identification') }}" data-qr-form hidden>
+            <input type="hidden" name="public_id" data-qr-public-id>
+            <input type="hidden" name="identification_method" value="qr">
+        </form>
+    </article>
+
+    <article class="identification-card manual-identification-card">
+        <span class="identification-icon" aria-hidden="true">1234</span>
+        <div>
+            <p class="eyebrow">Saisie manuelle</p>
+            <h2>Saisir mon identifiant</h2>
+            {% if id_lock_until %}
+            <p role="status">La saisie par identifiant est temporairement indisponible. Réessayez dans environ {{ id_lock_minutes }} minute{{ 's' if id_lock_minutes > 1 else '' }}.</p>
+            <p>Vous pouvez utiliser votre QR code ou rechercher votre nom dans la liste.</p>
+            {% else %}<p>Entrez les 4 chiffres associés à votre compte.</p>{% endif %}
+        </div>
+        {% if not id_lock_until %}
+        <form method="post" action="{{ url_for('identification') }}" class="identifier-form" data-identifier-form>
+            <input
+                id="public-id"
+                name="public_id"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]{4}"
+                minlength="4"
+                maxlength="4"
+                placeholder="0101"
+                autocomplete="off"
+                autocorrect="off"
+                enterkeyhint="done"
+                spellcheck="false"
+                aria-label="Identifiant à 4 chiffres"
+                data-identifier-input
+                required
+            >
+            <button class="user-action arrival" type="submit" data-identifier-submit>Valider mon identifiant</button>
+        </form>
+        {% endif %}
+    </article>
+</section>
+
+<p class="manual-fallback">
+    <a href="{{ url_for('users') }}">Je n'ai pas mon badge ou mon identifiant</a>
+</p>
+{% endblock %}

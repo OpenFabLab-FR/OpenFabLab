@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Répertoire des usagers · OpenFabLab{% endblock %}
+{% block body_class %}admin-page directory-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading">
+    <h1>Répertoire des usagers</h1>
+    <p>Recherchez un usager et classez le répertoire selon l'information utile.</p>
+</section>
+{% include "_admin_nav.html" %}
+
+<section class="admin-section directory-tools" aria-label="Recherche et tri">
+    <label class="search-field" for="admin-user-search">
+        <span>Rechercher</span>
+        <input id="admin-user-search" type="search" placeholder="Prénom, nom, identifiant ou catégorie" data-user-search autocomplete="off">
+    </label>
+    <form method="get" class="sort-form">
+        <label for="directory-sort">Classer par</label>
+        <select id="directory-sort" name="tri" onchange="this.form.submit()">
+            <option value="created" {% if selected_sort == 'created' %}selected{% endif %}>Date de création (récent d’abord)</option>
+            <option value="first_name" {% if selected_sort == 'first_name' %}selected{% endif %}>Prénom</option>
+            <option value="last_name" {% if selected_sort == 'last_name' %}selected{% endif %}>Nom</option>
+            <option value="public_id" {% if selected_sort == 'public_id' %}selected{% endif %}>Identifiant</option>
+            <option value="duration" {% if selected_sort == 'duration' %}selected{% endif %}>Durée de présence</option>
+            <option value="visits" {% if selected_sort == 'visits' %}selected{% endif %}>Nombre de passages</option>
+        </select>
+    </form>
+    <a class="admin-button primary compact" href="{{ url_for('admin_add_user') }}">＋ Ajouter un usager</a>
+</section>
+
+<section class="admin-section" aria-labelledby="users-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow" id="users-title">{{ users|length }} compte{% if users|length != 1 %}s{% endif %} usager{% if users|length != 1 %}s{% endif %}</p>
+        </div>
+    </div>
+    <p class="table-empty" data-no-search-result hidden>Aucun usager ne correspond à cette recherche.</p>
+    <div class="table-scroll">
+        <table class="directory-table">
+            <thead>
+                <tr>
+                    <th>Identifiant et téléchargements</th>
+                    <th>Prénom</th>
+                    <th>Nom</th>
+                    <th>Catégorie</th>
+                    <th>Statut</th>
+                    <th>Création</th>
+                    <th>Dernier passage</th>
+                    <th>Passages</th>
+                    <th>Durée cumulée</th>
+                    {% if admin_access_role == 'admin' %}<th>Action</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr data-user-card data-search-text="{{ user.public_id }} {{ user.first_name }} {{ user.last_name }} {{ user.category|category_label }}">
+                        <td data-label="Identifiant">
+                            <div class="identifier-qr-block">
+                                <button
+                                    class="qr-preview-button"
+                                    type="button"
+                                    data-qr-preview
+                                    data-qr-src="{{ url_for('admin_user_qr', user_id=user.id, image_format='svg') }}"
+                                    data-qr-label="QR code de {{ user.first_name }} {{ user.last_name }} — identifiant {{ user.public_id }}"
+                                    aria-label="Afficher en grand le QR code de {{ user.first_name }} {{ user.last_name }}"
+                                >
+                                    <img class="identifier-qr-image" src="{{ url_for('admin_user_qr', user_id=user.id, image_format='svg') }}" alt="QR code de l'identifiant {{ user.public_id }}" width="72" height="72" loading="lazy">
+                                </button>
+                                <div class="identifier-qr-details">
+                                    <span class="identifier-code">{{ user.public_id }}</span>
+                                    <span class="download-row"><span class="download-label">QR Code :</span><a href="{{ url_for('admin_user_qr', user_id=user.id, image_format='svg', telecharger=1) }}">SVG</a><a href="{{ url_for('admin_user_qr', user_id=user.id, image_format='png', telecharger=1) }}">PNG</a></span>
+                                    <span class="download-row"><span class="download-label">Badge :</span><a href="{{ url_for('admin_user_badge', user_id=user.id, image_format='svg') }}">SVG</a><a href="{{ url_for('admin_user_badge', user_id=user.id, image_format='png') }}">PNG</a></span>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Prénom">{{ user.first_name }}</td>
+                        <td data-label="Nom">{{ user.last_name|upper }}</td>
+                        <td data-label="Catégorie"><span class="category-badge category-{{ user.category }}">{{ user.category|category_label }}</span></td>
+                        <td data-label="Statut"><span class="status-badge {% if user.active %}active{% else %}inactive{% endif %}">{% if user.active %}Actif{% else %}Inactif{% endif %}</span></td>
+                        <td data-label="Création">{{ user.created_at|paris_datetime }}</td>
+                        <td data-label="Dernier passage">{{ user.last_check_in|last_visit }}</td>
+                        <td data-label="Passages">{{ user.visit_count }}</td>
+                        <td data-label="Durée cumulée">{{ user.total_duration_seconds|duration_seconds }}</td>
+                        {% if admin_access_role == 'admin' %}<td data-label="Action"><a class="table-action" href="{{ url_for('admin_edit_user', user_id=user.id) }}">Modifier</a></td>{% endif %}
+                    </tr>
+                {% else %}
+                    <tr><td colspan="{{ 10 if admin_access_role == 'admin' else 9 }}" class="table-empty">Aucun usager enregistré.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="qr-preview-backdrop" data-qr-preview-dialog hidden>
+    <section class="qr-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="qr-preview-title">
+        <p class="eyebrow">Identifiant usager</p>
+        <h2 id="qr-preview-title" data-qr-preview-title>QR code</h2>
+        <img data-qr-preview-image src="" alt="">
+        <button class="admin-button primary" type="button" data-qr-preview-close>Retour au répertoire</button>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+<section id="closure-sessions" class="admin-section closure-status-card">
+    <div>
+        <p class="eyebrow">Sessions oubliées</p>
+        <h2>{% if closure.enabled %}Clôture automatique activée{% else %}Clôture automatique en pause{% endif %}</h2>
+        <p>Le planning ferme les présences restées ouvertes, sans empêcher une nouvelle arrivée.</p>
+    </div>
+    <form method="post" action="{{ url_for('admin_toggle_automatic_closure') }}">
+        <button class="admin-button {% if closure.enabled %}secondary{% else %}primary{% endif %}" type="submit">{% if closure.enabled %}Mettre en pause{% else %}Réactiver{% endif %}</button>
+    </form>
+</section>
+
+<form class="admin-form closure-options-form" method="post" action="{{ url_for('admin_closure_settings') }}">
+    <section class="form-section">
+        <div class="form-section-heading"><p class="eyebrow">Planning hebdomadaire</p><h2>Heure d'éjection quotidienne</h2></div>
+        <label class="checkbox-field">
+            <input name="enabled" type="checkbox" value="1" {% if closure.enabled %}checked{% endif %}>
+            <span><strong>Activer la clôture automatique</strong><small>Décochez pour conserver les heures sans les appliquer.</small></span>
+        </label>
+        <div class="closure-week-grid">
+            {% for day in closure.days %}<label class="closure-day"><span>{{ day.label }}</span><input type="time" name="{{ day.key }}" value="{{ day.time }}"><small>Vide = aucune clôture</small></label>{% endfor %}
+        </div>
+        <p class="form-help">À l'heure prévue, les sessions ouvertes sont clôturées. Une arrivée enregistrée plus tard reste ouverte : le compteur ne bloque jamais l'accès.</p>
+        <button class="admin-button primary" type="submit">Enregistrer les horaires</button>
+    </section>
+</form>
+
+<section class="danger-zone closure-now-zone">
+    <div><h2>Fermer le FabLab maintenant</h2><p>Clôture toutes les sessions ouvertes à l'heure réelle, sans modifier le planning.</p></div>
+    <form method="post" action="{{ url_for('admin_close_all_now') }}" onsubmit="return confirm('Clôturer maintenant toutes les sessions ouvertes ?');"><button class="admin-button danger" type="submit">Éjecter tous les usagers présents</button></form>
+</section>
+
+<details id="daily-reset" class="admin-section daily-reset-section">
+    <summary>Remise à 0 du compteur d’aujourd’hui</summary>
+    <p>Supprime les visiteurs et sessions commencées aujourd'hui. Les usagers encore présents sont retirés sans ajouter de visite aux statistiques. Une copie de sécurité est créée automatiquement.</p>
+    <form method="post" action="{{ url_for('admin_reset_today') }}" class="inline-confirmation-form"><label>Saisissez exactement <strong>EFFACER AUJOURD'HUI</strong></label><input name="confirmation" type="text" autocomplete="off" required><button class="admin-button danger" type="submit">Remettre la journée à zéro</button></form>
+</details>

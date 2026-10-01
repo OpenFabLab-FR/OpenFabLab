@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Facturation · OpenFabLab{% endblock %}
+{% block body_class %}admin-page billing-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading statistics-heading">
+    <div>
+        <h1>Facturation</h1>
+        <p>Suivez un même dossier depuis le devis jusqu'au paiement de la facture.</p>
+    </div>
+    <div class="billing-create-actions">{% if modules.booking_slots %}<a class="admin-button primary" href="{{ url_for('admin_billing_form', type='reservation') }}">Nouveau créneau</a>{% endif %}{% if modules.rentals %}<a class="admin-button secondary" href="{{ url_for('admin_billing_form', type='rental') }}">Nouvelle location</a>{% endif %}</div>
+</section>
+
+{% include "_admin_nav.html" %}
+
+<section class="billing-summary" aria-label="Résumé de la facturation">
+    <article><strong>{{ totals.quotes }}</strong><span>Devis en attente</span></article>
+    <article><strong>{{ totals.signed }}</strong><span>Devis signés</span></article>
+    <article><strong>{{ '%.2f'|format(totals.pending / 100)|replace('.', ',') }} €</strong><span>À encaisser</span></article>
+    <article><strong>{{ '%.2f'|format(totals.paid / 100)|replace('.', ',') }} €</strong><span>Encaissé</span></article>
+</section>
+
+<section class="admin-section billing-tools">
+    <form class="service-filters" method="get" action="{{ url_for('admin_billing') }}">
+        <label>
+            <span>Rechercher</span>
+            <input name="q" type="search" value="{{ search }}" placeholder="Numéro, client, structure ou activité">
+        </label>
+        <label>
+            <span>État</span>
+            <select name="status">
+                <option value="">Tous les états</option>
+                <option value="quote"{% if selected_status == 'quote' %} selected{% endif %}>Devis</option>
+                <option value="signed"{% if selected_status == 'signed' %} selected{% endif %}>Devis signé</option>
+                <option value="cancelled"{% if selected_status == 'cancelled' %} selected{% endif %}>Devis annulé</option>
+                <option value="ready"{% if selected_status == 'ready' %} selected{% endif %}>Facture prête</option>
+                <option value="sent"{% if selected_status == 'sent' %} selected{% endif %}>Facture envoyée</option>
+                <option value="paid"{% if selected_status == 'paid' %} selected{% endif %}>Facture payée</option>
+            </select>
+        </label>
+        <label>
+            <span>Année</span>
+            <select name="year">
+                <option value="">Toutes les années</option>
+                {% for year in years %}<option value="{{ year }}"{% if selected_year == year %} selected{% endif %}>{{ year }}</option>{% endfor %}
+            </select>
+        </label>
+        <button class="admin-button primary compact" type="submit">Filtrer</button>
+        {% if search or selected_status or selected_year %}<a class="admin-button secondary compact" href="{{ url_for('admin_billing') }}">Effacer</a>{% endif %}
+    </form>
+</section>
+
+<section class="admin-section billing-directory">
+    <div class="section-heading">
+        <div><p class="eyebrow">Suivi chronologique</p><h2>Dossiers de facturation</h2></div>
+    </div>
+    <div class="table-scroll">
+        <table class="billing-table">
+            <thead><tr><th>Devis</th><th>Facture</th><th>Client</th><th>Prestation</th><th>Montant</th><th>État</th><th>Action</th></tr></thead>
+            <tbody>
+                {% for record in records %}
+                    <tr>
+                        <td data-label="Devis"><strong>{{ record.quote_number }}</strong><br><small>{{ record.quote_date|date_fr }}</small></td>
+                        <td data-label="Facture">{% if record.invoice_number %}<strong>{{ record.invoice_number }}</strong><br><small>{{ record.invoice_date|date_fr }}</small>{% else %}—{% endif %}</td>
+                        <td data-label="Client"><strong>{{ record.client_structure }}</strong><br><small>{{ record.client_contact }}</small></td>
+                        <td data-label="Prestation"><span class="billing-type-tag">{{ 'Location' if record.billing_type == 'rental' else 'Réservation' }}</span><br><strong>{{ record.title }}</strong><br><small>{{ record.activity_date|date_fr }}</small></td>
+                        <td data-label="Montant">{{ '%.2f'|format(record.amount_cents / 100)|replace('.', ',') }} €</td>
+                        <td data-label="État"><span class="billing-status billing-status-{{ 'cancelled' if record.quote_cancelled_at else 'paid' if record.paid_at else 'sent' if record.invoice_sent_at else 'ready' if record.invoice_number else 'signed' if record.quote_signed_at else 'quote' }}">{{ record.status_label }}</span></td>
+                        <td data-label="Action"><a class="table-action" href="{{ url_for('admin_billing_detail', record_id=record.id) }}">Ouvrir</a></td>
+                    </tr>
+                {% else %}
+                    <tr><td class="table-empty" colspan="7">Aucun dossier ne correspond aux critères.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="admin-section facdepot-section">
+    <div>
+        <p class="eyebrow">État annuel pour la comptabilité</p>
+        <h2>Bilan de facturation</h2>
+        <p>Le fichier reprend automatiquement les factures, leur règlement et les relances.</p>
+    </div>
+    <div class="facdepot-years">
+        {% for year in years %}
+            <div><strong>{{ year }}</strong><a class="admin-button secondary compact" href="{{ url_for('admin_billing_facdepot', year=year|int, output_format='xlsx') }}">XLSX</a><a class="admin-button secondary compact" href="{{ url_for('admin_billing_facdepot', year=year|int, output_format='pdf') }}">PDF</a></div>
+        {% else %}<p>Aucune année disponible.</p>{% endfor %}
+    </div>
+</section>
+
+<section class="admin-section facdepot-section">
+    <div>
+        <p class="eyebrow">Bilan annuel du Fablab</p>
+        <h2>Rapport annuel d'activité</h2>
+        <p>Les chiffres proviennent des statistiques ; les nouveautés et temps forts restent librement éditables.</p>
+    </div>
+    <div class="facdepot-years">
+        {% for year in report_years %}
+            <div><strong>{{ year }}</strong><a class="admin-button secondary compact" href="{{ url_for('admin_activity_report_form', year=year) }}">Éditer</a>{% if year in saved_report_years %}<a class="admin-button secondary compact" href="{{ url_for('admin_activity_report_document', year=year, output_format='docx') }}">DOCX</a><a class="admin-button secondary compact" href="{{ url_for('admin_activity_report_document', year=year, output_format='pdf') }}">PDF</a>{% endif %}</div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="admin-section billing-client-directory" id="annuaire-clients">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Coordonnées de référence</p>
+            <h2>Annuaire des clients</h2>
+            <p>Ces fiches préremplissent les prochains devis. Les coordonnées déjà inscrites dans les anciens documents restent inchangées.</p>
+        </div>
+        <div class="document-actions billing-client-export-actions" aria-label="Exporter l’annuaire des clients">
+            <a class="admin-button secondary compact" href="{{ url_for('admin_billing_clients_export', output_format='xlsx') }}">XLSX</a>
+            <a class="admin-button secondary compact" href="{{ url_for('admin_billing_clients_export', output_format='pdf') }}">PDF</a>
+        </div>
+    </div>
+    <div class="table-scroll">
+        <table class="billing-table">
+            <thead><tr><th>Contact</th><th>Structure</th><th>Adresse</th><th>Coordonnées</th><th>Dossiers</th><th>Action</th></tr></thead>
+            <tbody>
+                {% for client in clients %}
+                    <tr>
+                        <td data-label="Contact"><strong>{{ client.contact_name }}</strong></td>
+                        <td data-label="Structure">{{ client.structure_name }}</td>
+                        <td data-label="Adresse">{{ client.address_line }}<br><small>{{ client.postal_code }} {{ client.city }}</small></td>
+                        <td data-label="Coordonnées">{{ client.email or 'Aucun e-mail' }}<br><small>{{ client.phone or 'Aucun téléphone' }}</small></td>
+                        <td data-label="Dossiers">{{ client.record_count }}</td>
+                        <td data-label="Action"><a class="table-action" href="{{ url_for('admin_billing_client_form', client_id=client.id) }}">Modifier</a></td>
+                    </tr>
+                {% else %}
+                    <tr><td class="table-empty" colspan="6">L'annuaire sera alimenté lors de la création du premier devis.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

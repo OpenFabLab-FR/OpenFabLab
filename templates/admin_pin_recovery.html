@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Récupération de l’accès · OpenFabLab{% endblock %}
+{% block body_class %}admin-login-page{% endblock %}
+{% block content %}
+<section class="login-card" aria-labelledby="recovery-title">
+    <p class="eyebrow">Accès local au serveur requis</p>
+    <h1 id="recovery-title">Récupérer l’accès administrateur</h1>
+    {% if valid %}
+    <p>Ce jeton temporaire ne donne accès qu’au changement de PIN.</p>
+    <form method="post" class="pin-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="token" value="{{ token }}">
+        <label for="new-pin">Nouveau PIN administrateur</label>
+        <input id="new-pin" name="new_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required>
+        <label for="confirm-pin">Confirmer le nouveau PIN</label>
+        <input id="confirm-pin" name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required>
+        <button class="admin-button primary" type="submit">Définir le nouveau PIN</button>
+    </form>
+    {% else %}
+    <p>Ce lien est invalide, déjà utilisé ou expiré. Générez un nouveau lien depuis le serveur.</p>
+    {% endif %}
+</section>
+{% endblock %}

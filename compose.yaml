@@ -1,0 +1,29 @@
+name: openfablab
+
+services:
+  application:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openfablab:v2.6.1
+    container_name: openfablab
+    restart: unless-stopped
+    ports:
+      - "5080:8000"
+    environment:
+      OPENFABLAB_DATABASE: /data/openfablab.db
+      OPENFABLAB_SECRET_KEY_FILE: /data/.secret_key
+      OPENFABLAB_URL_PREFIX: /stat
+      OPENFABLAB_ENABLE_SCHEDULER: "1"
+      OPENFABLAB_BACKUP_ROOT: /nas-backups
+      OPENFABLAB_BACKUP_DISPLAY_ROOT: ${OPENFABLAB_BACKUP_HOST_ROOT:-./backups}
+      TZ: Europe/Paris
+    volumes:
+      - ./data:/data
+      # Configure the host root at deployment; the backup subdirectory stays in Réglages.
+      - ${OPENFABLAB_BACKUP_HOST_ROOT:-./backups}:/nas-backups
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

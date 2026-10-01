@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Choisir un usager · OpenFabLab{% endblock %}
+{% block header_action %}
+<a class="header-link" href="{{ url_for('index') }}">← Accueil</a>
+{% endblock %}
+
+{% block content %}
+<section class="content-heading">
+    <p class="eyebrow">Présence manuelle</p>
+    <h1>Choisissez votre nom</h1>
+    <p>Votre bouton indique automatiquement l'action qui sera enregistrée.</p>
+</section>
+
+<div class="search-box">
+    <label for="user-search">Rechercher un usager</label>
+    <input
+        id="user-search"
+        type="search"
+        placeholder="Prénom ou nom…"
+        autocomplete="off"
+        data-user-search
+    >
+</div>
+
+<section class="user-grid" data-user-list aria-label="Usagers actifs">
+    {% for user in users %}
+        <article class="user-card {% if user.open_session_id %}is-currently-present{% endif %}" data-user-card data-search-text="{{ user.first_name }} {{ user.last_name }}">
+            <div class="user-identity">
+                <span class="avatar avatar-large" aria-hidden="true">{{ user.first_name[0] }}{{ user.last_name[0] }}</span>
+                <div>
+                    <h2>
+                        {{ user.first_name }} {{ user.last_name }}
+                        {% if user.category != 'user' %}
+                            <span class="category-badge category-{{ user.category }}">{{ user.category|category_label }}</span>
+                        {% endif %}
+                    </h2>
+                    {% if user.open_session_id %}
+                        <span class="presence-label is-present">Actuellement présent</span>
+                    {% else %}
+                        <span class="presence-label">Non présent</span>
+                        <span class="last-visit">Dernier passage : {{ user.last_check_in|last_visit }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <form method="post" action="{{ url_for('toggle_presence', user_id=user.id) }}">
+                <button class="user-action {% if user.open_session_id %}departure{% else %}arrival{% endif %}" type="submit">
+                    {% if user.open_session_id %}
+                        Enregistrer mon départ
+                    {% else %}
+                        Enregistrer mon arrivée
+                    {% endif %}
+                </button>
+            </form>
+        </article>
+    {% else %}
+        <div class="empty-state">
+            <p>Aucun usager actif n'est disponible.</p>
+        </div>
+    {% endfor %}
+</section>
+
+<p class="no-search-result" data-no-search-result hidden>Aucun usager ne correspond à cette recherche.</p>
+{% endblock %}

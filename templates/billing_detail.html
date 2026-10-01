@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}{{ record.quote_number }} · Facturation{% endblock %}
+{% block body_class %}admin-page billing-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('admin_billing') }}">← Facturation</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading statistics-heading">
+    <div><p class="eyebrow">{{ 'Location' if record.billing_type == 'rental' else 'Créneau réservable' }} · dossier {{ record.quote_number }}</p><h1>{{ record.client_structure }}</h1><p>{{ record.title }}</p></div>
+    {% if module_enabled %}<div class="document-actions">
+        <a class="admin-button secondary" href="{{ url_for('admin_billing_calendar', record_id=record.id) }}">Calendrier Apple / Outlook</a>
+        <a class="admin-button secondary" href="{{ url_for('admin_billing_form', record_id=record.id) }}">Modifier le dossier</a>
+    </div>{% endif %}
+</section>
+
+{% include "_admin_nav.html" %}
+
+<ol class="billing-steps{% if record.quote_cancelled_at %} is-cancelled{% endif %}" aria-label="Avancement du dossier">
+    <li class="complete">Devis</li><li class="{% if record.quote_signed_at %}complete{% endif %}">Devis signé</li><li class="{% if record.invoice_sent_at %}complete{% elif record.invoice_number %}current{% endif %}">Facture envoyée</li><li class="{% if record.paid_at %}complete{% endif %}">Facture payée</li>
+</ol>
+
+{% if record.quote_cancelled_at %}
+<section class="admin-section billing-cancelled-notice" role="status">
+    <div>
+        <p class="eyebrow">Dossier conservé</p>
+        <h2>Devis annulé</h2>
+        <p>Ce devis est retiré des dossiers en attente depuis le {{ record.quote_cancelled_at|paris_datetime }}. Son contenu et son éventuelle signature restent conservés.</p>
+    </div>
+    {% if module_enabled %}<form method="post" action="{{ url_for('admin_billing_toggle_cancellation', record_id=record.id) }}">
+        <button class="admin-button primary" type="submit">Réouvrir le devis</button>
+    </form>{% endif %}
+</section>
+{% endif %}
+
+<section class="billing-detail-grid">
+    <article class="admin-section"><p class="eyebrow">Destinataire</p><h2>{{ record.client_structure }}</h2><p><strong>{{ record.client_contact }}</strong><br>{{ record.address_line }}<br>{{ record.postal_code }} {{ record.city }}</p><p>{{ record.email or 'Aucun e-mail' }}<br>{{ record.phone or 'Aucun téléphone' }}</p></article>
+    <article class="admin-section"><p class="eyebrow">{{ 'Location' if record.billing_type == 'rental' else 'Activité' }}</p><h2>{{ record.title }}</h2><p>{{ record.description }}</p><p><strong>{{ record.activity_date|date_fr }}</strong>{% if record.activity_time_details %}<br>{{ record.activity_time_details }}{% endif %}{% if record.billing_type == 'rental' %}<br>{{ record.rental_machine_name }} · {{ record.rental_months }} mois<br>Retour prévu le {{ record.rental_end_date|date_fr }}<br>Caution : {{ 'dispensée' if record.rental_deposit_exempt else ('%.2f'|format(record.rental_deposit_cents / 100)|replace('.', ',')) ~ ' €' }}{% else %}<br>{{ record.participants }} participant{% if record.participants != 1 %}s{% endif %}{% endif %}</p></article>
+    <article class="admin-section billing-amount-card"><p class="eyebrow">Montant total HT</p><strong>{{ '%.2f'|format(record.amount_cents / 100)|replace('.', ',') }} €</strong><span class="billing-status">{{ record.status_label }}</span></article>
+</section>
+
+<section class="admin-section billing-documents">
+    <div><p class="eyebrow">Documents</p><h2>Devis {{ record.quote_number }}</h2><p>Édité le {{ record.quote_date|date_fr }}</p></div>
+    <div class="document-actions"><a class="admin-button primary" href="{{ url_for('admin_billing_document', record_id=record.id, document_kind='devis', output_format='pdf') }}">Devis PDF</a><a class="admin-button secondary" href="{{ url_for('admin_billing_document', record_id=record.id, document_kind='devis', output_format='docx') }}">Devis DOCX</a></div>
+</section>
+
+{% if record.invoice_number %}
+<section class="admin-section billing-documents">
+    <div><p class="eyebrow">Document lié au devis {{ record.quote_number }}</p><h2>Facture {{ record.invoice_number }}</h2><p>Éditée le {{ record.invoice_date|date_fr }}{% if record.paid_at %} · <strong>payée</strong>{% endif %}</p></div>
+    <div class="document-actions"><a class="admin-button primary" href="{{ url_for('admin_billing_document', record_id=record.id, document_kind='facture', output_format='pdf') }}">Facture PDF</a><a class="admin-button secondary" href="{{ url_for('admin_billing_document', record_id=record.id, document_kind='facture', output_format='docx') }}">Facture DOCX</a></div>
+</section>
+{% endif %}
+
+{% if record.notes %}
+<section class="admin-section billing-notes">
+    <p class="eyebrow">Note interne</p>
+    <h2>Suivi réservé à l'administration</h2>
+    <p>{{ record.notes }}</p>
+</section>
+{% endif %}
+
+{% if module_enabled %}<section class="admin-section billing-workflow">
+    <div class="form-section-heading"><p class="eyebrow">Avancement manuel</p><h2>Mettre à jour le dossier</h2></div>
+    <div class="billing-workflow-actions">
+        {% if record.quote_cancelled_at %}
+            <form method="post" action="{{ url_for('admin_billing_toggle_cancellation', record_id=record.id) }}"><button class="admin-button primary" type="submit">Réouvrir le devis</button></form>
+        {% elif not record.invoice_number %}
+            <form method="post" action="{{ url_for('admin_billing_sign', record_id=record.id) }}"><button class="admin-button {{ 'secondary' if record.quote_signed_at else 'primary' }}" type="submit">{{ 'Retirer « devis signé »' if record.quote_signed_at else 'Marquer le devis comme signé' }}</button></form>
+            {% if record.quote_signed_at %}<form method="post" action="{{ url_for('admin_billing_create_invoice', record_id=record.id) }}" onsubmit="return confirm('Créer la facture liée à ce devis ?');"><button class="admin-button primary" type="submit">Créer la facture</button></form>{% endif %}
+            <form method="post" action="{{ url_for('admin_billing_toggle_cancellation', record_id=record.id) }}" onsubmit="return confirm('Annuler ce devis sans le supprimer ? Il restera consultable et pourra être réouvert.');"><button class="admin-button danger" type="submit">Annuler le devis</button></form>
+        {% elif not record.invoice_sent_at %}
+            <form method="post" action="{{ url_for('admin_billing_mark_sent', record_id=record.id) }}"><button class="admin-button primary" type="submit">Marquer la facture comme envoyée</button></form>
+        {% else %}
+            <form method="post" action="{{ url_for('admin_billing_mark_paid', record_id=record.id) }}"><button class="admin-button {{ 'secondary' if record.paid_at else 'primary' }}" type="submit">{{ 'Retirer le règlement' if record.paid_at else 'Marquer la facture comme payée' }}</button></form>
+            {% if not record.paid_at and not record.reminder_one_at %}<form method="post" action="{{ url_for('admin_billing_reminder', record_id=record.id, number=1) }}"><button class="admin-button secondary" type="submit">Enregistrer la relance 1</button></form>{% elif not record.paid_at and not record.reminder_two_at %}<form method="post" action="{{ url_for('admin_billing_reminder', record_id=record.id, number=2) }}"><button class="admin-button secondary" type="submit">Enregistrer la relance 2</button></form>{% endif %}
+        {% endif %}
+    </div>
+    <p class="option-state">Devis créé le {{ record.quote_date|date_fr }}{% if record.quote_signed_at %} · Signé le {{ record.quote_signed_at|paris_datetime }}{% endif %}{% if record.quote_cancelled_at %} · Annulé le {{ record.quote_cancelled_at|paris_datetime }}{% endif %}{% if record.invoice_sent_at %} · Facture envoyée le {{ record.invoice_sent_at|paris_datetime }}{% endif %}{% if record.reminder_one_at %} · Relance 1 le {{ record.reminder_one_at|paris_datetime }}{% endif %}{% if record.reminder_two_at %} · Relance 2 le {{ record.reminder_two_at|paris_datetime }}{% endif %}{% if record.paid_at %} · Payée le {{ record.paid_at|paris_datetime }}{% endif %}</p>
+</section>
+
+{% if not record.invoice_number %}
+<details class="admin-section daily-reset-section"><summary>Supprimer ce devis</summary><form method="post" action="{{ url_for('admin_billing_delete', record_id=record.id) }}" class="inline-confirmation-form"><label>Saisissez <strong>SUPPRIMER</strong></label><input name="confirmation" type="text" autocomplete="off" required><button class="admin-button danger" type="submit">Supprimer</button></form></details>
+{% else %}
+<details class="admin-section daily-reset-section"><summary>Supprimer uniquement la facture</summary><p>Le devis et ses coordonnées seront conservés. La facture, ses dates de suivi et la prestation statistique liée seront retirées.</p><form method="post" action="{{ url_for('admin_billing_delete_invoice', record_id=record.id) }}" class="inline-confirmation-form"><label>Saisissez <strong>SUPPRIMER</strong></label><input name="confirmation" type="text" autocomplete="off" required><button class="admin-button danger" type="submit">Supprimer la facture</button></form></details>
+{% endif %}
+{% endif %}
+{% endblock %}

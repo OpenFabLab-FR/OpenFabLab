@@ -1,0 +1,8 @@
+<nav class="admin-subtabs settings-subtabs" aria-label="Navigation des réglages">
+    <a class="admin-subtab{% if request.endpoint == 'admin_settings_display' %} active{% endif %}" href="{{ url_for('admin_settings_display') }}">Affichage</a>
+    <a class="admin-subtab{% if request.endpoint == 'admin_settings_kiosk' %} active{% endif %}" href="{{ url_for('admin_settings_kiosk') }}">Borne et horaires</a>
+    <a class="admin-subtab{% if request.endpoint == 'admin_settings_tariffs' %} active{% endif %}" href="{{ url_for('admin_settings_tariffs') }}">Tarifs et machines</a>
+    <a class="admin-subtab{% if request.endpoint == 'admin_settings_data' %} active{% endif %}" href="{{ url_for('admin_settings_data') }}">Données et sauvegardes</a>
+    <a class="admin-subtab{% if request.endpoint in ('admin_settings_structure', 'admin_settings_reservations') %} active{% endif %}" href="{{ url_for('admin_settings_structure') }}">Structure et modules</a>
+    <a class="admin-subtab{% if request.endpoint == 'admin_notifications' %} active{% endif %}" href="{{ url_for('admin_notifications') }}">Notifications</a>
+</nav>
