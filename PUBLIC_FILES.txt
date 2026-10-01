@@ -16,6 +16,7 @@ annual_report.py
 app.py
 badge_templates/OpenFabLab-template.svg
 billing.py
+branding.py
 build_openfablab.py
 build_wordpress_plugin.py
 calendar_export.py
@@ -23,6 +24,7 @@ compose.yaml
 docs/animation-slots.md
 docs/architecture.md
 docs/backup-restore.md
+docs/branding.md
 docs/configuration.md
 docs/development.md
 docs/email-templates.md
@@ -59,6 +61,7 @@ static/style.css
 static/vendor/jsQR-1.4.0.js
 static/vendor/jsQR-LICENSE.txt
 templates/_admin_nav.html
+templates/_branding_settings.html
 templates/_closure_options.html
 templates/_frequency_nav.html
 templates/_reservation_settings.html
@@ -100,6 +103,7 @@ tests/schema12_fixture.py
 tests/slots_artifact_fixture.py
 tests/test_animation_slots.py
 tests/test_app.py
+tests/test_branding.py
 tests/test_naming.py
 tests/test_participants_ui.js
 tests/test_publication.py

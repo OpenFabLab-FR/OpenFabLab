@@ -1,0 +1,30 @@
+# Identité, logos et badges privés
+
+Dans Réglages → Structure et modules → Identité de la structure, quatre usages sont indépendants :
+
+| Réglage | Destination | Stockage persistant |
+| --- | --- | --- |
+| Logo de la structure (en-tête) | Gauche de l’interface ; logo OpenFabLab si aucun personnalisé | `data/branding/wordmark.png` |
+| Logo institutionnel d’en-tête | Droite, avant le réseau | `data/branding/header_institution.png` |
+| Logo de réseau | Droite, avant météo et verrouillage | `data/branding/network.png` |
+| Logo des documents administratifs | Factures/devis, jamais l’en-tête | `data/branding/institution.png` |
+
+Les trois usages d’en-tête peuvent être masqués complètement : pas d’image ni d’emplacement vide. Les téléversements acceptent PNG/JPEG/WebP (2 Mo) et sont convertis en PNG. Le champ vide ne change rien ; un bouton séparé, avec confirmation, retire le logo de son usage. Le fichier désactivé reste récupérable jusqu’à son remplacement. Le logo complémentaire historique `main.png` et la signature `signature.png` restent exclusivement dédiés aux documents. Sans logos configurés, les documents sont générés sans image de logo. Aucun logo de document n’est automatiquement adopté par l’en-tête après configuration initiale.
+
+## Badge personnalisé
+
+Sans configuration privée, le modèle public générique est utilisé. Un administrateur peut téléverser un gabarit SVG autonome dans les ressources complémentaires. Il est conservé dans `data/branding/badge-template.svg` ; le réglage `structure_badge_template` vaut alors `badge-template.svg`. La sélection ne dépend jamais du nom de la structure.
+
+Le SVG doit avoir `viewBox="0 0 54 86"`, les textes `user-id`, `first-name`, `category` (avec x/y/font-size), et un groupe `qr-code` non transformé. Le QR encode exclusivement `public_id`, sur la zone x=5.25, y=40, taille=43.5. Les transformations des autres éléments et les logos vectoriels intégrés sont conservés. Le fond `card-background`, s’il existe, est retiré. Les textes sont échappés et les prénoms longs ajustés. Le PNG est rendu depuis ce même SVG, avec transparence. Scripts, événements, images externes, liens externes et entités XML sont refusés.
+
+Un modèle privé configuré mais absent/invalide produit une erreur explicite : aucun remplacement silencieux par le badge générique. La prévisualisation administrative utilise un usager fictif. Un gabarit peut embarquer une banque de tracés vectoriels (`badge-glyphs`) pour stabiliser sa typographie entre SVG et PNG ; ces ressources restent privées et leurs droits relèvent de l’installation. Aucune police propriétaire n’est fournie par OpenFabLab.
+
+## Responsable du traitement
+
+Renseigner séparément la personne morale, son adresse, son représentant et la fonction du représentant. La page Gestion des données affiche ces informations et conserve le contact existant. Une installation neuve n’impose ni organisme ni personne ; un avertissement invite à compléter ces champs.
+
+## Mise à jour 2.6.1 → 2.6.2
+
+Le schéma SQLite reste **13**. Les nouveaux réglages sont additifs ; les valeurs existantes gagnent. Lorsque le nouveau réglage d’en-tête n’existe pas encore, l’ancien logo institutionnel présent est copié une seule fois vers un fichier distinct, sans modifier le logo documentaire. L’entité juridique et l’adresse déjà configurées initialisent les champs du responsable du traitement. Aucun réseau ou badge institutionnel n’est choisi par déduction du nom du FabLab.
+
+Conserver tout `data`, les secrets et le montage `./data:/data`. Les nouveaux fichiers survivent aux redémarrages, images Docker et mises à jour. L’export/import `.openfablab-profile.zip` inclut logos, badge et champs d’identité ; ce profil est **privé** et ne doit jamais être publié. Son import n’emporte pas de secrets et conserve la règle existante de désactivation/reconfiguration WordPress/Discord. Une sauvegarde SQLite seule ne contient pas les fichiers : sauvegarder aussi `data/branding` et les fichiers privés séparément, avec accès restreint.

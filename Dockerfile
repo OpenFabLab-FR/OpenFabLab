@@ -9,7 +9,7 @@ WORKDIR /app
 COPY requirements.txt requirements-nas.txt ./
 RUN pip install --no-cache-dir --disable-pip-version-check -r requirements-nas.txt
 
-COPY app.py billing.py annual_report.py animation_report.py calendar_export.py pin_security.py profile_archive.py reservations_sync.py animation_slots.py ./
+COPY app.py billing.py annual_report.py animation_report.py calendar_export.py pin_security.py profile_archive.py reservations_sync.py animation_slots.py branding.py ./
 COPY openfablab ./openfablab
 COPY LICENSE THIRD_PARTY_NOTICES.md ./
 COPY templates ./templates

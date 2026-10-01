@@ -26,6 +26,12 @@
 *.pdf
 data/
 branding/
+private-assets/
+OpenFabLab-Deployment/
+OpenFabLab-Public-Review/
+UPDATE_NAS_*.sh
+badge-*.svg
+badge-*.png
 backups/
 sauvegardes/
 Saves/

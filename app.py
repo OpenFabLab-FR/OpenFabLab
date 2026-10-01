@@ -170,6 +170,9 @@ MODULE_LABELS = {
     "weather": "Météo",
     "discord": "Notifications Discord",
 }
+from branding import (LOGO_KINDS, VISIBILITY_KEYS, BADGE_FILENAME, validate_badge_template,
+                      badge_source, outline_private_text, migrate_branding_settings, logo_status)
+
 STRUCTURE_FIELDS = {
     "name": ("Nom de la structure", 120),
     "short_name": ("Nom court", 60),
@@ -187,6 +190,10 @@ STRUCTURE_FIELDS = {
     "longitude": ("Longitude de la structure", 24),
     "color": ("Couleur principale", 7),
     "legal_entity": ("Entité juridique", 180),
+    "data_controller": ("Responsable du traitement (personne morale)", 180),
+    "data_controller_address": ("Adresse du responsable du traitement", 500),
+    "data_controller_representative": ("Représentant du responsable du traitement", 180),
+    "data_controller_representative_role": ("Fonction du représentant", 240),
     "billing_address": ("Adresse de facturation", 500),
     "siret": ("SIRET", 14),
     "vat_number": ("Numéro de TVA", 40),
@@ -794,6 +801,7 @@ def initialize_database():
     create_statistics_triggers(database)
 
     # Existing installation settings win; only missing keys receive neutral defaults.
+    migrate_branding_settings(database, Path(current_database_path()).parent)
     default_settings = default_application_settings()
     database.executemany(
         "INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)",
@@ -961,6 +969,16 @@ def default_application_settings(_legacy_installation=False):
         ('structure_wordmark_logo', ''),
         ('structure_institution_logo', ''),
         ('structure_signature', ''),
+        ('structure_header_institution_logo', ''),
+        ('structure_network_logo', ''),
+        ('structure_badge_template', ''),
+        ('structure_show_wordmark_logo', '1'),
+        ('structure_show_header_institution_logo', '1'),
+        ('structure_show_network_logo', '1'),
+        ('structure_data_controller', ''),
+        ('structure_data_controller_address', ''),
+        ('structure_data_controller_representative', ''),
+        ('structure_data_controller_representative_role', ''),
         ("module_frequency", "1"),
         ("module_users", "1"),
         ("module_activities", "1"),
@@ -3749,6 +3767,12 @@ def load_structure_settings(database):
     settings["wordmark_logo"] = read_setting(database, "structure_wordmark_logo")
     settings["institution_logo"] = read_setting(database, "structure_institution_logo")
     settings["signature"] = read_setting(database, "structure_signature")
+    settings['header_institution_logo'] = read_setting(database, 'structure_header_institution_logo')
+    settings['network_logo'] = read_setting(database, 'structure_network_logo')
+    settings['badge_template'] = read_setting(database, 'structure_badge_template')
+    for key in VISIBILITY_KEYS:
+        settings[key] = read_setting(database, 'structure_' + key, '1') == '1'
+    settings['logo_status'] = logo_status(Path(current_database_path()).parent, settings)
     return settings
 
 
@@ -5433,7 +5457,8 @@ def compact_french_date(value):
 def generate_badge_svg(user, structure=None):
     """Adapte le gabarit de gravure rouge avec le QR et le prénom de l'usager."""
     structure = structure or {"name": "Mon FabLab", "short_name": "FabLab"}
-    template = BADGE_TEMPLATE_SVG.read_text(encoding="utf-8")
+    data_directory = Path(current_database_path()).parent if structure.get('badge_template') else None
+    template = badge_source(structure, BADGE_TEMPLATE_SVG, data_directory)
     qr_code = segno.make_qr(user["public_id"], error="h")
     matrix = qr_code.matrix
     module_count = len(matrix)
@@ -5463,7 +5488,8 @@ def generate_badge_svg(user, structure=None):
         if count != 1:
             raise RuntimeError(f"Élément SVG introuvable : {element_id}")
 
-    replace_text("structure-name", structure.get("short_name") or structure.get("name", "FabLab"))
+    if re.search(r'<text\b[^>]*\bid="structure-name"', template):
+        replace_text("structure-name", structure.get("short_name") or structure.get("name", "FabLab"))
     replace_text("user-id", f"ID {user['public_id']}")
     first_name = user["first_name"].strip()
     replace_text("first-name", first_name)
@@ -5477,6 +5503,11 @@ def generate_badge_svg(user, structure=None):
         count=1,
     )
     if len(first_name) > 11:
+        template = re.sub(
+            r'<text\b[^>]*\bid="first-name"[^>]*>',
+            lambda match: re.sub(r'\s+(?:textLength|lengthAdjust)="[^"]*"', '', match.group(0)),
+            template, count=1,
+        )
         template = re.sub(
             r'(<text\b[^>]*\bid="first-name")',
             r'\1 textLength="45" lengthAdjust="spacingAndGlyphs"',
@@ -5493,14 +5524,13 @@ def generate_badge_svg(user, structure=None):
     # Le support est la carte noire photographiée dans xTool : aucun fond ni
     # contour ne doit être exporté. Tout ce qui reste correspond à la gravure.
     template, count = re.subn(
-        r'<rect\b[^>]*\bid="card-background"[^>]*/>',
+        r'<rect\b[^>]*\bid="card-background"[^>]*(?:/>|>\s*</rect>)',
         "",
         template,
         count=1,
         flags=re.DOTALL,
     )
-    if count != 1:
-        raise RuntimeError("Fond du gabarit SVG introuvable")
+    # A private engraving template may already have no background.
     template = re.sub(r'fill="#[0-9a-fA-F]{6}"', f'fill="{ENGRAVING_COLOR}"', template)
     template = re.sub(r'stroke="#[0-9a-fA-F]{6}"', f'stroke="{ENGRAVING_COLOR}"', template)
     template = re.sub(r'fill:#[0-9a-fA-F]{6}', f'fill:{ENGRAVING_COLOR}', template)
@@ -5514,7 +5544,7 @@ def generate_badge_svg(user, structure=None):
         count=1,
         flags=re.DOTALL,
     )
-    return template.encode("utf-8")
+    return outline_private_text(template).encode("utf-8")
 
 
 def generate_badge_png(user, structure=None):
@@ -5944,15 +5974,17 @@ def register_routes(application):
 
     @application.get("/media/structure/<kind>.png")
     def structure_logo(kind):
-        if kind not in {"main", "institution", "wordmark"}:
+        if kind not in {"main", "institution", "wordmark", "header_institution", "network"}:
             abort(404)
         filename = read_setting(get_database(), f"structure_{kind}_logo")
         if filename != f"{kind}.png":
             abort(404)
         path = Path(application.config["DATABASE"]).parent / "branding" / filename
-        if not path.is_file():
+        if not path.is_file() or path.is_symlink():
             abort(404)
-        return send_file(path, mimetype="image/png", max_age=3600)
+        response = send_file(path, mimetype="image/png", max_age=0)
+        response.headers['Cache-Control'] = 'no-cache'
+        return response
 
     @application.get("/gestion-des-donnees")
     def data_management():
@@ -6622,9 +6654,9 @@ def register_routes(application):
                 if image_format == "svg"
                 else generate_badge_png(user, structure)
             )
-        except (OSError, RuntimeError):
-            application.logger.exception("Erreur lors de la génération d'un badge")
-            abort(500)
+        except (OSError, RuntimeError, ValueError) as error:
+            flash('Badge non généré : ' + str(error), 'error')
+            return redirect(url_for('admin_users_directory'))
         filename = (
             f"badge-{safe_filename_part(structure['short_name'])}-{user['public_id']}-"
             f"{safe_filename_part(user['first_name'])}.{image_format}"
@@ -6983,8 +7015,10 @@ def register_routes(application):
     def admin_settings_structure():
         if request.method == "GET":
             return render_settings_page("structure")
+        if not pin_csrf_valid():
+            abort(400)
         database = get_database()
-        values = {key: request.form.get(key, "").strip()
+        values = {key: request.form.get(key, read_setting(database, 'structure_' + key)).strip()
                   for key in STRUCTURE_FIELDS}
         errors = []
         for key, (label, maximum) in STRUCTURE_FIELDS.items():
@@ -7032,7 +7066,7 @@ def register_routes(application):
         if (selected["booking_slots"] or selected["rentals"]) and not selected["billing"]:
             errors.append("Les créneaux réservables et locations nécessitent le module Facturation.")
         logo_files = {}
-        for kind in ("main", "institution", "signature", "wordmark"):
+        for kind in LOGO_KINDS:
             uploaded = request.files.get(f"logo_{kind}")
             if uploaded and uploaded.filename:
                 raw = uploaded.read(2 * 1024 * 1024 + 1)
@@ -7048,6 +7082,14 @@ def register_routes(application):
                     errors.append("Logo invalide : utilisez une image PNG, JPEG ou WebP.")
                     continue
                 logo_files[kind] = raw
+        badge_raw = None
+        uploaded = request.files.get('badge_template')
+        if uploaded and uploaded.filename:
+            badge_raw = uploaded.read(2 * 1024 * 1024 + 1)
+            try:
+                validate_badge_template(badge_raw)
+            except ValueError as error:
+                errors.append(str(error))
         if errors:
             for error in errors:
                 flash(error, "error")
@@ -7067,6 +7109,21 @@ def register_routes(application):
                     finally:
                         temporary_logo.unlink(missing_ok=True)
                     write_setting(database, f"structure_{kind}_logo" if kind != "signature" else "structure_signature", f"{kind}.png")
+                    os.chmod(branding_dir / f'{kind}.png', 0o600)
+            if badge_raw is not None:
+                branding_dir = Path(application.config['DATABASE']).parent / 'branding'
+                branding_dir.mkdir(parents=True, exist_ok=True)
+                temporary = branding_dir / ('.badge-' + secrets.token_hex(5) + '.tmp')
+                try:
+                    temporary.write_bytes(badge_raw)
+                    os.chmod(temporary, 0o600)
+                    os.replace(temporary, branding_dir / BADGE_FILENAME)
+                finally:
+                    temporary.unlink(missing_ok=True)
+                write_setting(database, 'structure_badge_template', BADGE_FILENAME)
+            if request.form.get('branding_visibility_form') == '1':
+                for key in VISIBILITY_KEYS:
+                    write_setting(database, 'structure_' + key, '1' if request.form.get(key) == '1' else '0')
             for key, value in values.items():
                 write_setting(database, f"structure_{key}", value)
             for key, enabled in selected.items():
@@ -7079,6 +7136,32 @@ def register_routes(application):
             database.commit()
             flash("Structure et modules enregistrés sans supprimer de données.", "success")
         return redirect(url_for("admin_settings_structure"))
+
+    @application.post('/admin/reglages/structure/supprimer/<kind>')
+    def admin_remove_branding(kind):
+        if not pin_csrf_valid() or request.form.get('confirmation') != 'SUPPRIMER':
+            abort(400)
+        if kind not in LOGO_KINDS and kind != 'badge':
+            abort(404)
+        database = get_database()
+        filename = BADGE_FILENAME if kind == 'badge' else kind + '.png'
+        key = ('structure_badge_template' if kind == 'badge' else
+               'structure_signature' if kind == 'signature' else 'structure_' + kind + '_logo')
+        # Preserve the removed file for recovery; only deactivate the setting.
+        # Re-upload explicitly replaces the same dedicated persistent filename.
+        write_setting(database, key, '')
+        database.commit()
+        flash('Ressource personnalisée retirée. Les autres usages restent inchangés.', 'success')
+        return redirect(url_for('admin_settings_structure'))
+
+    @application.get('/admin/reglages/structure/badge-apercu.png')
+    def admin_badge_preview():
+        try:
+            raw = generate_badge_png({'public_id': '2001', 'first_name': 'Alex', 'category': 'user'},
+                                     load_structure_settings(get_database()))
+        except (OSError, ValueError, RuntimeError) as error:
+            return Response('Badge non généré : ' + str(error), status=422, mimetype='text/plain')
+        return Response(raw, mimetype='image/png', headers={'Cache-Control': 'private, no-store'})
 
     @application.get("/admin/profil/exporter")
     def admin_export_profile():
@@ -7096,7 +7179,7 @@ def register_routes(application):
             for row in database.execute("SELECT * FROM billing_tariff_catalog ORDER BY sort_order, name")]
         assets = {}
         branding = Path(application.config["DATABASE"]).parent / "branding"
-        for kind in ("main", "institution", "signature", "wordmark"):
+        for kind in LOGO_KINDS:
             local = branding / f"{kind}.png"
             setting = read_setting(database, f"structure_{kind}_logo" if kind != "signature" else "structure_signature")
             source = local if setting == f"{kind}.png" and local.is_file() else None
@@ -7107,6 +7190,10 @@ def register_routes(application):
                     output = io.BytesIO()
                     picture.convert("RGBA" if "A" in picture.getbands() else "RGB").save(output, "PNG")
                     assets[f"assets/{kind}.png"] = output.getvalue()
+        if settings.get('structure_badge_template'):
+            raw = (branding / BADGE_FILENAME).read_bytes()
+            validate_badge_template(raw)
+            assets['assets/' + BADGE_FILENAME] = raw
         profile = build_profile(settings, machines, assets, tariffs)
         name = compact_filename_part(read_setting(database, "structure_short_name", "OpenFabLab"), "OpenFabLab")[:60]
         return Response(profile, mimetype="application/zip", headers={
@@ -7127,6 +7214,9 @@ def register_routes(application):
         try:
             profile = parse_profile(raw)
             for kind, content in profile["assets"].items():
+                if kind == 'assets/' + BADGE_FILENAME:
+                    validate_badge_template(content)
+                    continue
                 with Image.open(io.BytesIO(content)) as picture:
                     if (picture.format != "PNG" or picture.width * picture.height > 20_000_000):
                         raise ValueError("Image du profil invalide.")
@@ -7183,10 +7273,13 @@ def register_routes(application):
                         temporary = branding / f".{kind}-{secrets.token_hex(5)}.tmp"
                         try:
                             temporary.write_bytes(content)
-                            os.replace(temporary, branding / f"{kind}.png")
+                            os.chmod(temporary, 0o600)
+                            os.replace(temporary, branding / Path(path).name)
                         finally:
                             temporary.unlink(missing_ok=True)
-                        write_setting(database, f"structure_{kind}_logo" if kind != "signature" else "structure_signature", f"{kind}.png")
+                        key = ('structure_badge_template' if kind == 'badge-template' else
+                               'structure_signature' if kind == 'signature' else f'structure_{kind}_logo')
+                        write_setting(database, key, Path(path).name)
                 sync_secret_path(application.config["DATABASE"]).unlink(missing_ok=True)
                 Path(application.config["DISCORD_WEBHOOK_FILE"]).unlink(missing_ok=True)
                 flash("Profil importé. Données métier conservées ; reconfigurez WordPress et Discord.", "success")

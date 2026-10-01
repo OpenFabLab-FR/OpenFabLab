@@ -19,15 +19,16 @@
 </head>
 <body class="{% block body_class %}{% endblock %}">
     <header class="site-header">
-        <a class="brand" href="{{ url_for('index') }}" aria-label="Retour à l'accueil">
+        {% if structure.show_wordmark_logo %}<a class="brand" href="{{ url_for('index') }}" aria-label="Retour à l'accueil">
             {% if structure.wordmark_logo == 'wordmark.png' %}<img class="brand-wordmark" src="{{ url_for('structure_logo', kind='wordmark') }}" alt="{{ structure.name }}">
             {% else %}<img class="brand-wordmark" src="{{ url_for('static', filename='brand/OpenFabLab-logo-horizontal.svg') }}" alt="OpenFabLab">{% endif %}
-        </a>
+        </a>{% endif %}
         <div class="header-tools">
+            {% if (structure.show_header_institution_logo and structure.logo_status.header_institution) or (structure.show_network_logo and structure.logo_status.network) %}
             <div class="partner-logos" aria-label="Partenaires de {{ structure.name }}">
-                {% if structure.institution_logo %}<img src="{{ url_for('structure_logo', kind='institution') }}" alt="Partenaire institutionnel">
-                {% endif %}
-            </div>
+                {% if structure.show_header_institution_logo and structure.logo_status.header_institution %}<img src="{{ url_for('structure_logo', kind='header_institution') }}" alt="Logo institutionnel d’en-tête">{% endif %}
+                {% if structure.show_network_logo and structure.logo_status.network %}<img src="{{ url_for('structure_logo', kind='network') }}" alt="Logo de réseau">{% endif %}
+            </div>{% endif %}
             {% block header_weather %}{% endblock %}
             {% block header_status %}{% endblock %}
             {% block header_action %}{% endblock %}

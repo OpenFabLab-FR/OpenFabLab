@@ -76,6 +76,15 @@ a {
     background: rgba(255, 255, 255, 0.92);
 }
 
+.header-tools { margin-left: auto; }
+.branding-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 1rem; }
+.branding-card { border: 1px solid var(--border, #d7e5e7); border-radius: 16px; padding: 1rem; min-width: 0; }
+.branding-card h4 { margin: 0 0 .6rem; }
+.logo-preview { background: #fff; border-radius: 10px; padding: .8rem; min-height: 70px; display: flex; align-items: center; justify-content: center; }
+.logo-preview img { max-height: 72px; max-width: 100%; object-fit: contain; }
+.branding-extra { margin-top: 1rem; padding: 1rem; border: 1px solid #d7e5e7; border-radius: 12px; }
+.multiline-text { white-space: pre-line; }
+
 .brand {
     display: inline-flex;
     align-items: center;
@@ -6281,3 +6290,11 @@ tbody tr:last-child td {
 .animation-slot-summary > article { padding: .75rem; border: 1px solid var(--border-color, #d7e1e5); border-radius: .65rem; min-width: 0; display: grid; gap: .3rem; }
 .slot-preview { margin-block: 1rem; overflow-wrap: anywhere; }
 .slot-preview ul { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; padding-inline-start: 1.25rem; }
+
+@media (max-width: 600px) {
+    .site-header { flex-wrap: wrap; gap: 8px; }
+    .header-tools { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .header-tools .partner-logos { display: flex; gap: 4px; }
+    .header-tools .partner-logos img { height: 28px; width: 28px; object-fit: contain; }
+    .brand-wordmark { max-width: 105px; }
+}

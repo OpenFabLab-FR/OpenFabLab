@@ -20,8 +20,8 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.6.1')
-        self.assertIn('openfablab:v2.6.1',(ROOT/'compose.yaml').read_text())
+        self.assertEqual(__version__,'2.6.2')
+        self.assertIn('openfablab:v2.6.2',(ROOT/'compose.yaml').read_text())
 
     def test_every_default_is_generic_even_with_legacy_flag(self):
         for flag in (False,True):
@@ -156,7 +156,7 @@ class PublicReleaseTests(unittest.TestCase):
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.6.1'
+assert app.app.config['APP_VERSION']=='V2.6.2'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)

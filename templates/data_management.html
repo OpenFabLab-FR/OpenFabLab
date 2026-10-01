@@ -20,8 +20,10 @@
 <div class="data-information-grid">
     <section class="admin-section">
         <h2>Responsable du traitement</h2>
-        <p><strong>{{ structure.legal_entity or structure.name }}</strong>{% if structure.address %}<br>{{ structure.address }}{% endif %}</p>
-        <p>La structure utilisatrice doit préciser ici son responsable de traitement avant toute ouverture au public.</p>
+        {% if structure.data_controller %}
+        <p><strong>{{ structure.data_controller }}</strong>{% if structure.data_controller_address %}<br><span class="multiline-text">{{ structure.data_controller_address }}</span>{% endif %}</p>
+        {% if structure.data_controller_representative %}<p>Représentant du responsable du traitement :<br>{{ structure.data_controller_representative }}{% if structure.data_controller_representative_role %}, {{ structure.data_controller_representative_role }}{% endif %}.</p>{% endif %}
+        {% else %}<p>Le responsable du traitement doit être renseigné dans Réglages → Identité de la structure avant toute ouverture au public.</p>{% endif %}
     </section>
     <section class="admin-section">
         <h2>Contact pour les données personnelles</h2>

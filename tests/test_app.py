@@ -50,6 +50,7 @@ DEMO_SETTINGS = {
     'structure_name':'Atelier Exemple','structure_short_name':'Atelier Exemple',
     'structure_description':'FabLab de démonstration',
     'structure_legal_entity':'Association Exemple', 'structure_address':'1 voie Fictive',
+    'structure_data_controller':'Association Exemple', 'structure_data_controller_address':'1 voie Fictive',
     'structure_email':'privacy@example.invalid','structure_website':'https://example.invalid',
     'structure_privacy_policy_url':'https://example.invalid/privacy',
     'billing_rate_normal_hourly_cents':'6000','billing_rate_normal_half_day_cents':'12000',
@@ -4036,6 +4037,7 @@ class OpenFabLabTestCase(unittest.TestCase):
             self.assertEqual(publication["animation"]["privacy_policy_url"],
                              "https://example.invalid/privacy")
         changed = self.client.post("/admin/reglages/structure", data={
+            "csrf_token": re.search(r'name="csrf_token" value="([^"]+)"', self.client.get('/admin/reglages/structure').get_data(as_text=True)).group(1),
             "name": "Atelier Exemple", "short_name": "Atelier Exemple",
             "timezone": "Europe/Paris",
             "privacy_policy_url": "https://example.invalid/gestion-des-donnees/",
@@ -5222,6 +5224,7 @@ class OpenFabLabTestCase(unittest.TestCase):
         Image.new('RGB',(100,30),'white').save(picture,'PNG')
         picture.seek(0)
         form['logo_wordmark']=(picture,'fictional-wordmark.png')
+        form['csrf_token']=re.search(r'name="csrf_token" value="([^"]+)"',self.client.get('/admin/reglages/structure').get_data(as_text=True)).group(1)
         self.client.post("/admin/reglages/structure", data=form, content_type="multipart/form-data")
         with self.database() as database:
             self.assertEqual(database.execute(

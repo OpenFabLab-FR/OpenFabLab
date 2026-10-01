@@ -1,6 +1,14 @@
 # Historique public
 
-## 2.6.1 — première publication publique proposée
+## 2.6.2 — identité et ressources privées persistantes
+
+- Badge personnalisé SVG persistant, rendu SVG/PNG commun, erreurs explicites si le modèle configuré manque ; badge générique conservé pour les nouvelles installations.
+- Quatre usages de logos indépendants, prévisualisations, remplacement, retrait explicite et visibilité des logos d’en-tête.
+- Séparation additive du logo institutionnel historique d’en-tête et du logo documentaire.
+- Personne morale responsable du traitement, adresse, représentant et fonction configurables ; profil privé enrichi.
+- Schéma SQLite inchangé (13) ; aucun changement WordPress, PIN, secret ou donnée métier.
+
+## 2.6.1 — première publication publique
 
 - OpenFabLab est créé par William Aumand, sous licence MIT ; documentation pour les installations tierces.
 - Valeurs initiales et ressources neutres : aucune banque, identité de structure, machine, tarif, usager, PIN ou secret préconfiguré. Les réglages enregistrés d'une installation existante restent conservés.
@@ -11,6 +19,4 @@
 
 Fonctionnalités héritées de 2.6.0 : réservations classiques et par créneaux, attente par créneau, inscriptions et présence distinctes, exports CSV/PDF. Le plugin 2.6.1 propose six modèles d'e-mails personnalisables et une maintenance Test administrateur.
 
-FougèresLab, FabLab de Fougères Agglomération, est la première installation réelle et le terrain de test du projet, non son éditeur. Cette préparation locale ne modifie pas sa version de production 2.6.0.
-
-Publication, tag `v2.6.1` et release restent soumis à autorisation ; aucun envoi GitHub n'est réalisé par la préparation.
+FougèresLab, FabLab de Fougères Agglomération, est la première installation réelle et le terrain de test du projet, non son éditeur.

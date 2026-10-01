@@ -11,14 +11,14 @@ ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "dist" / f"OpenFabLab-{__version__}.zip"
 FILES = (
     "app.py", "billing.py", "annual_report.py", "animation_report.py", "calendar_export.py",
-    "pin_security.py", "profile_archive.py", "reservations_sync.py", "animation_slots.py",
+    "pin_security.py", "profile_archive.py", "reservations_sync.py", "animation_slots.py", "branding.py",
     "build_openfablab.py", "Dockerfile", ".dockerignore", "compose.yaml", "AppStart.command",
     "requirements.txt", "requirements-nas.txt", "LICENSE", "README.md",
     ".env.example",
     "CONTRIBUTING.md", "SECURITY.md", "THIRD_PARTY_NOTICES.md", "CHANGELOG.md",
     "docs/installation.md", "docs/architecture.md", "docs/configuration.md",
     "docs/wordpress.md", "docs/animation-slots.md", "docs/email-templates.md",
-    "docs/backup-restore.md", "docs/upgrade.md", "docs/legacy-migration.md", "docs/development.md",
+    "docs/backup-restore.md", "docs/upgrade.md", "docs/legacy-migration.md", "docs/development.md", "docs/branding.md",
     "static/app.js", "static/qr-scanner.js", "static/style.css", "static/animation-slots.js",
     "static/vendor/jsQR-1.4.0.js", "static/vendor/jsQR-LICENSE.txt",
     "static/fonts/LibreFranklin-Regular.ttf", "static/fonts/LibreFranklin-Bold.ttf",

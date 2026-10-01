@@ -114,7 +114,7 @@ class NamingConsistencyTestCase(unittest.TestCase):
             backup = run_automatic_backup(database, self.fixture.app,
                                           now=datetime(2026, 9, 30, 8, 30, tzinfo=timezone.utc), force=True)
             self.assertEqual(backup.parent.name, "OpenFabLab")
-            self.assertRegex(backup.name, r"^openfablab-sauvegarde-2026-09-30_10-30-V2\.6\.1\.db$")
+            self.assertRegex(backup.name, r"^openfablab-sauvegarde-2026-09-30_10-30-V2\.6\.2\.db$")
             self.assertFalse(OLD_NAMES.search(backup.name))
         with sqlite3.connect(backup) as database:
             self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
@@ -183,7 +183,7 @@ class NamingConsistencyTestCase(unittest.TestCase):
     def test_compose_is_portable_and_docker_copies_existing_pdf_module(self):
         compose = (ROOT / "compose.yaml").read_text()
         self.assertTrue(compose.startswith("name: openfablab\n"))
-        for value in ("image: openfablab:v2.6.1", "container_name: openfablab", '"5080:8000"',
+        for value in ("image: openfablab:v2.6.2", "container_name: openfablab", '"5080:8000"',
                       "OPENFABLAB_URL_PREFIX: /stat", "OPENFABLAB_DATABASE: /data/openfablab.db",
                       "./data:/data", "${OPENFABLAB_BACKUP_HOST_ROOT:-./backups}:/nas-backups"):
             self.assertIn(value, compose)

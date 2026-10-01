@@ -14,13 +14,17 @@ FORMAT = "openfablab-profile"
 VERSION = 1
 MAX_ARCHIVE_BYTES = 6 * 1024 * 1024
 MAX_ASSET_BYTES = 2 * 1024 * 1024
-ASSET_NAMES = {"assets/main.png", "assets/institution.png", "assets/signature.png", "assets/wordmark.png"}
+ASSET_NAMES = {"assets/main.png", "assets/institution.png", "assets/signature.png", "assets/wordmark.png",
+               "assets/header_institution.png", "assets/network.png", "assets/badge-template.svg"}
 STRUCTURE_KEYS = {
     "name", "short_name", "description", "address", "city", "postal_code",
     "email", "phone", "website", "country", "timezone", "latitude", "longitude", "color", "privacy_policy_url",
     "legal_entity", "billing_address", "siret", "vat_number", "vat_note",
     "iban", "bic", "account_holder", "payment_terms", "payment_days",
     "regie_contact", "signer_name", "rental_terms",
+    "main_logo", "institution_logo", "signature", "wordmark_logo", "header_institution_logo", "network_logo",
+    "show_wordmark_logo", "show_header_institution_logo", "show_network_logo", "badge_template",
+    "data_controller", "data_controller_address", "data_controller_representative", "data_controller_representative_role",
 }
 MODULE_KEYS = {
     "frequency", "users", "activities", "public_reservations", "booking_slots",
@@ -146,8 +150,14 @@ def parse_profile(raw):
             for key, value in settings.items():
                 if not isinstance(key, str) or not allowed_setting(key) or not isinstance(value, str) or len(value) > 8000:
                     raise ValueError("Le profil contient un réglage non autorisé.")
-                if key.startswith("module_") and value not in {"0", "1"}:
+                if (key.startswith("module_") or key.startswith('structure_show_')) and value not in {"0", "1"}:
                     raise ValueError("État de module invalide.")
+                if key == 'structure_badge_template' and value not in {'', 'badge-template.svg'}:
+                    raise ValueError('Nom du modèle de badge invalide.')
+                if key.endswith('_logo') and key.startswith('structure_') and not key.startswith('structure_show_'):
+                    kind = key.removeprefix('structure_').removesuffix('_logo')
+                    if value not in {'', kind + '.png'}:
+                        raise ValueError('Nom de logo invalide.')
                 if key in RESERVATION_RANGES:
                     minimum, maximum = RESERVATION_RANGES[key]
                     if not value.isdecimal() or not minimum <= int(value) <= maximum:
@@ -182,6 +192,8 @@ def parse_profile(raw):
                     settings.get("module_rentals") == "1") and
                     settings.get("module_billing") != "1"):
                 raise ValueError("Les créneaux réservables et locations nécessitent le module Facturation.")
+            if settings.get('structure_badge_template') and 'assets/badge-template.svg' not in digests:
+                raise ValueError('Le profil configure un modèle de badge absent.')
             keys = set()
             for machine in machines:
                 if not isinstance(machine, dict) or set(machine) != {"machine_key", "name", "monthly_cents", "deposit_cents", "active", "archived", "sort_order"}:

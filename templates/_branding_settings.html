@@ -1,0 +1,41 @@
+<h3>Logos : quatre usages indépendants</h3>
+<input type="hidden" name="branding_visibility_form" value="1">
+<div class="branding-grid">
+{% for kind, label, description, toggle in (
+ ('wordmark', 'Logo de la structure (en-tête)', 'Affiché en haut à gauche de l’interface. Lorsqu’aucun logo personnalisé n’est configuré, OpenFabLab peut utiliser son logo par défaut.', 'show_wordmark_logo'),
+ ('header_institution', 'Logo institutionnel d’en-tête', 'Logo facultatif affiché en haut à droite de l’interface. Exemple : collectivité, université, organisme porteur ou établissement de rattachement.', 'show_header_institution_logo'),
+ ('network', 'Logo de réseau', 'Logo facultatif d’un réseau, collectif, label ou communauté auquel appartient la structure. Affiché en haut à droite, après le logo institutionnel et avant la météo.', 'show_network_logo'),
+ ('institution', 'Logo des documents administratifs', 'Utilisé sur les factures, devis et autres documents générés. Il n’est pas affiché dans l’interface.', '')
+) %}
+<section class="branding-card">
+    <h4>{{ label }}</h4><p>{{ description }}</p>
+    {% if toggle %}<label class="checkbox-field"><input type="checkbox" name="{{ toggle }}" value="1" {% if structure_settings[toggle] %}checked{% endif %}><span>Afficher {% if kind == 'wordmark' %}le logo de la structure{% elif kind == 'network' %}le logo de réseau{% else %}le logo institutionnel d’en-tête{% endif %}</span></label>{% endif %}
+    {% if structure_settings.logo_status[kind] %}
+    <div class="logo-preview"><img src="{{ url_for('structure_logo', kind=kind) }}" alt="Prévisualisation : {{ label }}"></div><p class="form-help">État : logo personnalisé configuré{% if toggle and not structure_settings[toggle] %}, affichage désactivé{% endif %}.</p>
+    {% elif kind == 'wordmark' %}
+    <div class="logo-preview"><img src="{{ url_for('static', filename='brand/OpenFabLab-logo-horizontal.svg') }}" alt="Logo OpenFabLab par défaut"></div><p class="form-help">État : {% if structure_settings.wordmark_logo %}fichier personnalisé manquant{% elif not structure_settings.show_wordmark_logo %}affichage désactivé{% else %}logo OpenFabLab par défaut{% endif %}.</p>
+    {% else %}<p class="form-help">État : {% if structure_settings[kind + '_logo'] %}fichier configuré manquant{% else %}aucun logo personnalisé{% endif %}.</p>{% endif %}
+    <label class="form-field"><span>Téléverser / remplacer</span><input name="logo_{{ kind }}" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP · 2 Mo. Sans nouveau fichier, aucune modification du fichier actuel.</small></label>
+    {% if structure_settings[kind + '_logo'] %}<button class="admin-button secondary" type="submit" form="remove-{{ kind }}" onclick="return confirm('Supprimer ce logo personnalisé de cet usage uniquement ?')">Supprimer le logo{% if kind == 'wordmark' %} personnalisé{% endif %}</button>{% endif %}
+</section>
+{% endfor %}
+</div>
+<details class="branding-extra"><summary>Ressources complémentaires des documents et badge privé</summary>
+<p>Le logo complémentaire historique et la signature restent réservés aux documents. Ils ne sont jamais repris automatiquement dans l’en-tête.</p>
+{% for kind, label in (('main', 'Logo complémentaire des documents'), ('signature', 'Signature des bilans')) %}
+<label class="form-field"><span>{{ label }} · {% if structure_settings.logo_status[kind] %}configuré{% else %}non configuré{% endif %}</span><input name="logo_{{ kind }}" type="file" accept="image/png,image/jpeg,image/webp"></label>
+{% if structure_settings['signature' if kind == 'signature' else 'main_logo'] %}<button class="admin-button secondary" type="submit" form="remove-{{ kind }}" onclick="return confirm('Retirer cette ressource des prochains documents ?')">Supprimer {{ label|lower }}</button>{% endif %}
+{% endfor %}
+<h4>Modèle privé du badge</h4><p>Le modèle générique reste utilisé tant qu’aucun modèle privé n’est configuré. Un modèle privé manquant ou invalide bloque la génération, sans remplacement silencieux.</p>
+<p>État : {% if structure_settings.badge_template %}modèle privé configuré{% else %}modèle générique{% endif %}.</p>
+<label class="form-field"><span>Téléverser / remplacer le gabarit SVG</span><input name="badge_template" type="file" accept="image/svg+xml,.svg"><small>SVG autonome 54 × 86 mm · 2 Mo, sans contenu actif ou lien externe. Sans fichier : aucune modification.</small></label>
+<a class="header-link" href="{{ url_for('admin_badge_preview') }}" target="_blank" rel="noopener">Prévisualiser le badge avec un usager fictif</a>
+{% if structure_settings.badge_template %}<button class="admin-button secondary" type="submit" form="remove-badge" onclick="return confirm('Retirer le modèle privé et revenir au badge générique ?')">Supprimer le modèle privé</button>{% endif %}
+</details>
+<h3>Protection des données personnelles</h3>
+<div class="form-grid two-columns">
+{% for key, label in (('data_controller', 'Responsable du traitement (personne morale)'), ('data_controller_address', 'Adresse du responsable du traitement'), ('data_controller_representative', 'Représentant du responsable du traitement'), ('data_controller_representative_role', 'Fonction du représentant')) %}
+<label class="form-field"><span>{{ label }}</span>{% if key == 'data_controller_address' %}<textarea name="{{ key }}" maxlength="500" rows="3">{{ structure_settings[key] }}</textarea>{% else %}<input name="{{ key }}" value="{{ structure_settings[key] }}" maxlength="{{ 240 if key.endswith('_role') else 180 }}">{% endif %}</label>
+{% endfor %}
+</div>
+<p class="form-help">La personne morale demeure responsable du traitement ; son représentant est indiqué séparément. Ces renseignements alimentent Gestion des données et le profil privé.</p>

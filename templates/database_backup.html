@@ -14,6 +14,7 @@
 
 {% if settings_view == 'structure' %}
 <form method="post" class="admin-form structure-settings-form" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}">
     <section class="form-section">
         <div class="form-section-heading"><h2>Identité de la structure</h2><p>OpenFabLab est le logiciel ; ces coordonnées décrivent le FabLab qui l’utilise.</p></div>
         <div class="form-grid two-columns">
@@ -22,12 +23,7 @@
             {% endfor %}
         </div>
         <p class="form-help">La météo utilise les coordonnées publiques du FabLab. Sans latitude et longitude, aucun appel météo n’est effectué. Le lien de gestion des données peut être affiché dans le formulaire de réservation.</p>
-        <div class="form-grid two-columns">
-            <label class="form-field"><span>Mot-symbole de la structure (facultatif){% if structure_settings.wordmark_logo == 'wordmark.png' %} · personnalisé{% endif %}</span><input name="logo_wordmark" type="file" accept="image/png,image/jpeg,image/webp"><small>Lorsqu’il est configuré, il remplace le logo OpenFabLab dans l’en-tête. PNG, JPEG ou WebP, 2 Mo maximum.</small></label>
-            <label class="form-field"><span>Logo principal{% if structure_settings.main_logo %} · personnalisé{% endif %}</span><input name="logo_main" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP, 2 Mo maximum. Laissez vide pour conserver le logo actuel.</small></label>
-            <label class="form-field"><span>Logo institutionnel{% if structure_settings.institution_logo %} · personnalisé{% endif %}</span><input name="logo_institution" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP, 2 Mo maximum.</small></label>
-            <label class="form-field"><span>Signature des bilans{% if structure_settings.signature %} · personnalisée{% endif %}</span><input name="logo_signature" type="file" accept="image/png,image/jpeg,image/webp"><small>Utilisée pour les bilans PDF/XLSX, sans être affichée publiquement.</small></label>
-        </div>
+        {% include '_branding_settings.html' %}
     </section>
     <section class="form-section">
         <div class="form-section-heading"><h2>Administration et facturation</h2><p>Ces valeurs alimentent les prochains documents. Les factures et devis déjà créés conservent leurs montants et leurs coordonnées client.</p></div>
@@ -49,7 +45,7 @@
         <div class="form-actions structure-save-actions"><button class="admin-button primary" type="submit">Enregistrer la structure et les modules</button></div>
     </section>
 </form>
-{% if structure_settings.wordmark_logo == 'wordmark.png' %}<form method="post" action="{{ url_for('admin_reset_structure_wordmark') }}" class="form-actions structure-reset-wordmark-form"><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><button class="admin-button secondary" type="submit">Revenir au logo OpenFabLab</button></form>{% endif %}
+{% for kind in ('wordmark', 'header_institution', 'network', 'institution', 'main', 'signature', 'badge') %}<form id="remove-{{ kind }}" method="post" action="{{ url_for('admin_remove_branding', kind=kind) }}"><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><input type="hidden" name="confirmation" value="SUPPRIMER"></form>{% endfor %}
 {% include '_reservation_settings.html' %}
 <section class="admin-section profile-section">
     <h2>Profil privé de configuration</h2>
