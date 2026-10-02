@@ -83,6 +83,14 @@ a {
 .logo-preview { background: #fff; border-radius: 10px; padding: .8rem; min-height: 70px; display: flex; align-items: center; justify-content: center; }
 .logo-preview img { max-height: 72px; max-width: 100%; object-fit: contain; }
 .branding-extra { margin-top: 1rem; padding: 1rem; border: 1px solid #d7e5e7; border-radius: 12px; }
+.branding-extra > h3, .privacy-settings > h3 { margin: 0 0 .75rem; }
+.privacy-settings { margin-top: 1.5rem; }
+.privacy-settings > .branding-card { margin-top: 1rem; }
+.resource-grid .branding-card { display: flex; flex-direction: column; gap: .65rem; }
+.resource-grid .branding-card > p, .resource-grid .branding-card > h4 { margin: 0; }
+.resource-grid .admin-button, .resource-grid .header-link { align-self: flex-start; white-space: normal; }
+.branding-card .checkbox-field { align-items: flex-start; }
+.branding-card .checkbox-field span, .data-information-grid a, .multiline-text { overflow-wrap: anywhere; }
 .multiline-text { white-space: pre-line; }
 
 .brand {

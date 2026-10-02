@@ -9,6 +9,7 @@ from xml.etree import ElementTree as ET
 
 LOGO_KINDS = ('wordmark', 'header_institution', 'network', 'institution', 'main', 'signature')
 VISIBILITY_KEYS = ('show_wordmark_logo', 'show_header_institution_logo', 'show_network_logo')
+RESOURCE_USAGE_KEYS = ('use_main_logo', 'use_signature', 'use_badge_template')
 BADGE_FILENAME = 'badge-template.svg'
 MAX_TEMPLATE_BYTES = 2 * 1024 * 1024
 
@@ -91,7 +92,7 @@ def validate_badge_template(raw):
 
 def badge_source(structure, default, data_directory):
     configured = (structure or {}).get('badge_template', '')
-    if not configured:
+    if not configured or not (structure or {}).get('use_badge_template', True):
         return Path(default).read_text(encoding='utf-8')
     if configured != BADGE_FILENAME:
         raise ValueError('Le modèle privé de badge configuré est invalide.')
@@ -181,6 +182,17 @@ def migrate_branding_settings(database, data_directory):
                        ('data_controller_address', old.get('structure_address', '')),
                        ('data_controller_representative', ''), ('data_controller_representative_role', '')):
         add('structure_' + key, value)
+    # The canonical key, even explicitly empty, wins. Never use the general
+    # structure email or infer a DPO identity from the structure name.
+    for field, aliases in {
+        'dpo': ('structure_dpo_name', 'dpo_name', 'dpo', 'data_protection_officer'),
+        'dpo_email': ('dpo_email', 'data_protection_officer_email'),
+        'dpo_phone': ('dpo_phone', 'data_protection_officer_phone'),
+    }.items():
+        value = next((old[key] for key in aliases if old.get(key)), '')
+        add('structure_' + field, value)
+    for key in RESOURCE_USAGE_KEYS:
+        add('structure_' + key, '1')
 
 
 def logo_status(data_directory, structure):

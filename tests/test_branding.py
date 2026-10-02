@@ -164,7 +164,8 @@ class BrandingTests(unittest.TestCase):
     def test_privacy_legal_person_and_representative_distinct(self):
         self.set(structure_data_controller='Association Fictive',structure_data_controller_address='Adresse fictive',structure_data_controller_representative='Camille Exemple',structure_data_controller_representative_role='Présidente')
         page=self.client.get('/gestion-des-donnees').get_data(as_text=True)
-        for value in ('Association Fictive','Adresse fictive','Camille Exemple','Présidente','privacy@example.invalid'):self.assertIn(value,page)
+        for value in ('Association Fictive','Adresse fictive','Camille Exemple','Présidente'):self.assertIn(value,page)
+        self.assertNotIn('mailto:privacy@example.invalid',page)
         self.set(structure_data_controller='',structure_data_controller_representative='')
         self.assertIn('doit être renseigné',self.client.get('/gestion-des-donnees').get_data(as_text=True))
 

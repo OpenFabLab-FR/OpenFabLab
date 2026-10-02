@@ -21,7 +21,17 @@ Un modèle privé configuré mais absent/invalide produit une erreur explicite :
 
 ## Responsable du traitement
 
-Renseigner séparément la personne morale, son adresse, son représentant et la fonction du représentant. La page Gestion des données affiche ces informations et conserve le contact existant. Une installation neuve n’impose ni organisme ni personne ; un avertissement invite à compléter ces champs.
+Renseigner séparément la personne morale, son adresse, son représentant et la fonction du représentant. La page Gestion des données affiche ces informations dans une carte distincte du DPO, dont les coordonnées sont dédiées et non déduites du contact général. Une installation neuve n’impose ni organisme ni personne ; un avertissement invite à compléter ces champs.
+
+## Ressources complémentaires et DPO (2.6.3)
+
+Les trois ressources complémentaires sont présentées dans des cartes visibles, sans section repliée. Le logo complémentaire est réservé aux documents qui prévoient deux logos ; la signature est destinée aux bilans de facturation PDF/Excel. Son aperçu est réservé à l’administrateur et n’est pas exposé comme image publique. Le badge privé remplace le modèle générique uniquement lorsque **Utiliser le modèle de badge personnalisé** est coché. Désactiver une ressource conserve son nom de fichier, ses données et sa prévisualisation administrative ; elle peut être réactivée sans téléversement. Le retrait explicite reste une action séparée avec confirmation.
+
+Les clés `structure_use_main_logo`, `structure_use_signature` et `structure_use_badge_template` sont initialisées à `1` uniquement si elles manquent, pour conserver le rendu antérieur. Une clé déjà personnalisée, y compris `0`, reste inchangée. Un badge privé activé mais invalide/absent produit toujours une erreur claire ; un badge privé volontairement désactivé utilise le modèle générique.
+
+Les champs `structure_dpo`, `structure_dpo_email` et `structure_dpo_phone` sont indépendants de l’e-mail général. Le texte DPO est entièrement libre. Les anciennes clés explicites `structure_dpo_name`, `dpo_name`, `dpo`, `data_protection_officer`, `dpo_email`, `data_protection_officer_email`, `dpo_phone` et `data_protection_officer_phone` peuvent initialiser les nouveaux champs absents. Aucun nom de personne/structure ni aucune ancienne coordonnée codée en dur n’est fourni par le logiciel public. Les réglages canoniques existants, même vides, restent prioritaires.
+
+Le profil privé conserve ces champs, les trois cases d’utilisation et les ressources configurées, même désactivées. Les profils antérieurs sans ces nouveaux champs restent importables. Le schéma SQLite reste 13 ; aucune donnée métier n’est migrée ou supprimée.
 
 ## Mise à jour 2.6.1 → 2.6.2
 

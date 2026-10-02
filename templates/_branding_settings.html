@@ -20,22 +20,56 @@
 </section>
 {% endfor %}
 </div>
-<details class="branding-extra"><summary>Ressources complémentaires des documents et badge privé</summary>
-<p>Le logo complémentaire historique et la signature restent réservés aux documents. Ils ne sont jamais repris automatiquement dans l’en-tête.</p>
-{% for kind, label in (('main', 'Logo complémentaire des documents'), ('signature', 'Signature des bilans')) %}
-<label class="form-field"><span>{{ label }} · {% if structure_settings.logo_status[kind] %}configuré{% else %}non configuré{% endif %}</span><input name="logo_{{ kind }}" type="file" accept="image/png,image/jpeg,image/webp"></label>
-{% if structure_settings['signature' if kind == 'signature' else 'main_logo'] %}<button class="admin-button secondary" type="submit" form="remove-{{ kind }}" onclick="return confirm('Retirer cette ressource des prochains documents ?')">Supprimer {{ label|lower }}</button>{% endif %}
+<section class="branding-extra" id="complementary-resources">
+<h3>Ressources complémentaires des documents et badge privé</h3>
+<p>Ces ressources sont indépendantes des logos d’en-tête. Les désactiver conserve leurs fichiers pour une réactivation ultérieure.</p>
+<input type="hidden" name="branding_resources_form" value="1">
+<div class="branding-grid resource-grid">
+{% for kind, label, description, toggle, toggle_label, configured_state in (
+ ('main', 'Logo complémentaire des documents', 'Logo supplémentaire utilisé dans les documents administratifs et les bilans qui prévoient deux logos. Il n’apparaît jamais dans l’en-tête.', 'use_main_logo', 'Utiliser le logo complémentaire des documents', 'logo personnalisé configuré'),
+ ('signature', 'Signature des bilans', 'Signature visuelle utilisée dans les bilans de facturation générés, en PDF et Excel. Elle n’apparaît jamais dans l’en-tête.', 'use_signature', 'Utiliser la signature dans les bilans', 'signature personnalisée configurée')
+) %}
+<section class="branding-card" data-resource="{{ kind }}">
+<h4>{{ label }}</h4><p>{{ description }}</p>
+<label class="checkbox-field"><input type="checkbox" name="{{ toggle }}" value="1" {% if structure_settings[toggle] %}checked{% endif %}><span>{{ toggle_label }}</span></label>
+{% if structure_settings.logo_status[kind] %}
+<div class="logo-preview"><img src="{{ url_for('admin_resource_preview', kind=kind) }}" alt="Prévisualisation : {{ label }}"></div>
+<p class="form-help">État : {{ configured_state }}{% if not structure_settings[toggle] %}, utilisation désactivée{% endif %}.</p>
+{% else %}<p class="form-help">État : {% if structure_settings['signature' if kind == 'signature' else 'main_logo'] %}fichier configuré manquant{% elif kind == 'signature' %}aucune signature personnalisée{% else %}aucun logo personnalisé{% endif %}.</p>{% endif %}
+<label class="form-field"><span>Téléverser / remplacer</span><input name="logo_{{ kind }}" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP · 2 Mo. Sans nouveau fichier, le fichier actuel est conservé.</small></label>
+{% if structure_settings['signature' if kind == 'signature' else 'main_logo'] %}<button class="admin-button secondary" type="submit" form="remove-{{ kind }}" onclick="return confirm('Retirer cette ressource des prochains documents ?')">Supprimer {% if kind == 'signature' %}la signature{% else %}le logo complémentaire{% endif %}</button>{% endif %}
+</section>
 {% endfor %}
-<h4>Modèle privé du badge</h4><p>Le modèle générique reste utilisé tant qu’aucun modèle privé n’est configuré. Un modèle privé manquant ou invalide bloque la génération, sans remplacement silencieux.</p>
-<p>État : {% if structure_settings.badge_template %}modèle privé configuré{% else %}modèle générique{% endif %}.</p>
+<section class="branding-card" data-resource="badge">
+<h4>Modèle privé du badge</h4><p>Lorsqu’il est activé, le modèle SVG privé remplace le modèle générique OpenFabLab. Le désactiver permet de revenir temporairement au badge générique sans perdre le fichier.</p>
+<label class="checkbox-field"><input type="checkbox" name="use_badge_template" value="1" {% if structure_settings.use_badge_template %}checked{% endif %}><span>Utiliser le modèle de badge personnalisé</span></label>
+<p class="form-help">État : {% if structure_settings.badge_template %}modèle privé configuré{% if not structure_settings.use_badge_template %}, utilisation désactivée ; modèle générique OpenFabLab utilisé{% endif %}{% else %}modèle générique OpenFabLab utilisé{% endif %}.</p>
+<p class="form-help">Un modèle privé activé mais manquant ou invalide bloque la génération avec une erreur explicite.</p>
 <label class="form-field"><span>Téléverser / remplacer le gabarit SVG</span><input name="badge_template" type="file" accept="image/svg+xml,.svg"><small>SVG autonome 54 × 86 mm · 2 Mo, sans contenu actif ou lien externe. Sans fichier : aucune modification.</small></label>
 <a class="header-link" href="{{ url_for('admin_badge_preview') }}" target="_blank" rel="noopener">Prévisualiser le badge avec un usager fictif</a>
 {% if structure_settings.badge_template %}<button class="admin-button secondary" type="submit" form="remove-badge" onclick="return confirm('Retirer le modèle privé et revenir au badge générique ?')">Supprimer le modèle privé</button>{% endif %}
-</details>
+</section>
+</div>
+</section>
+<section class="privacy-settings" id="privacy-settings">
 <h3>Protection des données personnelles</h3>
+<p class="form-help">Ces informations apparaissent sur la page publique Gestion des données et sont conservées dans le profil privé de structure.</p>
+<section class="branding-card">
+<h4>Responsable du traitement</h4>
 <div class="form-grid two-columns">
-{% for key, label in (('data_controller', 'Responsable du traitement (personne morale)'), ('data_controller_address', 'Adresse du responsable du traitement'), ('data_controller_representative', 'Représentant du responsable du traitement'), ('data_controller_representative_role', 'Fonction du représentant')) %}
+{% for key, label in (('data_controller', 'Responsable du traitement (personne morale)'), ('data_controller_address', 'Adresse du responsable du traitement'), ('data_controller_representative', 'Représentant'), ('data_controller_representative_role', 'Fonction du représentant')) %}
 <label class="form-field"><span>{{ label }}</span>{% if key == 'data_controller_address' %}<textarea name="{{ key }}" maxlength="500" rows="3">{{ structure_settings[key] }}</textarea>{% else %}<input name="{{ key }}" value="{{ structure_settings[key] }}" maxlength="{{ 240 if key.endswith('_role') else 180 }}">{% endif %}</label>
 {% endfor %}
 </div>
-<p class="form-help">La personne morale demeure responsable du traitement ; son représentant est indiqué séparément. Ces renseignements alimentent Gestion des données et le profil privé.</p>
+<p class="form-help">La personne morale demeure responsable du traitement ; son représentant est indiqué séparément.</p>
+</section>
+<section class="branding-card">
+<h4>DPO / délégué à la protection des données</h4>
+<label class="form-field"><span>DPO / délégué à la protection des données</span><textarea name="dpo" maxlength="500" rows="2">{{ structure_settings.dpo }}</textarea><small>Texte entièrement libre : personne, service, organisme ou formulation de votre choix. Il est affiché tel que saisi, sans découpage ni reformulation.</small></label>
+<div class="form-grid two-columns">
+<label class="form-field"><span>E-mail du DPO</span><input type="email" name="dpo_email" maxlength="254" value="{{ structure_settings.dpo_email }}" autocomplete="off"></label>
+<label class="form-field"><span>Téléphone du DPO (facultatif)</span><input type="tel" name="dpo_phone" maxlength="40" value="{{ structure_settings.dpo_phone }}" autocomplete="off"></label>
+</div>
+<p class="form-help">Ces coordonnées sont indépendantes de l’e-mail général du FabLab. Si tous les champs sont vides, la carte DPO n’est pas affichée publiquement.</p>
+</section>
+</section>

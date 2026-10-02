@@ -170,7 +170,7 @@ MODULE_LABELS = {
     "weather": "Météo",
     "discord": "Notifications Discord",
 }
-from branding import (LOGO_KINDS, VISIBILITY_KEYS, BADGE_FILENAME, validate_badge_template,
+from branding import (LOGO_KINDS, VISIBILITY_KEYS, RESOURCE_USAGE_KEYS, BADGE_FILENAME, validate_badge_template,
                       badge_source, outline_private_text, migrate_branding_settings, logo_status)
 
 STRUCTURE_FIELDS = {
@@ -192,8 +192,11 @@ STRUCTURE_FIELDS = {
     "legal_entity": ("Entité juridique", 180),
     "data_controller": ("Responsable du traitement (personne morale)", 180),
     "data_controller_address": ("Adresse du responsable du traitement", 500),
-    "data_controller_representative": ("Représentant du responsable du traitement", 180),
+    "data_controller_representative": ("Représentant", 180),
     "data_controller_representative_role": ("Fonction du représentant", 240),
+    "dpo": ("DPO / délégué à la protection des données", 500),
+    "dpo_email": ("E-mail du DPO", 254),
+    "dpo_phone": ("Téléphone du DPO", 40),
     "billing_address": ("Adresse de facturation", 500),
     "siret": ("SIRET", 14),
     "vat_number": ("Numéro de TVA", 40),
@@ -979,6 +982,12 @@ def default_application_settings(_legacy_installation=False):
         ('structure_data_controller_address', ''),
         ('structure_data_controller_representative', ''),
         ('structure_data_controller_representative_role', ''),
+        ('structure_dpo', ''),
+        ('structure_dpo_email', ''),
+        ('structure_dpo_phone', ''),
+        ('structure_use_main_logo', '1'),
+        ('structure_use_signature', '1'),
+        ('structure_use_badge_template', '1'),
         ("module_frequency", "1"),
         ("module_users", "1"),
         ("module_activities", "1"),
@@ -3770,7 +3779,7 @@ def load_structure_settings(database):
     settings['header_institution_logo'] = read_setting(database, 'structure_header_institution_logo')
     settings['network_logo'] = read_setting(database, 'structure_network_logo')
     settings['badge_template'] = read_setting(database, 'structure_badge_template')
-    for key in VISIBILITY_KEYS:
+    for key in VISIBILITY_KEYS + RESOURCE_USAGE_KEYS:
         settings[key] = read_setting(database, 'structure_' + key, '1') == '1'
     settings['logo_status'] = logo_status(Path(current_database_path()).parent, settings)
     return settings
@@ -3781,8 +3790,8 @@ def document_brand_assets(database):
     structure = load_structure_settings(database)
     branding = Path(current_database_path()).parent / "branding"
     institution = branding / "institution.png" if structure["institution_logo"] == "institution.png" else None
-    main = branding / "main.png" if structure["main_logo"] == "main.png" else None
-    signature = branding / "signature.png" if structure["signature"] == "signature.png" else None
+    main = branding / "main.png" if structure["main_logo"] == "main.png" and structure['use_main_logo'] else None
+    signature = branding / "signature.png" if structure["signature"] == "signature.png" and structure['use_signature'] else None
     return structure, institution, main, signature
 
 
@@ -7018,8 +7027,9 @@ def register_routes(application):
         if not pin_csrf_valid():
             abort(400)
         database = get_database()
-        values = {key: request.form.get(key, read_setting(database, 'structure_' + key)).strip()
+        values = {key: request.form.get(key, read_setting(database, 'structure_' + key))
                   for key in STRUCTURE_FIELDS}
+        values = {key: value if key == 'dpo' else value.strip() for key, value in values.items()}
         errors = []
         for key, (label, maximum) in STRUCTURE_FIELDS.items():
             if not values[key] and key in {"name", "short_name", "timezone"}:
@@ -7028,6 +7038,8 @@ def register_routes(application):
                 errors.append(f"{label} est trop long.")
         if values["email"] and not EMAIL_PATTERN.fullmatch(values["email"]):
             errors.append("L'adresse e-mail n'est pas valide.")
+        if values['dpo_email'] and not EMAIL_PATTERN.fullmatch(values['dpo_email']):
+            errors.append("L'adresse e-mail du DPO n'est pas valide.")
         if values["website"] and not re.fullmatch(r"https?://[^\s/]+[^\s]*", values["website"]):
             errors.append("Le site web doit commencer par http:// ou https://.")
         if values["privacy_policy_url"]:
@@ -7124,6 +7136,9 @@ def register_routes(application):
             if request.form.get('branding_visibility_form') == '1':
                 for key in VISIBILITY_KEYS:
                     write_setting(database, 'structure_' + key, '1' if request.form.get(key) == '1' else '0')
+            if request.form.get('branding_resources_form') == '1':
+                for key in RESOURCE_USAGE_KEYS:
+                    write_setting(database, 'structure_' + key, '1' if request.form.get(key) == '1' else '0')
             for key, value in values.items():
                 write_setting(database, f"structure_{key}", value)
             for key, enabled in selected.items():
@@ -7162,6 +7177,22 @@ def register_routes(application):
         except (OSError, ValueError, RuntimeError) as error:
             return Response('Badge non généré : ' + str(error), status=422, mimetype='text/plain')
         return Response(raw, mimetype='image/png', headers={'Cache-Control': 'private, no-store'})
+
+    @application.get('/admin/reglages/structure/ressource/<kind>.png')
+    def admin_resource_preview(kind):
+        """Preview document resources without exposing a signature publicly."""
+        if kind not in {'main', 'signature'}:
+            abort(404)
+        key = 'structure_signature' if kind == 'signature' else 'structure_main_logo'
+        filename = read_setting(get_database(), key)
+        if filename != kind + '.png':
+            abort(404)
+        path = Path(application.config['DATABASE']).parent / 'branding' / filename
+        if not path.is_file() or path.is_symlink():
+            abort(404)
+        response = send_file(path, mimetype='image/png', max_age=0)
+        response.headers['Cache-Control'] = 'private, no-store'
+        return response
 
     @application.get("/admin/profil/exporter")
     def admin_export_profile():

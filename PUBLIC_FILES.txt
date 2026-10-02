@@ -99,6 +99,7 @@ templates/users.html
 tests/__init__.py
 tests/check_v26_archives.py
 tests/participants_fixture.py
+tests/privacy_resources_fixture.py
 tests/schema12_fixture.py
 tests/slots_artifact_fixture.py
 tests/test_animation_slots.py
@@ -106,6 +107,8 @@ tests/test_app.py
 tests/test_branding.py
 tests/test_naming.py
 tests/test_participants_ui.js
+tests/test_privacy_resources.py
+tests/test_privacy_resources_ui.js
 tests/test_publication.py
 tests/test_slots_ui.js
 tests/test_walkin_prefill.js

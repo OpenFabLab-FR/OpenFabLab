@@ -11,6 +11,12 @@ Les modules peuvent être désactivés sans convertir les données historiques. 
 Les valeurs déjà enregistrées en base sont conservées lors d'une mise à jour ; les valeurs neutres ne remplacent que les clés absentes. Une remise à zéro volontaire revient aux valeurs génériques et ne restaure pas les anciennes constantes d'une structure.
 
 Variables d'installation utiles : `OPENFABLAB_DATABASE`, `OPENFABLAB_SECRET_KEY_FILE`, `OPENFABLAB_URL_PREFIX`, `OPENFABLAB_ENABLE_SCHEDULER`, `OPENFABLAB_BACKUP_ROOT`, `OPENFABLAB_BACKUP_HOST_ROOT` (Compose). Préférer les fichiers privés et l'interface pour les secrets/PIN ; les anciens alias `COMPTEUR_*` sont conservés uniquement pour compatibilité. Ne les utiliser ni dans un exemple neuf ni dans un rapport public.
-# Identité et ressources privées 2.6.2
+# Identité et ressources privées
 
 Les logos de structure, d’en-tête institutionnel, de réseau et des documents sont indépendants. Les champs du responsable du traitement distinguent personne morale et représentant. Le badge générique peut être remplacé par un gabarit privé persistant. Voir [Branding](branding.md) pour les emplacements, les contrôles de sécurité, le profil privé et la conservation lors des mises à jour.
+
+## Protection des données personnelles (2.6.3)
+
+Renseigner la personne morale responsable du traitement, son adresse, le **Représentant** et sa fonction. Renseigner séparément **DPO / délégué à la protection des données**, **E-mail du DPO** et, facultativement, **Téléphone du DPO**. Le premier champ est libre : un service, un organisme, une personne ou toute formulation souhaitée, conservée sans découpage ni reformulation et échappée à l’affichage. L’e-mail général ne sert jamais de repli. Si ces trois champs sont vides, la carte DPO est masquée. Ces renseignements sont publics une fois configurés ; ne pas y saisir de secret.
+
+La page Gestion des données distingue le responsable du traitement et le DPO. Elle précise qu’aucune télémétrie n’est transmise automatiquement à `https://openfablab.fr`. Les échanges facultatifs météo/Discord/WordPress restent ceux configurés pour le fonctionnement de l’installation.

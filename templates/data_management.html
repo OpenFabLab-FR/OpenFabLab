@@ -22,13 +22,17 @@
         <h2>Responsable du traitement</h2>
         {% if structure.data_controller %}
         <p><strong>{{ structure.data_controller }}</strong>{% if structure.data_controller_address %}<br><span class="multiline-text">{{ structure.data_controller_address }}</span>{% endif %}</p>
-        {% if structure.data_controller_representative %}<p>Représentant du responsable du traitement :<br>{{ structure.data_controller_representative }}{% if structure.data_controller_representative_role %}, {{ structure.data_controller_representative_role }}{% endif %}.</p>{% endif %}
         {% else %}<p>Le responsable du traitement doit être renseigné dans Réglages → Identité de la structure avant toute ouverture au public.</p>{% endif %}
+        {% if structure.data_controller_representative or structure.data_controller_representative_role %}<p>Représentant :<br>{{ structure.data_controller_representative }}{% if structure.data_controller_representative and structure.data_controller_representative_role %}, {% endif %}{{ structure.data_controller_representative_role }}</p>{% endif %}
     </section>
+    {% if structure.dpo or structure.dpo_email or structure.dpo_phone %}
     <section class="admin-section">
-        <h2>Contact pour les données personnelles</h2>
-        <p>{% if structure.email %}<a href="mailto:{{ structure.email }}">{{ structure.email }}</a>{% else %}À compléter dans Réglages → Structure et modules avant ouverture au public.{% endif %}</p>
+        <h2>Délégué à la protection des données</h2>
+        {% if structure.dpo %}<p class="multiline-text"><strong>{{ structure.dpo }}</strong></p>{% endif %}
+        {% if structure.dpo_email %}<p><a href="mailto:{{ structure.dpo_email }}">{{ structure.dpo_email }}</a></p>{% endif %}
+        {% if structure.dpo_phone %}<p>{{ structure.dpo_phone }}</p>{% endif %}
     </section>
+    {% endif %}
     <section class="admin-section">
         <h2>Données et finalités</h2>
         <p>Certaines informations sont nécessaires à la création d’un compte {{ structure.name }} afin d’assurer la gestion du service, les inscriptions aux activités, la possibilité de vous contacter en cas de besoin et la production de statistiques anonymisées permettant d’évaluer la fréquentation et les publics du FabLab. Les données collectées sont limitées aux besoins de son fonctionnement et soumises à des durées de conservation définies.</p>
@@ -40,6 +44,8 @@
         <p>Les données principales sont stockées dans une base SQLite sur le serveur de {{ structure.name }}. Elles ne sont pas confiées à un service publicitaire ni à un service de QR code externe.</p>
         <p>L’accès aux informations nominatives, aux exports et aux opérations de sauvegarde ou de restauration est protégé par l’administration. Il est réservé au Fabmanager et, le cas échéant, aux agents expressément habilités, uniquement pour la gestion du lieu, le suivi de la fréquentation et la réalisation des bilans.</p>
         <p>La météo affichée à l'accueil est obtenue sans transmettre de donnée personnelle. Source : <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>.</p>
+        <p>OpenFabLab peut, avec l'accord des structures concernées, présenter sur son site Internet des initiatives ou retours d'expérience de FabLabs utilisant le logiciel. Aucune télémétrie n'est transmise automatiquement par OpenFabLab vers ce site.</p>
+        <p><a href="https://openfablab.fr" target="_blank" rel="noopener noreferrer">https://openfablab.fr</a></p>
     </section>
     <section class="admin-section">
         <h2>Durée de conservation</h2>
@@ -54,7 +60,7 @@
     <section class="admin-section">
         <h2>Vos droits</h2>
         <p>Vous pouvez demander l'accès à vos données, leur rectification ou, lorsque le cadre applicable le permet, leur effacement ou la limitation de leur traitement.</p>
-        <p>Adressez votre demande à {{ structure.name }} via le contact indiqué ci-dessus. Une réservation à vérifier peut être rattachée manuellement à votre compte après contrôle, sans modifier automatiquement votre fiche usager.</p>
+        <p>Adressez votre demande {% if structure.dpo_email or structure.dpo_phone %}au délégué à la protection des données indiqué ci-dessus{% else %}à {{ structure.name }}, qui vous précisera le contact compétent{% endif %}. Une réservation à vérifier peut être rattachée manuellement à votre compte après contrôle, sans modifier automatiquement votre fiche usager.</p>
     </section>
 </div>
 {% endblock %}

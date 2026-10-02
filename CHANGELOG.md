@@ -1,5 +1,15 @@
 # Historique public
 
+## 2.6.3 — DPO et ressources complémentaires
+
+- DPO libre, e-mail et téléphone facultatif dédiés, indépendants du contact général ; carte publique conditionnelle distincte du responsable du traitement.
+- Intitulé « Représentant » simplifié, ponctuation adaptée aux renseignements disponibles.
+- Trois cartes directement visibles : logo complémentaire des documents, signature des bilans et badge privé, avec aperçu, état, remplacement et retrait explicite.
+- Désactivation/réactivation des trois ressources sans effacer leurs fichiers ; comportement existant conservé après mise à jour.
+- Profil privé enrichi, reprise additive des anciennes clés DPO disponibles et schéma SQLite toujours 13.
+- Mention explicite de l’absence de télémétrie vers le site du projet ; aucun mécanisme de collecte ajouté.
+- Plugin Reservations 2.6.1 inchangé ; aucune modification des données métier, PIN ou secrets.
+
 ## 2.6.2 — identité et ressources privées persistantes
 
 - Badge personnalisé SVG persistant, rendu SVG/PNG commun, erreurs explicites si le modèle configuré manque ; badge générique conservé pour les nouvelles installations.

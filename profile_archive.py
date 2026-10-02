@@ -24,6 +24,7 @@ STRUCTURE_KEYS = {
     "regie_contact", "signer_name", "rental_terms",
     "main_logo", "institution_logo", "signature", "wordmark_logo", "header_institution_logo", "network_logo",
     "show_wordmark_logo", "show_header_institution_logo", "show_network_logo", "badge_template",
+    "use_main_logo", "use_signature", "use_badge_template", "dpo", "dpo_email", "dpo_phone",
     "data_controller", "data_controller_address", "data_controller_representative", "data_controller_representative_role",
 }
 MODULE_KEYS = {
@@ -150,11 +151,11 @@ def parse_profile(raw):
             for key, value in settings.items():
                 if not isinstance(key, str) or not allowed_setting(key) or not isinstance(value, str) or len(value) > 8000:
                     raise ValueError("Le profil contient un réglage non autorisé.")
-                if (key.startswith("module_") or key.startswith('structure_show_')) and value not in {"0", "1"}:
+                if (key.startswith("module_") or key.startswith(('structure_show_', 'structure_use_'))) and value not in {"0", "1"}:
                     raise ValueError("État de module invalide.")
                 if key == 'structure_badge_template' and value not in {'', 'badge-template.svg'}:
                     raise ValueError('Nom du modèle de badge invalide.')
-                if key.endswith('_logo') and key.startswith('structure_') and not key.startswith('structure_show_'):
+                if key.endswith('_logo') and key.startswith('structure_') and not key.startswith(('structure_show_', 'structure_use_')):
                     kind = key.removeprefix('structure_').removesuffix('_logo')
                     if value not in {'', kind + '.png'}:
                         raise ValueError('Nom de logo invalide.')
@@ -166,6 +167,10 @@ def parse_profile(raw):
                     raise ValueError("État de liste d’attente invalide.")
                 if key == "structure_color" and value and not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
                     raise ValueError("Couleur de structure invalide.")
+                if key == 'structure_dpo_email' and value and not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', value):
+                    raise ValueError('E-mail du DPO invalide.')
+                if key in {'structure_dpo', 'structure_dpo_email', 'structure_dpo_phone'} and len(value) > {'structure_dpo':500,'structure_dpo_email':254,'structure_dpo_phone':40}[key]:
+                    raise ValueError('Coordonnées du DPO trop longues.')
                 if key in {"structure_latitude", "structure_longitude"} and value:
                     try:
                         number = Decimal(value)

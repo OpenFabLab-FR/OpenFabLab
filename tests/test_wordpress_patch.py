@@ -14,8 +14,8 @@ class WordPressPatchTests(unittest.TestCase):
     def test_application_public_version_is_canonical(self):
         from openfablab import __version__
         import build_openfablab
-        self.assertEqual(__version__,'2.6.2')
-        self.assertEqual(build_openfablab.OUTPUT.name,'OpenFabLab-2.6.2.zip')
+        self.assertEqual(__version__,'2.6.3')
+        self.assertEqual(build_openfablab.OUTPUT.name,'OpenFabLab-2.6.3.zip')
 
     def test_protocol_advertises_slots_and_keeps_both_environments(self):
         api=(builder.PLUGIN/'includes/class-openfablab-api.php').read_text()

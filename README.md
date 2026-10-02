@@ -6,7 +6,7 @@ OpenFabLab est un logiciel libre de gestion de FabLab créé par **William Auman
 
 Site du projet : [openfablab.fr](https://openfablab.fr).
 
-Cette édition est **OpenFabLab 2.6.2**, SQLite **schéma 13**, avec le plugin séparé **OpenFabLab Reservations 2.6.1**. Elle sépare les logos d’en-tête et de documents, permet un badge privé persistant et complète l’identité du responsable du traitement. Une installation neuve reste générique. Ce dépôt ne contient ni données d’une structure ni historique privé de déploiement. Voir [Personnalisation et badges](docs/branding.md).
+Cette édition est **OpenFabLab 2.6.3**, SQLite **schéma 13**, avec le plugin séparé **OpenFabLab Reservations 2.6.1**. Elle ajoute un contact DPO indépendant, clarifie les ressources des documents et permet de désactiver temporairement logos, signature et badge privé sans perdre leurs fichiers. Une installation neuve reste générique. Ce dépôt ne contient ni données d’une structure ni historique privé de déploiement. Voir [Personnalisation et badges](docs/branding.md).
 
 ## Fonctionnalités
 
@@ -49,7 +49,7 @@ docker compose build application
 docker compose up -d application
 ```
 
-Ouvrir `http://localhost:5080/stat/` ; santé : `/stat/sante`. Le projet/conteneur s'appelle `openfablab`, l'image `openfablab:v2.6.2`. Données : `./data:/data`, base `/data/openfablab.db`. Sauvegardes : `./backups:/nas-backups`, sous-dossier `OpenFabLab`. `.env.example` documente uniquement la racine de sauvegarde facultative. Protéger l'accès réseau et configurer HTTPS avant toute utilisation réelle ; aucun reverse proxy propre à une structure n'est livré.
+Ouvrir `http://localhost:5080/stat/` ; santé : `/stat/sante`. Le projet/conteneur s'appelle `openfablab`, l'image `openfablab:v2.6.3`. Données : `./data:/data`, base `/data/openfablab.db`. Sauvegardes : `./backups:/nas-backups`, sous-dossier `OpenFabLab`. `.env.example` documente uniquement la racine de sauvegarde facultative. Protéger l'accès réseau et configurer HTTPS avant toute utilisation réelle ; aucun reverse proxy propre à une structure n'est livré.
 
 ## Première initialisation
 

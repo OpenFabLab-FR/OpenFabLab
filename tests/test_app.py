@@ -152,7 +152,7 @@ class OpenFabLabTestCase(unittest.TestCase):
 
         data_page = self.client.get("/gestion-des-donnees").get_data(as_text=True)
         self.assertIn("Association Exemple", data_page)
-        self.assertIn("privacy@example.invalid", data_page)
+        self.assertNotIn("mailto:privacy@example.invalid", data_page)
         self.assertIn("serveur de Atelier Exemple", data_page)
         self.assertIn("Une solution suivie et évolutive", data_page)
         self.assertIn("utilisé en situation réelle", data_page)
@@ -4608,7 +4608,8 @@ class OpenFabLabTestCase(unittest.TestCase):
             self.assertNotIn("ville fictive-agglomeration.jpg", page)
             self.assertEqual(client.get("/manifest.webmanifest").json["short_name"], "FabLab")
             privacy = client.get("/gestion-des-donnees").get_data(as_text=True)
-            self.assertIn("Contact pour les données personnelles", privacy)
+            self.assertNotIn("Contact pour les données personnelles", privacy)
+            self.assertNotIn("Délégué à la protection des données", privacy)
             self.assertIn("responsable de traitement", privacy)
             with sqlite3.connect(path) as database:
                 self.assertEqual(database.execute("SELECT COUNT(*) FROM rental_catalog").fetchone()[0], 0)

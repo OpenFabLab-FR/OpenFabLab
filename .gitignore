@@ -27,6 +27,7 @@
 data/
 branding/
 private-assets/
+legacy-dpo.json
 OpenFabLab-Deployment/
 OpenFabLab-Public-Review/
 UPDATE_NAS_*.sh

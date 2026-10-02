@@ -31,6 +31,8 @@ Attendus : version compatible, `ok`, aucune ligne FK. Comparer également les vo
 Tester d'abord dans un environnement isolé, avec réseau/scheduler désactivés et sans synchronisation vers le WordPress réel. L'interface Admin propose une restauration SQLite explicite avec copie de sécurité. Restaurer séparément les fichiers privés nécessaires pour une reprise complète. Ne jamais restaurer un schéma plus récent dans une ancienne version : utiliser la sauvegarde cohérente correspondant à la version choisie.
 
 Les anciens noms de sauvegardes/base restent reconnus pour migration ; ne pas renommer ou nettoyer une ancienne archive pour la rendre artificiellement « nouvelle ».
-# Ressources privées 2.6.2
+# Ressources privées
+
+Depuis 2.6.3, le profil privé inclut le contact DPO libre, son e-mail/téléphone et les cases d’utilisation du logo complémentaire, de la signature et du badge privé. Les ressources configurées mais désactivées sont également exportées/importées. Une sauvegarde complète du dossier `data` conserve leurs fichiers, leurs paramètres et les secrets séparés. Les profils précédents restent importables sans convertir ni effacer leurs données métier.
 
 Conserver également `data/branding/` : logos d’en-tête, de réseau, de documents, signature et éventuel `badge-template.svg`. Une sauvegarde SQLite ne suffit pas à restaurer ces fichiers. Le profil privé exporte l’identité et ces ressources, mais pas les secrets ni les données métier ; il doit rester confidentiel. Voir [Branding](branding.md).

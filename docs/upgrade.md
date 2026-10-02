@@ -1,5 +1,13 @@
 # Mettre à jour OpenFabLab
 
+## 2.6.2 → 2.6.3
+
+SQLite reste au **schéma 13**. Seuls six réglages manquants sont ajoutés : DPO libre, e-mail/téléphone DPO, utilisation du logo complémentaire, de la signature et du badge privé. Les trois cases sont activées par défaut pour conserver l’apparence actuelle. Les réglages existants, même vides ou désactivés, restent prioritaires ; aucun fichier privé n’est effacé. Des anciennes clés DPO explicites peuvent être reprises, jamais l’e-mail général ni des valeurs institutionnelles prédéfinies.
+
+Sauvegarder à froid le dossier de données complet et la configuration, tester l’initialisation normale sur une copie isolée puis préserver ce même `data` pour la nouvelle image. Vérifier santé, SQLite, contenu métier, ressources, réglages DPO et profil privé avant remise en service. Ne rejouer aucune migration historique ou migration PIN. Le plugin Reservations reste 2.6.1.
+
+Lorsqu’un paquet de mise à jour automatisé est préparé pour l’installation, privilégier une seule commande avec contrôles préalables, sauvegarde, essai isolé, bascule, vérifications et rollback prudent. Une migration plus complexe peut nécessiter des étapes supplémentaires. Ne jamais restaurer automatiquement une sauvegarde si cela risque de perdre de nouvelles écritures métier.
+
 ## 2.6.0 → première édition publique 2.6.1
 
 SQLite reste au **schéma 13**. Les changements sont la préparation Open Source : valeurs initiales neutres, Libre Franklin, ressources génériques, documentation et tests. Pas de changement fonctionnel métier intentionnel. Les réglages déjà enregistrés, les usagers, dossiers, inscriptions et fichiers persistants doivent être conservés.

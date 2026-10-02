@@ -13,6 +13,13 @@ __pycache__
 Ressources
 Saves
 branding
+private-assets
+legacy-dpo.json
+UPDATE_NAS_*.sh
+OpenFabLab-Deployment
+OpenFabLab-Public-Review
+badge-*.png
+badge-*.svg
 wordpress
 dist
 *.zip
