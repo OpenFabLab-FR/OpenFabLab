@@ -29,6 +29,8 @@ from PIL import Image, UnidentifiedImageError
 import resvg_py
 import segno
 from openfablab import __version__
+from evolution_schema import (backup_before_evolution, migrate as migrate_evolution,
+                              categories, default_category, category_label as dynamic_category_label)
 
 from flask import (
     Flask,
@@ -163,6 +165,8 @@ MODULE_LABELS = {
     "frequency": "Fréquentation",
     "users": "Usagers",
     "activities": "Activités",
+    "resources": "Ressources",
+    "authorizations": "Formations et habilitations",
     "public_reservations": "Réservations publiques",
     "booking_slots": "Créneaux réservables",
     "rentals": "Locations de machines",
@@ -457,7 +461,11 @@ def create_app(test_config=None):
                          else resolve_database_path())
     application.config.from_mapping(
         DATABASE=database_location,
-        SECRET_KEY=load_secret_key(),
+        SECRET_KEY=(test_config or {}).get('SECRET_KEY') or load_secret_key(),
+        PRIVATE_SECRET_PATH=(str(Path(database_location).with_name('.openfablab_flask_secret'))
+                             if (test_config or {}).get('SECRET_KEY') else
+                             (os.environ.get('OPENFABLAB_SECRET_KEY_FILE') or os.environ.get('COMPTEUR_SECRET_KEY_FILE')
+                              or str(Path(database_location).with_name('.openfablab_flask_secret')))),
         ADMIN_PIN=os.environ.get("OPENFABLAB_ADMIN_PIN") or os.environ.get("COMPTEUR_ADMIN_PIN"),
         APP_VERSION=f"V{__version__}",
         MAX_CONTENT_LENGTH=100 * 1024 * 1024,
@@ -481,13 +489,26 @@ def create_app(test_config=None):
             Path(application.config["DATABASE"]).with_name(".discord_webhook_url")
         )
 
+    from runtime_policy import install_network_guard, is_test_instance, register_storage
+    install_network_guard()
+    if is_test_instance(application.config['DATABASE']):
+        application.config.update(EXTERNAL_ACTIONS=False, AUTO_CLOSURE_WORKER=False, WEATHER_ENABLED=False)
+    if os.environ.get('OPENFABLAB_EXTERNAL_ACTIONS') == '0':
+        application.config.update(EXTERNAL_ACTIONS=False, AUTO_CLOSURE_WORKER=False, WEATHER_ENABLED=False)
+    if Path(application.config['DATABASE']).with_name('.openfablab-restore-in-progress.json').exists():
+        raise RuntimeError('Restauration interrompue : récupération privée hors ligne requise.')
+    register_storage(application)
+
     application.teardown_appcontext(close_database)
     register_template_helpers(application)
     register_admin_protection(application)
     register_routes(application)
+    from evolution_routes import register as register_evolution
+    register_evolution(application, globals())
     register_error_handlers(application)
 
-    with application.app_context():
+    from runtime_policy import storage_guard
+    with storage_guard(application.config['DATABASE']), application.app_context():
         initialize_database()
         initialize_pin_credentials(application)
 
@@ -568,7 +589,9 @@ def close_database(_exception=None):
 def initialize_database():
     """Crée les tables et ajoute les comptes de démonstration une seule fois."""
     database = get_database()
+    backup_before_evolution(database, current_database_path())
     legacy_installation = database.execute("PRAGMA user_version").fetchone()[0] > 0
+    existing_users_table = database.execute("SELECT 1 FROM sqlite_master WHERE name='users'").fetchone() is not None
     database.executescript(
         """
         CREATE TABLE IF NOT EXISTS users (
@@ -801,6 +824,8 @@ def initialize_database():
     migrate_reservations_schema(database)
     migrate_catalog_schema(database)
     migrate_animation_slots_schema(database)
+    migrate_evolution(database, new_installation=not legacy_installation and not existing_users_table
+                      and not (current_app.config.get('TESTING') and current_app.config.get('SEED_DEMO_USERS', True)))
     create_statistics_triggers(database)
 
     # Existing installation settings win; only missing keys receive neutral defaults.
@@ -991,6 +1016,10 @@ def default_application_settings(_legacy_installation=False):
         ("module_frequency", "1"),
         ("module_users", "1"),
         ("module_activities", "1"),
+        ("module_resources", "1"),
+        ("module_authorizations", "1"),
+        ("calendar_display_start", "09:00"),
+        ("calendar_display_end", "19:00"),
         ("module_public_reservations", "0"),
         ("module_booking_slots", "1"),
         ("module_rentals", "1"),
@@ -1952,7 +1981,7 @@ def next_available_public_id(database):
     raise RuntimeError("Aucun identifiant public à quatre chiffres disponible")
 
 
-def validate_user_form(form, database, current_user_id=None):
+def validate_user_form(form, database, current_user_id=None, public_enrollment=False):
     """Nettoie et valide les données saisies dans une fiche usager."""
     data = {
         "public_id": form.get("public_id", "").strip(),
@@ -2010,7 +2039,7 @@ def validate_user_form(form, database, current_user_id=None):
     if not data["gender"]:
         data["gender"] = None
 
-    if current_user_id is None:
+    if current_user_id is None and not public_enrollment:
         for key, label in (("birth_year", "L'année de naissance"),
                            ("city", "La commune"),
                            ("nationality", "La nationalité"),
@@ -2019,7 +2048,9 @@ def validate_user_form(form, database, current_user_id=None):
             if not data[key]:
                 errors.append(f"{label} est obligatoire pour un nouvel usager.")
 
-    if data["category"] not in ALLOWED_CATEGORIES:
+    category_row = database.execute('SELECT active FROM user_categories WHERE category_key=?', (data['category'],)).fetchone()
+    existing_category = database.execute('SELECT category FROM users WHERE id=?', (current_user_id,)).fetchone() if current_user_id else None
+    if not category_row or (not category_row['active'] and (not existing_category or existing_category[0]!=data['category'])):
         errors.append("La catégorie choisie n'est pas valide.")
 
     for field_name, label, maximum_length in (
@@ -2234,9 +2265,12 @@ def session_overlaps(database, user_id, check_in, check_out=None, exclude_id=Non
     ).fetchone() is not None
 
 
-def load_day_attendance(database, local_day):
+def load_day_attendance(database, local_day, start_time=None, end_time=None):
     """Construit les indicateurs et la chronologie d'une journée précise."""
     day_start, day_end = local_day_utc_bounds(local_day)
+    if start_time and end_time:
+        day_start = datetime.combine(local_day, datetime.strptime(start_time, '%H:%M').time(), PARIS_TIMEZONE).astimezone(timezone.utc)
+        day_end = datetime.combine(local_day, datetime.strptime(end_time, '%H:%M').time(), PARIS_TIMEZONE).astimezone(timezone.utc)
     start_iso = day_start.isoformat(timespec="seconds")
     end_iso = day_end.isoformat(timespec="seconds")
     session_rows = database.execute(
@@ -3289,11 +3323,12 @@ def load_statistics(database, selected_year):
             }
         )
 
-    categories = [user["category"] for user in visited_users.values()]
+    visited_categories = [user["category"] for user in visited_users.values()]
+    category_labels = {row['category_key']:row['name'] for row in categories(database, True)}
     category_rows = distribution_rows(
-        categories,
-        labels=CATEGORY_LABELS,
-        order=list(CATEGORY_LABELS),
+        visited_categories,
+        labels=category_labels,
+        order=list(category_labels),
     )
     category_session_counts = Counter(
         item["row"]["category"] for item in selected_sessions
@@ -3908,7 +3943,8 @@ def queue_invalid_id_alert(database, settings, sequence_start, now):
 
     def worker():
         try:
-            post_discord_message(webhook, message, discord["bot_name"])
+            with application.app_context():
+                post_discord_message(webhook, message, discord["bot_name"])
         except (OSError, urllib.error.URLError, ValueError):
             application.logger.warning("Alerte de sécurité Discord indisponible")
 
@@ -4178,6 +4214,8 @@ def render_discord_message(template, **values):
 
 
 def post_discord_message(webhook_url, message, username="Compteur"):
+    from runtime_policy import require_external
+    require_external()
     """Envoie une notification courte sans divulguer l'URL en cas d'échec."""
     payload = json.dumps(
         {
@@ -4829,6 +4867,7 @@ def synchronize_billing_service(database, record):
         "UPDATE billing_records SET service_id = ? WHERE id = ?",
         (cursor.lastrowid, record["id"]),
     )
+    database.execute('UPDATE resource_bookings SET service_id=? WHERE billing_record_id=?', (cursor.lastrowid,record['id']))
     database.execute(
         """
         UPDATE fablab_services SET start_time = ?, end_time = ?,
@@ -5309,6 +5348,9 @@ def run_automatic_backup(database, application, now=None, force=False):
 
 def start_automatic_closure_worker(application):
     """Lance les contrôles périodiques dans l'unique processus Gunicorn."""
+    from runtime_policy import external_allowed, storage_guard
+    if not external_allowed(application.config['DATABASE']):
+        return
     if getattr(application, "_automatic_closure_worker_started", False):
         return
     application._automatic_closure_worker_started = True
@@ -5316,7 +5358,9 @@ def start_automatic_closure_worker(application):
     def worker():
         while True:
             try:
-                with application.app_context():
+                with storage_guard(application.config['DATABASE']), application.app_context():
+                    if not external_allowed(application.config['DATABASE']):
+                        return
                     database = get_database()
                     run_automatic_closure(database)
                     run_data_retention(database)
@@ -5389,6 +5433,9 @@ def notify_sync_events(database, result):
 
 def start_local_reservation_sync_worker(application):
     """Synchroniser Normal et Test en local, sans les autres tâches de maintenance."""
+    from runtime_policy import external_allowed, storage_guard
+    if not external_allowed(application.config['DATABASE']):
+        return
     if getattr(application, "_local_reservation_sync_started", False):
         return
     application._local_reservation_sync_started = True
@@ -5396,7 +5443,9 @@ def start_local_reservation_sync_worker(application):
     def worker():
         while True:
             try:
-                with application.app_context():
+                with storage_guard(application.config['DATABASE']), application.app_context():
+                    if not external_allowed(application.config['DATABASE']):
+                        return
                     database = get_database()
                     if load_modules(database)["public_reservations"]:
                         site_url = read_setting(database, "reservation_wordpress_url")
@@ -5523,7 +5572,11 @@ def generate_badge_svg(user, structure=None):
             template,
             count=1,
         )
-    replace_text("category", CATEGORY_LABELS.get(user["category"], "Usager"))
+    # Standalone rendering (CLI/tests) does not require a Flask context.
+    from flask import has_app_context
+    label = (dynamic_category_label(get_database(), user['category']) if has_app_context()
+             else structure.get('category_label') or CATEGORY_LABELS.get(user['category'], user['category']))
+    replace_text("category", label)
     template, count = re.subn(
         r'<g\s+id="qr-code">.*?</g>', qr_group, template, count=1, flags=re.DOTALL
     )
@@ -5762,7 +5815,7 @@ def register_template_helpers(application):
 
     @application.template_filter("category_label")
     def category_label(value):
-        return CATEGORY_LABELS.get(value, "Usager")
+        return dynamic_category_label(get_database(), value)
 
     @application.template_filter("method_label")
     def method_label_filter(value):
@@ -5814,8 +5867,12 @@ def register_admin_protection(application):
         "admin_moderator_themes",
         "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
         "admin_animation_booking_action", "admin_animation_booking_walkin",
+        'evolution.calendar', 'evolution.resource_directory', 'evolution.resource_bookings',
+        'evolution.authorizations', 'evolution.resend_welcome',
     }
     module_endpoints = {
+        'resources': {'evolution.resource_directory', 'evolution.resource_bookings'},
+        'authorizations': {'evolution.authorizations'},
         "frequency": {
             "admin", "admin_frequency_day", "admin_statistics", "admin_statistics_legacy",
             "admin_frequency_exports", "admin_add_historical_session",
@@ -5827,6 +5884,7 @@ def register_admin_protection(application):
         "users": {
             "admin_users_directory", "admin_add_user", "admin_edit_user", "admin_delete_user",
             "admin_user_qr", "admin_user_badge", "admin_communes_api",
+            'evolution.resend_welcome',
         },
         "activities": {
             "admin_services", "admin_services_legacy", "admin_service_form",
@@ -5834,6 +5892,7 @@ def register_admin_protection(application):
             "admin_delete_service", "admin_service_calendar", "admin_service_calendar_legacy",
             "admin_export_animations", "admin_export_paid_services",
             "admin_activity_report_form", "admin_activity_report_document",
+            'evolution.calendar', 'evolution.resource_directory', 'evolution.resource_bookings', 'evolution.authorizations',
         },
         "public_reservations": {
             "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
@@ -5856,9 +5915,10 @@ def register_admin_protection(application):
         if role is None and session.get("admin_authenticated"):
             role = "admin"
         database = get_database()
-        return {"admin_access_role": role,
+        from runtime_policy import is_test_instance
+        return {"admin_access_role": role, 'test_instance': is_test_instance(application.config['DATABASE']),
                 "structure": load_structure_settings(database),
-                "modules": load_modules(database)}
+                "modules": load_modules(database), 'user_categories': categories(database, True)}
 
     @application.before_request
     def require_admin_pin():
@@ -6221,6 +6281,9 @@ def register_routes(application):
         return hmac.compare_digest(
             request.form.get("csrf_token", ""), session.get("pin_csrf", "")
         ) and bool(session.get("pin_csrf"))
+
+    from private_backup import register as register_private_backup
+    register_private_backup(application, globals(), pin_csrf_valid)
 
     @application.route("/admin/initialisation", methods=["GET", "POST"])
     def admin_pin_setup():
@@ -6609,7 +6672,7 @@ def register_routes(application):
         all_users = database.execute(
             f"""
             SELECT users.id, users.public_id, users.first_name, users.last_name,
-                   users.active, users.category, users.created_at,
+                   users.active, users.category, users.created_at, users.created_source, users.created_by_role,
                    COUNT(sessions.id) AS visit_count,
                    COALESCE(SUM(
                        CASE WHEN sessions.check_out IS NOT NULL
@@ -6840,6 +6903,9 @@ def register_routes(application):
             keep_screen_awake=wake_lock["enabled"], wake_lock=wake_lock,
             openlab_schedule=load_openlab_schedule(database),
             show_attendance_decimals=(read_setting(database, "openlab_attendance_show_decimals", "0") == "1"),
+            calendar_display_start=read_setting(database, 'calendar_display_start', '09:00'),
+            calendar_display_end=read_setting(database, 'calendar_display_end', '19:00'),
+            smtp=__import__('welcome_mail').load_public_config(current_database_path()),
             home_theme=load_home_theme(database), home_themes=HOME_THEMES,
             lock_home_scroll=home_scroll_lock_enabled(database),
             retention=load_retention_settings(database),
@@ -6870,6 +6936,9 @@ def register_routes(application):
                 "AS known_bookings, "
                 "(SELECT COUNT(*) FROM reservation_outbox o WHERE o.environment = e.environment "
                 "AND o.sent_at IS NULL) AS pending_actions "
+                ", (SELECT COUNT(*) FROM animation_reservation_config c WHERE c.environment=e.environment) AS known_animations "
+                ", (SELECT value FROM app_settings WHERE key='reservation_protocol_' || e.environment) AS protocol "
+                ", (SELECT value FROM app_settings WHERE key='reservation_plugin_' || e.environment) AS plugin "
                 "FROM (SELECT 'test' AS environment UNION ALL SELECT 'production') e "
                 "LEFT JOIN reservation_sync_state s ON s.environment = e.environment "
                 "ORDER BY e.environment"
@@ -7027,6 +7096,7 @@ def register_routes(application):
         if not pin_csrf_valid():
             abort(400)
         database = get_database()
+        database.execute('BEGIN IMMEDIATE')
         values = {key: request.form.get(key, read_setting(database, 'structure_' + key))
                   for key in STRUCTURE_FIELDS}
         values = {key: value if key == 'dpo' else value.strip() for key, value in values.items()}
@@ -7071,8 +7141,14 @@ def register_routes(application):
             ZoneInfo(values["timezone"])
         except (KeyError, ValueError):
             errors.append("Le fuseau horaire n'est pas reconnu.")
-        selected = {key: request.form.get(f"module_{key}") == "1"
-                    for key in MODULE_LABELS}
+        privacy_only = request.form.get('privacy_only') == '1'
+        selected = load_modules(database) if privacy_only else {
+            key: request.form.get(f"module_{key}") == "1" for key in MODULE_LABELS}
+        if not selected['authorizations']:
+            dependent = database.execute('SELECT name FROM resources WHERE active=1 AND required_authorization IS NOT NULL').fetchall()
+            if dependent:
+                errors.append('Impossible de désactiver Formations et habilitations : ressources actives dépendantes : '
+                              + ', '.join(row['name'] for row in dependent) + '. Retirez explicitement leurs exigences ou désactivez ces ressources.')
         if selected["public_reservations"] and not selected["activities"]:
             errors.append("Les réservations publiques nécessitent le module Activités.")
         if (selected["booking_slots"] or selected["rentals"]) and not selected["billing"]:
@@ -7150,7 +7226,7 @@ def register_routes(application):
                     enqueue_animation(database, row["service_id"])
             database.commit()
             flash("Structure et modules enregistrés sans supprimer de données.", "success")
-        return redirect(url_for("admin_settings_structure"))
+        return redirect(url_for("admin_settings_data" if privacy_only else "admin_settings_structure"))
 
     @application.post('/admin/reglages/structure/supprimer/<kind>')
     def admin_remove_branding(kind):
@@ -7225,7 +7301,9 @@ def register_routes(application):
             raw = (branding / BADGE_FILENAME).read_bytes()
             validate_badge_template(raw)
             assets['assets/' + BADGE_FILENAME] = raw
-        profile = build_profile(settings, machines, assets, tariffs)
+        registry = [{k:r[k] for k in ('category_key','name','color','active','sort_order','is_default')} for r in categories(database,True)]
+        types = [{k:r[k] for k in ('type_key','name','color','active','sort_order')} for r in database.execute('SELECT * FROM resource_types')]
+        profile = build_profile(settings, machines, assets, tariffs, registry, types)
         name = compact_filename_part(read_setting(database, "structure_short_name", "OpenFabLab"), "OpenFabLab")[:60]
         return Response(profile, mimetype="application/zip", headers={
             "Content-Disposition": f'attachment; filename="{name}.openfablab-profile.zip"',
@@ -7271,8 +7349,19 @@ def register_routes(application):
                 database = get_database()
                 timestamp = utc_now_iso()
                 with database:
+                    if profile['categories']:
+                        database.execute('UPDATE user_categories SET is_default=0')
+                        for entry in profile['categories']:
+                            database.execute('INSERT INTO user_categories VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(category_key) DO UPDATE SET name=excluded.name,normalized_name=excluded.normalized_name,color=excluded.color,active=excluded.active,sort_order=excluded.sort_order,is_default=excluded.is_default,updated_at=excluded.updated_at',
+                                (entry['category_key'],entry['name'],entry['name'].strip().casefold(),entry['color'],entry['active'],entry['sort_order'],entry['is_default'],timestamp,timestamp))
+                    for entry in profile['resource_types']:
+                        database.execute('INSERT INTO resource_types VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(type_key) DO UPDATE SET name=excluded.name,normalized_name=excluded.normalized_name,color=excluded.color,active=excluded.active,sort_order=excluded.sort_order,updated_at=excluded.updated_at',
+                            (entry['type_key'],entry['name'],entry['name'].strip().casefold(),entry['color'],entry['active'],entry['sort_order'],timestamp,timestamp))
                     for key, value in profile["settings"].items():
                         write_setting(database, key, value)
+                    if not load_modules(database)['authorizations'] and database.execute(
+                            'SELECT 1 FROM resources WHERE active=1 AND required_authorization IS NOT NULL LIMIT 1').fetchone():
+                        raise ValueError('Ce profil désactiverait une habilitation requise par une ressource active ; import refusé.')
                     for machine in profile["machines"]:
                         database.execute(
                             "INSERT INTO rental_catalog (machine_key, name, monthly_cents, deposit_cents, active, archived, sort_order, created_at, updated_at) "
@@ -7355,6 +7444,10 @@ def register_routes(application):
             home_theme = request.form.get("home_theme", load_home_theme(database)).strip()
             if home_theme not in HOME_THEMES:
                 errors.append("Le thème d’accueil sélectionné n’est pas disponible.")
+            calendar_start = request.form.get('calendar_display_start', read_setting(database, 'calendar_display_start', '09:00'))
+            calendar_end = request.form.get('calendar_display_end', read_setting(database, 'calendar_display_end', '19:00'))
+            if not TIME_PATTERN.fullmatch(calendar_start) or not TIME_PATTERN.fullmatch(calendar_end) or calendar_end <= calendar_start:
+                errors.append('La fin de la plage affichée du calendrier doit suivre son début (HH:MM).')
 
         if settings_view in {"borne", "legacy"}:
             security_values = {}
@@ -7437,6 +7530,8 @@ def register_routes(application):
 
         if settings_view in {"affichage", "legacy"}:
             write_setting(database, "home_theme", home_theme)
+            write_setting(database, 'calendar_display_start', calendar_start)
+            write_setting(database, 'calendar_display_end', calendar_end)
             write_setting(database, "openlab_attendance_show_decimals", "1" if request.form.get("openlab_attendance_show_decimals") == "1" else "0")
         if settings_view in {"borne", "legacy"}:
             for setting_key, value in security_values.items():
@@ -8209,7 +8304,7 @@ def register_routes(application):
                              row["first_name"], row["last_name"], row["birth_year"] or "",
                              int(service["service_date"][:4]) - row["birth_year"] if row["birth_year"] else "",
                              "Usager" if row["user_id"] else "Visiteur",
-                             CATEGORY_LABELS.get(row["category"], "") if row["category"] else "",
+                             dynamic_category_label(database,row['category']) if row['category'] else '',
                              row["link_status"], "Oui" if presence is True else "Non" if presence is False else "Non renseignée",
                              row["email"], row["phone"]]
                             + ([slot_label(row, read_setting(database, "structure_timezone", "Europe/Paris"))] if _config and _config["booking_mode"] == "slots" else []))
@@ -8229,7 +8324,7 @@ def register_routes(application):
         bookings = [dict(row, slot_label=slot_label(row, read_setting(database, "structure_timezone", "Europe/Paris"))) for row in bookings]
         structure, institution, main, _signature = document_brand_assets(database)
         content = generate_animation_bookings_pdf(service, config, bookings, structure,
-                                                  CATEGORY_LABELS, main, institution)
+                                                  {r['category_key']:r['name'] for r in categories(database,True)}, main, institution)
         filename = f"{service['service_date'].replace('-', '')}_Inscriptions_{safe_filename_part(service['title'])}.pdf"
         return Response(content, mimetype="application/pdf", headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
@@ -8631,12 +8726,25 @@ def register_routes(application):
         database = get_database()
         record = load_billing_record(database, record_id) if record_id else None
         modules = load_modules(database)
+        resource_key = request.values.get('resource_booking','') if not record else ''
+        resource_context = None
+        if resource_key:
+            from evolution_routes import require_csrf
+            resource_context = database.execute('SELECT b.*,r.name,u.first_name,u.last_name,u.email,u.phone FROM resource_bookings b JOIN resources r USING(resource_uuid) LEFT JOIN users u ON u.id=b.user_id WHERE booking_uuid=?',(resource_key,)).fetchone()
+            if not resource_context:
+                abort(404)
+            if resource_context['billing_record_id']:
+                if request.method=='POST':abort(409,'Cette réservation possède déjà un dossier.')
+                return redirect(url_for('admin_billing_detail',record_id=resource_context['billing_record_id']))
+            if resource_context['status'] in {'refused','cancelled'}:
+                abort(409,'Réservation refusée ou annulée : aucun nouveau devis.')
+            if request.method=='POST':require_csrf()
         if not record:
             requested_type = (request.args.get("type") if request.method == "GET"
                               else request.form.get("billing_type")) or "reservation"
             if requested_type not in {"reservation", "rental"}:
                 abort(404)
-            if requested_type == "reservation" and not modules["booking_slots"]:
+            if requested_type == "reservation" and not modules["booking_slots"] and not resource_context:
                 abort(404)
             if requested_type == "rental" and not modules["rentals"]:
                 abort(404)
@@ -8657,6 +8765,14 @@ def register_routes(application):
                 "rental_months": 1,
             }
             values["notes"] = values.get("notes") or ""
+            if resource_context:
+                begin=parse_timestamp(resource_context['starts_at']).astimezone(PARIS_TIMEZONE)
+                end=parse_timestamp(resource_context['ends_at']).astimezone(PARIS_TIMEZONE)
+                values.update(resource_booking=resource_key,title=resource_context['name'],activity_date=begin.date().isoformat(),
+                              activity_start_time=begin.strftime('%H:%M'),activity_end_time=end.strftime('%H:%M'),
+                              client_contact=' '.join(filter(None,(resource_context['first_name'],resource_context['last_name']))),
+                              email=resource_context['email'] or '',phone=resource_context['phone'] or '',
+                              description='Réservation de ressource · tarif convenu : '+format(resource_context['amount_cents']/100,'.2f')+' €')
             values["quote_signed_date"] = (
                 timestamp_to_local_date(record.get("quote_signed_at"))
                 if record else ""
@@ -8681,6 +8797,11 @@ def register_routes(application):
         values, errors = parse_billing_form(
             request.form, database, existing_record=record
         )
+        if resource_context:
+            # Reuse the existing dossier and client registry; snapshot price is
+            # not recomputed from an unrelated generic booking tariff.
+            values.update(amount_cents=resource_context['amount_cents'],rate_unit_cents=resource_context['amount_cents'],
+                          rate_quantity=1,travel_quantity=0,consumable_quantity=0)
         quote_date, quote_date_error = parse_iso_date(
             request.form.get("quote_date"), "La date du devis"
         )
@@ -8759,6 +8880,8 @@ def register_routes(application):
 
         timestamp = utc_now_iso()
         try:
+            if resource_context:
+                database.execute('BEGIN IMMEDIATE')
             client_id = upsert_billing_client(
                 database,
                 values,
@@ -8900,9 +9023,17 @@ def register_routes(application):
                 if updated_record.get("service_id"):
                     synchronize_billing_service(database, updated_record)
                 message = f"Le dossier {quote_number} a été mis à jour."
+            if resource_context:
+                from resource_booking import link_billing
+                link_billing(database,resource_key,record_id,'admin')
             database.commit()
             flash(message, "success")
             return redirect(url_for("admin_billing_detail", record_id=record_id))
+        except ValueError:
+            database.rollback()
+            if resource_context:
+                abort(409, 'Cette réservation a changé pendant la création du dossier. Rechargez sa fiche.')
+            raise
         except sqlite3.IntegrityError:
             database.rollback()
             application.logger.exception("Numérotation de facturation déjà utilisée")
@@ -9552,7 +9683,9 @@ def register_routes(application):
             flash("Les notifications ont été configurées.", "success")
             return redirect(url_for("admin_notifications"))
         return render_template(
-            "notifications.html", discord=load_discord_settings(database)
+            "notifications.html", discord=load_discord_settings(database),
+            creation_discord={key:read_setting(database,'discord_new_user_'+key,'0')=='1'
+                             for key in ('enabled','first_name','last_name','last_initial','age','category','source','time')}
         )
 
     @application.post("/admin/notifications/test")
@@ -9633,7 +9766,7 @@ def register_routes(application):
                 user["public_id"],
                 user["last_name"],
                 user["first_name"],
-                CATEGORY_LABELS.get(user["category"], user["category"]),
+                dynamic_category_label(get_database(),user['category']),
                 "Actif" if user["active"] else "Inactif",
                 user["birth_year"] or "",
                 GENDER_LABELS.get(user["gender"], "Inconnu"),
@@ -9703,7 +9836,7 @@ def register_routes(application):
                     presence["public_id"],
                     presence["last_name"],
                     presence["first_name"],
-                    CATEGORY_LABELS.get(presence["category"], presence["category"]),
+                    dynamic_category_label(get_database(),presence['category']),
                     arrival.strftime("%d/%m/%Y %H:%M"),
                     departure.strftime("%d/%m/%Y %H:%M")
                     if departure
@@ -9934,7 +10067,7 @@ def register_routes(application):
                 "email": "",
                 "phone_country_code": "+33",
                 "phone": "",
-                "category": "user",
+                "category": default_category(database),
                 "active": 1,
             }
             return render_template(
@@ -9965,7 +10098,7 @@ def register_routes(application):
             )
 
         try:
-            database.execute(
+            cursor = database.execute(
                 """
                 INSERT INTO users (
                     public_id, first_name, last_name, active, category,
@@ -9997,7 +10130,11 @@ def register_routes(application):
                     utc_now_iso(),
                 ),
             )
+            source = session.get('access_role') or 'admin'
+            database.execute('UPDATE users SET created_source=?,created_by_role=? WHERE id=?', (source,source,cursor.lastrowid))
             database.commit()
+            from evolution_routes import after_creation
+            after_creation(__import__('types').SimpleNamespace(**globals()),database,cursor.lastrowid,request.form.get('send_welcome')=='1')
             flash(
                 f"L'usager {user_data['first_name']} {user_data['last_name']} a été créé avec l'identifiant {user_data['public_id']}.",
                 "success",
@@ -10017,9 +10154,7 @@ def register_routes(application):
         database = get_database()
         user = database.execute(
             """
-            SELECT id, public_id, first_name, last_name, active, category,
-                   birth_year, gender, city, postal_code, nationality,
-                   email, phone_country_code, phone
+            SELECT *
             FROM users WHERE id = ?
             """,
             (user_id,),

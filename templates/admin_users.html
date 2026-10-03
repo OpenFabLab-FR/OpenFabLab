@@ -77,9 +77,9 @@
                         </td>
                         <td data-label="Prénom">{{ user.first_name }}</td>
                         <td data-label="Nom">{{ user.last_name|upper }}</td>
-                        <td data-label="Catégorie"><span class="category-badge category-{{ user.category }}">{{ user.category|category_label }}</span></td>
+                        <td data-label="Catégorie"><span class="category-badge category-{{ user.category }}" style="border-left:4px solid {{ category_colors.get(user.category,'#16849c') }}">{{ user.category|category_label }}</span></td>
                         <td data-label="Statut"><span class="status-badge {% if user.active %}active{% else %}inactive{% endif %}">{% if user.active %}Actif{% else %}Inactif{% endif %}</span></td>
-                        <td data-label="Création">{{ user.created_at|paris_datetime }}</td>
+                        <td data-label="Création">{{ user.created_at|paris_datetime }}<small class="muted">{{ creation_sources.get(user.created_source,'Historique / inconnue') }}</small></td>
                         <td data-label="Dernier passage">{{ user.last_check_in|last_visit }}</td>
                         <td data-label="Passages">{{ user.visit_count }}</td>
                         <td data-label="Durée cumulée">{{ user.total_duration_seconds|duration_seconds }}</td>

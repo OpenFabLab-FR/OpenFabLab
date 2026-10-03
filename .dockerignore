@@ -4,6 +4,9 @@ node_modules
 .env.*
 !.env.example
 __pycache__
+review
+.checks
+private-migration-validation
 *.pyc
 *.db
 *.db-*
@@ -24,6 +27,10 @@ wordpress
 dist
 *.zip
 .openfablab_*
+.openfablab-*
+.secret_key*
+restore-backups
+private-complete-backup-validation
 .discord_webhook_url
 .compteur_*
 tests

@@ -5,6 +5,7 @@ final class OpenFabLab_API {
     public static function register() {
         $private = [
             '/sync/capabilities' => 'capabilities',
+            '/sync/snapshot' => 'snapshot',
             '/sync/animations' => 'sync_animations',
             '/sync/directory' => 'sync_directory',
             '/sync/events' => 'sync_events',
@@ -35,7 +36,13 @@ final class OpenFabLab_API {
     }
 
     public static function capabilities(WP_REST_Request $request) {
-        return ['ok' => true, 'animation_slots_v1' => true];
+        return ['ok' => true, 'animation_slots_v1' => true, 'catalog_snapshot_v1' => true,
+                'custom_categories_v1' => true, 'protocol_version' => 2,
+                'plugin_version' => defined('OPENFABLAB_RES_VERSION') ? OPENFABLAB_RES_VERSION : '2.7.0'];
+    }
+
+    public static function snapshot(WP_REST_Request $request) {
+        return OpenFabLab_Reconciliation::snapshot($request);
     }
 
     public static function private_permission(WP_REST_Request $request) {
@@ -66,6 +73,10 @@ final class OpenFabLab_API {
             return new WP_Error('openfablab_replay', 'Requête déjà traitée.', ['status' => 409]);
         }
         update_option('openfablab_res_last_sync', gmdate('d/m/Y H:i') . ' UTC', false);
+        $body = self::body($request);
+        if (in_array($body['environment'] ?? '', ['test','production'], true)) {
+            update_option('openfablab_res_attempt_' . $body['environment'], gmdate('c'), false);
+        }
         return true;
     }
 
@@ -97,8 +108,7 @@ final class OpenFabLab_API {
             $wpdb->delete($table, ['environment' => $environment]);
             foreach ($users as $user) {
                 if (!is_array($user) || !preg_match('/^[0-9]{4}$/D', (string) ($user['public_id'] ?? ''))
-                    || !in_array((string) ($user['category'] ?? ''),
-                        ['user','volunteer','voluntary','fabmanager','intern','staff'], true)) {
+                    || !preg_match('/^[a-z0-9_-]{1,40}$/D', (string) ($user['category'] ?? ''))) {
                     throw new RuntimeException('Annuaire invalide.');
                 }
                 foreach (['email_hmac', 'phone_hmac'] as $field) {
@@ -137,7 +147,7 @@ final class OpenFabLab_API {
         }
     }
 
-    public static function sync_animations(WP_REST_Request $request) {
+    public static function sync_animations(WP_REST_Request $request, $in_transaction = false) {
         global $wpdb;
         $body = self::body($request);
         $environment = $body['environment'] ?? '';
@@ -147,8 +157,9 @@ final class OpenFabLab_API {
         }
         $table = OpenFabLab_Database::table('animations');
         if (($body['command'] ?? '') === 'delete') {
-            $wpdb->update($table, ['published' => 0, 'updated_at' => gmdate('Y-m-d H:i:s')],
+            $ok = $wpdb->update($table, ['published' => 0, 'updated_at' => gmdate('Y-m-d H:i:s')],
                           ['environment' => $environment, 'service_id' => $service_id]);
+            if ($ok === false) { return new WP_Error('delete_failed', 'Dépublication refusée.', ['status'=>500]); }
             return ['ok' => true];
         }
         $animation = $body['animation'] ?? null;
@@ -192,7 +203,7 @@ final class OpenFabLab_API {
         } catch (Throwable $error) {
             return new WP_Error('bad_animation', 'Date ou paramètre invalide.', ['status' => 400]);
         }
-        $wpdb->query('START TRANSACTION');
+        if (!$in_transaction) { $wpdb->query('START TRANSACTION'); }
         try {
             $existing = $wpdb->get_row($wpdb->prepare(
                 "SELECT * FROM $table WHERE environment = %s AND service_id = %d FOR UPDATE", $environment, $service_id
@@ -200,9 +211,9 @@ final class OpenFabLab_API {
             OpenFabLab_Slots::protect_update($existing, $data);
             $ok = $existing ? $wpdb->update($table, $data, ['id' => $existing['id']]) : $wpdb->insert($table, $data);
             if ($ok === false) { throw new RuntimeException('Publication impossible.'); }
-            if ($wpdb->query('COMMIT') === false) { throw new RuntimeException('Publication impossible.'); }
+            if (!$in_transaction && $wpdb->query('COMMIT') === false) { throw new RuntimeException('Publication impossible.'); }
         } catch (Throwable $error) {
-            $wpdb->query('ROLLBACK');
+            if (!$in_transaction) { $wpdb->query('ROLLBACK'); }
             return new WP_Error('save_failed', $error->getMessage(), ['status' => 409]);
         }
         if (array_key_exists('privacy_policy_url', $animation)) {
@@ -255,7 +266,16 @@ final class OpenFabLab_API {
                 'updated_at' => str_replace(' ', 'T', $row['updated_at']) . '+00:00',
             ]];
         }
-        $response = new WP_REST_Response(['events' => $result, 'cursor' => (string) $cursor]);
+        if (!empty($wpdb->last_error)) {
+            update_option('openfablab_res_error_' . $environment, 'Lecture du flux refusée.', false);
+            return new WP_Error('events_failed', 'Flux indisponible.', ['status'=>500]);
+        }
+        $has_more = count($rows) === $limit;
+        if (!$has_more) {
+            update_option('openfablab_res_success_' . $environment, gmdate('c'), false);
+            update_option('openfablab_res_error_' . $environment, '', false);
+        }
+        $response = new WP_REST_Response(['ok'=>true, 'events' => $result, 'cursor' => (string) $cursor, 'has_more'=>$has_more]);
         $response->header('Cache-Control', 'private, no-store');
         return $response;
     }

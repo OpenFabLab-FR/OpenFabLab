@@ -21,6 +21,7 @@
       data-consumable-unit="{{ billing_tariffs.consumable }}"
       data-rental-contract="{{ billing_tariffs.rental_contract }}"
       data-rental-delivery="{{ billing_tariffs.rental_delivery }}">
+    {% if values.resource_booking %}<input type="hidden" name="resource_booking" value="{{ values.resource_booking }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><p>Réservation de ressource liée. Le tarif convenu est conservé ; complétez ou sélectionnez le client dans l’annuaire existant.</p>{% endif %}
     <section class="form-section">
         <div class="form-section-heading"><p class="eyebrow">Type de dossier</p><h2>Prestation facturée</h2></div>
         {% if record %}

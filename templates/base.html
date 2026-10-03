@@ -39,6 +39,7 @@
             {% endif %}
         </div>
     </header>
+    {% if test_instance and admin_access_role == 'admin' %}<p class="form-help" role="status">Instance issue d’une copie de test · connexions et intégrations externes désactivées.</p>{% endif %}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -66,6 +67,7 @@
         <span class="footer-group footer-links">
             <a href="{{ url_for('data_management') }}">Gestion des données</a>
             <a href="{{ url_for('admin') }}">Administration</a>
+            {% if request.endpoint == 'index' and self_enrollment_enabled and modules.users %}<a href="{{ url_for('evolution.enroll') }}">Créer un compte</a>{% endif %}
         </span>
     </footer>
 </body>

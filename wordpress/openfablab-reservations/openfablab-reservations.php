@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OpenFabLab Reservations
  * Description: Réservations publiques d'animations synchronisées avec OpenFabLab.
- * Version: 2.6.1
+ * Version: 2.7.0
  * Requires PHP: 8.1
  * License: MIT
  * Text Domain: openfablab-reservations
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('OPENFABLAB_RES_VERSION', '2.6.1');
+define('OPENFABLAB_RES_VERSION', '2.7.0');
 // Schema revision also upgrades an already installed 2.5.0 corrective build.
 define('OPENFABLAB_RES_SCHEMA_VERSION', '2.6.0');
 define('OPENFABLAB_RES_FILE', __FILE__);
@@ -24,6 +24,8 @@ require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-emails.php';
 require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-bookings.php';
 require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-api.php';
 require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-test-maintenance.php';
+require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-reconciliation.php';
+add_action('admin_post_openfablab_catalog_maintenance', ['OpenFabLab_Reconciliation', 'admin_action']);
 
 register_activation_hook(__FILE__, function () {
     OpenFabLab_Database::install();
@@ -129,7 +131,8 @@ function openfablab_res_admin_page() {
         . ' · HTTPS : ' . (is_ssl() ? 'actif' : 'à vérifier')
         . ' · REST : ' . (rest_url('openfablab/v1/public/animations') ? 'disponible' : 'à vérifier')
         . ' · wp_mail : ' . (function_exists('wp_mail') ? 'disponible (délivrabilité à tester)' : 'indisponible') . '</p>';
-    echo '<p>Dernière synchronisation : ' . esc_html(get_option('openfablab_res_last_sync', 'Aucune')) . '</p>';
+    echo '<p>Dernier contact signé : ' . esc_html(get_option('openfablab_res_last_sync', 'Aucun')) . ' (ne garantit pas la réussite du catalogue).</p>';
+    OpenFabLab_Reconciliation::render();
     if ($tables_ok) {
         foreach (['production' => 'Normal', 'test' => 'Test'] as $environment => $label) {
             $animations = (int) $wpdb->get_var($wpdb->prepare(

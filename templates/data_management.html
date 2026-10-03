@@ -42,6 +42,8 @@
     <section class="admin-section">
         <h2>Stockage et accès</h2>
         <p>Les données principales sont stockées dans une base SQLite sur le serveur de {{ structure.name }}. Elles ne sont pas confiées à un service publicitaire ni à un service de QR code externe.</p>
+        <p>Si l’envoi de bienvenue est configuré et demandé, l’adresse e-mail, le message, l’identifiant et le QR Code sont transmis au fournisseur SMTP choisi par la structure. Ce service reste facultatif et indépendant de WordPress.</p>
+        {% if modules.discord %}<p>Lorsque les notifications Discord sont activées, les seuls renseignements sélectionnés par l’équipe peuvent être transmis aux destinataires de son espace Discord. La notification facultative de création de compte n’envoie jamais les coordonnées, l’identifiant ou le QR Code.</p>{% endif %}
         <p>L’accès aux informations nominatives, aux exports et aux opérations de sauvegarde ou de restauration est protégé par l’administration. Il est réservé au Fabmanager et, le cas échéant, aux agents expressément habilités, uniquement pour la gestion du lieu, le suivi de la fréquentation et la réalisation des bilans.</p>
         <p>La météo affichée à l'accueil est obtenue sans transmettre de donnée personnelle. Source : <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>.</p>
         <p>OpenFabLab peut, avec l'accord des structures concernées, présenter sur son site Internet des initiatives ou retours d'expérience de FabLabs utilisant le logiciel. Aucune télémétrie n'est transmise automatiquement par OpenFabLab vers ce site.</p>

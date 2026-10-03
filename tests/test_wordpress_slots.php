@@ -6,7 +6,7 @@ class WP_Error {
     public function __construct(public $code,public $message,public $data=[]) {}
     public function get_error_message(){return $this->message;}
 }
-class WP_REST_Request {public function __construct(private $data){} public function get_body(){return json_encode($this->data);}}
+class WP_REST_Request {public function __construct(private $data){} public function set_body($body){$this->data=json_decode($body,true);} public function get_body(){return json_encode($this->data);}}
 class WP_REST_Response {public function __construct(public $data){} public function header(...$args){}}
 function is_wp_error($v){return $v instanceof WP_Error;}
 function get_option($n,$d=''){return $GLOBALS['email_test_options'][$n]??($n==='openfablab_res_sync_secret'?'fictional-only-slot-fixture':$d);}
@@ -47,6 +47,7 @@ class SlotDatabase {
     public function get_results($sql,$mode=null){$q=$this->execute($sql);return$q?$q->fetchAll(PDO::FETCH_ASSOC):[];}
     public function get_var($sql){$q=$this->execute($sql);return$q?$q->fetchColumn():null;}
     public function query($sql){$q=$this->execute($sql);return$q===false?false:$q->rowCount();}
+    public function delete($table,$where){$filters=[];foreach($where as$key=>$value)$filters[]=$key.'='.$this->pdo->quote((string)$value);return$this->query('DELETE FROM '.$table.' WHERE '.implode(' AND ',$filters));}
     public function insert($table,$row,$format=[]){$q=$this->execute('INSERT INTO '.$table.' ('.implode(',',array_keys($row)).') VALUES ('.implode(',',array_map(fn($v)=>$v===null?'NULL':$this->pdo->quote((string)$v),array_values($row))).')');return$q===false?false:$q->rowCount();}
     public function update($table,$row,$where){$set=[];$filters=[];foreach($row as$key=>$v)$set[]=$key.'='.($v===null?'NULL':$this->pdo->quote((string)$v));foreach($where as$key=>$v)$filters[]=$key.($v===null?' IS NULL':'='.$this->pdo->quote((string)$v));$q=$this->execute('UPDATE '.$table.' SET '.implode(',',$set).' WHERE '.implode(' AND ',$filters));return$q===false?false:$q->rowCount();}
 }

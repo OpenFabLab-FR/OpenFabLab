@@ -248,10 +248,14 @@ $signature=hash_hmac('sha256', "$timestamp\n$nonce\nPOST\n/openfablab/v1/sync/di
 $signed=new WP_REST_Request($body,['x-openfablab-timestamp'=>$timestamp,'x-openfablab-nonce'=>$nonce,'x-openfablab-signature'=>$signature],'/openfablab/v1/sync/directory');
 check(OpenFabLab_API::private_permission($signed)===true, 'valid signed directory request accepted');
 check(is_wp_error(OpenFabLab_API::private_permission($signed)), 'nonce replay refused');
+$wrong_nonce=str_repeat('b',32);
+$wrong_signature=hash_hmac('sha256', "$timestamp\n$wrong_nonce\nPOST\n/openfablab/v1/sync/directory\n".hash('sha256',json_encode($body)), 'fictional-incorrect-secret');
+$wrong_signed=new WP_REST_Request($body,['x-openfablab-timestamp'=>$timestamp,'x-openfablab-nonce'=>$wrong_nonce,'x-openfablab-signature'=>$wrong_signature],'/openfablab/v1/sync/directory');
+check(is_wp_error(OpenFabLab_API::private_permission($wrong_signed)), 'incorrect secret refused without changing synchronization settings');
 $html = openfablab_res_shortcode(['environment'=>'test']);
 check(!str_contains($html . $inline_script, 'Élise') && !str_contains($html . $inline_script, 'elise@example.invalid'), 'initial public HTML has no directory PII');
 check(!str_contains($html, 'openfablab-test-maintenance'), 'maintenance not public');
-check(OPENFABLAB_RES_VERSION==='2.6.1'&&OPENFABLAB_RES_SCHEMA_VERSION==='2.6.0', 'email patch without extra schema change');
+check(OPENFABLAB_RES_VERSION==='2.7.0'&&OPENFABLAB_RES_SCHEMA_VERSION==='2.6.0', 'reconciliation without extra schema change');
 $_SERVER['REQUEST_METHOD']='GET'; ob_start(); openfablab_res_admin_page(); $admin=ob_get_clean();
 foreach (['Normal :','Test :','Shortcodes des pages de réservation', 'Réservations normales', 'Réservations de test', 'data-openfablab-copy'] as $text) {
     check(str_contains($admin, $text), 'admin displays ' . $text);

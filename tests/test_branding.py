@@ -84,7 +84,7 @@ class BrandingTests(unittest.TestCase):
             self.assertEqual(load_structure_settings(db)['header_institution_logo'],'')
             self.assertFalse(load_structure_settings(db)['show_header_institution_logo'])
             self.assertEqual(before,[tuple(r) for r in db.execute('SELECT * FROM users')])
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],13)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],14)
 
     def test_custom_badge_not_selected_by_structure_name(self):
         self.set(structure_name='Atelier totalement fictif')

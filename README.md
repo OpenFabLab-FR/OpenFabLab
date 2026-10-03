@@ -1,12 +1,16 @@
 <p align="center"><img src="static/brand/OpenFabLab-logo-horizontal.svg" width="420" alt="OpenFabLab"></p>
 
-# OpenFabLab
+# OpenFabLab 2.7.0
+
+**Version stable · SQLite schéma 14 · OpenFabLab Reservations 2.7.0**
 
 OpenFabLab est un logiciel libre de gestion de FabLab créé par **William Aumand**, distribué sous licence MIT. Il réunit la fréquentation du lieu, les usagers et les activités dans une application web installée sur le serveur de votre structure.
 
 Site du projet : [openfablab.fr](https://openfablab.fr).
 
-Cette édition est **OpenFabLab 2.6.3**, SQLite **schéma 13**, avec le plugin séparé **OpenFabLab Reservations 2.6.1**. Elle ajoute un contact DPO indépendant, clarifie les ressources des documents et permet de désactiver temporairement logos, signature et badge privé sans perdre leurs fichiers. Une installation neuve reste générique. Ce dépôt ne contient ni données d’une structure ni historique privé de déploiement. Voir [Personnalisation et badges](docs/branding.md).
+OpenFabLab 2.7.0 est une version stable, testée localement puis validée sur une installation réelle de FabLab. Elle enrichit le quotidien du Fabmanager : calendrier centralisé, ressources réservables, formations et habilitations, catégories d’usagers configurables, inscription autonome facultative et sauvegardes privées complètes. Une installation neuve reste générique. Voir [les nouveautés et leur fonctionnement](docs/evolution-2.7.md) et [la personnalisation](docs/branding.md).
+
+La navigation Réglages comporte sept onglets courts et des formulaires compacts. Le calendrier Semaine/Mois propose une plage visible configurable, 09:00–19:00 par défaut, sans double défilement vertical. Les modules Ressources et Formations restent facultatifs. Une installation neuve propose Usager, Bénévole et Manager ; une migration conserve les catégories historiques, y compris celles sans usager actuel. Le lien facultatif **Créer un compte** reste discret dans le pied de la borne.
 
 ## Fonctionnalités
 
@@ -16,8 +20,14 @@ Cette édition est **OpenFabLab 2.6.3**, SQLite **schéma 13**, avec le plugin s
 - Réservation pour toute une animation ou par créneaux internes, capacité et attente par créneau.
 - Locations, catalogue de machines, clients et dossiers de facturation.
 - Identité visuelle configurable, modules activables, météo et notifications Discord facultatives.
-- Sauvegarde/restauration SQLite et profil privé de configuration.
-- Plugin WordPress : réservation publique, Normal/Test séparés, préremplissage contrôlé, six modèles d'e-mails texte et maintenance Test réservée à l'administration.
+- Sauvegarde/restauration SQLite, [sauvegarde complète privée et copie de test isolée](docs/private-backup.md), profil privé de configuration.
+- Catégories d’usagers configurables : nom, couleur, ordre, active/masquée et catégorie active par défaut ; provenance et historique de création des fiches, indépendants des droits.
+- Inscription autonome facultative sur la borne, sans session privilégiée ; e-mail de bienvenue avec identifiant et QR Code via SMTP natif facultatif.
+- Notification Discord de création d’usager désactivée par défaut, limitée aux champs choisis.
+- Calendrier Semaine/Mois : OpenLab et fréquentation, activités, réservations, locations et formations.
+- Machines et autres ressources réservables, catégories de ressources, gratuité ou tarif, confirmation automatique ou validation par l’équipe et lien avec la facturation existante.
+- Formations et habilitations permanentes ou expirables, révocation et historique ; une ressource peut exiger une habilitation valide, avec dérogation Administrateur motivée et auditée.
+- Plugin WordPress : réservation publique, Normal/Test séparés, préremplissage contrôlé, six modèles d'e-mails texte, réconciliation du catalogue, reprise des synchronisations manquées et maintenance réservée à l'administration.
 
 Les captures ne sont pas distribuées : aucun écran comportant des données personnelles n'est nécessaire à l'installation.
 
@@ -49,7 +59,7 @@ docker compose build application
 docker compose up -d application
 ```
 
-Ouvrir `http://localhost:5080/stat/` ; santé : `/stat/sante`. Le projet/conteneur s'appelle `openfablab`, l'image `openfablab:v2.6.3`. Données : `./data:/data`, base `/data/openfablab.db`. Sauvegardes : `./backups:/nas-backups`, sous-dossier `OpenFabLab`. `.env.example` documente uniquement la racine de sauvegarde facultative. Protéger l'accès réseau et configurer HTTPS avant toute utilisation réelle ; aucun reverse proxy propre à une structure n'est livré.
+Ouvrir `http://localhost:5080/stat/` ; santé : `/stat/sante`. Le projet/conteneur s'appelle `openfablab`, l'image `openfablab:v2.7.0`. Données : `./data:/data`, base `/data/openfablab.db`. Sauvegardes : `./backups:/nas-backups`, sous-dossier `OpenFabLab`. `.env.example` documente uniquement la racine de sauvegarde facultative. Protéger l'accès réseau et configurer HTTPS avant toute utilisation réelle ; aucun reverse proxy propre à une structure n'est livré.
 
 ## Première initialisation
 
@@ -67,7 +77,7 @@ Fréquentation, usagers, activités, réservations publiques, créneaux réserva
 
 ## Réservations WordPress et créneaux
 
-Installer le ZIP autonome Reservations 2.6.1 dans WordPress, puis configurer l'URL HTTPS racine du site et le même secret privé des deux côtés. N'autoriser qu'une instance OpenFabLab à synchroniser avec ce WordPress.
+Installer le ZIP autonome Reservations 2.7.0 dans WordPress, après un essai sur une installation séparée, puis configurer l'URL HTTPS racine du site et le même secret privé des deux côtés. N'autoriser qu'une instance OpenFabLab à synchroniser avec ce WordPress.
 
 ```text
 [openfablab_reservations environment="test"]
@@ -80,11 +90,17 @@ Exemple : **Découverte casque VR**, 10:00–12:00, durée 20 minutes, battement
 
 ## Sauvegarde et restauration
 
-Sauvegarder la base **et les fichiers privés persistants**. Un export SQLite seul ne contient pas les secrets stockés à côté. Les profils `.openfablab-profile.zip` sont également privés. Conserver des copies protégées et tester leur restauration sur une instance isolée. [Procédure complète](docs/backup-restore.md).
+Dans **Réglages → Données**, choisir le niveau adapté :
+
+1. **Sauvegarde SQLite** : données métier ; les fichiers privés externes ne sont pas inclus.
+2. **Sauvegarde complète privée** : base, dérivations PIN, clé persistante, réglages et ressources de l’installation, avec manifeste et empreintes.
+3. **Copie privée pour test/diagnostic** : données et identité conservées, intégrations externes neutralisées et connexions externes bloquées.
+
+Ces fichiers peuvent contenir des données personnelles et des secrets : ils ne sont pas chiffrés et **ne doivent jamais être publiés**. Conserver aussi la configuration de déploiement et tester la restauration sur une instance isolée. Un profil `.openfablab-profile.zip` ne remplace pas une sauvegarde d’installation. [Procédure complète](docs/backup-restore.md), [format privé et restauration](docs/private-backup.md).
 
 ## Mise à jour
 
-Sauvegarder à froid avant tout changement de schéma, conserver l'image/code précédents, vérifier intégrité, clés étrangères et données avant remise en service. La migration 12 → 13 est additive ; les anciennes animations restent en mode classique. Un rollback vers un ancien schéma exige sa sauvegarde cohérente, jamais la base migrée. Voir [mise à jour](docs/upgrade.md) et [anciennes installations](docs/legacy-migration.md).
+Sauvegarder à froid **tout le persistant** avant tout changement de schéma et conserver l’image/code, Compose et configuration précédents. OpenFabLab 2.7.0 migre de manière additive du **schéma 13 au 14**, en préservant les clés historiques, et crée aussi une sauvegarde SQLite avant initialisation. Vérifier `integrity_check`, `foreign_key_check` et les données avant remise en service. Les anciennes animations restent en mode classique. **Ne jamais démarrer 2.6.x sur une base schéma 14** : un rollback exige la sauvegarde schéma 13 correspondante et la prise en compte des nouvelles écritures éventuelles. Voir [mise à jour](docs/upgrade.md) et [anciennes installations](docs/legacy-migration.md).
 
 ## Développement et tests
 

@@ -25,6 +25,8 @@ Renseigner séparément la personne morale, son adresse, son représentant et la
 
 ## Ressources complémentaires et DPO (2.6.3)
 
+Dans OpenFabLab 2.7.0, les ressources graphiques restent dans **Réglages → Structure**. La protection des données (responsable, représentant, DPO) est regroupée dans **Réglages → Données**, avec conservation des mêmes clés, du profil et de la page publique.
+
 Les trois ressources complémentaires sont présentées dans des cartes visibles, sans section repliée. Le logo complémentaire est réservé aux documents qui prévoient deux logos ; la signature est destinée aux bilans de facturation PDF/Excel. Son aperçu est réservé à l’administrateur et n’est pas exposé comme image publique. Le badge privé remplace le modèle générique uniquement lorsque **Utiliser le modèle de badge personnalisé** est coché. Désactiver une ressource conserve son nom de fichier, ses données et sa prévisualisation administrative ; elle peut être réactivée sans téléversement. Le retrait explicite reste une action séparée avec confirmation.
 
 Les clés `structure_use_main_logo`, `structure_use_signature` et `structure_use_badge_template` sont initialisées à `1` uniquement si elles manquent, pour conserver le rendu antérieur. Une clé déjà personnalisée, y compris `0`, reste inchangée. Un badge privé activé mais invalide/absent produit toujours une erreur claire ; un badge privé volontairement désactivé utilise le modèle générique.
@@ -35,6 +37,6 @@ Le profil privé conserve ces champs, les trois cases d’utilisation et les res
 
 ## Mise à jour 2.6.1 → 2.6.2
 
-Le schéma SQLite reste **13**. Les nouveaux réglages sont additifs ; les valeurs existantes gagnent. Lorsque le nouveau réglage d’en-tête n’existe pas encore, l’ancien logo institutionnel présent est copié une seule fois vers un fichier distinct, sans modifier le logo documentaire. L’entité juridique et l’adresse déjà configurées initialisent les champs du responsable du traitement. Aucun réseau ou badge institutionnel n’est choisi par déduction du nom du FabLab.
+Les évolutions de branding 2.6.2/2.6.3 conservaient le schéma **13** ; OpenFabLab 2.7.0 utilise le schéma **14** pour les nouvelles fonctions métier, sans modifier les ressources privées existantes. Les réglages restent additifs et les valeurs existantes gagnent. Lorsque le nouveau réglage d’en-tête n’existe pas encore, l’ancien logo institutionnel présent est copié une seule fois vers un fichier distinct, sans modifier le logo documentaire. L’entité juridique et l’adresse déjà configurées initialisent les champs du responsable du traitement. Aucun réseau ou badge institutionnel n’est choisi par déduction du nom du FabLab.
 
 Conserver tout `data`, les secrets et le montage `./data:/data`. Les nouveaux fichiers survivent aux redémarrages, images Docker et mises à jour. L’export/import `.openfablab-profile.zip` inclut logos, badge et champs d’identité ; ce profil est **privé** et ne doit jamais être publié. Son import n’emporte pas de secrets et conserve la règle existante de désactivation/reconfiguration WordPress/Discord. Une sauvegarde SQLite seule ne contient pas les fichiers : sauvegarder aussi `data/branding` et les fichiers privés séparément, avec accès restreint.

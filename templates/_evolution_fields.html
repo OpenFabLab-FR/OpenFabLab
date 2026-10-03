@@ -1,0 +1,9 @@
+{% macro csrf(token, action) -%}
+<input type="hidden" name="evolution_csrf" value="{{ token }}"><input type="hidden" name="action" value="{{ action }}">
+{%- endmacro %}
+{% macro field(name, label, value='', type='text', required=false) -%}
+<label class="form-field"><span>{{ label }}</span><input name="{{ name }}" type="{{ type }}" value="{{ value }}" {% if required %}required{% endif %} {% if type=='text' %}maxlength="240"{% endif %}></label>
+{%- endmacro %}
+{% macro check(name,label,on=false) -%}
+<label class="checkbox-field compact-check"><input name="{{ name }}" type="checkbox" value="1" {% if on %}checked{% endif %}><span>{{ label }}</span></label>
+{%- endmacro %}

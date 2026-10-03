@@ -45,6 +45,7 @@ async function check(name,fn){await fn();checks++;console.log('OK '+name);}
     if(process.env.UI_SCREENSHOT_DIR)await resources.screenshot({path:path.join(process.env.UI_SCREENSHOT_DIR,'resources-'+name+'.png')});
    });
    await check('privacy fields '+name+' readable and free DPO',async()=>{
+    await page.goto(base+'/admin/reglages/donnees');
     const section=page.locator('#privacy-settings');
     assert.equal(await page.locator('textarea[name="dpo"]').inputValue(),'Service DPO — Atelier fictif');
     assert.equal(await section.locator('input[name="dpo_phone"]').inputValue(),'');

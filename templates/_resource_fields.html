@@ -1,0 +1,7 @@
+<div class="form-grid">{{ field('name','Nom',resource.name|default(''),required=true) }}
+<label class="form-field">Catégorie de ressource<select name="type_key">{% for item in resource_types if item.active or item.type_key==resource.type_key|default('') %}<option value="{{ item.type_key }}" {% if item.type_key==resource.type_key|default('machine') %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select><small>Créer une catégorie dans la carte dédiée ci-dessous.</small></label>
+{{ field('color','Couleur spécifique (facultative)',resource.color|default('',true)) }}
+{{ field('price_cents','Prix de cette réservation en centimes (0 = gratuit)',resource.price_cents|default(0),'number') }}
+<label class="form-field">Habilitation requise<select name="required_authorization"><option value="">Aucune</option>{% for item in authorizations %}<option value="{{ item.authorization_uuid }}" {% if item.authorization_uuid==resource.required_authorization|default('') %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></label></div>
+<label class="form-field">Description<textarea name="description" maxlength="2000">{{ resource.description|default('') }}</textarea></label>
+{{ check('active','Ressource disponible',resource.active|default(true)) }}{{ check('approval_required','Demande nécessitant une validation',resource.approval_required|default(false)) }}

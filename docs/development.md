@@ -15,6 +15,8 @@ Le runner crée un espace temporaire pour les bases, secrets fictifs, sauvegarde
 
 Les tests couvrent parcours, droits, schémas, fictive migration 12 → 13, réservations classiques/créneaux, capacité/attente, accompagnants, préremplissage, e-mails, maintenance Test, exports et responsive. Les tests PHP utilisent un stockage simulé et les tests navigateur bloquent les appels externes. Aucun vrai secret, PIN historique, base ou ZIP ancien n'est requis.
 
+Les tests 2.7.0 comprennent une fixture schéma 13 → 14 avec contrôle des colonnes/volumes/fichiers, sauvegarde pré-initialisation et rollback de migration ; catégories/default/réaffectation, borne/CSRF/limitation/session, SMTP simulé/QR et Discord minimal, ressources/concurrence/facturation/habilitations, calendrier et profils. `tests/test_private_backup.py` couvre sauvegarde complète, copie de test, restauration, PIN dérivés, intégrité, isolation réseau et refus des archives altérées. Les tests navigateur couvrent neuf largeurs (1440, 1024, 820, 768, 430, 390, 375, 360 et 320 px) et bloquent les requêtes externes. `tests/test_wordpress_reconciliation.php` couvre snapshots, conservation des transactions et confirmations/nonce/droits. Ces fixtures ne remplacent pas un test WordPress/InnoDB réel ni une vérification de délivrabilité SMTP chez chaque fournisseur.
+
 Exécution ciblée :
 
 ```sh

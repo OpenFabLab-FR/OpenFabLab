@@ -1,4 +1,4 @@
-"""2.6.3 regression tests, using only fictional identity and geometric resources."""
+"""2.7.0 regression tests, using only fictional identity and geometric resources."""
 import hashlib
 import io
 import re
@@ -88,7 +88,8 @@ class PrivacyResourceTests(unittest.TestCase):
 
     def test_short_representative_label_and_visible_resource_cards(self):
         html=self.client.get('/admin/reglages/structure').get_data(as_text=True)
-        self.assertIn('<span>Représentant</span>',html)
+        privacy=self.client.get('/admin/reglages/donnees').get_data(as_text=True)
+        self.assertIn('<span>Représentant</span>',privacy)
         self.assertNotIn('Représentant du responsable du traitement',html)
         self.assertNotIn('<details class="branding-extra"',html)
         for kind in ('main','signature','badge'):self.assertIn('data-resource="'+kind+'"',html)
@@ -137,7 +138,7 @@ class PrivacyResourceTests(unittest.TestCase):
             self.assertEqual(settings['dpo'],'Service historique fictif');self.assertEqual(settings['dpo_email'],'legacy@example.invalid')
             for key in RESOURCE_USAGE_KEYS:self.assertTrue(settings[key])
             self.assertEqual(before,{table:[tuple(r) for r in db.execute('SELECT * FROM '+table)] for table in tables})
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],13)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],14)
             self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
             self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
         self.assertEqual(before_files,{p.name:p.read_bytes() for p in self.branding.iterdir()})

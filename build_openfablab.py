@@ -12,6 +12,8 @@ OUTPUT = ROOT / "dist" / f"OpenFabLab-{__version__}.zip"
 FILES = (
     "app.py", "billing.py", "annual_report.py", "animation_report.py", "calendar_export.py",
     "pin_security.py", "profile_archive.py", "reservations_sync.py", "animation_slots.py", "branding.py",
+    "private_backup.py", "runtime_policy.py", "docs/private-backup.md",
+    'evolution_schema.py', 'evolution_users.py', 'evolution_routes.py', 'welcome_mail.py', 'resource_booking.py', 'fablab_calendar.py',
     "build_openfablab.py", "Dockerfile", ".dockerignore", "compose.yaml", "AppStart.command",
     "requirements.txt", "requirements-nas.txt", "LICENSE", "README.md",
     ".env.example",
@@ -19,7 +21,9 @@ FILES = (
     "docs/installation.md", "docs/architecture.md", "docs/configuration.md",
     "docs/wordpress.md", "docs/animation-slots.md", "docs/email-templates.md",
     "docs/backup-restore.md", "docs/upgrade.md", "docs/legacy-migration.md", "docs/development.md", "docs/branding.md",
+    'docs/evolution-2.7.md',
     "static/app.js", "static/qr-scanner.js", "static/style.css", "static/animation-slots.js",
+    'static/evolution.js',
     "static/vendor/jsQR-1.4.0.js", "static/vendor/jsQR-LICENSE.txt",
     "static/fonts/LibreFranklin-Regular.ttf", "static/fonts/LibreFranklin-Bold.ttf",
     "static/fonts/OFL.txt", "static/fonts/AUTHORS.txt", "static/fonts/SOURCE.md",

@@ -1,5 +1,39 @@
 # Mettre à jour OpenFabLab
 
+## 2.6.x / schéma 13 → 2.7.0 / schéma 14
+
+Le persistant complet, pas seulement SQLite, doit être sauvegardé avant migration.
+Le [format privé complet](private-backup.md) distingue production et copie de test
+neutralisée. Les paquets d'exploitation privés peuvent automatiser préflight,
+build avant interruption, PRE/POST complets, essai hors réseau, migration,
+validation et rollback avant exposition en une seule commande. Après exposition
+potentiellement suivie d'écritures, aucune ancienne sauvegarde n'est restaurée
+automatiquement. Les chemins et scripts propres à une infrastructure restent
+privés ; ils ne font pas partie de la distribution publique.
+
+Le plugin associé est **Reservations 2.7.0**, sans changement de schéma WordPress. Les anciennes clés de catégories et leurs affectations restent conservées. Le mécanisme normal migre transactionnellement et crée aussi une copie SQLite pré-initialisation ; celle-ci ne remplace pas une sauvegarde complète.
+
+1. Relever version, schéma et état du service. Contrôler la base en lecture seule et vérifier l’espace disponible.
+2. Conserver l’image/code 2.6.x, Compose, configuration et chemins de montage. Préparer la nouvelle image avant interruption lorsque possible ; la tester avec une base vierge, sans réseau ni workers.
+3. Arrêter proprement puis sauvegarder **tout le persistant** : SQLite, PIN dérivés, clé Flask, secrets, branding, profils et autres fichiers privés. Sur 2.6.x, copier le dossier complet à froid puisque son interface ne propose pas encore le nouveau format. Conserver cette sauvegarde schéma 13 sans la modifier.
+4. Tester la migration normale sur une copie isolée. Pour une migration hors ligne, désactiver les workers et actions externes et n’exposer aucun port public. Ne pas forcer `user_version` manuellement ni rejouer des migrations historiques/PIN.
+5. Vérifier schéma 14, intégrité, clés étrangères, conservation des données et réglages, puis mettre en service avec le même persistant. Contrôler HTTP/HTTPS, droits, modules et ressources privées.
+6. Après validation et redémarrage, créer une sauvegarde complète privée schéma 14, distincte de l’état schéma 13.
+
+Contrôles SQLite avant et après :
+
+```sql
+PRAGMA user_version;
+PRAGMA integrity_check;
+PRAGMA foreign_key_check;
+```
+
+Attendus : 13 avant, 14 après ; `ok` ; aucune ligne FK. Comparer aussi les données métier : l’intégrité ne prouve pas à elle seule leur conservation.
+
+**Ne jamais démarrer 2.6.x avec une base schéma 14.** Un rollback exige la sauvegarde froide **schéma 13 correspondante**, ses fichiers privés et son runtime. Après exposition ou écritures de workers, ne pas restaurer automatiquement cet état ancien : préserver la base 14 et décider explicitement de la reprise pour éviter une perte de nouvelles données. Voir [nouveautés et contrôles d’essai](evolution-2.7.md).
+
+Pour les déploiements, privilégier lorsque raisonnable un paquet privé préparé, une commande ponctuelle, contrôles automatisés, sauvegarde, rollback prudent et rapport lisible. La distribution publique ne contient pas les scripts ni chemins propres à une infrastructure ; une migration complexe peut nécessiter une procédure distincte.
+
 ## 2.6.2 → 2.6.3
 
 SQLite reste au **schéma 13**. Seuls six réglages manquants sont ajoutés : DPO libre, e-mail/téléphone DPO, utilisation du logo complémentaire, de la signature et du badge privé. Les trois cases sont activées par défaut pour conserver l’apparence actuelle. Les réglages existants, même vides ou désactivés, restent prioritaires ; aucun fichier privé n’est effacé. Des anciennes clés DPO explicites peuvent être reprises, jamais l’e-mail général ni des valeurs institutionnelles prédéfinies.

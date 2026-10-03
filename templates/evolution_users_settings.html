@@ -1,0 +1,27 @@
+{% extends 'base.html' %}{% from '_evolution_fields.html' import csrf,field,check %}
+{% block title %}Usagers et catégories · OpenFabLab{% endblock %}{% block body_class %}admin-page{% endblock %}
+{% block content %}
+<section class="content-heading"><p class="eyebrow">Réglages</p><h1>Usagers et catégories</h1></section>
+{% include '_admin_nav.html' %}{% include '_settings_nav.html' %}
+<form class="admin-form" method="post">{{ csrf(evolution_csrf,'preferences') }}
+<section class="form-section"><h2>Inscription et bienvenue</h2>
+{{ check('self_enrollment_enabled','Autoriser « Créer un compte » dans le bas de la borne',enrollment) }}
+<p>Ce parcours verrouille la session de l’équipe ; aucune fonction administrative n’y est accessible.</p>
+{{ check('welcome_default','Présélectionner l’e-mail de bienvenue lorsqu’une adresse valide est renseignée',welcome_default) }}
+<p>Envoi facultatif, avec consentement de la personne. <a href="{{ url_for('admin_settings_structure') }}#smtp">Configurer SMTP</a>.</p>
+{{ field('welcome_subject','Sujet de bienvenue',welcome_subject,required=true) }}
+<label class="form-field"><span>Message de bienvenue (texte brut)</span><textarea name="welcome_body" rows="8" maxlength="8000" required>{{ welcome_body }}</textarea></label>
+<p>Variables : {% raw %}{{structure_name}}, {{first_name}}, {{last_name}}, {{public_id}}, {{contact}}, {{website}}{% endraw %}. Le QR Code est intégré et joint automatiquement.</p>
+<button class="admin-button primary compact">Enregistrer</button></section></form>
+<section class="category-section"><h2>Catégories</h2><p class="form-help">Une catégorie inactive reste conservée dans l’historique mais n’est plus proposée pour les nouvelles fiches.</p>
+<div class="category-cards">
+{% for item in entries %}<section class="admin-section category-card"><form method="post" class="compact-form category-form">{{ csrf(evolution_csrf,'category') }}<input name="key" type="hidden" value="{{ item.category_key }}">
+{{ field('name','Nom',item.name,required=true) }}{{ field('color','Couleur',item.color,'color') }}{{ field('order','Ordre',item.sort_order,'number') }}
+{{ check('active','Activer cette catégorie',item.active) }}{{ check('default','Catégorie par défaut',item.is_default) }}
+<button class="admin-button secondary compact">Enregistrer</button></form>
+{% if not item.is_default %}<details class="category-danger"><summary>Supprimer ou réaffecter cette catégorie</summary><form method="post" class="danger-form">{{ csrf(evolution_csrf,'remove_category') }}<input type="hidden" name="key" value="{{ item.category_key }}">
+<p>Si elle est utilisée, les fiches sont réaffectées et la catégorie est archivée pour préserver l’historique.</p><label class="form-field">Remplacement<select name="replacement"><option value="">Aucun (uniquement si jamais utilisée)</option>{% for other in entries if other.active and other.category_key!=item.category_key %}<option value="{{ other.category_key }}">{{ other.name }}</option>{% endfor %}</select></label>
+{{ field('confirmation','Saisir SUPPRIMER') }}<button class="admin-button danger compact">Confirmer</button></form></details>{% endif %}</section>{% endfor %}
+</div></section>
+<section class="form-section"><h2>Créer une catégorie</h2><form class="compact-form category-form" method="post">{{ csrf(evolution_csrf,'category') }}{{ field('name','Nom',required=true) }}{{ field('color','Couleur','#16849c','color') }}{{ field('order','Ordre',0,'number') }}{{ check('active','Activer cette catégorie',true) }}{{ check('default','Catégorie par défaut') }}<button class="admin-button primary compact">Créer la catégorie</button></form></section>
+{% endblock %}

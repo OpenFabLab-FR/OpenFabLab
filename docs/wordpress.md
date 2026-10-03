@@ -1,12 +1,28 @@
-# OpenFabLab Reservations 2.6.1
+# OpenFabLab Reservations 2.7.0
 
-Installer le ZIP autonome `openfablab-reservations-2.6.1.zip` dans **Extensions → Ajouter → Téléverser**, puis activer le plugin. La source est également dans `wordpress/openfablab-reservations/`. Cette distribution publique ajoute la licence MIT complète et les notices ; son runtime reste celui de Reservations 2.6.1.
+Installer le ZIP autonome `openfablab-reservations-2.7.0.zip` dans **Extensions → Ajouter → Téléverser**, puis activer, après un essai sur un **WordPress séparé**. La source est dans `wordpress/openfablab-reservations/`. Le plugin conserve réservations, créneaux, e-mails et maintenance Test, sans migration supplémentaire de schéma depuis le plugin 2.6.1. Il ajoute réconciliation, diagnostics et actualisation au prochain passage sortant du serveur. La purge confirmée porte uniquement sur la configuration reconstruisible, jamais les transactions. Voir [le protocole et ses limites](evolution-2.7.md).
 
 ## Connexion
 
 Dans WordPress **Réglages → OpenFabLab Reservations**, configurer les options du plugin et conserver le secret dans son stockage privé. Dans OpenFabLab **Réglages → Structure et modules → Réservations publiques**, renseigner **la racine HTTPS du site**, par exemple `https://example.invalid` (exemple non fonctionnel), et exactement le même secret. OpenFabLab ajoute les routes REST `/wp-json/openfablab/v1/...` : ne pas saisir cette route comme URL racine.
 
 Enregistrer URL/secret avant d'activer le module. Ne jamais afficher le secret dans des logs ou captures. Une seule instance OpenFabLab synchronise ce site ; conserver le module désactivé dans les autres installations locales. Intervalle initial : **2 minutes**, une valeur personnalisée reste inchangée. Tester la connexion puis « Synchroniser maintenant » lorsque la configuration est cohérente.
+
+Le sens réseau est **OpenFabLab → HTTPS signé HMAC → WordPress** : aucun port entrant dédié ni ouverture Internet vers le serveur OpenFabLab n’est requis. WordPress ne se connecte pas au serveur pour déclencher une synchronisation.
+
+## Protocole 2, réconciliation et diagnostics
+
+Le plugin annonce `protocol_version: 2`, `animation_slots_v1`, `catalog_snapshot_v1` et `custom_categories_v1`. Les capabilities sont négociées ; un ancien plugin conserve le parcours incrémental compatible, sans bénéficier des nouvelles fonctions de catalogue/catégories.
+
+Avec `catalog_snapshot_v1`, OpenFabLab transmet l’état actuel du catalogue de l’environnement. WordPress applique une réconciliation transactionnelle, masque les animations absentes et conserve les réservations, événements et tokens. Une modification incompatible avec un créneau réservé est refusée, jamais appliquée silencieusement. La capacité continue à compter les réservations WordPress récentes.
+
+Les commandes de catalogue sont recalculées depuis l’état courant et les suppressions nécessaires traitées en priorité. Les actions de réservation gardent leur ordre. Seul un accusé positif valide une commande ; après une erreur, elle reste rejouable. La pagination et le curseur sont contrôlés, avec un état indépendant pour Test et Normal.
+
+OpenFabLab distingue **dernière tentative**, **dernière réussite**, erreur, commandes en attente et version du protocole/plugin. WordPress distingue le dernier contact signé de la réussite de son cycle : celle-ci ne prouve pas à elle seule l’import SQLite. « Actualiser » côté WordPress est traité au prochain passage sortant du serveur ; « Synchroniser maintenant » côté OpenFabLab lance ce passage.
+
+La **purge/resynchronisation du catalogue** exige Administrateur WordPress, POST, nonce, réconciliation 2.7 préalable et confirmation `RESYNCHRONISER TEST` ou `RESYNCHRONISER PRODUCTION`. Elle masque uniquement le catalogue et vide son annuaire reconstruisible dans l’environnement choisi. Réservations, événements et tokens sont préservés ; le prochain passage reconstruit la configuration. Ce mécanisme est distinct de la maintenance d’inscriptions Test décrite plus bas.
+
+Les tests automatiques couvrent ces parcours avec des données fictives. Ils ne prouvent pas le fonctionnement de toutes les combinaisons WordPress, hébergement, cache ou moteur SQL : vérifier votre propre installation et la concurrence InnoDB avant une bascule.
 
 ## Pages et environnements
 

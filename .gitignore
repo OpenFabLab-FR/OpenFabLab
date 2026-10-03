@@ -5,6 +5,9 @@
 .secret_key*
 .discord_*
 .openfablab_*
+.openfablab-*
+restore-backups/
+private-complete-backup-validation/
 .compteur_*
 *.pem
 *.key
@@ -41,6 +44,9 @@ exports/
 captures/
 screenshots/
 reports/
+review/
+.checks/
+private-migration-validation/
 PHASE*
 *.started
 *RESULT*

@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: openfablab:v2.6.3
+    image: openfablab:v2.7.0
     container_name: openfablab
     restart: unless-stopped
     ports:

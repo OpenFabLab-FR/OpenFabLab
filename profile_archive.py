@@ -30,6 +30,7 @@ STRUCTURE_KEYS = {
 MODULE_KEYS = {
     "frequency", "users", "activities", "public_reservations", "booking_slots",
     "rentals", "billing", "weather", "discord",
+    'resources', 'authorizations',
 }
 BILLING_KEYS = {
     "billing_rate_normal_hourly_cents", "billing_rate_normal_half_day_cents",
@@ -40,10 +41,15 @@ BILLING_KEYS = {
 EXACT_KEYS = {
     "home_theme", "keep_screen_awake", "lock_home_scroll", "wake_lock_start",
     "wake_lock_end", "openlab_attendance_show_decimals",
+    'calendar_display_start', 'calendar_display_end',
     "retention_contact_years", "retention_deactivation_years", "retention_deletion_years",
     "automatic_closure_enabled", "invalid_id_threshold", "invalid_id_window_minutes",
     "invalid_id_lock_enabled", "invalid_id_lock_minutes",
     "discord_notifications_enabled", "discord_bot_name",
+    'self_enrollment_enabled', 'welcome_default', 'welcome_subject', 'welcome_body',
+    'discord_new_user_enabled', 'discord_new_user_first_name', 'discord_new_user_last_name',
+    'discord_new_user_last_initial', 'discord_new_user_age', 'discord_new_user_category',
+    'discord_new_user_source', 'discord_new_user_time',
 }
 DISCORD_MESSAGE_KEYS = {
     "discord_message_arrival", "discord_message_departure", "discord_message_visitor",
@@ -103,7 +109,7 @@ def allowed_setting(key):
     return False
 
 
-def build_profile(settings, machines, assets, tariffs=None):
+def build_profile(settings, machines, assets, tariffs=None, categories=None, resource_types=None):
     safe_settings = {key: value for key, value in settings.items() if allowed_setting(key)}
     if not all(isinstance(value, str) for value in safe_settings.values()):
         raise ValueError("Réglage du profil invalide.")
@@ -114,6 +120,7 @@ def build_profile(settings, machines, assets, tariffs=None):
         "settings": safe_settings,
         "machines": machines,
         "tariffs": tariffs or [],
+        'categories': categories or [], 'resource_types': resource_types or [],
         "assets": {name: hashlib.sha256(raw).hexdigest() for name, raw in assets.items()},
     }
     memory = io.BytesIO()
@@ -144,6 +151,28 @@ def parse_profile(raw):
             machines = manifest.get("machines")
             tariffs = manifest.get("tariffs")
             digests = manifest.get("assets")
+            category_registry = manifest.get('categories', [])
+            type_registry = manifest.get('resource_types', [])
+            for registry, key_field, has_default in ((category_registry,'category_key',True),(type_registry,'type_key',False)):
+                if not isinstance(registry,list) or len(registry)>500:
+                    raise ValueError('Annuaire de profil invalide.')
+                used_keys=set();used_names=set()
+                for entry in registry:
+                    if not isinstance(entry,dict) or set(entry)!={key_field,'name','color','active','sort_order'} | ({'is_default'} if has_default else set()):
+                        raise ValueError('Annuaire de profil invalide.')
+                    key=entry[key_field];name=entry['name']
+                    if (not isinstance(key,str) or not re.fullmatch('[a-z0-9_]{1,40}',key) or key in used_keys
+                        or not isinstance(name,str) or not 1<=len(name)<=80 or name.strip().casefold() in used_names
+                        or not isinstance(entry['color'],str) or not re.fullmatch('#[a-fA-F0-9]{6}',entry['color'])):
+                        raise ValueError('Nom, identifiant ou couleur d’annuaire invalide.')
+                    used_keys.add(key);used_names.add(name.strip().casefold())
+                    for field in ('active','is_default') if has_default else ('active',):
+                        if type(entry[field]) is not int or entry[field] not in (0,1):
+                            raise ValueError('État d’annuaire invalide.')
+                    if type(entry['sort_order']) is not int or not 0<=entry['sort_order']<=100000:
+                        raise ValueError('Ordre d’annuaire invalide.')
+                if has_default and registry and (sum(e['is_default'] for e in registry)!=1 or any(e['is_default'] and not e['active'] for e in registry)):
+                    raise ValueError('Une catégorie active par défaut est nécessaire.')
             if (not isinstance(settings, dict) or not isinstance(machines, list) or
                     not isinstance(tariffs, list) or
                     not isinstance(digests, dict) or set(digests) != set(names) - {"profile.json"}):
@@ -155,10 +184,14 @@ def parse_profile(raw):
                     raise ValueError("État de module invalide.")
                 if key == 'structure_badge_template' and value not in {'', 'badge-template.svg'}:
                     raise ValueError('Nom du modèle de badge invalide.')
+                if (key in {'self_enrollment_enabled','welcome_default'} or key.startswith('discord_new_user_')) and value not in {'0','1'}:
+                    raise ValueError('État d’inscription ou de notification invalide.')
                 if key.endswith('_logo') and key.startswith('structure_') and not key.startswith(('structure_show_', 'structure_use_')):
                     kind = key.removeprefix('structure_').removesuffix('_logo')
                     if value not in {'', kind + '.png'}:
                         raise ValueError('Nom de logo invalide.')
+                if key in {'calendar_display_start','calendar_display_end'} and not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d', value):
+                    raise ValueError('Plage affichée du calendrier invalide.')
                 if key in RESERVATION_RANGES:
                     minimum, maximum = RESERVATION_RANGES[key]
                     if not value.isdecimal() or not minimum <= int(value) <= maximum:
@@ -200,6 +233,8 @@ def parse_profile(raw):
             if settings.get('structure_badge_template') and 'assets/badge-template.svg' not in digests:
                 raise ValueError('Le profil configure un modèle de badge absent.')
             keys = set()
+            if settings.get('calendar_display_end','19:00') <= settings.get('calendar_display_start','09:00'):
+                raise ValueError('La fin de la plage du calendrier doit suivre son début.')
             for machine in machines:
                 if not isinstance(machine, dict) or set(machine) != {"machine_key", "name", "monthly_cents", "deposit_cents", "active", "archived", "sort_order"}:
                     raise ValueError("Catalogue de machines invalide.")
@@ -239,6 +274,7 @@ def parse_profile(raw):
                 if not isinstance(digest, str) or not hashlib.sha256(content).hexdigest() == digest:
                     raise ValueError("Une ressource du profil est corrompue.")
                 assets[name] = content
-            return {"settings": settings, "machines": machines, "tariffs": tariffs, "assets": assets}
+            return {"settings": settings, "machines": machines, "tariffs": tariffs, "assets": assets,
+                    'categories':category_registry, 'resource_types':type_registry}
     except (zipfile.BadZipFile, KeyError, TypeError, UnicodeError, json.JSONDecodeError) as error:
         raise ValueError("Le profil ZIP est invalide ou endommagé.") from error

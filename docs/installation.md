@@ -1,6 +1,6 @@
 # Installer une nouvelle instance
 
-Application 2.6.3, schéma SQLite 13. Prérequis : Python 3.10+ (3.12 dans Docker), navigateur moderne, disque persistant. Le plugin optionnel demande WordPress avec PHP 8.1+ et HTTPS. Les tests n'installent pas WordPress ni MySQL.
+OpenFabLab 2.7.0 stable, schéma SQLite 14 ; voir [les nouveautés](evolution-2.7.md) et [la procédure de mise à jour](upgrade.md) avant une migration. Prérequis : Python 3.10+ (3.12 dans Docker), navigateur moderne, disque persistant. Le plugin optionnel OpenFabLab Reservations 2.7.0 demande WordPress avec PHP 8.1+ et HTTPS. Les tests n'installent pas WordPress ni MySQL.
 
 ## Python local
 

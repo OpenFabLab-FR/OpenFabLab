@@ -6295,6 +6295,69 @@ tbody tr:last-child td {
     }
 }
 .animation-slot-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: .75rem; margin-block: 1rem; }
+.evolution-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:1.25rem; margin-block:1.25rem; }
+.evolution-cards > * { min-width:0; overflow-wrap:anywhere; }
+.calendar-controls { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; margin-block:1.25rem; }
+.calendar-scroll { overflow:auto; max-width:100%; border:1px solid #d7e1e5; border-radius:16px; background:#fff; }
+.calendar-scroll-week { overflow-x:auto; }
+.calendar-scroll:focus-visible { outline:3px solid #16849c; outline-offset:3px; }
+.calendar-grid { display:grid; }
+.calendar-week { grid-template-columns:70px repeat(7,minmax(115px,1fr)); min-width:875px; }
+.calendar-month { grid-template-columns:repeat(7,minmax(100px,1fr)); min-width:700px; }
+.calendar-day { border-left:1px solid #e1e7eb; min-width:0; }
+.calendar-month .calendar-day { min-height:130px; border-bottom:1px solid #e1e7eb; }
+.calendar-day-label { height:42px; margin:0; font-size:1rem; padding:10px 8px; box-sizing:border-box; }
+.calendar-week .calendar-day-label { position:sticky; top:0; z-index:2; background:#fff; }
+.calendar-today .calendar-day-label { background:#e2f3f6; color:#185b70; }
+.calendar-all-day { height:72px; overflow:auto; font-size:.75rem; border-bottom:1px solid #d7e1e5; }
+.calendar-week .calendar-all-day { position:sticky; top:42px; z-index:1; background:#fff; }
+.calendar-timeline { height:var(--timeline-height,600px); position:relative; background:repeating-linear-gradient(to bottom,transparent,transparent 59px,#e9eff2 59px,#e9eff2 60px); }
+.calendar-hours .calendar-timeline > span { position:absolute; font-size:.75rem; padding-left:4px; }
+.calendar-event { position:absolute; padding:4px; border:1px solid var(--event-color); border-left:4px solid var(--event-color); border-radius:6px; background:#f8fafb; color:#203e47; overflow:auto; font-size:.75rem; box-sizing:border-box; }
+.calendar-event strong,.calendar-event small { display:block; }
+.calendar-attendance { font-size:.68rem; margin-top:4px; }
+.calendar-hours .calendar-day-label { font-size:.85rem; }
+.settings-subtabs { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); overflow:visible; gap:4px; }
+.settings-subtabs .admin-subtab { padding:10px 4px; min-width:0; font-size:.92rem; }
+.compact-form { display:grid; gap:14px; align-items:end; }
+.compact-form > .admin-button, .admin-form > .admin-button { justify-self:start; align-self:end; }
+.compact-check { display:flex; width:fit-content; min-height:44px; padding:4px 0; background:none; border:0; gap:8px; align-items:center; }
+.compact-check input { width:20px; height:20px; flex:0 0 20px; }
+.form-field input[type="color"] { width:52px; min-width:52px; height:44px; padding:4px; cursor:pointer; }
+.category-section { margin-block:24px; }
+.category-cards { display:grid; gap:14px; margin-block:14px; }
+.category-card { margin:0; padding:18px; }
+.category-form { grid-template-columns:minmax(140px,1fr) 60px 80px minmax(130px,auto) minmax(125px,auto) auto; }
+.resource-category-form { grid-template-columns:minmax(140px,1fr) 60px 80px minmax(130px,auto) auto; }
+.category-danger { margin-top:14px; }
+.category-danger summary { cursor:pointer; }
+.danger-form { display:grid; gap:18px; margin-top:20px; }
+.danger-form > .admin-button { justify-self:start; }
+.authorization-definition { grid-template-columns:minmax(180px,1fr) minmax(220px,2fr) auto; }
+.authorization-grant { grid-template-columns:repeat(3,minmax(0,1fr)) auto; }
+.authorization-grant > .form-field:nth-of-type(-n+2) { grid-column:span 2; }
+.footer-links { flex-wrap:wrap; }
+@media (max-width:1100px) {
+  .category-form { grid-template-columns:minmax(140px,1fr) 60px 80px; }
+  .resource-category-form { grid-template-columns:minmax(140px,1fr) 60px 80px; }
+  .authorization-grant { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .authorization-grant > .form-field:nth-of-type(-n+2) { grid-column:auto; }
+  .authorization-definition { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:600px) {
+  .settings-subtabs { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .settings-subtabs .admin-subtab { white-space:normal; }
+  .category-form, .resource-category-form { grid-template-columns:minmax(0,1fr) 60px; }
+  .compact-form { min-width:0; }
+  .compact-form > *, .danger-form > * { min-width:0; }
+  .category-form > .compact-check, .resource-category-form > .compact-check { grid-column:1 / -1; }
+  .authorization-grant, .authorization-definition { grid-template-columns:minmax(0,1fr); }
+  .category-card { padding:14px; }
+}
+@media (max-width:380px) { .settings-subtabs { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+.calendar-month-event { display:block; color:#203e47; border-left:4px solid var(--event-color); padding:4px; font-size:.75rem; overflow-wrap:anywhere; margin:4px; }
+.enrollment-receipt { text-align:center; max-width:650px; margin-inline:auto; }
+.enrollment-receipt img { max-width:100%; height:auto; }
 .animation-slot-summary > article { padding: .75rem; border: 1px solid var(--border-color, #d7e1e5); border-radius: .65rem; min-width: 0; display: grid; gap: .3rem; }
 .slot-preview { margin-block: 1rem; overflow-wrap: anywhere; }
 .slot-preview ul { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; padding-inline-start: 1.25rem; }

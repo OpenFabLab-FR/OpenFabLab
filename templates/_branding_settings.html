@@ -1,3 +1,4 @@
+{% if settings_view != 'donnees' %}
 <h3>Logos : quatre usages indépendants</h3>
 <input type="hidden" name="branding_visibility_form" value="1">
 <div class="branding-grid">
@@ -51,6 +52,8 @@
 </section>
 </div>
 </section>
+{% endif %}
+{% if settings_view == 'donnees' %}
 <section class="privacy-settings" id="privacy-settings">
 <h3>Protection des données personnelles</h3>
 <p class="form-help">Ces informations apparaissent sur la page publique Gestion des données et sont conservées dans le profil privé de structure.</p>
@@ -73,3 +76,4 @@
 <p class="form-help">Ces coordonnées sont indépendantes de l’e-mail général du FabLab. Si tous les champs sont vides, la carte DPO n’est pas affichée publiquement.</p>
 </section>
 </section>
+{% endif %}

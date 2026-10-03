@@ -174,7 +174,7 @@ class WordPressClient:
         return result
 
 
-def enqueue_animation(database, service_id, command="upsert"):
+def animation_payload(database, service_id, command="upsert", environment=None):
     service = database.execute(
         "SELECT * FROM fablab_services WHERE id = ? AND service_type = 'animation'",
         (service_id,),
@@ -184,7 +184,7 @@ def enqueue_animation(database, service_id, command="upsert"):
     ).fetchone()
     if command == "upsert" and (service is None or config is None):
         return
-    environment = config["environment"] if config else "test"
+    environment = environment or (config["environment"] if config else "test")
     payload = {"command": command, "service_id": service_id,
                "environment": environment}
     if service is not None and config is not None:
@@ -216,10 +216,17 @@ def enqueue_animation(database, service_id, command="upsert"):
         payload["animation"]["slots"] = [dict(row) for row in database.execute(
             "SELECT slot_uuid, starts_at, ends_at, capacity FROM animation_slots "
             "WHERE service_id=? AND active=1 ORDER BY starts_at", (service_id,))]
+    return payload
+
+
+def enqueue_animation(database, service_id, command="upsert"):
+    payload = animation_payload(database, service_id, command)
+    if payload is None:
+        return
     database.execute(
         "INSERT INTO reservation_outbox (environment, command_type, entity_key, "
         "payload_json, created_at) VALUES (?, ?, ?, ?, ?)",
-        (environment, command, str(service_id), json.dumps(payload, ensure_ascii=False),
+        (payload['environment'], command, str(service_id), json.dumps(payload, ensure_ascii=False),
          datetime.now(timezone.utc).isoformat(timespec="seconds")),
     )
 
@@ -335,6 +342,9 @@ def sync_error_label(error):
 def run_sync_cycle(database, database_path, site_url, now=None, client=None,
                    environments=ENVIRONMENTS):
     """Même chemin signé pour Normal et Test, sans activation supplémentaire."""
+    from runtime_policy import external_allowed
+    if not external_allowed(database_path):
+        return {"configured": False, "imported": 0, "isolated": True}
     if not environments or any(environment not in ENVIRONMENTS for environment in environments):
         raise ValueError("Environnement de synchronisation invalide")
     secret = load_sync_secret(database_path)
@@ -375,24 +385,80 @@ def run_sync_cycle(database, database_path, site_url, now=None, client=None,
 def _sync_environment(database, client, environment, directory, now, notifications, rejected):
     """Une erreur d'un environnement ne bloque pas l'autre ni son diagnostic."""
     imported = 0
-    client.post("/sync/directory", {"environment": environment, "users": directory})
+    try:
+        capabilities = client.post('/sync/capabilities', {'environment': environment})
+    except urllib.error.HTTPError as error:
+        if error.code!=404:
+            raise
+        capabilities = {}  # Original pre-capability plugin: incremental only.
+    if not isinstance(capabilities,dict):
+        raise ValueError('Capabilities WordPress invalides')
+    # Old 2.5/2.6 senders and plugins keep the original incremental protocol.
+    slots_supported = capabilities.get('animation_slots_v1') is True
+    snapshot_supported = capabilities.get('catalog_snapshot_v1') is True
+    if capabilities.get('custom_categories_v1') is not True and any(
+            user.get('category') not in {'user','volunteer','voluntary','fabmanager','intern','staff'} for user in directory):
+        raise ValueError('Mettez à jour le plugin WordPress pour les catégories personnalisées')
+    if not client.post("/sync/directory", {"environment": environment, "users": directory}).get('ok'):
+        raise ValueError('Annuaire refusé')
+    # Prioritize pending catalogue tombstones independently of a different
+    # incompatible upsert. Never reorder reservation commands among themselves.
+    tombstones = database.execute("SELECT id,payload_json FROM reservation_outbox WHERE environment=? AND sent_at IS NULL AND command_type!='booking' ORDER BY id", (environment,)).fetchall()
+    for row in tombstones:
+        old=json.loads(row['payload_json']); current=animation_payload(database,int(old['service_id']))
+        if current is not None and current['environment']==environment:
+            continue
+        try:
+            result=client.post('/sync/animations',dict(command='delete',service_id=int(old['service_id']),environment=environment))
+            if not result.get('ok'):raise ValueError('Suppression WordPress refusée')
+        except (OSError,ValueError) as error:
+            database.execute('UPDATE reservation_outbox SET attempts=attempts+1,last_error=? WHERE id=?',(sync_error_label(error),row['id']))
+            database.commit();raise
+        database.execute('UPDATE reservation_outbox SET sent_at=?,attempts=attempts+1,last_error=NULL WHERE id=?',(now.isoformat(timespec='seconds'),row['id']))
+        database.commit()
+    if snapshot_supported:
+        catalogue = [animation_payload(database, row[0])['animation'] for row in database.execute(
+            'SELECT service_id FROM animation_reservation_config WHERE environment=? ORDER BY service_id',
+            (environment,)).fetchall()]
+        result = client.post('/sync/snapshot', {'environment': environment, 'animations': catalogue})
+        if not result.get('ok'):
+            raise ValueError('Réconciliation refusée')
+    database.execute('INSERT OR REPLACE INTO app_settings(key,value) VALUES(?,?)',
+                     ('reservation_protocol_' + environment, str(capabilities.get('protocol_version', 1))))
+    database.execute('INSERT OR REPLACE INTO app_settings(key,value) VALUES(?,?)',
+                     ('reservation_plugin_' + environment, str(capabilities.get('plugin_version', 'ancien/inconnu'))))
+    database.commit()
     rows = database.execute(
         "SELECT id, command_type, payload_json FROM reservation_outbox "
         "WHERE environment = ? AND sent_at IS NULL ORDER BY id LIMIT 100", (environment,)
     ).fetchall()
-    slots_supported = False
     for row in rows:
         route = "/sync/commands" if row["command_type"] == "booking" else "/sync/animations"
         payload = json.loads(row["payload_json"])
+        if row['command_type'] != 'booking':
+            service_id = int(payload['service_id'])
+            current = animation_payload(database, service_id)
+            # Send current truth, never obsolete intermediate configuration. A
+            # refused old update must not prevent the later deletion reaching WP.
+            if current is None or current['environment'] != environment:
+                payload = {'command': 'delete', 'service_id': service_id, 'environment': environment}
+            elif payload['command'] == 'upsert':
+                payload = current
+            elif snapshot_supported:
+                # A historical delete followed by recreate has been reconciled.
+                payload = current
         if payload.get("animation", {}).get("booking_mode") == "slots" or payload.get("slot_uuid"):
             if not slots_supported:
-                capability = client.post("/sync/capabilities", {"environment": environment})
-                if capability.get("animation_slots_v1") is not True:
-                    raise ValueError("Le plugin WordPress doit être mis à jour pour les créneaux")
-                slots_supported = True
-        result = client.post(route, payload)
-        if not result.get("ok"):
-            raise ValueError("Publication WordPress refusée")
+                raise ValueError("Le plugin WordPress doit être mis à jour pour les créneaux")
+        try:
+            result = client.post(route, payload)
+            if not result.get('ok'):
+                raise ValueError('Publication WordPress refusée')
+        except (OSError, ValueError) as error:
+            database.execute('UPDATE reservation_outbox SET attempts=attempts+1,last_error=? WHERE id=?',
+                             (sync_error_label(error), row['id']))
+            database.commit()
+            raise
         rejection = None
         if result.get("confirmation") == "refused":
             rejection = ("Confirmation refusée : capacité atteinte." if result.get("reason") == "capacity"
@@ -402,7 +468,8 @@ def _sync_environment(database, client, environment, directory, now, notificatio
                          ", last_error = ? WHERE id = ?",
                          (now.isoformat(timespec="seconds"), rejection, row["id"]))
         database.commit()
-    client.post("/heartbeat", {"environment": environment})
+    if not client.post("/heartbeat", {"environment": environment}).get('ok'):
+        raise ValueError('Traitement WordPress refusé')
     state = database.execute(
         "SELECT cursor FROM reservation_sync_state WHERE environment = ?", (environment,)
     ).fetchone()
@@ -410,11 +477,17 @@ def _sync_environment(database, client, environment, directory, now, notificatio
     while True:
         result = client.post("/sync/events", {"environment": environment,
                                                "cursor": cursor, "limit": 100})
+        if not result.get('ok',True):
+            raise ValueError('Flux WordPress refusé')
         events = result.get("events", [])
         if not isinstance(events, list):
             raise ValueError("Flux d'événements WordPress invalide")
         imported += import_events(database, environment, events, notifications)
-        cursor = str(result.get("cursor", cursor))
+        next_cursor = str(result.get("cursor", cursor))
+        has_more = result.get('has_more', len(events)>=100)
+        if has_more and next_cursor==cursor:
+            raise ValueError('Le curseur WordPress ne progresse pas')
+        cursor = next_cursor
         database.execute(
             "INSERT INTO reservation_sync_state (environment, cursor, last_success_at, last_error_at, last_error) "
             "VALUES (?, ?, ?, NULL, NULL) ON CONFLICT(environment) DO UPDATE SET "
@@ -423,6 +496,6 @@ def _sync_environment(database, client, environment, directory, now, notificatio
             (environment, cursor, now.isoformat(timespec="seconds")),
         )
         database.commit()
-        if len(events) < 100:
+        if not has_more:
             break
     return imported

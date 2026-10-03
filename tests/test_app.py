@@ -16,12 +16,29 @@ from zoneinfo import ZoneInfo
 
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
+from flask.testing import FlaskClient
+
+
+class BrowserClient(FlaskClient):
+    """Legacy browser scenarios submit the hidden token rendered by the form.
+
+    Security-negative tests explicitly use an unwrapped FlaskClient instead.
+    """
+    def post(self, path, *args, **kwargs):
+        if path=='/admin/usagers/nouveau' or (path.startswith('/admin/usagers/') and path.endswith('/modifier')):
+            page=self.get(path).get_data(as_text=True)
+            token=re.search(r'name="evolution_csrf" value="([^"]+)"',page)
+            if token and isinstance(kwargs.get('data'),dict):
+                kwargs['data']=dict(kwargs['data'],evolution_csrf=token[1])
+        return super().post(path,*args,**kwargs)
 
 # L'instance Flask globale créée lors de l'import utilise elle aussi une base
 # temporaire : la suite de tests ne doit jamais ouvrir la base locale réelle.
 _import_database_directory = tempfile.TemporaryDirectory(prefix="openfablab_import_test_")
 _previous_database_path = os.environ.get("COMPTEUR_DATABASE")
+_previous_secret_path = os.environ.get('COMPTEUR_SECRET_KEY_FILE')
 os.environ["COMPTEUR_DATABASE"] = str(Path(_import_database_directory.name) / "import.db")
+os.environ['COMPTEUR_SECRET_KEY_FILE']=str(Path(_import_database_directory.name)/'import.secret')
 from app import (
     collect_openlab_weather_snapshot,
     create_app,
@@ -37,6 +54,10 @@ if _previous_database_path is None:
     os.environ.pop("COMPTEUR_DATABASE", None)
 else:
     os.environ["COMPTEUR_DATABASE"] = _previous_database_path
+if _previous_secret_path is None:
+    os.environ.pop('COMPTEUR_SECRET_KEY_FILE',None)
+else:
+    os.environ['COMPTEUR_SECRET_KEY_FILE']=_previous_secret_path
 
 
 # Explicitly fictional examples; never application defaults.
@@ -99,6 +120,7 @@ class OpenFabLabTestCase(unittest.TestCase):
         # Geometric placeholders only: no actual logo or handwritten signature.
         for name in ('main', 'institution', 'signature'):
             Image.new('RGB', (120, 40), '#307b9a').save(branding / (name + '.png'))
+        self.app.test_client_class = BrowserClient
         self.client = self.app.test_client()
 
     def tearDown(self):
@@ -3053,7 +3075,7 @@ class OpenFabLabTestCase(unittest.TestCase):
         overview = self.client.get("/admin")
         self.assertEqual(overview.status_code, 200)
         overview_page = overview.get_data(as_text=True)
-        self.assertEqual(overview_page.count('<a class="admin-tab'), 5)
+        self.assertEqual(overview_page.count('<a class="admin-tab'), 6)
         for label in ("Fréquentation", "Usagers", "Activités", "Facturation", "Réglages"):
             self.assertIn(f">{label}</a>", overview_page)
         for label in ("Aperçu", "Journée", "Statistiques", "Exports"):
@@ -3094,21 +3116,20 @@ class OpenFabLabTestCase(unittest.TestCase):
         self.assertIn(">Affichage</a>", settings_page)
         tabs = re.search(r'<nav class="admin-subtabs settings-subtabs"[^>]*>(.*?)</nav>', settings_page, re.S).group(1)
         self.assertEqual(re.findall(r'>([^<>]+)</a>', tabs), [
-            "Affichage", "Borne et horaires", "Tarifs et machines",
-            "Données et sauvegardes", "Structure et modules", "Notifications",
+            "Affichage", "Usagers", "Borne", "Notifications", "Tarifs", "Données", "Structure",
         ])
         self.assertIn('class="admin-subtab active" href="/admin/reglages/affichage"', tabs)
         self.assertIn('href="/admin/reglages">Réglages</a>', settings_page)
         self.assertIn("Thème de la page d’accueil", settings_page)
-        self.assertIn("Borne et horaires", settings_page)
-        self.assertIn("Tarifs et machines", settings_page)
-        self.assertIn("Données et sauvegardes", settings_page)
+        self.assertIn(">Borne</a>", settings_page)
+        self.assertIn(">Tarifs</a>", settings_page)
+        self.assertIn(">Données</a>", settings_page)
         self.assertIn(">Notifications</a>", settings_page)
         schedule_settings = self.client.get(
             "/admin/reglages/borne"
         ).get_data(as_text=True)
         self.assertIn(
-            'class="admin-subtab active" href="/admin/reglages/borne">Borne et horaires</a>',
+            'class="admin-subtab active" href="/admin/reglages/borne"',
             schedule_settings,
         )
 
@@ -3128,10 +3149,10 @@ class OpenFabLabTestCase(unittest.TestCase):
         for page in pages.values():
             for label in (
                 "Affichage",
-                "Borne et horaires",
-                "Tarifs et machines",
-                "Données et sauvegardes",
-                "Structure et modules",
+                ">Borne</a>",
+                ">Tarifs</a>",
+                ">Données</a>",
+                ">Structure</a>",
                 "Notifications",
             ):
                 self.assertIn(label, page)
@@ -3745,7 +3766,7 @@ class OpenFabLabTestCase(unittest.TestCase):
     def test_moderator_sees_frequency_but_not_exports_or_settings(self):
         self.login_admin("8642")
         dashboard = self.client.get("/admin").get_data(as_text=True)
-        self.assertEqual(dashboard.count('<a class="admin-tab'), 4)
+        self.assertEqual(dashboard.count('<a class="admin-tab'), 5)
         self.assertIn(">Fréquentation</a>", dashboard)
         self.assertIn(">Usagers</a>", dashboard)
         self.assertIn(">Activités</a>", dashboard)
@@ -4619,7 +4640,7 @@ class OpenFabLabTestCase(unittest.TestCase):
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_latitude'").fetchone()[0], "")
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_longitude'").fetchone()[0], "")
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_privacy_policy_url'").fetchone()[0], "")
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0], 13)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0], 14)
             create_app({"TESTING": True, "DATABASE": path, "ADMIN_PIN": None,
                         "MODERATOR_PIN": None, "SEED_DEMO_USERS": False})
             with sqlite3.connect(path) as database:
@@ -5128,9 +5149,9 @@ class OpenFabLabTestCase(unittest.TestCase):
                 booking_script = archive.read("openfablab-reservations/assets/reservations.js").decode("utf-8")
                 logo = archive.read("openfablab-reservations/assets/OpenFabLab-logo-horizontal.svg")
                 archive_header = archive.read("openfablab-reservations/openfablab-reservations.php")
-            self.assertEqual(len(names), 15)
+            self.assertEqual(len(names), 16)
             self.assertIn("openfablab-reservations/includes/class-openfablab-test-maintenance.php", names)
-            self.assertIn(b"Version: 2.6.1", archive_header)
+            self.assertIn(b"Version: 2.7.0", archive_header)
             self.assertTrue(all(name.startswith("openfablab-reservations/") for name in names))
             self.assertFalse(any(name.endswith((".db", ".sqlite", ".png")) for name in names))
             self.assertEqual(logo, Path("static/brand/OpenFabLab-logo-horizontal.svg").read_bytes())
@@ -5493,7 +5514,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
             create_app(config)
             with sqlite3.connect(database_path) as database:
                 after = {table: database.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in before}
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0], 13)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0], 14)
                 self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
                 self.assertEqual(database.execute("PRAGMA foreign_key_check").fetchall(), [])
                 self.assertTrue(database.execute("SELECT 1 FROM sqlite_master WHERE name='security_events'").fetchone())
@@ -5555,7 +5576,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                 ("1001", "Victor", "EXEMPLE", "user", None, None,
                  None, "+33", None),
             )
-            self.assertEqual(schema_version, 13)
+            self.assertEqual(schema_version, 14)
 
 
     def test_v23_schema_migrates_to_v240_without_losing_rows(self):
@@ -5587,7 +5608,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                 integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
                 foreign_keys = database.execute("PRAGMA foreign_key_check").fetchall()
             self.assertEqual(after, before)
-            self.assertEqual(schema_version, 13)
+            self.assertEqual(schema_version, 14)
             self.assertIsNotNone(audit_table)
             self.assertEqual(integrity, "ok")
             self.assertEqual(foreign_keys, [])
@@ -5595,7 +5616,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
             # La migration doit être rejouable sur une base déjà au schéma 8.
             create_app({"TESTING": True, "DATABASE": database_path})
             with sqlite3.connect(database_path) as database:
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0], 13)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0], 14)
                 self.assertEqual(
                     database.execute("SELECT COUNT(*) FROM attendance_corrections").fetchone()[0],
                     0,
@@ -5655,7 +5676,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                     "precipitation_mm", "created_at",
                 },
             )
-            self.assertEqual(schema_version, 13)
+            self.assertEqual(schema_version, 14)
             self.assertEqual(integrity, "ok")
             self.assertEqual(foreign_keys, [])
 
@@ -5795,7 +5816,7 @@ class NasDeploymentTestCase(unittest.TestCase):
                 ("TEST", "volunteer", "+33", "06 10 10 10 10"),
             )
             self.assertEqual(session_count, 1)
-            self.assertEqual(schema_version, 13)
+            self.assertEqual(schema_version, 14)
 
 
 if __name__ == "__main__":

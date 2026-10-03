@@ -12,7 +12,7 @@ def create_schema12(path):
     config = {'TESTING': True, 'SEED_DEMO_USERS': False, 'DATABASE': str(path),
               'ADMIN_PIN': None, 'MODERATOR_PIN': None, 'SECRET_KEY': 'fictional-schema12',
               'WEATHER_ENABLED': False, 'AUTO_CLOSURE_WORKER': False}
-    with mock.patch.object(app, 'migrate_animation_slots_schema', lambda database: None):
+    with mock.patch.object(app, 'migrate_animation_slots_schema', lambda database: None), mock.patch.object(app, 'migrate_evolution', lambda database, **kwargs: None):
         app.create_app(config)
     with sqlite3.connect(path) as db:
         assert db.execute('PRAGMA user_version').fetchone()[0] == 12
@@ -27,5 +27,5 @@ def create_schema12(path):
         for i,status in enumerate(('confirmed','waitlisted','cancelled')):
             db.execute("INSERT INTO animation_bookings(external_uuid,service_id,environment,first_name,last_name,status,link_status,source,created_at,updated_at) VALUES(?,1,'test','Ancien','FICTIF',?,'visitor','online','2026-01-01','2026-01-01')", (str(i),status))
     # Materialize the pre-existing normalization/statistical snapshots at schema 12.
-    with mock.patch.object(app, 'migrate_animation_slots_schema', lambda database: None):
+    with mock.patch.object(app, 'migrate_animation_slots_schema', lambda database: None), mock.patch.object(app, 'migrate_evolution', lambda database, **kwargs: None):
         app.create_app(config)

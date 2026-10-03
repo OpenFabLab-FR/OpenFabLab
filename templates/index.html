@@ -75,7 +75,7 @@
                         <span class="present-details">
                             <span class="present-name">{{ user.first_name }} {{ user.last_name[0] }}.</span>
                             {% if user.category != 'user' %}
-                                <span class="category-badge category-{{ user.category }}">{{ user.category|category_label }}</span>
+                                <span class="category-badge category-{{ user.category }}" style="border-left:4px solid {{ category_colors.get(user.category,'#16849c') }}">{{ user.category|category_label }}</span>
                             {% endif %}
                         </span>
                     </button>

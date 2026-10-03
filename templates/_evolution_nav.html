@@ -1,0 +1,10 @@
+<nav class="admin-subtabs" aria-label="Ressources et compétences">
+  <a class="admin-subtab{% if request.endpoint=='admin_services' %} active{% endif %}" href="{{ url_for('admin_services') }}">Aperçu</a>
+  {% if modules.resources %}
+  <a class="admin-subtab{% if request.endpoint=='evolution.resource_directory' %} active{% endif %}" href="{{ url_for('evolution.resource_directory') }}">Ressources</a>
+  <a class="admin-subtab{% if request.endpoint=='evolution.resource_bookings' %} active{% endif %}" href="{{ url_for('evolution.resource_bookings') }}">Réservations de ressources</a>
+  {% endif %}
+  {% if modules.authorizations %}
+  <a class="admin-subtab{% if request.endpoint=='evolution.authorizations' %} active{% endif %}" href="{{ url_for('evolution.authorizations') }}">Formations et habilitations</a>
+  {% endif %}
+</nav>

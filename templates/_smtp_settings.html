@@ -1,0 +1,8 @@
+{% from '_evolution_fields.html' import csrf,field %}
+<section class="admin-section" id="smtp"><h2>SMTP natif</h2><p>Service facultatif pour l’e-mail de bienvenue. Les identifiants restent dans le stockage privé persistant, hors des exports SQLite et du profil de structure.</p>
+<form method="post" action="{{ url_for('evolution.integrations') }}" class="admin-form">{{ csrf(evolution_csrf,'smtp') }}<div class="form-grid">
+{{ field('host','Serveur SMTP',smtp.host|default(''),required=true) }}{{ field('port','Port',smtp.port|default(587),'number',true) }}
+<label class="form-field">Sécurité<select name="security"><option value="starttls" {% if smtp.security|default('starttls')=='starttls' %}selected{% endif %}>STARTTLS</option><option value="tls" {% if smtp.security|default('')=='tls' %}selected{% endif %}>TLS</option></select></label>
+{{ field('username','Identifiant',smtp.username|default('')) }}<label class="form-field">Mot de passe<input name="password" type="password" autocomplete="new-password"><small>Vide : ne modifie pas le mot de passe actuel.</small></label>
+{{ field('sender_name','Nom expéditeur',smtp.sender_name|default('')) }}{{ field('sender_email','E-mail expéditeur',smtp.sender_email|default(''),'email',true) }}{{ field('reply_to','Répondre à',smtp.reply_to|default(''),'email') }}</div><button class="admin-button primary compact">Enregistrer SMTP</button></form>
+<form method="post" action="{{ url_for('evolution.integrations') }}" class="admin-form">{{ csrf(evolution_csrf,'test') }}{{ field('recipient','Destinataire du test',type='email',required=true) }}<button class="admin-button secondary compact">Envoyer un e-mail de test fictif</button></form></section>

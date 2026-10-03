@@ -20,8 +20,21 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.6.3')
-        self.assertIn('openfablab:v2.6.3',(ROOT/'compose.yaml').read_text())
+        self.assertEqual(__version__,'2.7.0')
+        self.assertIn('openfablab:v2.7.0',(ROOT/'compose.yaml').read_text())
+
+    def test_stable_release_documentation_is_consistent(self):
+        readme=(ROOT/'README.md').read_text()
+        self.assertIn('# OpenFabLab 2.7.0',readme)
+        self.assertIn('SQLite schéma 14',readme)
+        self.assertIn('OpenFabLab Reservations 2.7.0',readme)
+        obsolete=re.compile(r'candidate locale|la candidate|non publiée|non validée sur une installation réelle|aucun déploiement effectué',re.I)
+        for path in [ROOT/'README.md',ROOT/'CHANGELOG.md',*(ROOT/'docs').glob('*.md')]:
+            self.assertIsNone(obsolete.search(path.read_text()),path.name)
+        changelog=(ROOT/'CHANGELOG.md').read_text().split('## 2.6.3')[0]
+        for section in ('Calendrier','Usagers','E-mails et notifications','Ressources et réservations',
+                        'Formations et habilitations','WordPress','Sauvegardes','Interface','Migration'):
+            self.assertIn('### '+section,changelog)
 
     def test_every_default_is_generic_even_with_legacy_flag(self):
         for flag in (False,True):
@@ -34,7 +47,7 @@ class PublicReleaseTests(unittest.TestCase):
             self.assertEqual(settings['reservation_sync_interval_minutes'],'2')
             self.assertTrue(all(value=='0' for key,value in settings.items() if key.startswith('billing_') and key.endswith('_cents')))
 
-    def test_new_instance_empty_schema13_no_pin_or_secret(self):
+    def test_new_instance_empty_schema14_no_pin_or_secret(self):
         from pin_security import has_pin
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'openfablab.db'
@@ -43,7 +56,7 @@ class PublicReleaseTests(unittest.TestCase):
                                         AUTO_CLOSURE_WORKER=False,WEATHER_ENABLED=False))
             with application.app_context():
                 db=get_database()
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],13)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],14)
                 self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
                 self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
                 for table in ('users','sessions','visitors','rental_catalog','billing_tariff_catalog','billing_clients','billing_records','animation_bookings'):
@@ -156,14 +169,14 @@ class PublicReleaseTests(unittest.TestCase):
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.6.3'
+assert app.app.config['APP_VERSION']=='V2.7.0'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     response.close()
 with sqlite3.connect(app.app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==13
+    assert db.execute('PRAGMA user_version').fetchone()[0]==14
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     assert db.execute('SELECT COUNT(*) FROM users').fetchone()[0]==0
