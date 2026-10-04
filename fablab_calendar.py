@@ -86,8 +86,20 @@ def calendar_view(db,args,a):
                 if datetime.fromisoformat(str(day)+'T'+row['start']).replace(tzinfo=zone) <= current:
                     # Same counters and statistical identities as the existing
                     # attendance page, scoped to the OpenLab interval.
-                    summary = a.load_day_attendance(db, day, row['start'], row['end'])['summary']
+                    attendance = a.load_day_attendance(db, day, row['start'], row['end'])
+                    summary = attendance['summary']
                     daily[day][-1]['attendance'] = str(summary['unique_users'])+' usager'+('s' if summary['unique_users']!=1 else '')+' · '+str(summary['visitors'])+' visiteur'+('s' if summary['visitors']!=1 else '')
+                    event = daily[day][-1]
+                    event['action_label'] = 'Ouvrir la journée'
+                    event['extra_details'] = []
+                    if summary['peak_users']:
+                        event['extra_details'].append('Pic simultané : '+str(summary['peak_users'])+' usager(s) à '+summary['peak_at'])
+                    weather = summary['peak_weather']
+                    if weather:
+                        event['extra_details'].append('Météo enregistrée au pic : '+weather['description']+' · '+str(round(weather['temperature_c']))+' °C')
+                    event['people'] = [{'name':item['identity'], 'category':item['row']['statistical_category'],
+                        'state':str(item['duration_seconds']//60)+' min' if item['duration_seconds'] is not None else ''}
+                        for item in attendance['sessions']]
             day+=timedelta(days=1)
     for service in db.execute('''SELECT s.*,b.rental_end_date FROM fablab_services s
         LEFT JOIN billing_records b ON b.service_id=s.id
@@ -136,9 +148,50 @@ def calendar_view(db,args,a):
     days=[];day=start
     while day<end:
         events=daily[day]
+        # Presentation metadata only; interval calculation and counters above
+        # remain unchanged. This route is restricted to the existing team roles.
+        for event in events:
+            detail = [event['day'].strftime('%d/%m/%Y'), event['time'] or 'Journée entière']
+            event.setdefault('people', [])
+            if event.get('attendance'):
+                detail.append(event['attendance'])
+            detail.extend(event.get('extra_details', []))
+            if event['kind'] == 'reservation':
+                row = db.execute('SELECT b.status,u.first_name,u.last_name FROM resource_bookings b LEFT JOIN users u ON u.id=b.user_id WHERE booking_uuid=?',(event['key'],)).fetchone()
+                if row:
+                    from resource_booking import STATUS_LABELS
+                    detail.extend([((row['first_name'] or 'Usager supprimé') + ' ' + (row['last_name'] or '')).strip(), STATUS_LABELS[row['status']]])
+            elif event['kind'] == 'training':
+                row = db.execute('SELECT u.first_name,u.last_name FROM user_authorizations g LEFT JOIN users u ON u.id=g.user_id WHERE grant_uuid=?',(event['key'],)).fetchone()
+                if row:
+                    detail.append(((row['first_name'] or 'Usager supprimé') + ' ' + (row['last_name'] or '')).strip())
+            elif event['kind'] == 'animation':
+                config = db.execute('SELECT * FROM animation_reservation_config WHERE service_id=?',(event['key'],)).fetchone()
+                if config and modules['public_reservations']:
+                    from reservations_sync import booking_counts, booking_reservation_status
+                    bookings = db.execute('SELECT b.*,u.category FROM animation_bookings b LEFT JOIN users u ON u.id=b.user_id WHERE service_id=? AND environment=? ORDER BY CASE b.status WHEN \'waitlisted\' THEN 1 ELSE 0 END,b.created_at',(event['key'],config['environment'])).fetchall()
+                    counts = booking_counts(bookings)
+                    detail.append(str(sum(counts[s] for s in ('confirmed','offer_pending')))+' inscrit(s) / '+str(config['capacity'])+' places')
+                    if counts['waitlisted']:
+                        detail.append(str(counts['waitlisted'])+' en liste d’attente')
+                    labels = {'confirmed':'Confirmée','waitlisted':'Liste d’attente','offer_pending':'Place proposée','cancelled':'Annulée','expired':'Expirée'}
+                    event['people'] = [{'name':(b['first_name']+' '+b['last_name']).strip(), 'category':b['category'] or '',
+                        'state':labels.get(booking_reservation_status(b),'En cours')}
+                        for b in bookings if b['status'] not in ('cancelled','expired')]
+                row = db.execute('SELECT actual_participants,expected_participants FROM fablab_services WHERE id=?',(event['key'],)).fetchone()
+                if row:
+                    if row['actual_participants'] is not None:
+                        detail.append(str(row['actual_participants']) + ' participant(s) présent(s)')
+                    if row['expected_participants'] is not None:
+                        detail.append('Capacité : ' + str(row['expected_participants']) + ' place(s)')
+            event['details'] = '\n'.join(detail)
+            for person in event['people']:
+                row = db.execute('SELECT name FROM user_categories WHERE category_key=?',(person['category'],)).fetchone()
+                person['category_label'] = row['name'] if row else person['category']
         days.append({'date':day,'today':day==today,'timed':position_overlaps([e for e in events if not e['all_day']]),'all_day':[e for e in events if e['all_day']],'events':events})
         day+=timedelta(days=1)
     return {'view':view,'chosen':chosen,'days':days,'previous':previous,'following':following,'today':today,'hours':hours,
+            'has_all_day':any(day['all_day'] for day in days),
             'timeline_height':max(180, window_duration), 'window_extended':(window_start,window_end)!=(configured_start,configured_end),
             'visible_start':f'{window_start//60:02d}:{window_start%60:02d}', 'visible_end':f'{window_end//60:02d}:{window_end%60:02d}',
             'heading':('Semaine du '+start.strftime('%d/%m/%Y')) if view=='week' else chosen.strftime('%m/%Y')}

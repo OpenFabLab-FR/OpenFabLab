@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from zipfile import ZipFile, ZIP_DEFLATED
 from runtime_policy import TEST_MARKER, storage_guard, is_test_instance
+from openfablab import __version__
 
 FORMAT = 'openfablab-private-backup'
 FORMAT_VERSION = 1
@@ -160,7 +161,7 @@ def neutralize(root, bindings=None):
     _json(marker, {'format': 'openfablab-test-instance', 'version': 1, 'external_actions': False})
 
 
-def create_backup(database_path, output, *, app_version='2.7.0', kind='complete', extras=None,
+def create_backup(database_path, output, *, app_version=__version__, kind='complete', extras=None,
                   secret_key=None):
     if kind not in ('complete', 'test'):
         raise ValueError('Type de sauvegarde inconnu.')
@@ -258,7 +259,7 @@ def validate_backup(archive_path, destination=None):
                 or manifest.get('kind') not in ('complete', 'test')):
             raise ValueError('Format de sauvegarde inconnu.')
         version = manifest.get('openfablab_version', '')
-        if not re.fullmatch(r'2\.(?:6\.[0-9]+|7\.0)', version):
+        if not re.fullmatch(r'2\.(?:6\.[0-9]+|7\.[0-9]+)', version):
             raise ValueError('Version OpenFabLab incompatible avec cette restauration.')
         records = manifest.get('files')
         if not isinstance(records, list):
@@ -466,7 +467,7 @@ def main():
     parser.add_argument('--database', type=Path)
     parser.add_argument('--archive', type=Path)
     parser.add_argument('--kind', choices=('complete', 'test'), default='complete')
-    parser.add_argument('--app-version', default='2.7.0')
+    parser.add_argument('--app-version', default=__version__)
     args = parser.parse_args()
     if args.action == 'validate':
         validate_backup(args.archive)

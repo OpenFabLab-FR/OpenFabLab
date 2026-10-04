@@ -106,13 +106,13 @@ class CandidateRevisionTests(unittest.TestCase):
     def test_overview_first_subtab_keeps_legacy_route(self):
         page=self.client.get('/admin/animations').get_data(as_text=True)
         self.assertIn('Aperçu',page)
-        self.assertLess(page.index('>Aperçu</a>'),page.index('>Ressources</a>'))
+        self.assertLess(page.index('>Aperçu</a>'),page.index('>Gestion des ressources</a>'))
 
     def test_disabled_modules_hide_navigation_and_block_mutations_without_deletion(self):
         self.client.get('/admin/ressources')
         self.configure(module_resources='0',module_authorizations='0')
         page=self.client.get('/admin/animations').get_data(as_text=True)
-        for label in ('>Ressources</a>','>Réservations de ressources</a>','>Formations et habilitations</a>'):
+        for label in ('>Gestion des ressources</a>','>Réserver une ressource</a>','>Formations et habilitations</a>'):
             self.assertNotIn(label,page)
         for path in ('/admin/ressources','/admin/ressources/reservations','/admin/habilitations'):
             self.assertIn(self.client.get(path).status_code,(302,403,404))

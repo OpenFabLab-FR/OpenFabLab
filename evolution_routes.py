@@ -10,7 +10,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, send_file, session, url_for
-from evolution_schema import categories, default_category, save_category, remove_category, sync_legacy_machines, audit, now
+from evolution_schema import categories, default_category, save_category, remove_category, sync_legacy_machines, audit, now, reorder
 from evolution_users import create_user, creation_message, SOURCES
 import resource_booking as resources
 import welcome_mail
@@ -61,6 +61,11 @@ def register(application, api):
     a = SimpleNamespace(**api)
     bp = Blueprint('evolution', __name__)
 
+    @application.template_filter('money')
+    def money(value):
+        cents = int(value)
+        return str(cents // 100) + ',' + str(cents % 100).zfill(2)
+
     @application.before_request
     def protect_user_forms():
         if request.method=='POST' and request.endpoint in {'admin_add_user','admin_edit_user'}:
@@ -70,8 +75,16 @@ def register(application, api):
     def evolution_context():
         db = a.get_database()
         colors = {row['category_key']:row['color'] for row in categories(db,True)}
-        return {'evolution_csrf':csrf_token(), 'category_colors':colors,
+        # Keys/colors are validated registry values, never CSS supplied by a user.
+        styles = []
+        import re
+        for key, color in colors.items():
+            if re.fullmatch(r'[a-zA-Z0-9_-]+', key) and re.fullmatch(r'#[0-9a-fA-F]{6}', color):
+                styles.append('.category-badge.category-' + key + '{--category-color:' + color + ';background:' + color + '18;color:#203e47;}')
+        return {'evolution_csrf':csrf_token(), 'category_colors':colors, 'category_styles': ''.join(styles),
+                'user_grants': resources.grants_for_user(db, request.view_args['user_id']) if request.endpoint == 'admin_edit_user' else [],
                 'creation_sources':SOURCES, 'self_enrollment_enabled':a.read_setting(db,'self_enrollment_enabled','0')=='1',
+                'tablet_reservations_enabled':a.read_setting(db,'tablet_reservations_enabled','0')=='1',
                 'welcome_default':a.read_setting(db,'welcome_default','0')=='1',
                 'smtp_ready':bool(welcome_mail.load_config(application.config['DATABASE']))}
 
@@ -86,7 +99,7 @@ def register(application, api):
                     if request.form.get('action')=='category':
                         key=save_category(db,request.form.get('name',''),request.form.get('color','#16849c'),
                                           request.form.get('active')=='1',request.form.get('default')=='1',
-                                          request.form.get('key') or None, int(request.form.get('order','0')))
+                                          request.form.get('key') or None)
                         audit(db,'category',key,'saved',role)
                     elif request.form.get('action')=='remove_category':
                         if request.form.get('confirmation')!='SUPPRIMER':
@@ -95,15 +108,20 @@ def register(application, api):
                         action=remove_category(db,key,request.form.get('replacement') or None)
                         audit(db,'category',key,action,role)
                     elif request.form.get('action')=='preferences':
-                        for key in ('self_enrollment_enabled','welcome_default'):
+                        for key in ('self_enrollment_enabled','tablet_reservations_enabled','welcome_default'):
                             a.write_setting(db,key,'1' if request.form.get(key)=='1' else '0')
                         subject,body=request.form.get('welcome_subject',''),request.form.get('welcome_body','')
                         welcome_mail.validate_template(subject,body)
                         a.write_setting(db,'welcome_subject',subject);a.write_setting(db,'welcome_body',body)
                     else:
                         raise ValueError('Action inconnue.')
+                if request.headers.get('X-OpenFabLab-Autosave') == '1':
+                    return {'ok': True}
                 flash('Réglages enregistrés.', 'success')
             except (ValueError,sqlite3.IntegrityError) as error:
+                if request.headers.get('X-OpenFabLab-Autosave') == '1':
+                    db.rollback()
+                    return {'ok':False, 'message':str(error) if isinstance(error,ValueError) else 'Nom déjà utilisé.'},400
                 db.rollback();flash('Réglages refusés : ' + (str(error) if isinstance(error,ValueError) else 'nom déjà utilisé.'),'error')
             return redirect(url_for('evolution.users_settings'))
         return render_template('evolution_users_settings.html', entries=categories(db,True),
@@ -125,9 +143,15 @@ def register(application, api):
                     proposed['password']=request.form.get('password') or config.get('password','')
                     welcome_mail.save_config(application.config['DATABASE'],proposed)
                 elif action=='test':
-                    values={'structure_name':'Atelier Exemple','first_name':'Camille','last_name':'Exemple',
-                            'public_id':'9876','contact':'contact@example.invalid','website':'https://example.invalid'}
-                    message=welcome_mail.build_message(config,request.form.get('recipient'),values,'[TEST] ' + welcome_mail.SUBJECT)
+                    message=welcome_mail.build_smtp_test(config,request.form.get('recipient'),
+                        a.read_setting(db,'structure_name','Mon FabLab'),a.read_setting(db,'structure_website',''))
+                    welcome_mail.send(config,message)
+                elif action=='welcome_test':
+                    values={'structure_name':a.read_setting(db,'structure_name','Mon FabLab'),'first_name':'Camille','last_name':'Exemple',
+                            'public_id':'9876','contact':a.read_setting(db,'structure_email',''),'website':a.read_setting(db,'structure_website','')}
+                    message=welcome_mail.build_message(config,request.form.get('recipient'),values,
+                        '[EXEMPLE FICTIF] ' + a.read_setting(db,'welcome_subject',welcome_mail.SUBJECT),
+                        a.read_setting(db,'welcome_body',welcome_mail.BODY))
                     welcome_mail.send(config,message)
                 elif action=='discord':
                     with db:
@@ -140,6 +164,22 @@ def register(application, api):
                 flash('Échec : vérifiez les paramètres ou la connexion SMTP. Aucun secret affiché.', 'error')
             return redirect(url_for('admin_notifications')+'#new-user-notifications' if action=='discord' else url_for('admin_settings_structure')+'#smtp')
         return redirect(url_for('admin_settings_structure')+'#smtp')
+
+    @bp.post('/admin/reglages/ordre/<kind>')
+    def save_order(kind):
+        role = require_team(True); require_csrf()
+        db = a.get_database()
+        try:
+            import json
+            keys = json.loads(request.form.get('keys', 'null'))
+            db.execute('BEGIN IMMEDIATE')
+            keys = reorder(db, kind, keys)
+            audit(db, 'ordering', kind, 'reordered', role)
+            db.commit()
+        except (ValueError, sqlite3.Error):
+            db.rollback()
+            return {'ok': False, 'message': 'Ordre non enregistré. Rechargez la liste et réessayez.'}, 400
+        return {'ok': True, 'keys': keys}
 
     @bp.post('/admin/usagers/<int:user_id>/bienvenue')
     def resend_welcome(user_id):
@@ -230,21 +270,29 @@ def register(application, api):
                     if action=='type':
                         require_team(True)
                         resources.save_type(db,request.form.get('name',''),request.form.get('color','#16849c'),
-                                            request.form.get('active')=='1',request.form.get('key') or None,int(request.form.get('order','0')))
+                                            request.form.get('active')=='1',request.form.get('key') or None)
                     elif action=='resource':
                         require_team(True)
                         if request.form.get('required_authorization') and not a.load_modules(db)['authorizations']:
                             raise ValueError('Activez Formations et habilitations avant d’exiger une habilitation.')
-                        resources.save_resource(db,{k:request.form.get(k) for k in ('name','description','type_key','color','active','approval_required','price_cents','required_authorization')},role,request.form.get('key') or None)
+                        values = {k:request.form.get(k) for k in ('name','description','type_key','color','active','approval_required','price_cents','required_authorization')}
+                        if 'price_euros' in request.form:
+                            values['price_cents'] = resources.euros_to_cents(request.form['price_euros'])
+                        resources.save_resource(db,values,role,request.form.get('key') or None)
                     else:
                         raise ValueError('Action inconnue.')
+                if request.headers.get('X-OpenFabLab-Autosave') == '1':
+                    return {'ok': True}
                 flash('Ressource enregistrée.', 'success')
             except (ValueError,sqlite3.IntegrityError) as error:
+                if request.headers.get('X-OpenFabLab-Autosave') == '1':
+                    db.rollback()
+                    return {'ok':False, 'message':str(error) if isinstance(error,ValueError) else 'Référence incompatible.'},400
                 db.rollback();flash(str(error) if isinstance(error,ValueError) else 'Nom déjà utilisé ou référence invalide.','error')
             return redirect(url_for('evolution.resource_directory'))
         return render_template('resources.html',resource_types=db.execute('SELECT * FROM resource_types ORDER BY sort_order,name').fetchall(),
-            resources=db.execute('SELECT r.*, t.name AS type_name,COALESCE(r.color,t.color) AS display_color FROM resources r JOIN resource_types t USING(type_key) ORDER BY r.name').fetchall(),
-            authorizations=db.execute('SELECT * FROM authorizations WHERE active=1 ORDER BY name').fetchall())
+            resources=db.execute('SELECT r.*, t.name AS type_name,COALESCE(r.color,t.color) AS display_color,a.name AS authorization_name FROM resources r JOIN resource_types t USING(type_key) LEFT JOIN authorizations a ON a.authorization_uuid=r.required_authorization ORDER BY r.name').fetchall(),
+            authorizations=resources.definitions(db,True))
 
     @bp.route('/admin/ressources/reservations', methods=['GET','POST'])
     def resource_bookings():
@@ -293,11 +341,11 @@ def register(application, api):
                 with db:
                     action=request.form.get('action')
                     if action=='definition':
-                        require_team(True)
-                        name=request.form.get('name','').strip()
-                        if not name or len(name)>180:
-                            raise ValueError('Nom d’habilitation requis.')
-                        db.execute('INSERT INTO authorizations VALUES(?,?,?,?,?)',(str(uuid4()),name,request.form.get('description','')[:2000],1,now()))
+                        resources.save_definition(db, request.form.get('name',''), request.form.get('description',''),role,request.form.get('key') or None)
+                    elif action in {'archive', 'reactivate', 'delete'}:
+                        if action == 'delete' and request.form.get('confirmation') != 'SUPPRIMER':
+                            raise ValueError('Confirmez la suppression.')
+                        resources.change_definition(db, request.form.get('key'), action, role)
                     elif action=='grant':
                         resources.grant(db,int(request.form.get('user_id','')),request.form.get('authorization_uuid'),request.form.get('performed_on'),request.form.get('validated_by',''),role,request.form.get('expires_on') or None)
                     elif action=='revoke':
@@ -308,9 +356,16 @@ def register(application, api):
             except (ValueError,sqlite3.IntegrityError) as error:
                 db.rollback();flash(str(error) if isinstance(error,ValueError) else 'Référence incompatible.','error')
             return redirect(url_for('evolution.authorizations'))
-        return render_template('authorizations.html',definitions=db.execute('SELECT * FROM authorizations WHERE active=1 ORDER BY name').fetchall(),
+        definitions = resources.definitions(db, True)
+        today = datetime.now().date().isoformat()
+        for definition in definitions:
+            key = definition['authorization_uuid']
+            history, dependencies, active_resources = resources.definition_usage(db, key)
+            definition.update(history_count=history, dependencies=dependencies, active_resources=active_resources,
+                qualified_count=db.execute('SELECT COUNT(DISTINCT g.user_id) FROM user_authorizations g JOIN users u ON u.id=g.user_id WHERE u.active=1 AND g.authorization_uuid=? AND g.revoked_at IS NULL AND g.performed_on<=? AND (g.expires_on IS NULL OR g.expires_on>=?)',(key,today,today)).fetchone()[0])
+        return render_template('authorizations.html',definitions=definitions,
             users=db.execute('SELECT id,first_name,last_name FROM users WHERE active=1 ORDER BY first_name').fetchall(),
-            grants=db.execute('SELECT g.*,a.name,u.first_name,u.last_name FROM user_authorizations g JOIN authorizations a USING(authorization_uuid) LEFT JOIN users u ON u.id=g.user_id ORDER BY g.performed_on DESC').fetchall())
+            grants=resources.grants_for_user(db))
 
     @bp.get('/admin/calendrier')
     def calendar():

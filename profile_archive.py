@@ -46,7 +46,7 @@ EXACT_KEYS = {
     "automatic_closure_enabled", "invalid_id_threshold", "invalid_id_window_minutes",
     "invalid_id_lock_enabled", "invalid_id_lock_minutes",
     "discord_notifications_enabled", "discord_bot_name",
-    'self_enrollment_enabled', 'welcome_default', 'welcome_subject', 'welcome_body',
+    'self_enrollment_enabled', 'tablet_reservations_enabled', 'welcome_default', 'welcome_subject', 'welcome_body',
     'discord_new_user_enabled', 'discord_new_user_first_name', 'discord_new_user_last_name',
     'discord_new_user_last_initial', 'discord_new_user_age', 'discord_new_user_category',
     'discord_new_user_source', 'discord_new_user_time',
@@ -184,7 +184,7 @@ def parse_profile(raw):
                     raise ValueError("État de module invalide.")
                 if key == 'structure_badge_template' and value not in {'', 'badge-template.svg'}:
                     raise ValueError('Nom du modèle de badge invalide.')
-                if (key in {'self_enrollment_enabled','welcome_default'} or key.startswith('discord_new_user_')) and value not in {'0','1'}:
+                if (key in {'self_enrollment_enabled','tablet_reservations_enabled','welcome_default'} or key.startswith('discord_new_user_')) and value not in {'0','1'}:
                     raise ValueError('État d’inscription ou de notification invalide.')
                 if key.endswith('_logo') and key.startswith('structure_') and not key.startswith(('structure_show_', 'structure_use_')):
                     kind = key.removeprefix('structure_').removesuffix('_logo')
@@ -194,7 +194,15 @@ def parse_profile(raw):
                     raise ValueError('Plage affichée du calendrier invalide.')
                 if key in RESERVATION_RANGES:
                     minimum, maximum = RESERVATION_RANGES[key]
-                    if not value.isdecimal() or not minimum <= int(value) <= maximum:
+                    if key == 'reservation_sync_interval_minutes':
+                        try:
+                            number = Decimal(value)
+                            valid = number.is_finite() and minimum <= number <= maximum and number * 2 == (number * 2).to_integral_value()
+                        except InvalidOperation:
+                            valid = False
+                    else:
+                        valid = value.isdecimal() and minimum <= int(value) <= maximum
+                    if not valid:
                         raise ValueError("Paramètre de réservation invalide.")
                 if key == "reservation_waitlist_enabled" and value not in {"0", "1"}:
                     raise ValueError("État de liste d’attente invalide.")

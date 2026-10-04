@@ -67,7 +67,7 @@ par l'interface d'administration.
 ## Restauration contrôlée
 
 Administrateur seulement, POST et nonce de session, confirmation exacte
-`RESTAURER INSTALLATION`. Format, compatibilité (2.6.x/2.7.0, schéma 13/14),
+`RESTAURER INSTALLATION`. Format, compatibilité (2.6.x/2.7.x, schéma 13/14),
 liste exacte des fichiers, chemins, tailles, empreintes, SQLite integrity/FK et
 format des dérivations PIN sont vérifiés avant remplacement. Les archives
 futures, fichiers supplémentaires, doublons et chemins dangereux sont refusés.
@@ -83,7 +83,7 @@ pas fonctionner deux versions différentes sur le même persistant.
 
 Après restauration : intégrité, FK, schéma, initialisation additive normale et
 reconnexion avec le PIN de l'archive. Une base 13 est migrée normalement vers 14
-par OpenFabLab 2.7.0 ; jamais de rétrogradation 14 → 13.
+par OpenFabLab 2.7.x ; jamais de rétrogradation 14 → 13.
 
 Hors ligne (service arrêté) :
 

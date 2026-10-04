@@ -1,5 +1,13 @@
 # Mettre à jour OpenFabLab
 
+## 2.7.0 → 2.7.1
+
+SQLite reste au **schéma 14** et Reservations au **2.7.0**. L’initialisation normalise les ordres des catégories et initialise l’ordre des habilitations dans la configuration existante. Elle ajoute l’option de demandes d’animations depuis la borne, désactivée par défaut, et remplace une fois l’ancienne cadence de deux minutes par 1,5 minute ; les autres intervalles personnalisés sont préservés. Elle ne migre pas les données métier, ne remplace pas les ressources privées et ne modifie pas les PIN ou les secrets. Les nouvelles ressources et catégories restent configurées par la structure, sans valeurs institutionnelles imposées. Les demandes publiques utilisent l’outbox existante, sans nouvelle table.
+
+Conserver une sauvegarde complète privée et le runtime précédent. Tester la nouvelle version avec une copie privée de test isolée, puis contrôler santé, intégrité/FK, données, droits, catégories, ressources et branding. Ne rejouer aucune migration historique. OpenFabLab 2.7.1 est stable et a été déployé en conditions réelles au FougèresLab ; cette validation ne dispense pas des contrôles sur chaque installation. Voir [les corrections](corrections-2.7.1.md).
+
+Les configurations de production, fichiers privés et intégrations doivent être conservés. Ne jamais importer une base de test ou ses protections dans la production. Reservations 2.7.0 reste inchangé : aucun redéploiement WordPress nécessaire pour cette seule mise à jour. Après de nouvelles écritures, ne restaurer aucune sauvegarde PRE automatiquement : conserver l’état courant et décider d’une reprise explicite.
+
 ## 2.6.x / schéma 13 → 2.7.0 / schéma 14
 
 Le persistant complet, pas seulement SQLite, doit être sauvegardé avant migration.

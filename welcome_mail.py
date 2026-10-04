@@ -114,6 +114,23 @@ def build_message(config, recipient, values, subject=SUBJECT, body=BODY):
     return message
 
 
+def build_smtp_test(config, recipient, structure_name, website=''):
+    """Connectivity check only: no person, identifier, QR or attachment."""
+    config = validate_config(config)
+    if not EMAIL.fullmatch(str(recipient or '')):
+        raise ValueError('Adresse destinataire valide requise.')
+    message = EmailMessage()
+    message['Subject'] = 'Test de configuration e-mail OpenFabLab'
+    message['From'] = (config['sender_name'] + ' <' + config['sender_email'] + '>') if config['sender_name'] else config['sender_email']
+    message['To'] = recipient
+    if config['reply_to']:
+        message['Reply-To'] = config['reply_to']
+    message.set_content('Bonjour,\n\nCeci est un message de test envoyé depuis OpenFabLab afin de vérifier la configuration SMTP de ' + structure_name + '.\n\n'
+                        'Si vous recevez ce message, l’envoi d’e-mails depuis OpenFabLab fonctionne correctement.\n\n'
+                        + structure_name + ('\n' + website if website else ''))
+    return message
+
+
 def send(config, message):
     from runtime_policy import require_external
     require_external()

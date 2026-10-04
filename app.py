@@ -72,7 +72,7 @@ from reservations_sync import (enqueue_animation, enqueue_booking_command, load_
                                run_sync_cycle, save_sync_secret, sync_secret_path,
                                sync_error_label, booking_counts, booking_presence,
                                booking_reservation_status, booking_capacity_used,
-                               pending_confirmation_ids)
+                               pending_confirmation_ids, sync_interval_seconds)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -505,6 +505,8 @@ def create_app(test_config=None):
     register_routes(application)
     from evolution_routes import register as register_evolution
     register_evolution(application, globals())
+    from tablet_reservations import register as register_tablet_reservations
+    register_tablet_reservations(application, globals())
     register_error_handlers(application)
 
     from runtime_policy import storage_guard
@@ -835,6 +837,12 @@ def initialize_database():
         "INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)",
         default_settings,
     )
+    # One-time, requested 2.7.1 adjustment of the former two-minute default.
+    # Other intervals and subsequent explicit selections are preserved.
+    if read_setting(database, 'reservation_sync_90s_initialized', '') != '1':
+        if read_setting(database, 'reservation_sync_interval_minutes', '') == '2':
+            write_setting(database, 'reservation_sync_interval_minutes', '1.5')
+        write_setting(database, 'reservation_sync_90s_initialized', '1')
     # Convert only the exact historical default; never rename directories or
     # touch a custom destination (including nested historical directories).
     if read_setting(database, "automatic_backup_subdirectory") == "CompteurPassage":
@@ -1034,7 +1042,8 @@ def default_application_settings(_legacy_installation=False):
         ("reservation_close_minutes", "60"),
         ("reservation_reminder_one_hours", "24"),
         ("reservation_reminder_two_hours", "0"),
-        ("reservation_sync_interval_minutes", "2"),
+        ("reservation_sync_interval_minutes", "1.5"),
+        ('tablet_reservations_enabled', '0'),
         ("reservation_wordpress_url", ""),
     ]
     settings.extend((f"discord_reservation_{name}", "1") for name in RESERVATION_DISCORD_FLAGS)
@@ -2393,6 +2402,7 @@ def load_day_attendance(database, local_day, start_time=None, end_time=None):
             if completed_durations
             else 0,
             "peak_users": peak,
+            "peak_at": peak_at.astimezone(PARIS_TIMEZONE).strftime('%H:%M') if peak_at else None,
             "peak_period": peak_period,
             "peak_weather": peak_weather,
         },
@@ -5373,10 +5383,10 @@ def start_automatic_closure_worker(application):
                         secret_set = bool(load_sync_secret(application.config["DATABASE"]))
                         if site_url and secret_set:
                             try:
-                                interval = max(1, min(120, int(read_setting(database, "reservation_sync_interval_minutes", "2"))))
+                                interval = sync_interval_seconds(read_setting(database, "reservation_sync_interval_minutes", "1.5"))
                                 last_attempt = read_setting(database, "reservation_sync_last_attempt")
                                 due = (not last_attempt or datetime.now(timezone.utc) - parse_timestamp(last_attempt)
-                                       >= timedelta(minutes=interval))
+                                       >= timedelta(seconds=interval))
                                 if due:
                                     write_setting(database, "reservation_sync_last_attempt", utc_now_iso())
                                     database.commit()
@@ -5450,11 +5460,9 @@ def start_local_reservation_sync_worker(application):
                     if load_modules(database)["public_reservations"]:
                         site_url = read_setting(database, "reservation_wordpress_url")
                         if site_url and load_sync_secret(application.config["DATABASE"]):
-                            interval = max(1, min(120, int(read_setting(
-                                database, "reservation_sync_interval_minutes", "2"
-                            ))))
+                            interval = sync_interval_seconds(read_setting(database, "reservation_sync_interval_minutes", "1.5"))
                             last = read_setting(database, "reservation_sync_last_attempt")
-                            due = not last or datetime.now(timezone.utc) - parse_timestamp(last) >= timedelta(minutes=interval)
+                            due = not last or datetime.now(timezone.utc) - parse_timestamp(last) >= timedelta(seconds=interval)
                             if due:
                                 write_setting(database, "reservation_sync_last_attempt", utc_now_iso())
                                 database.commit()
@@ -5868,6 +5876,7 @@ def register_admin_protection(application):
         "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
         "admin_animation_booking_action", "admin_animation_booking_walkin",
         'evolution.calendar', 'evolution.resource_directory', 'evolution.resource_bookings',
+        'tablet_reservations.cancel_request',
         'evolution.authorizations', 'evolution.resend_welcome',
     }
     module_endpoints = {
@@ -5897,6 +5906,7 @@ def register_admin_protection(application):
         "public_reservations": {
             "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
             "admin_animation_booking_action", "admin_animation_booking_walkin",
+            'tablet_reservations.cancel_request',
         },
         "billing": {
             "admin_billing", "admin_billing_calendar", "admin_billing_form",
@@ -6370,7 +6380,7 @@ def register_routes(application):
                 return redirect(url_for("admin"))
             log_security_event(database, f"{requested_role}_login_failed")
             database.commit()
-            flash("Le code PIN est incorrect.", "error")
+            return render_template("admin_login.html", csrf_token=pin_csrf_token(), login_error="Le code PIN est incorrect.")
         return render_template("admin_login.html", csrf_token=pin_csrf_token())
 
     @application.post("/admin/deconnexion")
@@ -7005,10 +7015,18 @@ def register_routes(application):
             "minimum_age": (0, 120), "accompaniment_under_age": (0, 120),
             "offer_hours": (1, 168), "last_offer_hours": (1, 168),
             "close_minutes": (0, 1440), "reminder_one_hours": (0, 168),
-            "reminder_two_hours": (0, 168), "sync_interval_minutes": (1, 60),
+            "reminder_two_hours": (0, 168),
         }
         values = {}
         errors = []
+        interval_text = request.form.get('sync_interval_minutes', '').replace(',', '.')
+        try:
+            interval = Decimal(interval_text)
+            if not interval.is_finite() or not 1 <= interval <= 60 or interval * 2 != (interval * 2).to_integral_value():
+                raise ValueError
+            values['sync_interval_minutes'] = format(interval.normalize(), 'f')
+        except (ValueError, InvalidOperation):
+            errors.append('La synchronisation doit être comprise entre 1 et 60 minutes, par pas de 30 secondes.')
         for key, (minimum, maximum) in limits.items():
             try:
                 value = int(request.form.get(key, ""))
@@ -7357,6 +7375,10 @@ def register_routes(application):
                     for entry in profile['resource_types']:
                         database.execute('INSERT INTO resource_types VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(type_key) DO UPDATE SET name=excluded.name,normalized_name=excluded.normalized_name,color=excluded.color,active=excluded.active,sort_order=excluded.sort_order,updated_at=excluded.updated_at',
                             (entry['type_key'],entry['name'],entry['name'].strip().casefold(),entry['color'],entry['active'],entry['sort_order'],timestamp,timestamp))
+                    # Imported ranks may overlap retained entries: keep a total, gap-free order.
+                    from evolution_schema import reorder
+                    reorder(database, 'categories')
+                    reorder(database, 'resource_types')
                     for key, value in profile["settings"].items():
                         write_setting(database, key, value)
                     if not load_modules(database)['authorizations'] and database.execute(
@@ -8274,6 +8296,7 @@ def register_routes(application):
                     confirmation_errors[booking_id] = row["last_error"]
         return render_template(
             "animation_bookings.html", service=service, config=config,
+            tablet_requests=__import__('tablet_reservations').requests_for(database,service_id),
             bookings=bookings, counts=counts, users=users,
             remaining=max(0, (config["capacity"] if config else 0) - active),
             current_year=int(service["service_date"][:4]),
@@ -9585,6 +9608,18 @@ def register_routes(application):
         if request.method == "POST":
             current_settings = load_discord_settings(database)
             webhook_url = request.form.get("webhook_url", "").strip()
+            if request.form.get('webhook_only') == '1':
+                from evolution_routes import require_csrf
+                require_csrf()
+                try:
+                    if request.form.get('clear_webhook') == '1':
+                        clear_discord_webhook()
+                    elif webhook_url:
+                        write_discord_webhook(webhook_url)
+                    flash('Webhook enregistré ; les autres réglages restent inchangés.', 'success')
+                except (OSError, ValueError):
+                    flash('Webhook refusé. Vérifiez son adresse.', 'error')
+                return redirect(url_for('admin_notifications'))
             try:
                 bot_name = validate_discord_text(
                     request.form.get("bot_name", current_settings["bot_name"]),
@@ -9718,7 +9753,15 @@ def register_routes(application):
             request.args.get("year"), allow_total=True
         )
         statistics = load_statistics(database, selected_year)
+        show_inactive = request.args.get('show_inactive') == '1'
+        active_keys = {r['category_key'] for r in categories(database)}
+        hidden_rows = [r for r in statistics['category_rows'] if r['key'] not in active_keys]
+        statistics['hidden_category_people'] = sum(r['count'] for r in hidden_rows)
+        statistics['show_inactive_categories'] = show_inactive
+        if not show_inactive:
+            statistics['category_rows'] = [r for r in statistics['category_rows'] if r['key'] in active_keys]
         return render_template("statistics.html", **statistics)
+        
 
     @application.get("/admin/frequentation/exports")
     def admin_frequency_exports():

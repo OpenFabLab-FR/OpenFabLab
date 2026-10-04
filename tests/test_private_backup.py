@@ -168,7 +168,11 @@ class PrivateBackupTests(unittest.TestCase):
         self.assertFalse(application.config['AUTO_CLOSURE_WORKER']);self.assertFalse(application.config['WEATHER_ENABLED'])
         client=application.test_client();self.assertEqual(client.get('/admin/initialisation').status_code,302)
         with client.session_transaction() as s:s['access_role']='admin';s['admin_authenticated']=True
-        self.assertIn('Instance issue d’une copie de test',client.get('/admin/reglages/donnees').get_data(as_text=True))
+        self.assertNotIn('Instance issue d’une copie de test',client.get('/admin/reglages/donnees').get_data(as_text=True))
+        from runtime_policy import external_allowed, is_test_instance
+        self.assertTrue(is_test_instance(target))
+        with application.app_context():
+            self.assertFalse(external_allowed(target))
 
     def test_clone_no_smtp_transport_even_if_reconfigured(self):
         self.export('test');target=self.restore()

@@ -384,7 +384,7 @@ class EvolutionTests(unittest.TestCase):
             db.execute('''INSERT INTO billing_records(quote_number,quote_date,client_contact,client_structure,address_line,postal_code,city,title,description,activity_date,rate_category,rate_unit,rental_end_date,service_id,created_at,updated_at)
                 VALUES('2099.1','2099-09-01','Camille Exemple','Atelier Exemple','Voie fictive','00000','Ville Exemple','Location Exemple longue','Fictive','2099-09-01','normal','hourly','2099-10-31',?,?,?)''',(service,timestamp,timestamp))
         page=self.client.get('/admin/calendrier?date=2099-10-08').get_data(as_text=True)
-        self.assertEqual(page.count('Location Exemple longue'),7)
+        self.assertEqual(len(re.findall(r'class="calendar-month-event"[^>]*>[^<]*Location Exemple longue</a>',page)),7)
         self.assertNotRegex(page,r'class="calendar-event"[^>]*>[\s\S]*?<strong>Location Exemple longue</strong>')
 
     def test_new_pages_render_admin_and_calendar_moderator(self):

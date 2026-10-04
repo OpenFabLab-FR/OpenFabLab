@@ -1,5 +1,74 @@
 # Historique public
 
+## 2.7.1 — version stable
+
+Version corrective et d’amélioration de la 2.7.0, testée localement puis déployée en conditions réelles au FougèresLab.
+
+### Corrections
+
+- Couleur du registre dynamique appliquée à tous les badges de catégorie, sans anciennes couleurs prioritaires.
+- Catégories masquées cachées par défaut dans les statistiques, option explicite pour leur historique ; totaux historiques inchangés.
+- Correction d’une session dans une ligne pleine largeur avec focus et fermeture clavier, sans déformer le tableau.
+- Suppression de la provenance « Historique / inconnue » dans le répertoire ; formulation neutre dans la fiche.
+- Badges symétriques à pastille pleine ; labels de correction Journée au-dessus des champs ; historique annuel et ombre des sous-onglets ajustés.
+
+### Animations depuis la borne
+
+- Option désactivée par défaut et lien de footer ; catalogue public sans participants ni coordonnées.
+- Demande locale durable sans connexion Internet, explicitement en attente, puis traitement par le moteur WordPress existant (capacités, groupes, doublons, listes d’attente).
+- Réconciliation des réponses perdues sans renvoi aveugle ; contrôle par l’équipe si le résultat reste incertain.
+- Synchronisation à 90 secondes par défaut, demi-minutes administrables ; délai réel dépendant du réseau et du traitement.
+- Modérateur : participants, ajout sur place et suivi des demandes autorisés ; réglages sensibles toujours protégés.
+
+### Interface
+
+- Connexion Administrateur/Modérateur par choix segmenté accessible ; PIN toujours masqué à quatre chiffres.
+- Micro-interactions communes discrètes, focus visible et respect du mouvement réduit.
+- Sept sous-onglets Réglages en deux rangées sur téléphone.
+- Ombre équilibrée et statique sur le seul logo OpenFabLab d’en-tête ; logos personnalisés et partenaires inchangés.
+
+### Ressources
+
+- Sous-navigation clarifiée ; résumé compact des ressources et même formulaire pour ajout/modification.
+- Tarifs saisis en euros, calcul décimal exact et stockage inchangé en centimes.
+- Catégories et définitions réordonnables par poignées souris/tactiles ou flèches clavier, sauvegarde automatique et positions normalisées.
+
+### Formations et habilitations
+
+- Liste des habilitations, modification, ordre, archivage et réactivation ; cartes compactes avec commandes alignées.
+- Suppression seulement sans historique ni dépendance ; ressource active associée protégée.
+- Historique des formations et révocations motivées visible dans la fiche usager ; aucune suppression de validation.
+
+### Calendrier
+
+- Présentation plus lisible, jours nommés, aujourd’hui et week-ends discrets, détails accessibles au clic/clavier.
+- Calculs horaires, fréquentation et règles métier conservés.
+- Détail OpenLab enrichi avec pic et usagers, météo déjà enregistrée seulement ; participants des animations pour l’équipe ; rangée de journée entière masquée lorsqu’elle est vide.
+
+### Notifications
+
+- Webhook, nouvel usager puis événements ; cases homogènes et information explicite sur les données personnelles.
+- Présentation mobile et enregistrement indépendant du webhook.
+
+### E-mail
+
+- Test SMTP simple distinct de l’exemple de bienvenue fictif avec QR.
+- Les essais restent interdits dans une copie privée de test neutralisée.
+
+### Compatibilité
+
+- Schéma SQLite **14 inchangé**. Normalisation idempotente des seuls ordres de configuration ; classement des habilitations dans les paramètres existants.
+- Sauvegardes privées compatibles avec les correctives 2.7.x ; fichiers persistants et PIN dérivés conservés.
+- Plugin OpenFabLab Reservations **2.7.0 inchangé**.
+
+### Distribution et validation
+
+- Le Dockerfile copie maintenant le module de réservation depuis la borne, déjà présent dans les sources validées. Aucun changement métier associé.
+- 396 tests Python, 461 contrôles PHP et 622 contrôles JavaScript réussis ; contrôles responsive Chromium/WebKit de 320 à 1440 px.
+- Deux tests de packaging ajoutés : démarrage depuis les seuls fichiers copiés dans l’image et détection du module manquant.
+- ZIP applicatif approuvé et plugin inchangé, empreintes SHA-256, contenu public, licences et reproductibilité vérifiés. Docker indisponible localement : contrôle réel du jeu de fichiers et de l’entrée WSGI, pas de build d’image local revendiqué.
+- Familles, profils enfants et réservation pour un enfant restent en roadmap, non implémentés dans cette version.
+
 ## 2.7.0 — version stable
 
 ### Calendrier

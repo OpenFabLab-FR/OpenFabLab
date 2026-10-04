@@ -37,6 +37,9 @@ def backup_before_evolution(database, path):
 
 def migrate(database, new_installation=False):
     if database.execute("SELECT 1 FROM sqlite_master WHERE name='user_categories'").fetchone():
+        reorder(database, 'categories')
+        reorder(database, 'resource_types')
+        reorder(database, 'authorizations')
         database.execute('PRAGMA user_version=14')
         return
     database.commit()
@@ -115,6 +118,44 @@ def categories(database, include_hidden=False):
     return database.execute('SELECT * FROM user_categories' + ('' if include_hidden else ' WHERE active=1') + ' ORDER BY sort_order,name').fetchall()
 
 
+ORDERED_TABLES = {'categories': ('user_categories', 'category_key'),
+                  'resource_types': ('resource_types', 'type_key')}
+
+
+def ordered_keys(database, kind):
+    """Stable order, including archived entries. No business history is changed."""
+    if kind in ORDERED_TABLES:
+        table, key = ORDERED_TABLES[kind]
+        return [r[0] for r in database.execute(f'SELECT {key} FROM {table} ORDER BY sort_order,name,{key}')]
+    if kind != 'authorizations':
+        raise ValueError('Liste inconnue.')
+    keys = [r[0] for r in database.execute('SELECT authorization_uuid FROM authorizations ORDER BY created_at,name,authorization_uuid')]
+    row = database.execute("SELECT value FROM app_settings WHERE key='authorization_order'").fetchone()
+    try:
+        saved = json.loads(row[0]) if row else []
+        if not isinstance(saved, list):
+            saved = []
+    except (TypeError, ValueError):
+        saved = []
+    result = list(dict.fromkeys(k for k in saved if isinstance(k, str) and k in keys))
+    return result + [k for k in keys if k not in result]
+
+
+def reorder(database, kind, keys=None):
+    """Exact permutation only; prevents lost/stale or injected list items."""
+    current = ordered_keys(database, kind)
+    keys = current if keys is None else keys
+    if (not isinstance(keys, list) or not all(isinstance(k, str) for k in keys)
+            or len(keys) != len(set(keys)) or set(keys) != set(current)):
+        raise ValueError('La liste a changé. Rechargez la page avant de la réordonner.')
+    if kind in ORDERED_TABLES:
+        table, key = ORDERED_TABLES[kind]
+        database.executemany(f'UPDATE {table} SET sort_order=? WHERE {key}=?', enumerate(keys))
+    else:
+        database.execute("INSERT INTO app_settings(key,value) VALUES('authorization_order',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (json.dumps(keys),))
+    return keys
+
+
 def default_category(database):
     row = database.execute('SELECT category_key FROM user_categories WHERE active=1 AND is_default=1').fetchone()
     if row is None:
@@ -127,15 +168,17 @@ def category_label(database, key):
     return row[0] if row else HISTORICAL_CATEGORIES.get(key, key or 'Inconnu')
 
 
-def save_category(database, name, color, active=True, is_default=False, key=None, order=0):
+def save_category(database, name, color, active=True, is_default=False, key=None, order=None):
     name = str(name).strip()
     if not name or len(name)>80 or not re.fullmatch('#[0-9a-fA-F]{6}', color):
         raise ValueError('Nom (80 caractères maximum) et couleur de catégorie requis.')
     if is_default and not active:
         raise ValueError('La catégorie par défaut doit rester active.')
-    if not isinstance(order,int) or not 0<=order<=100000:
+    if order is not None and (not isinstance(order,int) or not 0<=order<=100000):
         raise ValueError('Ordre de catégorie invalide.')
     old = database.execute('SELECT * FROM user_categories WHERE category_key=?', (key,)).fetchone() if key else None
+    if order is None:
+        order = old['sort_order'] if old else database.execute('SELECT COALESCE(MAX(sort_order),-1)+1 FROM user_categories').fetchone()[0]
     if old and old['is_default'] and not is_default:
         raise ValueError('Choisissez d’abord une autre catégorie par défaut.')
     key = key or 'cat_' + uuid4().hex
@@ -143,6 +186,7 @@ def save_category(database, name, color, active=True, is_default=False, key=None
         database.execute('UPDATE user_categories SET is_default=0 WHERE is_default=1')
     database.execute('INSERT INTO user_categories VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(category_key) DO UPDATE SET name=excluded.name,normalized_name=excluded.normalized_name,color=excluded.color,active=excluded.active,sort_order=excluded.sort_order,is_default=excluded.is_default,updated_at=excluded.updated_at',
                      (key,name,name.casefold(),color,int(active),order,int(is_default),now(),now()))
+    reorder(database, 'categories')
     return key
 
 
@@ -163,4 +207,5 @@ def remove_category(database, key, replacement=None):
         database.execute('UPDATE user_categories SET active=0,updated_at=? WHERE category_key=?', (now(),key))
         return 'archived'
     database.execute('DELETE FROM user_categories WHERE category_key=?', (key,))
+    reorder(database, 'categories')
     return 'deleted'

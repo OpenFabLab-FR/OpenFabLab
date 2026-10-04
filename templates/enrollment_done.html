@@ -1,3 +1,3 @@
 {% extends 'base.html' %}{% block title %}Compte créé · OpenFabLab{% endblock %}
-{% block page_scripts %}<script src="{{ url_for('static',filename='evolution.js') }}" defer></script>{% endblock %}
+
 {% block content %}<section class="admin-section enrollment-receipt" data-enrollment-receipt data-home="{{ url_for('index') }}"><h1>Bienvenue {{ user.first_name }}</h1><p>Votre compte a été créé.</p><p>Votre identifiant : <strong>{{ user.public_id }}</strong></p><img src="{{ url_for('evolution.enrollment_qr') }}" width="240" height="240" alt="QR Code de votre identifiant"><p>Conservez votre identifiant ou votre QR Code.</p><a class="admin-button primary" href="{{ url_for('index') }}">Revenir à l’accueil</a><p>Retour automatique à l’accueil dans une minute.</p></section>{% endblock %}

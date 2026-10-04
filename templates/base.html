@@ -14,14 +14,16 @@
     <link rel="manifest" href="{{ url_for('web_app_manifest') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% if structure.color %}<style>:root { --primary: {{ structure.color }}; }</style>{% endif %}
+    {% if category_styles %}<style>{{ category_styles|safe }}</style>{% endif %}
     {% block page_scripts %}{% endblock %}
     <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='evolution.js') }}" defer></script>
 </head>
 <body class="{% block body_class %}{% endblock %}">
     <header class="site-header">
         {% if structure.show_wordmark_logo %}<a class="brand" href="{{ url_for('index') }}" aria-label="Retour à l'accueil">
             {% if structure.wordmark_logo == 'wordmark.png' %}<img class="brand-wordmark" src="{{ url_for('structure_logo', kind='wordmark') }}" alt="{{ structure.name }}">
-            {% else %}<img class="brand-wordmark" src="{{ url_for('static', filename='brand/OpenFabLab-logo-horizontal.svg') }}" alt="OpenFabLab">{% endif %}
+            {% else %}<img class="brand-wordmark brand-wordmark--openfablab" src="{{ url_for('static', filename='brand/OpenFabLab-logo-horizontal.svg') }}" alt="OpenFabLab">{% endif %}
         </a>{% endif %}
         <div class="header-tools">
             {% if (structure.show_header_institution_logo and structure.logo_status.header_institution) or (structure.show_network_logo and structure.logo_status.network) %}
@@ -39,7 +41,6 @@
             {% endif %}
         </div>
     </header>
-    {% if test_instance and admin_access_role == 'admin' %}<p class="form-help" role="status">Instance issue d’une copie de test · connexions et intégrations externes désactivées.</p>{% endif %}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -68,6 +69,7 @@
             <a href="{{ url_for('data_management') }}">Gestion des données</a>
             <a href="{{ url_for('admin') }}">Administration</a>
             {% if request.endpoint == 'index' and self_enrollment_enabled and modules.users %}<a href="{{ url_for('evolution.enroll') }}">Créer un compte</a>{% endif %}
+            {% if request.endpoint == 'index' and tablet_reservations_enabled and modules.public_reservations %}<a href="{{ url_for('tablet_reservations.catalogue') }}">Réserver une animation</a>{% endif %}
         </span>
     </footer>
 </body>

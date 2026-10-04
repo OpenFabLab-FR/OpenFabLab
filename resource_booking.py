@@ -1,8 +1,9 @@
 """FabLab resources, booking states and training/authorization history."""
 import re
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone
 from uuid import uuid4
-from evolution_schema import audit, now
+from evolution_schema import audit, now, reorder, ordered_keys
 
 STATUS_LABELS = {'requested':'En attente de validation', 'confirmed':'Confirmée',
                  'performed':'Effectuée', 'refused':'Refusée', 'cancelled':'Annulée'}
@@ -10,16 +11,97 @@ TRANSITIONS = {'requested':{'confirmed','refused','cancelled'}, 'confirmed':{'pe
                'performed':set(), 'refused':set(), 'cancelled':set()}
 
 
-def save_type(database, name, color, active=True, key=None, order=0):
+def save_type(database, name, color, active=True, key=None, order=None):
     name = str(name).strip()
     if not name or len(name)>80 or not re.fullmatch(r'#[a-fA-F0-9]{6}', color):
         raise ValueError('Nom et couleur de catégorie requis.')
-    if not isinstance(order,int) or not 0<=order<=100000:
+    if order is not None and (not isinstance(order,int) or not 0<=order<=100000):
         raise ValueError('Ordre de catégorie invalide.')
+    if order is None:
+        old = database.execute('SELECT sort_order FROM resource_types WHERE type_key=?', (key,)).fetchone()
+        order = old[0] if old else database.execute('SELECT COALESCE(MAX(sort_order),-1)+1 FROM resource_types').fetchone()[0]
     key = key or 'type_' + uuid4().hex
     database.execute('INSERT INTO resource_types VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(type_key) DO UPDATE SET name=excluded.name,normalized_name=excluded.normalized_name,color=excluded.color,active=excluded.active,sort_order=excluded.sort_order,updated_at=excluded.updated_at',
                      (key,name,name.casefold(),color,int(active),order,now(),now()))
+    reorder(database, 'resource_types')
     return key
+
+
+def euros_to_cents(value):
+    text = str(value).strip().replace(',', '.')
+    if not re.fullmatch(r'\d+(?:\.\d{1,2})?', text):
+        raise ValueError('Tarif en euros invalide (deux décimales maximum).')
+    try:
+        amount = Decimal(text) * 100
+        if amount > 100000000:
+            raise ValueError('Tarif trop élevé.')
+        return int(amount)
+    except InvalidOperation:
+        raise ValueError('Tarif en euros invalide.') from None
+
+
+def definitions(database, include_hidden=False):
+    rows = {r['authorization_uuid']: dict(r) for r in database.execute('SELECT * FROM authorizations')}
+    return [rows[k] for k in ordered_keys(database, 'authorizations') if include_hidden or rows[k]['active']]
+
+
+def save_definition(database, name, description, role, key=None):
+    if role != 'admin':
+        raise ValueError('Gestion des habilitations réservée à l’Administrateur.')
+    name = str(name).strip()
+    if not name or len(name) > 180 or len(description) > 2000:
+        raise ValueError('Nom requis (180 caractères maximum) et description limitée à 2000 caractères.')
+    if key and not database.execute('SELECT 1 FROM authorizations WHERE authorization_uuid=?', (key,)).fetchone():
+        raise ValueError('Habilitation inconnue.')
+    if key:
+        database.execute('UPDATE authorizations SET name=?,description=? WHERE authorization_uuid=?', (name, description, key))
+    else:
+        key = str(uuid4())
+        database.execute('INSERT INTO authorizations VALUES(?,?,?,?,?)', (key, name, description, 1, now()))
+    reorder(database, 'authorizations')
+    audit(database, 'authorization_definition', key, 'saved', role)
+    return key
+
+
+def definition_usage(database, key):
+    history = database.execute('SELECT COUNT(*) FROM user_authorizations WHERE authorization_uuid=?', (key,)).fetchone()[0]
+    resources = database.execute('SELECT COUNT(*),COALESCE(SUM(active),0) FROM resources WHERE required_authorization=?', (key,)).fetchone()
+    return history, resources[0], resources[1]
+
+
+def change_definition(database, key, action, role):
+    if role != 'admin' or action not in {'archive', 'reactivate', 'delete'}:
+        raise ValueError('Action Administrateur requise.')
+    if not database.execute('SELECT 1 FROM authorizations WHERE authorization_uuid=?', (key,)).fetchone():
+        raise ValueError('Habilitation inconnue.')
+    history, dependencies, active_resources = definition_usage(database, key)
+    if action == 'delete' and (history or dependencies):
+        raise ValueError('Suppression impossible : formations ou ressources associées. Conservez l’historique en archivant.')
+    if action == 'archive' and active_resources:
+        raise ValueError('Une ressource active exige cette habilitation. Modifiez sa configuration avant archivage.')
+    if action == 'delete':
+        database.execute('DELETE FROM authorizations WHERE authorization_uuid=?', (key,))
+    else:
+        database.execute('UPDATE authorizations SET active=? WHERE authorization_uuid=?', (int(action == 'reactivate'), key))
+    reorder(database, 'authorizations')
+    audit(database, 'authorization_definition', key, action, role)
+
+
+def grants_for_user(database, user_id=None):
+    from datetime import date
+    query = '''SELECT g.*,a.name,u.first_name,u.last_name,
+        (SELECT actor_role FROM evolution_audit e WHERE e.entity_type='authorization'
+         AND e.entity_key=g.grant_uuid AND e.action='revoked' ORDER BY e.id DESC LIMIT 1) AS revoked_by
+        FROM user_authorizations g JOIN authorizations a USING(authorization_uuid)
+        LEFT JOIN users u ON u.id=g.user_id'''
+    rows = database.execute(query + (' WHERE g.user_id=?' if user_id is not None else '') + ' ORDER BY g.performed_on DESC,g.created_at DESC', (user_id,) if user_id is not None else ()).fetchall()
+    today = date.today().isoformat()
+    result = []
+    for row in rows:
+        value = dict(row)
+        value['state'] = ('Révoquée' if row['revoked_at'] else 'Expirée' if row['expires_on'] and row['expires_on'] < today else 'À venir' if row['performed_on'] > today else 'Permanente' if not row['expires_on'] else 'Valide')
+        result.append(value)
+    return result
 
 
 def save_resource(database, values, role, key=None):
@@ -27,22 +109,26 @@ def save_resource(database, values, role, key=None):
         raise ValueError('Gestion des ressources réservée à l’Administrateur.')
     name = str(values.get('name') or '').strip()
     type_key = values.get('type_key')
-    existing = database.execute('SELECT type_key FROM resources WHERE resource_uuid=?', (key,)).fetchone() if key else None
+    existing = database.execute('SELECT type_key,required_authorization FROM resources WHERE resource_uuid=?', (key,)).fetchone() if key else None
     type_row = database.execute('SELECT active FROM resource_types WHERE type_key=?', (type_key,)).fetchone()
     if not name or len(name)>180 or not type_row or (not type_row['active'] and (not existing or existing['type_key']!=type_key)):
         raise ValueError('Nom et catégorie active de ressource requis.')
-    color = str(values.get('color','')).strip() or None
+    color = str(values.get('color') or '').strip() or None
     if color and not re.fullmatch(r'#[a-fA-F0-9]{6}', color):
         raise ValueError('Couleur de ressource invalide.')
     amount = int(values.get('price_cents') or 0)
     if not 0<=amount<=100000000:
         raise ValueError('Tarif de réservation invalide.')
     requirement = values.get('required_authorization') or None
-    if requirement and not database.execute('SELECT 1 FROM authorizations WHERE authorization_uuid=? AND active=1', (requirement,)).fetchone():
-        raise ValueError('Habilitation inconnue.')
+    if requirement:
+        authorization = database.execute('SELECT active FROM authorizations WHERE authorization_uuid=?', (requirement,)).fetchone()
+        retaining_archived = (existing and existing['required_authorization'] == requirement
+                              and values.get('active') not in (True, 1, '1'))
+        if not authorization or (not authorization['active'] and not retaining_archived):
+            raise ValueError('Habilitation active requise pour une ressource disponible.')
     key = key or str(uuid4())
     database.execute('INSERT INTO resources(resource_uuid,type_key,name,description,active,color,approval_required,price_cents,required_authorization,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(resource_uuid) DO UPDATE SET type_key=excluded.type_key,name=excluded.name,description=excluded.description,active=excluded.active,color=excluded.color,approval_required=excluded.approval_required,price_cents=excluded.price_cents,required_authorization=excluded.required_authorization,updated_at=excluded.updated_at',
-                     (key,type_key,name,str(values.get('description',''))[:2000],int(values.get('active') in (True,1,'1')),color,
+                     (key,type_key,name,str(values.get('description') or '')[:2000],int(values.get('active') in (True,1,'1')),color,
                       int(values.get('approval_required') in (True,1,'1')),amount,requirement,now(),now()))
     audit(database,'resource',key,'saved',role)
     return key

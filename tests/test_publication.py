@@ -1,6 +1,8 @@
 """First public release: neutral defaults, preservation, licensing and packaging."""
 import hashlib
 import re
+import shlex
+import shutil
 import sqlite3
 import tempfile
 import os
@@ -20,12 +22,12 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.7.0')
-        self.assertIn('openfablab:v2.7.0',(ROOT/'compose.yaml').read_text())
+        self.assertEqual(__version__,'2.7.1')
+        self.assertIn('openfablab:v2.7.1',(ROOT/'compose.yaml').read_text())
 
     def test_stable_release_documentation_is_consistent(self):
         readme=(ROOT/'README.md').read_text()
-        self.assertIn('# OpenFabLab 2.7.0',readme)
+        self.assertIn('# OpenFabLab 2.7.1',readme)
         self.assertIn('SQLite schéma 14',readme)
         self.assertIn('OpenFabLab Reservations 2.7.0',readme)
         obsolete=re.compile(r'candidate locale|la candidate|non publiée|non validée sur une installation réelle|aucun déploiement effectué',re.I)
@@ -44,7 +46,7 @@ class PublicReleaseTests(unittest.TestCase):
             self.assertEqual(settings['structure_signer_name'],'')
             self.assertEqual(settings['structure_wordmark_logo'],'')
             self.assertEqual(settings['module_public_reservations'],'0')
-            self.assertEqual(settings['reservation_sync_interval_minutes'],'2')
+            self.assertEqual(settings['reservation_sync_interval_minutes'],'1.5')
             self.assertTrue(all(value=='0' for key,value in settings.items() if key.startswith('billing_') and key.endswith('_cents')))
 
     def test_new_instance_empty_schema14_no_pin_or_secret(self):
@@ -139,6 +141,64 @@ class PublicReleaseTests(unittest.TestCase):
         docker=(ROOT/'Dockerfile').read_text()
         self.assertIn('HEALTHCHECK',docker)
         self.assertIn('COPY LICENSE THIRD_PARTY_NOTICES.md',docker)
+        self.assertIn('COPY tablet_reservations.py ./',docker)
+
+    def _run_docker_copy_layout(self, omit_tablet_module=False):
+        # Exercise the actual COPY file set, not the full repository or ZIP.
+        # This is a local runtime check, not a Docker image build.
+        with tempfile.TemporaryDirectory(prefix='openfablab-docker-layout-test-') as directory:
+            base=Path(directory);install=base/'app';install.mkdir()
+            for line in (ROOT/'Dockerfile').read_text().splitlines():
+                if not line.startswith('COPY '):
+                    continue
+                _,*sources,destination=shlex.split(line)
+                self.assertIn(destination,('./','./openfablab','./templates','./static','./badge_templates'))
+                for name in sources:
+                    if omit_tablet_module and name=='tablet_reservations.py':
+                        continue
+                    source=ROOT/name
+                    target=install/source.name if destination=='./' else install/destination
+                    if source.is_dir():
+                        shutil.copytree(source,target,ignore=shutil.ignore_patterns('__pycache__'))
+                    else:
+                        shutil.copy2(source,target)
+            env={k:v for k,v in os.environ.items() if not k.startswith(('OPENFABLAB_','COMPTEUR_')) and k!='PYTHONPATH'}
+            env.update(OPENFABLAB_DATABASE=str(base/'data/openfablab.db'),
+                       OPENFABLAB_SECRET_KEY_FILE=str(base/'data/.secret_key'),
+                       OPENFABLAB_URL_PREFIX='/stat',OPENFABLAB_EXTERNAL_ACTIONS='0',
+                       OPENFABLAB_ENABLE_SCHEDULER='0',OPENFABLAB_ENABLE_WEATHER='0',
+                       OPENFABLAB_BACKUP_ROOT=str(base/'backups'),PYTHONDONTWRITEBYTECODE='1')
+            code='''
+import pathlib,sqlite3,app
+from werkzeug.test import Client
+from werkzeug.wrappers import Response
+assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
+assert app.flask_app.config['APP_VERSION']=='V2.7.1'
+client=Client(app.app,Response)
+for route in ('/stat/sante','/stat/','/stat/static/brand/OpenFabLab-logo-horizontal.svg'):
+    response=client.get(route)
+    assert response.status_code==200,route
+    if route=='/stat/':
+        assert b'V2.7.1' in response.data
+    response.close()
+with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
+    assert db.execute('PRAGMA user_version').fetchone()[0]==14
+    assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
+    assert not db.execute('PRAGMA foreign_key_check').fetchall()
+    for table in ('users','sessions','visitors','animation_bookings','billing_clients'):
+        assert db.execute('SELECT COUNT(*) FROM '+table).fetchone()[0]==0,table
+'''
+            return subprocess.run([sys.executable,'-c',code],cwd=install,env=env,
+                                  capture_output=True,text=True,timeout=30)
+
+    def test_docker_copy_layout_starts_with_empty_schema14_and_http(self):
+        result=self._run_docker_copy_layout()
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_docker_copy_layout_catches_missing_tablet_module(self):
+        result=self._run_docker_copy_layout(omit_tablet_module=True)
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn("ModuleNotFoundError: No module named 'tablet_reservations'",result.stderr)
 
     def test_public_docs_links_resolve_without_private_documents(self):
         for path in [ROOT/'README.md',ROOT/'CONTRIBUTING.md',ROOT/'SECURITY.md']+list((ROOT/'docs').glob('*.md')):
@@ -169,7 +229,7 @@ class PublicReleaseTests(unittest.TestCase):
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.7.0'
+assert app.app.config['APP_VERSION']=='V2.7.1'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)

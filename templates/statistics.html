@@ -294,6 +294,8 @@
     <div class="section-heading">
         <div>
             <h2 id="categories-title">Fréquentation par catégorie</h2>
+            <form method="get" class="resource-options"><input type="hidden" name="year" value="{{ selected_year }}"><label class="compact-check"><input type="checkbox" name="show_inactive" value="1" {% if show_inactive_categories %}checked{% endif %}>Afficher les catégories inactives</label><button class="admin-button secondary compact">Afficher</button></form>
+            {% if not show_inactive_categories and hidden_category_people %}<p class="form-help">{{ hidden_category_people }} personne(s) de catégories masquées restent incluses dans les totaux et pourcentages. Activez l’option pour consulter leur historique.</p>{% endif %}
         </div>
     </div>
     <div class="table-scroll">
@@ -332,7 +334,7 @@
         </div>
     </div>
     <div class="table-scroll">
-        <table>
+        <table class="annual-history-table">
             <thead>
                 <tr>
                     <th>Année</th>

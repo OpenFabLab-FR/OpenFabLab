@@ -8,7 +8,7 @@
 
 {% block title %}{{ page_title }} · OpenFabLab{% endblock %}
 {% block body_class %}admin-page{% endblock %}
-{% block page_scripts %}<script src="{{ url_for('static',filename='evolution.js') }}" defer></script>{% endblock %}
+
 {% block header_action %}
 <a class="header-link" href="{{ url_for('index') if kiosk else url_for('admin') }}">{{ '← Accueil' if kiosk else '← Administration' }}</a>
 {% endblock %}
@@ -181,7 +181,8 @@
 </form>
 
 {% if form_mode == 'edit' %}
-    <section class="admin-section"><h2>Création et bienvenue</h2><p>Créé le {{ user.created_at|paris_datetime }} · Origine : {{ creation_sources.get(user.created_source,'Historique / inconnue') }}</p><p>Dernier e-mail : {{ user.welcome_sent_at|paris_datetime if user.welcome_sent_at else 'aucun' }} · {{ user.welcome_status or 'non envoyé' }}</p><form method="post" action="{{ url_for('evolution.resend_welcome',user_id=user.id) }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="confirmation" value="ENVOYER"><button class="admin-button secondary" {% if not user.email or not smtp_ready %}disabled{% endif %} onclick="return confirm('Renvoyer l’e-mail de bienvenue et le QR Code ?')">Renvoyer l’e-mail de bienvenue / QR Code</button></form></section>
+    <section class="admin-section"><h2>Création et bienvenue</h2><p>{% if user.created_at %}Créé le {{ user.created_at|paris_datetime }}{% endif %} · {% if user.created_source in ('admin','moderator','kiosk') %}Origine : {{ creation_sources[user.created_source] }}{% else %}Création antérieure au suivi de provenance{% endif %}</p><p>Dernier e-mail : {{ user.welcome_sent_at|paris_datetime if user.welcome_sent_at else 'aucun' }} · {{ user.welcome_status or 'non envoyé' }}</p><form method="post" action="{{ url_for('evolution.resend_welcome',user_id=user.id) }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="confirmation" value="ENVOYER"><button class="admin-button secondary" {% if not user.email or not smtp_ready %}disabled{% endif %} onclick="return confirm('Renvoyer l’e-mail de bienvenue et le QR Code ?')">Renvoyer l’e-mail de bienvenue / QR Code</button></form></section>
+    <section class="admin-section"><h2>Formations et habilitations</h2>{% for grant in user_grants %}<article class="authorization-card"><h3>{{ grant.name }}</h3><p><strong>{{ grant.state }}</strong>{% if grant.expires_on %} · échéance {{ grant.expires_on|date_fr }}{% endif %}</p><p>Formation effectuée le {{ grant.performed_on|date_fr }} · validée par {{ grant.validated_by }}</p>{% if grant.revoked_at %}<p>Révoquée le {{ grant.revoked_at|paris_datetime }} · accès {{ {'admin':'Administrateur','moderator':'Modérateur'}.get(grant.revoked_by,'non renseigné') }} · Motif : {{ grant.revoked_reason }}</p>{% endif %}</article>{% else %}<p>Aucune formation enregistrée.</p>{% endfor %}</section>
     <section class="danger-zone" aria-labelledby="delete-title">
         <div>
             <h2 id="delete-title">Supprimer cet usager</h2>

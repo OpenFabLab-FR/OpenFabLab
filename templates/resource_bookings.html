@@ -1,6 +1,6 @@
 {% extends 'base.html' %}{% from '_evolution_fields.html' import csrf,field %}
-{% block title %}Réservations de ressources · OpenFabLab{% endblock %}{% block body_class %}admin-page{% endblock %}
-{% block content %}<section class="content-heading"><h1>Réservations de ressources</h1><p>Une ressource ne peut pas recevoir deux demandes sur une plage qui se chevauche. Les habilitations sont vérifiées sur toute la durée réservée.</p></section>{% include '_admin_nav.html' %}{% include '_evolution_nav.html' %}
+{% block title %}Réserver une ressource · OpenFabLab{% endblock %}{% block body_class %}admin-page{% endblock %}
+{% block content %}<section class="content-heading"><h1>Réserver une ressource</h1><p>Réservez du matériel, des espaces ou toute autre ressource disponible dans votre structure.</p></section>{% include '_admin_nav.html' %}{% include '_evolution_nav.html' %}
 <section class="admin-section"><h2>Nouvelle réservation</h2><form method="post" class="admin-form">{{ csrf(evolution_csrf,'book') }}<div class="form-grid">
 <label class="form-field">Ressource<select name="resource_uuid" required>{% for resource in resources %}<option value="{{ resource.resource_uuid }}">{{ resource.name }}</option>{% endfor %}</select></label>
 <label class="form-field">Usager<select name="user_id" required>{% for user in users %}<option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</option>{% endfor %}</select></label>

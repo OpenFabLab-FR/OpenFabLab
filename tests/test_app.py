@@ -4224,7 +4224,7 @@ class OpenFabLabTestCase(unittest.TestCase):
                 thread.call_args.kwargs["target"]()
             sync.assert_not_called()
 
-    def test_v250_reservation_sync_default_two_minutes_new_and_v244(self):
+    def test_v271_reservation_sync_default_ninety_seconds_new_and_v244(self):
         with tempfile.TemporaryDirectory(prefix="openfablab_sync_default_") as directory:
             path = str(Path(directory) / "openfablab.db")
             config = {"TESTING": True, "DATABASE": path, "SEED_DEMO_USERS": False,
@@ -4233,7 +4233,7 @@ class OpenFabLabTestCase(unittest.TestCase):
             with sqlite3.connect(path) as database:
                 self.assertEqual(database.execute(
                     "SELECT value FROM app_settings WHERE key='reservation_sync_interval_minutes'"
-                ).fetchone()[0], "2")
+                ).fetchone()[0], "1.5")
                 # Une V2.4.4 ne possède pas encore ce réglage de réservation.
                 database.execute("DELETE FROM app_settings WHERE key='reservation_sync_interval_minutes'")
                 database.execute("PRAGMA user_version = 10")
@@ -4242,7 +4242,7 @@ class OpenFabLabTestCase(unittest.TestCase):
             with sqlite3.connect(path) as database:
                 self.assertEqual(database.execute(
                     "SELECT value FROM app_settings WHERE key='reservation_sync_interval_minutes'"
-                ).fetchone()[0], "2")
+                ).fetchone()[0], "1.5")
                 self.assertEqual(database.execute("SELECT COUNT(*) FROM visitors").fetchone()[0], before)
                 self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
                 self.assertEqual(database.execute("PRAGMA foreign_key_check").fetchall(), [])
@@ -4261,7 +4261,7 @@ class OpenFabLabTestCase(unittest.TestCase):
         page = self.client.get("/admin/reglages/structure").get_data(as_text=True)
         self.assertRegex(page, r'name="sync_interval_minutes"[^>]*value="17"')
 
-    def test_v250_local_worker_respects_two_minute_default_and_light_poll(self):
+    def test_v271_local_worker_respects_ninety_second_default_and_light_poll(self):
         from app import start_local_reservation_sync_worker, write_setting
         from reservations_sync import save_sync_secret
         class StopWorker(BaseException):
@@ -4277,7 +4277,7 @@ class OpenFabLabTestCase(unittest.TestCase):
             database = get_database()
             write_setting(database, "module_public_reservations", "1")
             write_setting(database, "reservation_wordpress_url", "https://example.invalid")
-            write_setting(database, "reservation_sync_last_attempt", (now - timedelta(seconds=119)).isoformat())
+            write_setting(database, "reservation_sync_last_attempt", (now - timedelta(seconds=89)).isoformat())
             database.commit()
         save_sync_secret(self.database_path, "fictional-secret-" + "x" * 48)
         with mock.patch("app.threading.Thread") as thread:

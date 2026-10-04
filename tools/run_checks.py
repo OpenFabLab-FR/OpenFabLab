@@ -1,5 +1,6 @@
 """Run every local suite in isolation; never import the application unconfigured."""
 import ast
+import argparse
 import os
 import re
 import shutil
@@ -12,6 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--reuse-plugin',action='store_true',help='Audit the unchanged plugin ZIP without rebuilding it')
+    options=parser.parse_args()
     node = shutil.which('node')
     php = os.environ.get('PHP_TEST_COMMAND') or shutil.which('php')
     if not php:
@@ -63,8 +67,9 @@ def main():
         if shutil.which('zsh'):
             run('macOS launcher syntax',['zsh','-n',str(ROOT/'AppStart.command')])
         run('Application package',[sys.executable,'build_openfablab.py'])
-        run('Plugin package',[sys.executable,'build_wordpress_plugin.py'])
-        run('Archives',[sys.executable,'tests/check_v26_archives.py'])
+        if not options.reuse_plugin:
+            run('Plugin package',[sys.executable,'build_wordpress_plugin.py'])
+        run('Archives',[sys.executable,'tests/check_v26_archives.py']+(['--reuse-plugin'] if options.reuse_plugin else []))
         run('Public manifest',[sys.executable,'tools/check_public_tree.py'])
         print('TOTALS=' + str(totals))
         print(f'SYNTAX=Python:{len(python_files)} JS:{len(js_files)} PHP:{len(php_files)}')

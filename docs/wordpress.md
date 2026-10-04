@@ -1,12 +1,14 @@
 # OpenFabLab Reservations 2.7.0
 
+**Plugin WordPress Reservations : version 2.7.0 inchangée, compatible avec OpenFabLab 2.7.1.** Un plugin 2.7.0 déjà en place n’a pas à être réinstallé pour mettre à jour l’application. WordPress reste facultatif pour l’ensemble du logiciel ; la fonction de demandes d’animations depuis la borne de la 2.7.1 nécessite cependant ce moteur configuré pour confirmer les inscriptions. Le dépôt local hors Internet conserve une demande en attente, jamais une place garantie. [Fonctionnement de la borne](corrections-2.7.1.md).
+
 Installer le ZIP autonome `openfablab-reservations-2.7.0.zip` dans **Extensions → Ajouter → Téléverser**, puis activer, après un essai sur un **WordPress séparé**. La source est dans `wordpress/openfablab-reservations/`. Le plugin conserve réservations, créneaux, e-mails et maintenance Test, sans migration supplémentaire de schéma depuis le plugin 2.6.1. Il ajoute réconciliation, diagnostics et actualisation au prochain passage sortant du serveur. La purge confirmée porte uniquement sur la configuration reconstruisible, jamais les transactions. Voir [le protocole et ses limites](evolution-2.7.md).
 
 ## Connexion
 
 Dans WordPress **Réglages → OpenFabLab Reservations**, configurer les options du plugin et conserver le secret dans son stockage privé. Dans OpenFabLab **Réglages → Structure et modules → Réservations publiques**, renseigner **la racine HTTPS du site**, par exemple `https://example.invalid` (exemple non fonctionnel), et exactement le même secret. OpenFabLab ajoute les routes REST `/wp-json/openfablab/v1/...` : ne pas saisir cette route comme URL racine.
 
-Enregistrer URL/secret avant d'activer le module. Ne jamais afficher le secret dans des logs ou captures. Une seule instance OpenFabLab synchronise ce site ; conserver le module désactivé dans les autres installations locales. Intervalle initial : **2 minutes**, une valeur personnalisée reste inchangée. Tester la connexion puis « Synchroniser maintenant » lorsque la configuration est cohérente.
+Enregistrer URL/secret avant d'activer le module. Ne jamais afficher le secret dans des logs ou captures. Une seule instance OpenFabLab synchronise ce site ; conserver le module désactivé dans les autres installations locales. Intervalle initial : **1,5 minute (90 secondes)**. La première initialisation 2.7.1 remplace l’ancienne cadence de deux minutes ; les autres valeurs personnalisées restent inchangées. Demi-minutes acceptées entre 1 et 60 minutes. Les réveils du worker, le transport et le traitement s’ajoutent : aucun délai maximal garanti. Tester la connexion puis « Synchroniser maintenant » lorsque la configuration est cohérente. Voir les [demandes de la borne et leurs limites](corrections-2.7.1.md).
 
 Le sens réseau est **OpenFabLab → HTTPS signé HMAC → WordPress** : aucun port entrant dédié ni ouverture Internet vers le serveur OpenFabLab n’est requis. WordPress ne se connecte pas au serveur pour déclencher une synchronisation.
 

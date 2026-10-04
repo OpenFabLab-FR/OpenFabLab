@@ -11,14 +11,14 @@
 </section>
 {% include "_admin_nav.html" %}
 {% include "_settings_nav.html" %}
-{% include '_creation_notifications.html' %}
 
 <form method="post" class="admin-form">
+    <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
     <section class="form-section">
         <div class="form-section-heading">
             <p class="eyebrow">Discord</p>
             <h2>Webhook du salon compteur</h2>
-            <p>L'adresse secrète est enregistrée dans un fichier privé du NAS. Elle n'apparaît jamais dans l'interface, la base SQLite ou ses sauvegardes.</p>
+            <p>L'adresse secrète est enregistrée dans un fichier privé du stockage persistant. Elle n'est affichée ni dans l'interface ni dans la base SQLite. La sauvegarde complète privée l'inclut : conservez cette archive dans un emplacement sécurisé et ne la publiez jamais.</p>
         </div>
         <p class="option-state">Configuration : <strong>{% if discord.configured %}Webhook enregistré{% else %}Aucun webhook enregistré{% endif %}</strong></p>
         <div class="form-field">
@@ -32,8 +32,11 @@
             <span><strong>Supprimer le webhook enregistré</strong></span>
         </label>
         {% endif %}
+        <div class="form-actions"><button class="admin-button primary compact" type="submit" name="webhook_only" value="1">Enregistrer le webhook</button></div>
     </section>
-
+</form>
+{% include '_creation_notifications.html' %}
+<form method="post" class="admin-form">
     <section class="form-section">
         <div class="form-section-heading"><h2>Événements notifiés</h2></div>
         <label class="checkbox-field">

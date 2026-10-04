@@ -11,12 +11,24 @@ import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from urllib.parse import urlparse
 
 
 ENVIRONMENTS = ("test", "production")
 RESERVED_STATUSES = ("confirmed", "offer_pending", "present", "absent")
+
+
+def sync_interval_seconds(value):
+    """Keep the historical profile key in minutes; support half minutes exactly."""
+    try:
+        minutes = Decimal(str(value))
+        if not minutes.is_finite() or not 1 <= minutes <= 60 or minutes * 2 != (minutes * 2).to_integral_value():
+            raise ValueError
+        return int(minutes * 60)
+    except (InvalidOperation, ValueError):
+        return 90
 
 
 def booking_reservation_status(booking):
@@ -403,7 +415,7 @@ def _sync_environment(database, client, environment, directory, now, notificatio
         raise ValueError('Annuaire refusé')
     # Prioritize pending catalogue tombstones independently of a different
     # incompatible upsert. Never reorder reservation commands among themselves.
-    tombstones = database.execute("SELECT id,payload_json FROM reservation_outbox WHERE environment=? AND sent_at IS NULL AND command_type!='booking' ORDER BY id", (environment,)).fetchall()
+    tombstones = database.execute("SELECT id,payload_json FROM reservation_outbox WHERE environment=? AND sent_at IS NULL AND command_type NOT IN ('booking','public_request') ORDER BY id", (environment,)).fetchall()
     for row in tombstones:
         old=json.loads(row['payload_json']); current=animation_payload(database,int(old['service_id']))
         if current is not None and current['environment']==environment:
@@ -430,7 +442,7 @@ def _sync_environment(database, client, environment, directory, now, notificatio
     database.commit()
     rows = database.execute(
         "SELECT id, command_type, payload_json FROM reservation_outbox "
-        "WHERE environment = ? AND sent_at IS NULL ORDER BY id LIMIT 100", (environment,)
+        "WHERE environment = ? AND sent_at IS NULL AND command_type!='public_request' ORDER BY id LIMIT 100", (environment,)
     ).fetchall()
     for row in rows:
         route = "/sync/commands" if row["command_type"] == "booking" else "/sync/animations"
@@ -470,6 +482,18 @@ def _sync_environment(database, client, environment, directory, now, notificatio
         database.commit()
     if not client.post("/heartbeat", {"environment": environment}).get('ok'):
         raise ValueError('Traitement WordPress refusé')
+    imported += receive_events(database, client, environment, now, notifications)
+    if database.execute("SELECT 1 FROM reservation_outbox WHERE environment=? AND command_type='public_request' AND sent_at IS NULL LIMIT 1",(environment,)).fetchone():
+        from tablet_reservations import process_requests
+        process_requests(database,client,environment)
+        imported += receive_events(database,client,environment,now,notifications)
+    from tablet_reservations import reconcile_requests
+    reconcile_requests(database,environment)
+    return imported
+
+
+def receive_events(database, client, environment, now, notifications):
+    imported = 0
     state = database.execute(
         "SELECT cursor FROM reservation_sync_state WHERE environment = ?", (environment,)
     ).fetchone()

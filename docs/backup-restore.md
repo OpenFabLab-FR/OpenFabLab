@@ -2,6 +2,8 @@
 
 Depuis OpenFabLab 2.7.0, **Réglages → Données** distingue trois niveaux.
 
+Ces formats sont conservés en **2.7.1, schéma SQLite 14**. Une sauvegarde complète est fortement recommandée avant le passage de 2.7.0 à 2.7.1 ; conserver aussi le runtime et la configuration précédents. Voir [la mise à jour](upgrade.md).
+
 ## 1. Sauvegarde SQLite
 
 Exporte les données métier et réglages présents dans la base. Elle ne contient

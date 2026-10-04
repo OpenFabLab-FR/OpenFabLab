@@ -1,6 +1,13 @@
 {% macro csrf(token, action) -%}
 <input type="hidden" name="evolution_csrf" value="{{ token }}"><input type="hidden" name="action" value="{{ action }}">
 {%- endmacro %}
+{% macro order_controls(name) -%}
+<div class="order-controls" aria-label="Déplacer {{ name }}">
+<span class="drag-handle" title="Glisser pour déplacer (ou utiliser les flèches)" aria-hidden="true">⠿</span>
+<button type="button" class="admin-button secondary compact" data-order-move="-1" aria-label="Monter {{ name }}">↑</button>
+<button type="button" class="admin-button secondary compact" data-order-move="1" aria-label="Descendre {{ name }}">↓</button>
+</div>
+{%- endmacro %}
 {% macro field(name, label, value='', type='text', required=false) -%}
 <label class="form-field"><span>{{ label }}</span><input name="{{ name }}" type="{{ type }}" value="{{ value }}" {% if required %}required{% endif %} {% if type=='text' %}maxlength="240"{% endif %}></label>
 {%- endmacro %}

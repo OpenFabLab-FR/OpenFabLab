@@ -38,7 +38,7 @@ Réglages → **Notifications → Notifications à la création d’usager**, é
 
 ## Ressources, réservations et habilitations
 
-Activités → **Aperçu | Ressources | Réservations de ressources | Formations et habilitations**. Aperçu conserve la page et la route historiques.
+Activités → **Aperçu | Réserver une ressource | Gestion des ressources | Formations et habilitations**. Aperçu conserve la page et la route historiques.
 
 Ressources : catégorie, couleur héritée ou propre, activation, prix forfaitaire et confirmation automatique ou validation de l’équipe. Seul « Machine » est initial ; Salle/Bureau apparaissent uniquement sur création explicite. Catégories contrôlées et masquables, formulaires compacts et identifiants internes `type_key` conservés. Les machines de locations sont reprises par clé stable, sans remplacement de leurs tarifs ou anciens dossiers. Le catalogue de locations et les nouveaux forfaits de réservation restent distincts.
 

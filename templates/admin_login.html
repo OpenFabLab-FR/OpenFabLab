@@ -13,10 +13,14 @@
     <p>Entrez le code PIN correspondant à votre niveau d'accès.</p>
     <form method="post" class="pin-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <label for="access-role">Accès souhaité</label>
-        <select id="access-role" name="access_role"><option value="admin">Administrateur</option><option value="moderator">Modérateur</option></select>
+        <fieldset class="access-roles"><legend>Accès souhaité</legend>
+            <label><input type="radio" name="access_role" value="admin" {% if request.form.get('access_role')!='moderator' %}checked{% endif %}><span>Administrateur</span></label>
+            <label><input type="radio" name="access_role" value="moderator" {% if request.form.get('access_role')=='moderator' %}checked{% endif %}><span>Modérateur</span></label>
+        </fieldset>
         <label for="admin-pin">Code PIN</label>
-        <input id="admin-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="current-password" autofocus required>
+        <input id="admin-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="current-password" autofocus required aria-describedby="pin-help">
+        <small id="pin-help" class="form-help">Code PIN à quatre chiffres.</small>
+        <p id="login-error" class="login-error" {% if login_error %}role="alert"{% endif %}>{{ login_error or '' }}</p>
         <button class="admin-button primary" type="submit">Déverrouiller</button>
     </form>
 </section>

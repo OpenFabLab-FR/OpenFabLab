@@ -14,7 +14,7 @@
         <div class="form-section-heading"><h2>Règles par défaut</h2><p>Chaque animation peut préciser ses propres règles depuis Activités.</p></div>
         <div class="form-grid two-columns">
             {% for key, label, unit in (('minimum_age', 'Âge minimum', 'ans'), ('accompaniment_under_age', 'Accompagnement obligatoire avant', 'ans'), ('offer_hours', 'Offre de place normale', 'heures'), ('last_offer_hours', 'Dernière personne en attente', 'heures'), ('close_minutes', 'Clôture avant le début', 'minutes'), ('reminder_one_hours', 'Premier rappel avant', 'heures'), ('reminder_two_hours', 'Deuxième rappel avant (0 = désactivé)', 'heures'), ('sync_interval_minutes', 'Synchronisation toutes les', 'minutes')) %}
-            <label class="form-field"><span>{{ label }}</span><span class="number-with-unit"><input name="{{ key }}" type="number" min="0" max="1440" value="{{ reservation_settings[key] }}" required><span>{{ unit }}</span></span></label>
+            <label class="form-field"><span>{{ label }}</span><span class="number-with-unit"><input name="{{ key }}" type="number" min="{{ 1 if key=='sync_interval_minutes' else 0 }}" max="{{ 60 if key=='sync_interval_minutes' else 1440 }}" step="{{ '0.5' if key=='sync_interval_minutes' else '1' }}" value="{{ reservation_settings[key] }}" required><span>{{ unit }}</span></span>{% if key=='sync_interval_minutes' %}<small>1,5 minute = 90 secondes. Le délai réel dépend aussi du réseau et du traitement.</small>{% endif %}</label>
             {% endfor %}
         </div>
         <label class="checkbox-field"><input name="waitlist_enabled" type="checkbox" value="1" {% if reservation_settings.waitlist_enabled == '1' %}checked{% endif %}><span><strong>Liste d’attente activée par défaut</strong></span></label>

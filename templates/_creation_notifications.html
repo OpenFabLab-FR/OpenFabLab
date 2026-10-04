@@ -1,5 +1,8 @@
-{% from '_evolution_fields.html' import csrf,check %}
-<section class="admin-section" id="new-user-notifications"><h2>Notifications à la création d’usager</h2>
-<p>Les informations cochées sont des données personnelles envoyées à Discord. Aucun e-mail, téléphone, adresse, identifiant ou QR Code n’est envoyé. Décochez l’événement pour le désactiver entièrement.</p>
-<form method="post" action="{{ url_for('evolution.integrations') }}" class="admin-form">{{ csrf(evolution_csrf,'discord') }}{{ check('enabled','Activer l’événement',creation_discord.enabled) }}<div class="form-grid">
-{% for key,label in [('first_name','Prénom'),('last_name','Nom complet'),('last_initial','Initiale du nom (si nom complet désactivé)'),('age','Âge'),('category','Catégorie'),('source','Origine de création'),('time','Date et heure')] %}{{ check(key,label,creation_discord[key]) }}{% endfor %}</div><button class="admin-button primary compact">Enregistrer l’événement</button></form></section>
+{% from '_evolution_fields.html' import csrf %}
+<section class="form-section standalone-form-section" id="new-user-notifications"><h2>Notifications à la création d’usager</h2>
+<p>Les informations cochées sont des données personnelles envoyées à Discord. Décochez l’événement pour désactiver cette notification.</p>
+<form method="post" action="{{ url_for('evolution.integrations') }}" class="admin-form">{{ csrf(evolution_csrf,'discord') }}
+<label class="checkbox-field"><input name="enabled" type="checkbox" value="1" {% if creation_discord.enabled %}checked{% endif %}><span><strong>Activer l’événement</strong></span></label>
+<div class="notification-options">{% for key,label in [('first_name','Prénom'),('last_name','Nom complet'),('last_initial','Initiale du nom (si nom complet désactivé)'),('age','Âge'),('category','Catégorie'),('source','Origine de création'),('time','Date et heure')] %}
+<label class="checkbox-field"><input name="{{ key }}" type="checkbox" value="1" {% if creation_discord[key] %}checked{% endif %}><span><strong>{{ label }}</strong></span></label>{% endfor %}</div>
+<button class="admin-button primary compact">Enregistrer l’événement</button></form></section>

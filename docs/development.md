@@ -29,6 +29,8 @@ Pour un lancement direct de Python, utiliser les variables d'isolation décrites
 
 ## Packaging
 
+La version stable 2.7.1 ajoute des contrôles ciblés sur les ordres, les couleurs, les habilitations, les tarifs exacts et les formulaires SMTP. Sa validation finale comprend 396 tests Python, 461 contrôles PHP et 622 contrôles JavaScript réussis. Les suites corrective, finale et logo ont été exécutées sur Chromium et WebKit, de 320 à 1440 px (`npx playwright install webkit` pour installer ce moteur). Les captures facultatives vont hors de la copie publique. Les fixtures utilisent uniquement des identités fictives, jamais un export de production.
+
 ```sh
 .venv/bin/python build_openfablab.py
 .venv/bin/python build_wordpress_plugin.py
@@ -37,6 +39,8 @@ Pour un lancement direct de Python, utiliser les variables d'isolation décrites
 
 Les constructeurs utilisent des listes autorisées et des dates/permissions ZIP fixes. Les deux ZIP doivent être identiques lors de deux constructions dans le même environnement. Pour une reconstruction strictement octet-identique, utiliser la même version de Python/zlib ; la compression peut différer entre versions. Le contrôleur compare également les octets des membres aux sources publiques et génère `dist/SHA256SUMS`. `dist/` n'est pas un contenu à committer.
 
+Pour la release stable 2.7.1, le ZIP applicatif approuvé n’a pas été reconstruit après la présentation de la documentation au statut stable dans le dépôt. Ces documents peuvent donc différer entre Git et l’archive approuvée, contrairement aux fichiers runtime qui doivent être identiques. La référence de téléchargement est l’asset de release et son `SHA256SUMS`, pas une nouvelle construction des guides de la branche principale. Le plugin 2.7.0 joint est réutilisé à l’identique.
+
 ## Docker
 
-`docker compose config --quiet`, puis `docker compose build application` sur une machine isolée. Sans Docker local, seule une validation statique est possible : l'indiquer, ne pas annoncer un build d'image réussi. Aucune procédure DSM historique ne fait partie de cette suite publique.
+`docker compose config --quiet`, puis `docker compose build application` sur une machine isolée. Sans Docker local, indiquer cette limite et ne pas annoncer un build d’image réussi. Les tests de publication reconstruisent le jeu de fichiers des instructions `COPY`, démarrent l’entrée WSGI et vérifient qu’un module manquant est détecté : ce contrôle runtime local ne remplace pas un build Docker. Aucune procédure DSM historique ne fait partie de cette suite publique.

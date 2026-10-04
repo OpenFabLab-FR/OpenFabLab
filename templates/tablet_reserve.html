@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% from '_evolution_fields.html' import field %}
+{% block title %}Demander une place · OpenFabLab{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('tablet_reservations.detail',service_id=animation.service_id) }}">← Animation</a>{% endblock %}
+{% macro person_fields(prefix='') %}
+<div class="form-grid two-columns">
+{{ field(prefix+'first_name','Prénom',values.get(prefix+'first_name',''),required=not prefix) }}
+{{ field(prefix+'last_name','Nom',values.get(prefix+'last_name',''),required=not prefix) }}
+{{ field(prefix+'birth_year','Année de naissance',values.get(prefix+'birth_year',''),type='number',required=not prefix) }}
+{{ field(prefix+'email','E-mail',values.get(prefix+'email',''),type='email',required=not prefix) }}
+{{ field(prefix+'phone','Téléphone (avec indicatif international)',values.get(prefix+'phone',''),type='tel',required=not prefix) }}
+<label class="form-field"><span>Identifiant OpenFabLab {{ '(facultatif)' if prefix else '(usager uniquement)' }}</span><input name="{{ prefix }}public_id" value="{{ values.get(prefix+'public_id','') }}" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off"></label>
+</div>{% endmacro %}
+{% block content %}
+<section class="content-heading"><h1>Demander une place</h1><p>{{ animation.title }} · {{ animation.date }} · {{ animation.hours }}</p></section>
+{% for error in errors %}<p class="flash flash-error" role="alert">{{ error }}</p>{% endfor %}
+<form method="post" class="admin-form tablet-request-form">
+<input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="form_token" value="{{ form_token }}">
+<div class="tablet-honeypot" aria-hidden="true"><label>Site Internet<input name="website" tabindex="-1" autocomplete="off"></label></div>
+<section class="form-section"><fieldset class="access-roles"><legend>Votre parcours</legend><label><input type="radio" name="participant_kind" value="user" required {% if values.get('participant_kind','user')=='user' %}checked{% endif %}><span>Je suis usager</span></label><label><input type="radio" name="participant_kind" value="visitor" {% if values.get('participant_kind')=='visitor' %}checked{% endif %}><span>Je suis visiteur</span></label></fieldset>
+<p class="form-help">Usager : saisissez votre identifiant à quatre chiffres et au moins une coordonnée déjà renseignée dans votre fiche. Aucun répertoire public n’est proposé. Visiteur : laissez l’identifiant vide.</p>
+{{ person_fields() }}
+{% if animation.booking_mode=='slots' %}<label class="form-field"><span>Créneau</span><select name="slot_uuid" required><option value="">Choisir un créneau</option>{% for slot in animation.slots %}<option value="{{ slot.slot_uuid }}" {% if values.get('slot_uuid')==slot.slot_uuid %}selected{% endif %}>{{ slot.label }} · {{ slot.available }} place(s), à confirmer</option>{% endfor %}</select></label>{% endif %}
+</section>
+<section class="form-section"><details {% if values.get('with_companion')=='1' %}open{% endif %}><summary>Ajouter un accompagnateur majeur</summary><p>Avant {{ animation.accompaniment_under_age }} ans, un accompagnateur doit également demander une place.</p><label class="checkbox-field compact-check"><input name="with_companion" type="checkbox" value="1" {% if values.get('with_companion')=='1' %}checked{% endif %}><span>Inclure cet accompagnateur dans la demande</span></label>{{ person_fields('companion_') }}</details></section>
+<section class="form-section"><label class="checkbox-field compact-check"><input name="consent" type="checkbox" value="1" required {% if values.get('consent')=='1' %}checked{% endif %}><span>J’accepte l’utilisation de ces informations pour gérer cette demande et ses échanges avec le service de réservation.</span></label><p class="form-help">La demande sera conservée localement puis transmise au service WordPress configuré par le FabLab. Une place n’est pas garantie avant confirmation. Les règles d’âge, de capacité et de liste d’attente sont celles de ce service. <a href="{{ url_for('data_management') }}">Gestion des données</a>.</p><button class="admin-button primary" type="submit">Enregistrer la demande</button></section>
+</form>{% endblock %}

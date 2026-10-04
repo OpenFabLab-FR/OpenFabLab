@@ -8,6 +8,7 @@ Dockerfile
 LICENSE
 PUBLIC_FILES.txt
 README.md
+ROADMAP.md
 SECURITY.md
 THIRD_PARTY_NOTICES.md
 animation_report.py
@@ -26,6 +27,7 @@ docs/architecture.md
 docs/backup-restore.md
 docs/branding.md
 docs/configuration.md
+docs/corrections-2.7.1.md
 docs/development.md
 docs/email-templates.md
 docs/evolution-2.7.md
@@ -70,6 +72,7 @@ static/qr-scanner.js
 static/style.css
 static/vendor/jsQR-1.4.0.js
 static/vendor/jsQR-LICENSE.txt
+tablet_reservations.py
 templates/_admin_nav.html
 templates/_branding_settings.html
 templates/_closure_options.html
@@ -116,11 +119,17 @@ templates/resources.html
 templates/service_form.html
 templates/services.html
 templates/statistics.html
+templates/tablet_animation.html
+templates/tablet_animations.html
+templates/tablet_done.html
+templates/tablet_reserve.html
 templates/user_form.html
 templates/users.html
 tests/__init__.py
 tests/check_v26_archives.py
+tests/corrective_fixture.py
 tests/evolution_fixture.py
+tests/logo_fixture.py
 tests/participants_fixture.py
 tests/privacy_resources_fixture.py
 tests/schema12_fixture.py
@@ -129,8 +138,12 @@ tests/test_animation_slots.py
 tests/test_app.py
 tests/test_branding.py
 tests/test_candidate_revision.py
+tests/test_corrective_271.py
+tests/test_corrective_ui.js
 tests/test_evolution.py
 tests/test_evolution_ui.js
+tests/test_final_pass_ui.js
+tests/test_logo_shadow_ui.js
 tests/test_naming.py
 tests/test_participants_ui.js
 tests/test_privacy_resources.py
@@ -139,6 +152,7 @@ tests/test_private_backup.py
 tests/test_publication.py
 tests/test_slots_ui.js
 tests/test_sync_reconciliation.py
+tests/test_tablet_reservations.py
 tests/test_walkin_prefill.js
 tests/test_wordpress_bookings.php
 tests/test_wordpress_emails.php
