@@ -15,7 +15,7 @@
 {% block content %}
 <div hidden data-home-live-state data-state-url="{{ url_for('home_state') }}" data-state-signature="{{ home_state_signature }}"></div>
 <section class="home-intro" aria-labelledby="today-title">
-    <h1 class="home-title" id="today-title">Aujourd’hui au FabLab</h1>
+    <h1 class="home-title" id="today-title">{{ home_title }}</h1>
     <time
         class="live-clock"
         data-paris-clock

@@ -1,5 +1,30 @@
 # Historique public
 
+## 2.8.0 — version stable — 5 octobre 2026
+
+Version validée localement, migrée depuis la 2.7.1 puis déployée et vérifiée au FougèresLab, avec le plugin WordPress 2.8.0 relié et testé en conditions réelles.
+
+- Chaque participant conserve un vrai compte : une personne sélectionnée = une place. Responsables et membres rattachés, plusieurs responsables possibles, liens privés réciproques et fin manuelle conservant l'historique.
+- Seuils d'autonomie/responsabilité et cinq politiques de coordonnées configurables ; naissance précise pour les nouveaux mineurs, année historique préservée.
+- Moteur transactionnel commun borne/administration/plugin WordPress 2.8 : groupes indivisibles, capacité par créneau, doublons, autorisations temporaires et répétition sans double inscription.
+- Le mécanisme spécifique d'accompagnateur reste uniquement lisible dans les anciennes réservations ; aucune conversion ou purge OpenFabLab.
+- Plugin optionnel refondu en relais HTTPS ; nettoyage des six tables historiques du plugin seulement, manuel, protégé, avec sauvegarde préalable. Les options et secrets sont conservés. Aucun nettoyage à l'installation.
+- Titre de borne configurable, accès publics depuis la page intermédiaire, catégories compactes et chronologie sans débordement de noms.
+- Accueil tablette minimaliste : lien « Gestion » vers la page intermédiaire ; « Gestion des données » masqué uniquement dans son footer. Les pages internes et l'espace protégé conservent leurs libellés et leurs liens.
+- Calendrier : couleurs par type, masquage par occurrence sans supprimer de données, OpenLab terminé sans présence masqué automatiquement, détails et titres améliorés.
+- Une seule pièce jointe QR PNG dans le message de bienvenue ; suivi quotidien idempotent du passage au seuil de responsabilité lorsque des coordonnées manquent.
+- Migration additive SQLite 14 → 15 avec sauvegarde PRE cohérente. Sauvegardes complètes/restauration adaptées au nouveau schéma.
+
+- Liste d’attente automatique : FIFO compatible avec la capacité, propositions temporaires pour le groupe entier, acceptation/refus et expiration atomiques ; une place bloquée ne peut pas être vendue une seconde fois.
+- E-mail valide obligatoire, téléphone obligatoire optionnel, complément de coordonnées après identification ; contact d’un responsable utilisable sans duplication sur le compte enfant.
+- SMTP natif et journal durable des confirmations, attentes, propositions, modifications et annulations ; traitement indépendant de WordPress, reprises bornées, historique et échéances dans l’administration.
+- Derniers ajustements : login sans aide PIN redondante, accès rapide sur une ligne, thème avant couleurs compactes puis horaires, formulaire animation simplifié et colonne Identifiant non coupée.
+- Le menu de tri du répertoire reste contenu à 320 px ; les exports privés d’inscriptions utilisent le contact de la demande sans le recopier dans le compte enfant.
+
+- Harmonisation finale des titres internes et champs numériques : âges, durées, montants en euros, conservation et sauvegardes ; lien direct vers les règles d'autonomie, corrections de tableaux et petits écrans WebKit.
+
+Validation automatisée finale : **451 tests Python, 724 contrôles PHP et 622 contrôles JavaScript** ; contrôles responsive et parcours Chromium/WebKit de 320 à 1440 px, migration/restauration d'une copie privée et archives publiques vérifiées. WordPress nécessite JavaScript et un accès HTTPS vers OpenFabLab. PHP/SQL et SMTP sont simulés dans les suites locales ; pas de nouveau build Docker ni de WordPress/MySQL réel réalisé par ces suites. La validation NAS/WordPress réelle a été confirmée par l'exploitant. Voir [le guide de vérification](docs/candidate-2.8-guide.md).
+
 ## 2.7.1 — version stable
 
 Version corrective et d’amélioration de la 2.7.0, testée localement puis déployée en conditions réelles au FougèresLab.

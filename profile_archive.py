@@ -39,6 +39,8 @@ BILLING_KEYS = {
     "billing_rental_contract_fee_cents", "billing_rental_delivery_fee_cents",
 }
 EXACT_KEYS = {
+    'home_title','family_autonomy_age','family_responsible_age','family_contact_dependent','family_contact_autonomous','family_contact_responsible',
+    'calendar_color_openlab','calendar_color_animation','calendar_color_reservation','calendar_color_rental','calendar_color_training',
     "home_theme", "keep_screen_awake", "lock_home_scroll", "wake_lock_start",
     "wake_lock_end", "openlab_attendance_show_decimals",
     'calendar_display_start', 'calendar_display_end',
@@ -93,7 +95,7 @@ def allowed_setting(key):
     if key.startswith("reservation_"):
         return key in {
             "reservation_minimum_age", "reservation_accompaniment_under_age",
-            "reservation_waitlist_enabled", "reservation_offer_hours",
+            "reservation_waitlist_enabled", "reservation_phone_required", "reservation_offer_hours",
             "reservation_last_offer_hours", "reservation_close_minutes",
             "reservation_reminder_one_hours", "reservation_reminder_two_hours",
             "reservation_sync_interval_minutes",
@@ -180,6 +182,17 @@ def parse_profile(raw):
             for key, value in settings.items():
                 if not isinstance(key, str) or not allowed_setting(key) or not isinstance(value, str) or len(value) > 8000:
                     raise ValueError("Le profil contient un réglage non autorisé.")
+                if key=='home_title' and (not value.strip() or len(value)>40 or any(ord(c)<32 for c in value)):
+                    raise ValueError('Titre d’accueil invalide.')
+                if key.startswith('calendar_color_') and not re.fullmatch(r'#[a-fA-F0-9]{6}',value):
+                    raise ValueError('Couleur du calendrier invalide.')
+                if key.startswith('family_contact_') and value not in {'none','email','phone','either','both'}:
+                    raise ValueError('Règle de coordonnées invalide.')
+                if key in {'family_autonomy_age','family_responsible_age'} and (not value.isdecimal() or not 0<=int(value)<=120):
+                    raise ValueError('Seuil d’âge invalide.')
+            if int(settings.get('family_autonomy_age','15'))>int(settings.get('family_responsible_age','18')):
+                raise ValueError('Seuils d’autonomie et de responsable incohérents.')
+            for key, value in settings.items():
                 if (key.startswith("module_") or key.startswith(('structure_show_', 'structure_use_'))) and value not in {"0", "1"}:
                     raise ValueError("État de module invalide.")
                 if key == 'structure_badge_template' and value not in {'', 'badge-template.svg'}:
@@ -204,8 +217,8 @@ def parse_profile(raw):
                         valid = value.isdecimal() and minimum <= int(value) <= maximum
                     if not valid:
                         raise ValueError("Paramètre de réservation invalide.")
-                if key == "reservation_waitlist_enabled" and value not in {"0", "1"}:
-                    raise ValueError("État de liste d’attente invalide.")
+                if key in {"reservation_waitlist_enabled", "reservation_phone_required"} and value not in {"0", "1"}:
+                    raise ValueError("Paramètre de réservation invalide.")
                 if key == "structure_color" and value and not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
                     raise ValueError("Couleur de structure invalide.")
                 if key == 'structure_dpo_email' and value and not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', value):

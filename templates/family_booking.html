@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Réserver une animation · OpenFabLab{% endblock %}
+{% block content %}
+<section class="content-heading"><p class="eyebrow">Réservation</p><h1>{{ animation.title }}</h1><p>{{ animation.date }} · {{ animation.hours }}</p></section>
+{% for error in errors %}<p class="flash flash-error" role="alert">{{ error }}</p>{% endfor %}
+<form method="post" class="admin-form family-booking">
+<input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+{% if stage=='identify' %}
+<section class="form-section"><h2>Identifier mon compte</h2><p>Votre identifiant et une coordonnée déjà renseignée dans votre fiche permettent de vous retrouver sans afficher de répertoire public.</p>
+<div class="form-grid two-columns"><label class="form-field"><span>Identifiant OpenFabLab</span><input name="public_id" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" required></label><label class="form-field"><span>E-mail ou téléphone de votre fiche</span><input name="contact" maxlength="254" required></label></div>
+<button class="admin-button primary" name="step" value="identify">Continuer</button><p class="form-help">Vous n’avez pas encore de compte ? Adressez-vous à l’équipe pour créer les comptes des participants et leurs rattachements.</p></section>
+{% elif stage=='contact' %}
+<section class="form-section"><h2>Compléter mes coordonnées</h2><p>Un e-mail valide est nécessaire pour recevoir la confirmation et les éventuelles propositions de places.</p>
+<div class="form-grid two-columns"><label class="form-field"><span>E-mail</span><input type="email" name="email" maxlength="254" autocomplete="email" required value="{{ request.form.get('email','') }}"></label><label class="form-field"><span>Téléphone{{ ' (obligatoire)' if phone_required else ' (facultatif)' }}</span><input type="tel" name="phone" maxlength="40" autocomplete="tel" {% if phone_required %}required{% endif %} value="{{ request.form.get('phone','') }}"></label></div>
+<button class="admin-button primary" name="step" value="contact">Enregistrer et continuer</button></section>
+{% elif stage=='select' %}
+<section class="form-section"><h2>Pour qui réservez-vous ?</h2><p>Chaque personne sélectionnée participe à l’animation et demande une place. Sélectionnez aussi un responsable rattaché pour chaque personne non autonome.</p>
+<div class="family-person-choices">{% for person in choices %}<label class="family-person-choice"><input type="checkbox" name="person_ids" value="{{ person.id }}" {% if person.id|string in selected|map('string')|list %}checked{% endif %}><span><strong>{{ person.first_name }} {{ person.last_name }}</strong><small>{{ person.label }} · {{ person|family_state }}</small></span></label>{% endfor %}</div>
+{% if animation.booking_mode=='slots' %}<label class="form-field"><span>Créneau</span><select name="slot_uuid" required><option value="">Choisir un créneau</option>{% for slot in animation.slots %}<option value="{{ slot.slot_uuid }}">{{ slot.label }} · {{ slot.available }} place(s) disponible(s)</option>{% endfor %}</select></label>{% endif %}
+<button class="admin-button primary" name="step" value="select">Voir le récapitulatif</button></section>
+{% else %}
+<section class="form-section"><h2>Récapitulatif</h2><ul>{% for person in people %}<li>{{ person.first_name }} {{ person.last_name }}</li>{% endfor %}</ul><p><strong>{{ people|length }} place(s) demandée(s)</strong>. Tout le groupe sera confirmé ensemble ou inscrit ensemble en liste d’attente, selon les places disponibles lors de la validation.</p>
+<input type="hidden" name="nonce" value="{{ grant.nonce }}"><label class="checkbox-field"><input type="checkbox" name="consent" value="1" required><span>J’accepte l’utilisation de ces informations pour gérer la réservation.</span></label><button class="admin-button primary" name="step" value="confirm">Valider la réservation</button><a class="admin-button secondary" href="{{ url_for('family.booking',service_id=animation.service_id) }}">Recommencer</a></section>
+{% endif %}</form>{% endblock %}

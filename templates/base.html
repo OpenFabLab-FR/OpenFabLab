@@ -66,10 +66,12 @@
             <span class="footer-version">{{ config.APP_VERSION }}</span>
         </span>
         <span class="footer-group footer-links">
+            {% if request.endpoint == 'index' %}
+            <a href="{{ url_for('admin') }}">Gestion</a>
+            {% else %}
             <a href="{{ url_for('data_management') }}">Gestion des données</a>
             <a href="{{ url_for('admin') }}">Administration</a>
-            {% if request.endpoint == 'index' and self_enrollment_enabled and modules.users %}<a href="{{ url_for('evolution.enroll') }}">Créer un compte</a>{% endif %}
-            {% if request.endpoint == 'index' and tablet_reservations_enabled and modules.public_reservations %}<a href="{{ url_for('tablet_reservations.catalogue') }}">Réserver une animation</a>{% endif %}
+            {% endif %}
         </span>
     </footer>
 </body>

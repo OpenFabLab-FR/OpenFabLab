@@ -42,8 +42,8 @@ async function check(name,fn){await fn();checks++;console.log('OK '+name);}
   }
   for(const width of [1440,1024,820,768,430,390,375,360,320])await check('kiosk footer '+width+'px',async()=>{
    await page.setViewportSize({width,height:900});await page.goto(base+'/');
-   assert.equal(await page.locator('a').filter({hasText:/^Créer un compte$/}).count(),1);
-   assert.equal(await page.locator('footer a').last().innerText(),'Créer un compte');
+   assert.equal(await page.locator('footer a').filter({hasText:/^Créer un compte$/}).count(),0);
+   assert.equal(await page.locator('footer a').filter({hasText:/^Réserver une animation$/}).count(),0);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   });
   await check('welcome opt-in only for valid email, default unchecked',async()=>{
@@ -55,6 +55,8 @@ async function check(name,fn){await fn();checks++;console.log('OK '+name);}
    await page.goto(base+'/inscription');assert.equal(await page.locator('h1').innerText(),'Créer mon compte');
    assert.equal(await page.locator('[name="category"]').count(),0);assert.equal(await page.locator('[name="public_id"]').count(),0);
    await page.locator('[name="first_name"]').fill('Éloïse-Exemple');await page.locator('[name="last_name"]').fill('FICTIF');
+   await page.locator('[name="birth_year"]').fill('1990');
+   await page.locator('[name="email"]').fill('fictional@example.invalid');await page.locator('[name="phone"]').fill('0600000000');
    await Promise.all([page.waitForNavigation(),page.locator('.form-actions button').click()]);
    assert(page.url().includes('/inscription/terminee'));await page.locator('img').last().evaluate(img=>img.decode());
    await page.goto(base+'/admin/calendrier');assert(page.url().includes('/admin/connexion'));

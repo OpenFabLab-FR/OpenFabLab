@@ -63,8 +63,8 @@ def sqlite_check(path, expected=None):
         tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         if not {'users', 'sessions', 'visitors', 'app_settings'} <= tables:
             raise ValueError('Ce fichier n’est pas une base OpenFabLab.')
-        if schema not in (13, 14) or (expected is not None and schema != expected):
-            raise ValueError('Schéma SQLite incompatible (13 ou 14 requis).')
+        if schema not in (13, 14, 15) or (expected is not None and schema != expected):
+            raise ValueError('Schéma SQLite incompatible (13, 14 ou 15 requis).')
         if db.execute('PRAGMA integrity_check').fetchall() != [('ok',)]:
             raise ValueError('Intégrité SQLite invalide.')
         if db.execute('PRAGMA foreign_key_check').fetchall():
@@ -259,7 +259,7 @@ def validate_backup(archive_path, destination=None):
                 or manifest.get('kind') not in ('complete', 'test')):
             raise ValueError('Format de sauvegarde inconnu.')
         version = manifest.get('openfablab_version', '')
-        if not re.fullmatch(r'2\.(?:6\.[0-9]+|7\.[0-9]+)', version):
+        if not re.fullmatch(r'2\.(?:6\.[0-9]+|7\.[0-9]+|8\.[0-9]+)', version):
             raise ValueError('Version OpenFabLab incompatible avec cette restauration.')
         records = manifest.get('files')
         if not isinstance(records, list):

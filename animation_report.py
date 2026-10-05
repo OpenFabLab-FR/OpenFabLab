@@ -15,7 +15,7 @@ from reservations_sync import booking_counts, booking_presence, booking_reservat
 
 
 STATUS_LABELS = {"confirmed": "Confirmé", "waitlisted": "Liste d'attente",
-                 "offer_pending": "Place proposée", "cancelled": "Annulé", "expired": "Offre expirée"}
+                 "offer_pending": "Place proposée", "cancelled": "Annulé", "expired": "Offre expirée", "declined": "Refusée"}
 LINK_LABELS = {"matched": "Coordonnées concordantes", "manual": "Vérifié manuellement",
                "needs_review": "À vérifier", "candidate": "À vérifier", "visitor": "Non rattaché"}
 

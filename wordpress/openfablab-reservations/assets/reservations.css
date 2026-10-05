@@ -126,3 +126,8 @@
 .openfablab-action-message.is-error { background: #fceeee; color: #792f34; }
 .openfablab-slot-choice { margin-block: 1rem; }
 .openfablab-slot-choice select { width: 100%; max-width: 34rem; min-width: 0; min-height: 44px; box-sizing: border-box; }
+.openfablab-family-person { display:flex;align-items:center;gap:12px;min-height:48px;padding:12px;border:1px solid #d8e1e5;border-radius:12px;margin-block:10px;overflow-wrap:anywhere; }
+.openfablab-family-person input { flex:none;width:20px;height:20px; }
+.openfablab-booking-form select { width:100%;min-height:44px;max-width:100%; }
+.openfablab-booking-form button { margin:8px 8px 0 0; }
+.openfablab-family-person:has(input:checked) { background:#e9f3f6; }

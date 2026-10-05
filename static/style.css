@@ -20,6 +20,10 @@
     --ui-easing: cubic-bezier(.2,.65,.3,1);
     --ui-hover-shadow: 0 5px 16px rgba(32,40,43,.10);
     --ui-focus: 3px solid var(--primary);
+    --ui-font: "Libre Franklin", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --control-font: 400 1rem/1.45 var(--ui-font);
+    --module-title-size: clamp(1.15rem, 2vw, 1.35rem);
+    --module-title-weight: 500;
 }
 
 @font-face {
@@ -58,6 +62,14 @@ button,
 input,
 select {
     font: inherit;
+}
+
+input,
+select,
+textarea {
+    font: var(--control-font);
+    min-width: 0;
+    max-width: 100%;
 }
 
 button,
@@ -2879,6 +2891,7 @@ body.dialog-open {
 }
 
 .openlab-schedule-row input {
+    width: 100%;
     min-width: 0;
     min-height: 42px;
     padding: 8px 10px;
@@ -3771,7 +3784,12 @@ body.dialog-open {
     gap: 22px;
 }
 
+.admin-form + .admin-form {
+    margin-top: 20px;
+}
+
 .form-section {
+    min-width: 0;
     padding: 28px;
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -3779,7 +3797,23 @@ body.dialog-open {
 }
 
 .form-section-heading {
-    margin-bottom: 22px;
+    margin-bottom: 18px;
+}
+
+/* Internal modules share one hierarchy; page titles and home counters stay prominent. */
+.admin-page h2,
+.form-section h2,
+.admin-section h2 {
+    margin-top: 0;
+    font-size: var(--module-title-size);
+    font-weight: var(--module-title-weight);
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    overflow-wrap: break-word;
+}
+
+.form-section-heading p:last-child {
+    margin-bottom: 0;
 }
 
 .form-grid {
@@ -3813,7 +3847,7 @@ body.dialog-open {
 .form-field label {
     display: block;
     margin-bottom: 7px;
-    font-weight: 750;
+    font-weight: 500;
 }
 
 .form-field input,
@@ -3832,7 +3866,7 @@ body.dialog-open {
 .form-field textarea {
     min-height: 88px;
     resize: vertical;
-    font: inherit;
+    font: var(--control-font);
     line-height: 1.45;
 }
 
@@ -4048,6 +4082,8 @@ body.dialog-open {
 }
 
 .table-scroll {
+    min-width: 0;
+    max-width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
@@ -4328,7 +4364,7 @@ tbody tr:last-child td {
     border: 2px solid var(--border);
     border-radius: 10px;
     background: white;
-    font: inherit;
+    font: var(--control-font);
 }
 
 .closure-day small {
@@ -4350,15 +4386,22 @@ tbody tr:last-child td {
     font-weight: 700;
 }
 
+.directory-tools > * {
+    min-width: 0;
+}
+
 .directory-tools input,
 .directory-tools select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     min-height: 48px;
     border: 1px solid var(--border);
     border-radius: 12px;
     background: #fff;
     padding: 0.75rem 0.9rem;
     color: var(--text);
-    font: inherit;
+    font: var(--control-font);
 }
 
 .directory-table {
@@ -4436,8 +4479,8 @@ tbody tr:last-child td {
 
 .reservation-bookings-table .booking-person-column { width: 14%; }
 .reservation-bookings-table .booking-age-column { width: 7%; }
-.reservation-bookings-table .booking-id-column { width: 10%; }
-.reservation-bookings-table .booking-link-column { width: 23%; }
+.reservation-bookings-table .booking-id-column { width: 14%; }
+.reservation-bookings-table .booking-link-column { width: 19%; }
 .reservation-bookings-table .booking-status-column { width: 17%; }
 .reservation-bookings-table .booking-contact-column { width: 13%; }
 .reservation-bookings-table .booking-actions-column { width: 16%; }
@@ -4528,7 +4571,7 @@ tbody tr:last-child td {
     padding: 0.65rem 0.8rem;
     border: 1px solid var(--border);
     border-radius: 10px;
-    font: inherit;
+    font: var(--control-font);
     font-variant-numeric: tabular-nums;
 }
 
@@ -4554,7 +4597,7 @@ tbody tr:last-child td {
     padding: 0.65rem 0.8rem;
     border: 1px solid var(--border);
     border-radius: 10px;
-    font: inherit;
+    font: var(--control-font);
 }
 
 .form-error {
@@ -4734,20 +4777,30 @@ tbody tr:last-child td {
 }
 
 .billing-rate-grid label {
+    min-width: 0;
     display: grid;
     gap: 8px;
-    font-weight: 750;
+    font-weight: 500;
 }
 
 .billing-rate-grid input,
 .billing-rate-grid select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     min-height: 50px;
     padding: 10px 12px;
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--surface);
     color: var(--text);
-    font: inherit;
+    font: var(--control-font);
+}
+
+/* WebKit must not paint the selected option beyond a narrow native control. */
+.billing-rate-grid select {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .billing-form .form-grid label,
@@ -4755,7 +4808,7 @@ tbody tr:last-child td {
 .billing-form .checkbox-card {
     display: grid;
     gap: 8px;
-    font-weight: 750;
+    font-weight: 500;
 }
 
 .billing-form .form-grid input,
@@ -4770,7 +4823,7 @@ tbody tr:last-child td {
     border-radius: 10px;
     background: var(--surface);
     color: var(--text);
-    font: inherit;
+    font: var(--control-font);
 }
 
 .billing-form .form-grid textarea {
@@ -4901,15 +4954,21 @@ tbody tr:last-child td {
     display: flex;
     align-items: center;
     gap: 0.65rem;
+    min-width: 0;
+    font-size: 1rem;
+    font-weight: 400;
 }
 
 .number-with-unit input {
-    width: 92px;
+    width: 110px;
+    max-width: 100%;
+    flex: 0 1 110px;
     min-height: 48px;
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 0.65rem;
-    font: inherit;
+    font: var(--control-font);
+    font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 900px) {
@@ -5133,7 +5192,7 @@ tbody tr:last-child td {
     border-radius: 12px;
     background: var(--surface);
     color: var(--text);
-    font: inherit;
+    font: var(--control-font);
 }
 
 @media (max-width: 760px) {
@@ -5274,7 +5333,7 @@ tbody tr:last-child td {
     }
 
     .openlab-schedule-row {
-        grid-template-columns: minmax(78px, 0.7fr) repeat(2, minmax(100px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .annual-summary-grid {
@@ -6168,7 +6227,6 @@ tbody tr:last-child td {
     min-width: 0;
     width: 100%;
     box-sizing: border-box;
-    font: inherit;
 }
 
 .category-visitor {
@@ -6485,4 +6543,76 @@ tbody tr:last-child td {
 @media (prefers-reduced-motion:reduce) {
     .admin-tab, .admin-subtab, .admin-button, .calendar-event, .calendar-month-event { transition:none; transform:none !important; }
     .user-card:has(a):hover { transform:none !important; }
+}
+
+/* Candidate 2.8: independent accounts, progressively disclosed family steps. */
+.family-age-grid,.family-policy-grid,.quick-access-grid,.calendar-color-grid { display:grid;gap:16px; }
+.family-age-grid,.quick-access-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.family-policy-grid { grid-template-columns:repeat(3,minmax(0,1fr));margin-block:20px; }
+.family-age-card,.family-policy-card,.quick-access-card { border:1px solid var(--border);border-radius:14px;background:#f5f9fa;padding:18px;min-width:0; }
+.family-age-card small,.quick-access-card span { display:block;color:var(--muted);font-size:.85rem;font-weight:400;line-height:1.5; }
+.family-policy-card h3 { margin:0 0 8px;font-size:1.05rem; }
+.family-person-choices { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-block:18px; }
+.family-person-choice { display:flex;align-items:center;gap:12px;min-height:68px;padding:14px;border:1px solid var(--border);border-radius:12px;cursor:pointer; }
+.family-person-choice:has(input:checked) { background:#e9f3f6;border-color:var(--accent); }
+.family-person-choice small { display:block;color:var(--muted);margin-top:4px; }
+.family-person-choice input { flex:0 0 20px;min-height:20px; }
+.family-panel { min-width:0; }
+.family-choice { display:flex;align-items:center;gap:12px;min-height:60px;margin-block:10px;padding:12px;border:1px solid var(--border);border-radius:12px;cursor:pointer;overflow-wrap:anywhere; }
+.family-choice input { width:20px;height:20px;flex:0 0 20px;accent-color:var(--primary); }
+.family-choice small { display:block;margin-top:4px;color:var(--muted);font-size:.85rem; }
+.family-choice:has(input:checked) { background:var(--primary-soft);border-color:var(--primary); }
+.family-choice:focus-within { outline:var(--ui-focus);outline-offset:2px; }
+.family-search { display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-block:12px; }
+.family-search .form-field { flex:1 1 200px;min-width:0; }
+.family-link-row { display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-block:10px;border-bottom:1px solid var(--border); }
+.family-link-row > a { min-width:0;overflow-wrap:anywhere; }
+.family-link-row small { display:block;color:var(--muted); }
+.family-warning { padding:10px 14px;border-radius:10px;background:#fff7e5;color:#624d1c; }
+.family-choices { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px;margin-block:16px; }
+.family-person { display:flex;align-items:center;gap:10px;min-height:60px;padding:12px;border:1px solid var(--border);border-radius:10px; }
+.family-person small { display:block;color:var(--muted); }
+.family-person input { flex:0 0 20px; }
+.family-panel .form-actions { flex-wrap:wrap; }
+.quick-access-card { color:var(--text);text-decoration:none;font-weight:700;font-size:.92rem;white-space:nowrap;min-height:82px;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:14px 12px;transition:box-shadow .15s ease; }
+.quick-access-card span { white-space:normal; }
+.pin-form .login-error[hidden] { display:none; }
+.quick-access-card:hover { box-shadow:var(--ui-hover-shadow); }
+.public-quick-access { margin-top:24px;padding-top:22px;border-top:1px solid var(--border); }
+.public-quick-access h2 { font-size:1.1rem; }
+.login-card h1 { font-size:clamp(1.7rem,3vw,2.2rem); }
+.calendar-color-grid { grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-block:12px; }
+.calendar-color-row { display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;min-width:0; }
+.calendar-color-row span { font-size:.92rem;line-height:1.3; }
+.services-page .services-table.reservation-bookings-table th:nth-child(3) { white-space:nowrap;min-width:95px; }
+.calendar-color-row input { width:48px;height:44px;flex:none; }
+.calendar-options { display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-block:16px; }
+.calendar-options p { margin:0; }
+.calendar-hidden-choice { font-size:.85rem;color:var(--muted); }
+.calendar-hidden-choice label { display:flex;align-items:center;gap:8px;min-height:44px; }
+.calendar-event { overflow:hidden;white-space:normal;overflow-wrap:anywhere; }
+.calendar-event strong { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;font-size:.76rem;font-weight:600; }
+.calendar-month .calendar-day-label { font-weight:500;font-size:.95rem; }
+.calendar-month-event { white-space:normal;overflow-wrap:anywhere;max-width:100%;overflow:hidden;font-weight:400;line-height:1.45; }
+.calendar-dialog { overflow-x:hidden;overflow-wrap:anywhere; }
+.category-card .category-form { display:grid;grid-template-columns:minmax(160px,1fr) 56px auto auto auto auto;align-items:end;gap:12px; }
+.category-card .order-controls { position:static;display:flex;align-items:center;gap:6px; }
+.category-card .order-controls button { min-width:42px;min-height:44px; }
+.category-card .drag-handle { min-height:44px;display:flex;align-items:center; }
+.day-timeline-table tbody td:first-child strong { display:block;max-width:100%;white-space:nowrap;text-overflow:ellipsis;overflow:hidden; }
+.home-dashboard-heading { gap:18px;flex-wrap:wrap; }
+.home-dashboard-heading h1,.home-dashboard-heading h2 { max-width:40ch;overflow-wrap:anywhere; }
+@media(max-width:1100px) {
+  .category-card .category-form { grid-template-columns:minmax(180px,1fr) 56px auto; }
+  .category-card .order-controls { justify-content:flex-end; }
+  .calendar-color-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:700px) {
+  .family-age-grid,.family-policy-grid,.family-person-choices,.quick-access-grid,.calendar-color-grid { grid-template-columns:minmax(0,1fr); }
+  .family-policy-grid { gap:12px; }
+  .category-card .category-form { grid-template-columns:minmax(0,1fr) 56px; }
+  .category-card .order-controls { grid-column:2;justify-content:flex-end; }
+  .category-card .category-form > button { grid-column:1; }
+  .calendar-dialog { padding:18px; }
+  .calendar-options { gap:2px; }
 }

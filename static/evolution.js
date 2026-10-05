@@ -1,4 +1,22 @@
 'use strict';
+document.querySelectorAll('[data-minor-toggle]').forEach(box => {
+  const form = box.form, exact = form.querySelector('[name="birth_date"]'), year = form.querySelector('[name="birth_year"]');
+  if (!exact || !year) return;
+  const update = () => {
+    const showDate = box.checked || exact.value !== '';
+    exact.closest('[data-birth-date]').hidden = !showDate;
+    exact.required = box.checked;
+    year.closest('[data-birth-year]').hidden = box.checked;
+    year.required = !box.checked && year.dataset.originalRequired === '1';
+  };
+  year.dataset.originalRequired = year.required ? '1' : '0';
+  box.addEventListener('change', update); update();
+});
+document.querySelectorAll('[data-character-count]').forEach(input => {
+  const status = input.parentElement.querySelector('[data-character-status]');
+  const update = () => { if (status) status.textContent = Array.from(input.value).length + ' / ' + input.maxLength + ' caractères'; };
+  input.addEventListener('input', update); update();
+});
 document.querySelectorAll('[data-welcome-email]').forEach(box => {
   const input = box.form?.querySelector('[name="email"]');
   if (!input) return;
@@ -151,5 +169,15 @@ document.querySelectorAll('[data-calendar-detail]').forEach(link => {
     dialog.addEventListener('close', () => { dialog.remove(); link.focus(); });
     dialog.append(title, details); if (people.childElementCount) dialog.append(people);
     dialog.append(open, close); document.body.append(dialog); dialog.showModal(); close.focus();
+    const visibility = document.getElementById('calendar-visibility');
+    if (visibility) {
+      const button = document.createElement('button');button.type = 'button';button.className = 'admin-button secondary compact';
+      button.textContent = link.dataset.hidden === '1' ? 'Réafficher cet événement' : 'Masquer cet événement';
+      button.addEventListener('click', () => {
+        for (const key of ['kind', 'key', 'day']) visibility.elements.namedItem(key).value = link.dataset[key];
+        visibility.elements.namedItem('hidden').value = link.dataset.hidden === '1' ? '0' : '1';
+        visibility.submit();
+      });dialog.append(button);
+    }
   });
 });

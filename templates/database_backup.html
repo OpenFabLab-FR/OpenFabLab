@@ -65,18 +65,22 @@
     </form>
 </section>
 {% elif settings_view == 'affichage' %}
-<form method="post" action="{{ url_for('admin_update_options', settings_view='affichage') }}" class="admin-form options-main-form settings-save-form">
+<form id="display-options" method="post" action="{{ url_for('admin_update_options', settings_view='affichage') }}" class="admin-form options-main-form settings-save-form">
     <section class="form-section options-section" id="affichage">
         <div class="form-section-heading"><h2>Affichage</h2><p>Personnalisez l’apparence de la borne et la précision visuelle des graphiques.</p></div>
         {% include "_theme_picker.html" %}
+    </section>
+</form>
+{% include '_calendar_colors.html' %}
+<section class="form-section options-section">
         <h3>Plage horaire visible du Calendrier</h3>
         <p>Ces heures concernent uniquement l’affichage. Les horaires OpenLab et les réservations restent inchangés. La semaine est étendue si un événement déborde exceptionnellement.</p>
-        <div class="form-grid two-columns"><label class="form-field"><span>Heure de début affichée</span><input type="time" name="calendar_display_start" value="{{ calendar_display_start }}" required></label><label class="form-field"><span>Heure de fin affichée</span><input type="time" name="calendar_display_end" value="{{ calendar_display_end }}" required></label></div>
-        <label class="checkbox-field"><input name="openlab_attendance_show_decimals" type="checkbox" value="1" {% if show_attendance_decimals %}checked{% endif %}><span><strong>Afficher les décimales dans les graphiques d’affluence</strong><small>Rétablit les valeurs détaillées, par exemple 2,8 usagers au lieu de 3 usagers.</small></span></label>
+        <div class="form-grid two-columns"><label class="form-field"><span>Heure de début affichée</span><input form="display-options" type="time" name="calendar_display_start" value="{{ calendar_display_start }}" required></label><label class="form-field"><span>Heure de fin affichée</span><input form="display-options" type="time" name="calendar_display_end" value="{{ calendar_display_end }}" required></label></div>
+        <label class="checkbox-field"><input form="display-options" name="openlab_attendance_show_decimals" type="checkbox" value="1" {% if show_attendance_decimals %}checked{% endif %}><span><strong>Afficher les décimales dans les graphiques d’affluence</strong><small>Rétablit les valeurs détaillées, par exemple 2,8 usagers au lieu de 3 usagers.</small></span></label>
     </section>
-    <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les options</button></div>
-</form>
+    <div class="form-actions"><button form="display-options" class="admin-button primary" type="submit">Enregistrer les options</button></div>
 {% elif settings_view == 'borne' %}
+{% include '_home_title.html' %}
 <form method="post" action="{{ url_for('admin_update_options', settings_view='borne') }}" class="admin-form options-main-form settings-save-form">
     <section class="form-section options-section" id="borne-et-horaires">
         <div class="form-section-heading"><p class="eyebrow">Tablette d’accueil</p><h2>Borne et horaires</h2></div>

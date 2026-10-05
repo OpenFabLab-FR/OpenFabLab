@@ -13,6 +13,7 @@ COPY app.py billing.py annual_report.py animation_report.py calendar_export.py p
 COPY evolution_schema.py evolution_users.py evolution_routes.py welcome_mail.py resource_booking.py fablab_calendar.py ./
 COPY private_backup.py runtime_policy.py ./
 COPY tablet_reservations.py ./
+COPY family_model.py family_routes.py family_reservations.py family_reservation_routes.py family_waitlist.py ./
 COPY openfablab ./openfablab
 COPY LICENSE THIRD_PARTY_NOTICES.md ./
 COPY templates ./templates

@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Ma réservation · OpenFabLab{% endblock %}
+{% block content %}
+<section class="form-section family-response">
+<p class="eyebrow">Ma réservation</p><h1>{{ service.title }}</h1>
+<p>{{ service.service_date[8:10] }}/{{ service.service_date[5:7] }}/{{ service.service_date[:4] }} · {{ service.start_time }}–{{ service.end_time }}</p>
+{% for error in errors %}<p class="flash flash-error" role="alert">{{ error }}</p>{% endfor %}
+<h2>{{ group.label }}</h2><ul>{% for person in people %}<li>{{ person.first_name }} {{ person.last_name }}</li>{% endfor %}</ul>
+<p>{{ people|length }} participant(s) · une place par personne.</p>
+{% if group.status=='offer_pending' %}<p>Les places sont temporairement bloquées pour tout votre groupe jusqu’au {{ group.offer_expires_at|paris_datetime }}. Sans acceptation avant cette heure, elles seront libérées.</p>
+{% elif group.status=='waitlisted' %}<p>Aucune place n’est confirmée. Une proposition vous sera envoyée par e-mail si votre groupe peut être accueilli.</p>
+{% elif group.status=='confirmed' %}<p>Tous les participants sont inscrits ensemble.</p>
+{% else %}<p>Aucune place n’est retenue pour cette demande.</p>{% endif %}
+{% if group.status in ('offer_pending','waitlisted','confirmed') %}
+<form method="post"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><div class="form-actions">
+{% if can_answer %}<button name="action" value="accept" class="admin-button primary">Accepter pour tout le groupe</button><button name="action" value="decline" class="admin-button secondary">Refuser la proposition</button>
+{% else %}<button name="action" value="cancel" class="admin-button danger">Annuler ma réservation</button>{% if group.status=='offer_pending' %}<p class="form-help">Pour accepter, utilisez le lien de proposition reçu par e-mail.</p>{% endif %}{% endif %}
+</div></form>{% endif %}
+<p class="form-help">Ce lien est personnel. Ne le partagez pas.</p></section>
+{% endblock %}

@@ -1,0 +1,4 @@
+<section class="form-section" id="calendar-colors"><div class="form-section-heading"><h2>Couleurs du calendrier</h2></div>
+<form method="post" action="{{ url_for('family.colors') }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+<div class="calendar-color-grid">{% for key,label in [('openlab','OpenLab'),('animation','Animation'),('reservation','Réservation de ressource / créneau'),('rental','Location'),('training','Formation / habilitation')] %}<label class="calendar-color-row"><span>{{ label }}</span><input name="{{ key }}" type="color" value="{{ calendar_colors[key] }}" aria-label="Couleur {{ label }}"></label>{% endfor %}</div>
+<div class="form-actions"><button class="admin-button primary compact">Enregistrer les couleurs</button><button class="admin-button secondary compact" name="reset" value="1">Réinitialiser</button></div></form></section>

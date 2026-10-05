@@ -1,5 +1,6 @@
 <?php
-// Actual plugin classes with in-memory WordPress/database fixtures only.
+// Historical protocol-2 helpers remain tested with in-memory fixtures only.
+// New public routes use the gateway, covered separately by test_wordpress_family.php.
 $fixture_root = sys_get_temp_dir() . '/openfablab-wp-' . bin2hex(random_bytes(8)) . '/';
 mkdir($fixture_root . 'wp-admin/includes', 0700, true);
 file_put_contents($fixture_root . 'wp-admin/includes/upgrade.php', '<?php');
@@ -159,8 +160,11 @@ foreach (['test', 'production'] as $env) {
 }
 $original = $wpdb->directory;
 function verify($id='1234', $email='', $phone='', $env='test') {
-    return OpenFabLab_API::public_verify(new WP_REST_Request([
+    $response=new WP_REST_Response(OpenFabLab_Bookings::verify([
         'environment'=>$env, 'public_id'=>$id, 'email'=>$email, 'phone'=>$phone]));
+    $response->header('Cache-Control','private, no-store, max-age=0');
+    $response->header('Referrer-Policy','no-referrer');
+    return $response;
 }
 $generic = verify('9999', 'elise@example.invalid')->data;
 foreach ([verify('1234','wrong@example.invalid'), verify('1234','', '0611111111'),
@@ -255,7 +259,7 @@ check(is_wp_error(OpenFabLab_API::private_permission($wrong_signed)), 'incorrect
 $html = openfablab_res_shortcode(['environment'=>'test']);
 check(!str_contains($html . $inline_script, 'Élise') && !str_contains($html . $inline_script, 'elise@example.invalid'), 'initial public HTML has no directory PII');
 check(!str_contains($html, 'openfablab-test-maintenance'), 'maintenance not public');
-check(OPENFABLAB_RES_VERSION==='2.7.0'&&OPENFABLAB_RES_SCHEMA_VERSION==='2.6.0', 'reconciliation without extra schema change');
+check(OPENFABLAB_RES_VERSION==='2.8.0'&&OPENFABLAB_RES_SCHEMA_VERSION==='2.6.0', 'legacy storage retained without destructive upgrade');
 $_SERVER['REQUEST_METHOD']='GET'; ob_start(); openfablab_res_admin_page(); $admin=ob_get_clean();
 foreach (['Normal :','Test :','Shortcodes des pages de réservation', 'Réservations normales', 'Réservations de test', 'data-openfablab-copy'] as $text) {
     check(str_contains($admin, $text), 'admin displays ' . $text);

@@ -14,8 +14,8 @@ class WordPressPatchTests(unittest.TestCase):
     def test_application_public_version_is_canonical(self):
         from openfablab import __version__
         import build_openfablab
-        self.assertEqual(__version__,'2.7.1')
-        self.assertEqual(build_openfablab.OUTPUT.name,'OpenFabLab-2.7.1.zip')
+        self.assertEqual(__version__,'2.8.0')
+        self.assertEqual(build_openfablab.OUTPUT.name,'OpenFabLab-2.8.0.zip')
 
     def test_protocol_advertises_slots_and_keeps_both_environments(self):
         api=(builder.PLUGIN/'includes/class-openfablab-api.php').read_text()
@@ -30,10 +30,10 @@ class WordPressPatchTests(unittest.TestCase):
 
     def test_additive_version_and_schema(self):
         source = (builder.PLUGIN / 'openfablab-reservations.php').read_text()
-        self.assertIn('Version: 2.7.0', source)
-        self.assertIn("define('OPENFABLAB_RES_VERSION', '2.7.0')", source)
+        self.assertIn('Version: 2.8.0', source)
+        self.assertIn("define('OPENFABLAB_RES_VERSION', '2.8.0')", source)
         self.assertIn("define('OPENFABLAB_RES_SCHEMA_VERSION', '2.6.0')", source)
-        self.assertEqual(builder.OUTPUT.name, 'openfablab-reservations-2.7.0.zip')
+        self.assertEqual(builder.OUTPUT.name, 'openfablab-reservations-2.8.0.zip')
 
     def test_build_is_reproducible_and_allowlisted(self):
         with tempfile.TemporaryDirectory(prefix='openfablab-plugin-patch-') as directory:

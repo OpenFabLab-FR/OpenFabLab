@@ -1,7 +1,7 @@
 <form id="reservations" method="post" action="{{ url_for('admin_save_reservation_settings') }}" class="admin-form">
     <input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}">
     <section class="form-section">
-        <div class="form-section-heading"><h2>Réservations publiques</h2><p>OpenFabLab publie les animations et récupère les réservations par HTTPS sortant. WordPress ne se connecte jamais au NAS.</p></div>
+        <div class="form-section-heading"><h2>Réservations publiques</h2><p>OpenFabLab gère les participants, les places et les listes d’attente. Le plugin WordPress 2.8 facultatif lui transmet les demandes par HTTPS : le serveur OpenFabLab doit donc être joignable depuis WordPress. Sans plugin, la borne et l’administration fonctionnent directement avec le moteur local.</p></div>
         <div class="form-grid two-columns">
             <label class="form-field"><span>URL HTTPS du site WordPress</span><input name="wordpress_url" type="url" placeholder="https://exemple.fr" value="{{ reservation_settings.wordpress_url }}"></label>
             <label class="form-field"><span>Secret généré dans le plugin WordPress</span><input name="sync_secret" type="password" autocomplete="new-password" placeholder="{% if reservation_secret_set %}Secret déjà configuré · laisser vide pour conserver{% else %}Coller le secret ici{% endif %}"><small>Enregistré dans un fichier privé, jamais dans SQLite ni les exports.</small></label>
@@ -11,13 +11,23 @@
         {% for state in reservation_sync_states %}<p><strong>{{ 'Test' if state.environment == 'test' else 'Normal' }}</strong> · dernière tentative : {{ state.last_attempt_at|paris_datetime if state.last_attempt_at else 'aucune' }} · dernière réussite : {{ state.last_success_at|paris_datetime if state.last_success_at else 'aucune' }} · dernière erreur : {% if state.last_error %}{{ state.last_error }} ({{ state.last_error_at|paris_datetime if state.last_error_at else 'date inconnue' }}){% else %}aucune{% endif %} · {{ state.known_bookings }} inscription{% if state.known_bookings != 1 %}s{% endif %} connue{% if state.known_bookings != 1 %}s{% endif %} · {{ state.pending_actions }} action{% if state.pending_actions != 1 %}s{% endif %} en attente</p>{% endfor %}
     </section>
     <section class="form-section">
-        <div class="form-section-heading"><h2>Règles par défaut</h2><p>Chaque animation peut préciser ses propres règles depuis Activités.</p></div>
+        <div class="form-section-heading"><h2>Confirmation et liste d’attente</h2><p>Les propositions de places sont envoyées automatiquement par l’e-mail de la structure. Le groupe répond ensemble, sans validation manuelle habituelle.</p></div>
         <div class="form-grid two-columns">
-            {% for key, label, unit in (('minimum_age', 'Âge minimum', 'ans'), ('accompaniment_under_age', 'Accompagnement obligatoire avant', 'ans'), ('offer_hours', 'Offre de place normale', 'heures'), ('last_offer_hours', 'Dernière personne en attente', 'heures'), ('close_minutes', 'Clôture avant le début', 'minutes'), ('reminder_one_hours', 'Premier rappel avant', 'heures'), ('reminder_two_hours', 'Deuxième rappel avant (0 = désactivé)', 'heures'), ('sync_interval_minutes', 'Synchronisation toutes les', 'minutes')) %}
+        <label class="form-field"><span>Adresse publique HTTPS d’OpenFabLab</span><input type="url" name="public_url" value="{{ reservation_settings.public_url }}" placeholder="https://fablab.exemple.fr/stat"><small>Adresse accessible aux usagers pour les liens personnels de réponse.</small></label>
+        <label class="form-field"><span>Délai pour accepter une place libérée</span><span class="number-with-unit"><input type="number" name="offer_hours" min="1" max="168" value="{{ reservation_settings.offer_hours }}" required><span>heures</span></span></label></div>
+        <label class="checkbox-field"><input type="checkbox" name="phone_required" value="1" {% if reservation_settings.phone_required=='1' %}checked{% endif %}><span><strong>Téléphone obligatoire pour réserver une animation</strong><small>Facultatif par défaut. Pour un enfant, le contact d’un responsable peut être utilisé.</small></span></label>
+        <p class="form-help">L’e-mail est obligatoire pour toute nouvelle réservation. <a href="{{ url_for('admin_settings_structure') }}#smtp">Configurer l’envoi SMTP</a>.</p>
+    </section>
+    <section class="form-section">
+        <div class="form-section-heading"><h2>Règles par défaut</h2><p>Ces valeurs seront proposées lors de la création d’une animation. Les règles liées à l’âge et à l’autonomie se règlent dans <a href="{{ url_for('evolution.users_settings') }}#ages-autonomie-familles">Âges, autonomie et familles</a>.</p></div>
+        <div class="form-grid two-columns">
+            {% for key, label, unit in (('minimum_age', 'Âge minimum', 'ans'), ('close_minutes', 'Clôture avant le début', 'minutes'), ('sync_interval_minutes', 'Vérification de la liaison WordPress toutes les', 'minutes')) %}
             <label class="form-field"><span>{{ label }}</span><span class="number-with-unit"><input name="{{ key }}" type="number" min="{{ 1 if key=='sync_interval_minutes' else 0 }}" max="{{ 60 if key=='sync_interval_minutes' else 1440 }}" step="{{ '0.5' if key=='sync_interval_minutes' else '1' }}" value="{{ reservation_settings[key] }}" required><span>{{ unit }}</span></span>{% if key=='sync_interval_minutes' %}<small>1,5 minute = 90 secondes. Le délai réel dépend aussi du réseau et du traitement.</small>{% endif %}</label>
             {% endfor %}
         </div>
         <label class="checkbox-field"><input name="waitlist_enabled" type="checkbox" value="1" {% if reservation_settings.waitlist_enabled == '1' %}checked{% endif %}><span><strong>Liste d’attente activée par défaut</strong></span></label>
+        <details><summary>Réglages historiques conservés</summary><p>Ces valeurs restent dans l’historique de l’ancien plugin. Les propositions actuelles utilisent le délai ci-dessus ; ces anciens rappels ne sont pas rejoués.</p>
+        {% for key, label in (('accompaniment_under_age', 'Ancien seuil d’accompagnement'), ('last_offer_hours', 'Ancienne dernière offre'), ('reminder_one_hours', 'Ancien premier rappel'), ('reminder_two_hours', 'Ancien second rappel')) %}<p>{{ label }} : {{ reservation_settings[key] }}</p><input type="hidden" name="{{ key }}" value="{{ reservation_settings[key] }}">{% endfor %}</details>
     </section>
-    <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les réservations</button><button class="admin-button secondary" type="submit" formaction="{{ url_for('admin_sync_reservations_now') }}" formnovalidate>Synchroniser maintenant</button></div>
+    <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les réservations</button><button class="admin-button secondary" type="submit" formaction="{{ url_for('admin_sync_reservations_now') }}" formnovalidate>Vérifier la liaison WordPress</button></div>
 </form>

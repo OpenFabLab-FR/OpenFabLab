@@ -26,11 +26,13 @@ docs/animation-slots.md
 docs/architecture.md
 docs/backup-restore.md
 docs/branding.md
+docs/candidate-2.8-guide.md
 docs/configuration.md
 docs/corrections-2.7.1.md
 docs/development.md
 docs/email-templates.md
 docs/evolution-2.7.md
+docs/families-2.8.md
 docs/installation.md
 docs/legacy-migration.md
 docs/private-backup.md
@@ -40,6 +42,11 @@ evolution_routes.py
 evolution_schema.py
 evolution_users.py
 fablab_calendar.py
+family_model.py
+family_reservation_routes.py
+family_reservations.py
+family_routes.py
+family_waitlist.py
 openfablab/__init__.py
 openfablab/__main__.py
 package-lock.json
@@ -75,11 +82,15 @@ static/vendor/jsQR-LICENSE.txt
 tablet_reservations.py
 templates/_admin_nav.html
 templates/_branding_settings.html
+templates/_calendar_colors.html
 templates/_closure_options.html
 templates/_creation_notifications.html
 templates/_evolution_fields.html
 templates/_evolution_nav.html
+templates/_family_fields.html
+templates/_family_settings.html
 templates/_frequency_nav.html
+templates/_home_title.html
 templates/_reservation_settings.html
 templates/_resource_fields.html
 templates/_settings_nav.html
@@ -107,6 +118,9 @@ templates/enrollment_done.html
 templates/error.html
 templates/evolution_integrations.html
 templates/evolution_users_settings.html
+templates/family_booking.html
+templates/family_receipt.html
+templates/family_response.html
 templates/frequency_day.html
 templates/frequency_exports.html
 templates/identification.html
@@ -142,6 +156,9 @@ tests/test_corrective_271.py
 tests/test_corrective_ui.js
 tests/test_evolution.py
 tests/test_evolution_ui.js
+tests/test_families.py
+tests/test_family_evolution.py
+tests/test_family_waitlist.py
 tests/test_final_pass_ui.js
 tests/test_logo_shadow_ui.js
 tests/test_naming.py
@@ -157,6 +174,7 @@ tests/test_walkin_prefill.js
 tests/test_wordpress_bookings.php
 tests/test_wordpress_emails.php
 tests/test_wordpress_emails_ui.js
+tests/test_wordpress_family.php
 tests/test_wordpress_form.js
 tests/test_wordpress_maintenance_ui.js
 tests/test_wordpress_patch.py
@@ -170,6 +188,7 @@ welcome_mail.py
 wordpress/openfablab-reservations/LICENSE
 wordpress/openfablab-reservations/THIRD_PARTY_NOTICES.md
 wordpress/openfablab-reservations/assets/OpenFabLab-logo-horizontal.svg
+wordpress/openfablab-reservations/assets/family.js
 wordpress/openfablab-reservations/assets/jsQR-1.4.0.js
 wordpress/openfablab-reservations/assets/jsQR-LICENSE.txt
 wordpress/openfablab-reservations/assets/reservations.css
@@ -178,6 +197,8 @@ wordpress/openfablab-reservations/includes/class-openfablab-api.php
 wordpress/openfablab-reservations/includes/class-openfablab-bookings.php
 wordpress/openfablab-reservations/includes/class-openfablab-database.php
 wordpress/openfablab-reservations/includes/class-openfablab-emails.php
+wordpress/openfablab-reservations/includes/class-openfablab-family-gateway.php
+wordpress/openfablab-reservations/includes/class-openfablab-legacy-reset.php
 wordpress/openfablab-reservations/includes/class-openfablab-reconciliation.php
 wordpress/openfablab-reservations/includes/class-openfablab-slots.php
 wordpress/openfablab-reservations/includes/class-openfablab-test-maintenance.php

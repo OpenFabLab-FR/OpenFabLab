@@ -8,6 +8,17 @@ import re
 COLORS = {'openlab':'#447e68','animation':'#16849c','reservation':'#94703a','rental':'#7657a5','training':'#a65378'}
 
 
+def set_visibility(db,kind,key,day,hidden):
+    if kind not in COLORS or not isinstance(key,str) or len(key)>120:
+        raise ValueError('Événement inconnu.')
+    date.fromisoformat(day)
+    exists=(kind=='openlab' and key==day) or (kind in ('animation','rental','reservation') and db.execute('SELECT 1 FROM fablab_services WHERE id=? AND service_type=?',(key,kind)).fetchone()) or (kind=='reservation' and db.execute('SELECT 1 FROM resource_bookings WHERE booking_uuid=?',(key,)).fetchone()) or (kind=='training' and db.execute('SELECT 1 FROM user_authorizations WHERE grant_uuid=?',(key,)).fetchone())
+    if not exists:
+        raise ValueError('Événement inconnu.')
+    db.execute('INSERT INTO calendar_visibility VALUES(?,?,?,?,?) ON CONFLICT(event_kind,event_key,occurrence_date) DO UPDATE SET hidden=excluded.hidden,updated_at=excluded.updated_at',
+               (kind,key,day,int(hidden),datetime.now(timezone.utc).isoformat()))
+
+
 def display_window(db, a):
     values = [a.read_setting(db, 'calendar_display_'+key, default)
               for key, default in [('start','09:00'),('end','19:00')]]
@@ -57,10 +68,14 @@ def calendar_view(db,args,a):
         end=next_month+timedelta(days=(7-next_month.weekday())%7)
         previous=month-timedelta(days=1);following=next_month
     daily=defaultdict(list)
+    show_hidden=args.get('hidden')=='1'
     def add(title,kind,key,day,begin=None,finish=None,link=None,color=None):
         if not start<=day<end:return
         item={'title':title,'kind':kind,'key':str(key),'day':day,'url':link or '#',
-              'color':color or COLORS[kind], 'all_day':not begin,'time':''}
+              'color':a.read_setting(db,'calendar_color_'+kind,COLORS[kind]), 'all_day':not begin,'time':'',
+              'hidden':False,'automatic_hidden':False}
+        override=db.execute('SELECT hidden FROM calendar_visibility WHERE event_kind=? AND event_key=? AND occurrence_date=?',(kind,str(key),day.isoformat())).fetchone()
+        item['hidden']=bool(override and override['hidden'])
         if begin:
             item.update(start_minute=begin.hour*60+begin.minute,end_minute=finish.hour*60+finish.minute)
             if item['end_minute']<=item['start_minute']:item['end_minute']=1440
@@ -90,6 +105,8 @@ def calendar_view(db,args,a):
                     summary = attendance['summary']
                     daily[day][-1]['attendance'] = str(summary['unique_users'])+' usager'+('s' if summary['unique_users']!=1 else '')+' · '+str(summary['visitors'])+' visiteur'+('s' if summary['visitors']!=1 else '')
                     event = daily[day][-1]
+                    ended=datetime.fromisoformat(str(day)+'T'+row['end']).replace(tzinfo=zone)<current
+                    event['automatic_hidden']=bool(ended and summary['unique_users']==0 and summary['visitors']==0)
                     event['action_label'] = 'Ouvrir la journée'
                     event['extra_details'] = []
                     if summary['peak_users']:
@@ -134,7 +151,7 @@ def calendar_view(db,args,a):
     for row in (db.execute('SELECT g.*,a.name FROM user_authorizations g JOIN authorizations a USING(authorization_uuid) WHERE performed_on>=? AND performed_on<?',(str(start),str(end))) if modules['authorizations'] else []):
         add('Formation · '+row['name'],'training',row['grant_uuid'],date.fromisoformat(row['performed_on']),link=url_for('evolution.authorizations')+'#formation-'+row['grant_uuid'])
     configured_start, configured_end = display_window(db, a)
-    timed = [event for events in daily.values() for event in events if not event['all_day']]
+    timed = [event for events in daily.values() for event in events if not event['all_day'] and (show_hidden or not (event['hidden'] or event['automatic_hidden']))]
     # Extend this period only; never hide an exceptional early/late event or
     # change the configured window or any booking constraints.
     window_start = min([configured_start]+[e['start_minute']//60*60 for e in timed])
@@ -155,29 +172,50 @@ def calendar_view(db,args,a):
             event.setdefault('people', [])
             if event.get('attendance'):
                 detail.append(event['attendance'])
+            if event['hidden']:
+                detail.append('Masqué manuellement — données conservées')
+            elif event['automatic_hidden']:
+                detail.append('Non tenu automatiquement — aucune présence enregistrée')
             detail.extend(event.get('extra_details', []))
             if event['kind'] == 'reservation':
-                row = db.execute('SELECT b.status,u.first_name,u.last_name FROM resource_bookings b LEFT JOIN users u ON u.id=b.user_id WHERE booking_uuid=?',(event['key'],)).fetchone()
+                row = db.execute('SELECT b.*,u.first_name,u.last_name,r.required_authorization,a.name AS authorization_name FROM resource_bookings b LEFT JOIN users u ON u.id=b.user_id JOIN resources r USING(resource_uuid) LEFT JOIN authorizations a ON a.authorization_uuid=r.required_authorization WHERE booking_uuid=?',(event['key'],)).fetchone()
                 if row:
                     from resource_booking import STATUS_LABELS
                     detail.extend([((row['first_name'] or 'Usager supprimé') + ' ' + (row['last_name'] or '')).strip(), STATUS_LABELS[row['status']]])
+                    detail.append('Tarif : '+format(row['amount_cents']/100,'.2f').replace('.',',')+' €')
+                    if row['required_authorization']:
+                        detail.append('Habilitation requise : '+(row['authorization_name'] or 'Habilitation historique'))
+                        from resource_booking import authorization_valid
+                        detail.append('Habilitation valable au créneau' if row['user_id'] and authorization_valid(db,row['user_id'],row['required_authorization'],datetime.fromisoformat(row['starts_at']).astimezone(zone).isoformat(),datetime.fromisoformat(row['ends_at']).astimezone(zone).isoformat()) else 'Habilitation à vérifier')
             elif event['kind'] == 'training':
                 row = db.execute('SELECT u.first_name,u.last_name FROM user_authorizations g LEFT JOIN users u ON u.id=g.user_id WHERE grant_uuid=?',(event['key'],)).fetchone()
                 if row:
                     detail.append(((row['first_name'] or 'Usager supprimé') + ' ' + (row['last_name'] or '')).strip())
             elif event['kind'] == 'animation':
+                description=db.execute('SELECT description FROM fablab_services WHERE id=?',(event['key'],)).fetchone()
+                if description and description[0]:
+                    detail.append(description[0])
                 config = db.execute('SELECT * FROM animation_reservation_config WHERE service_id=?',(event['key'],)).fetchone()
                 if config and modules['public_reservations']:
                     from reservations_sync import booking_counts, booking_reservation_status
                     bookings = db.execute('SELECT b.*,u.category FROM animation_bookings b LEFT JOIN users u ON u.id=b.user_id WHERE service_id=? AND environment=? ORDER BY CASE b.status WHEN \'waitlisted\' THEN 1 ELSE 0 END,b.created_at',(event['key'],config['environment'])).fetchall()
                     counts = booking_counts(bookings)
-                    detail.append(str(sum(counts[s] for s in ('confirmed','offer_pending')))+' inscrit(s) / '+str(config['capacity'])+' places')
+                    detail.append(str(counts['confirmed'])+' confirmé(s) / '+str(config['capacity'])+' places')
+                    if counts['offer_pending']:
+                        detail.append(str(counts['offer_pending'])+' place(s) temporairement proposée(s)')
+                    detail.append(str(max(0,config['capacity']-counts['confirmed']-counts['offer_pending']))+' place(s) libre(s)')
                     if counts['waitlisted']:
                         detail.append(str(counts['waitlisted'])+' en liste d’attente')
                     labels = {'confirmed':'Confirmée','waitlisted':'Liste d’attente','offer_pending':'Place proposée','cancelled':'Annulée','expired':'Expirée'}
                     event['people'] = [{'name':(b['first_name']+' '+b['last_name']).strip(), 'category':b['category'] or '',
                         'state':labels.get(booking_reservation_status(b),'En cours')}
-                        for b in bookings if b['status'] not in ('cancelled','expired')]
+                        for b in bookings if b['status'] not in ('cancelled','expired','declined')]
+                    slots=db.execute('SELECT * FROM animation_slots WHERE service_id=? AND active=1 ORDER BY starts_at',(event['key'],)).fetchall()
+                    if slots:
+                        from reservations_sync import booking_capacity_used
+                        for slot in slots:
+                            count=booking_capacity_used(db,int(event['key']),slot['slot_uuid'])
+                            detail.append(datetime.fromisoformat(slot['starts_at']).astimezone(zone).strftime('%H:%M')+'–'+datetime.fromisoformat(slot['ends_at']).astimezone(zone).strftime('%H:%M')+' : '+str(count)+' / '+str(slot['capacity'])+' place(s)')
                 row = db.execute('SELECT actual_participants,expected_participants FROM fablab_services WHERE id=?',(event['key'],)).fetchone()
                 if row:
                     if row['actual_participants'] is not None:
@@ -188,9 +226,10 @@ def calendar_view(db,args,a):
             for person in event['people']:
                 row = db.execute('SELECT name FROM user_categories WHERE category_key=?',(person['category'],)).fetchone()
                 person['category_label'] = row['name'] if row else person['category']
+        events=[e for e in events if show_hidden or not(e['hidden'] or e['automatic_hidden'])]
         days.append({'date':day,'today':day==today,'timed':position_overlaps([e for e in events if not e['all_day']]),'all_day':[e for e in events if e['all_day']],'events':events})
         day+=timedelta(days=1)
-    return {'view':view,'chosen':chosen,'days':days,'previous':previous,'following':following,'today':today,'hours':hours,
+    return {'view':view,'chosen':chosen,'days':days,'previous':previous,'following':following,'today':today,'hours':hours,'show_hidden':show_hidden,
             'has_all_day':any(day['all_day'] for day in days),
             'timeline_height':max(180, window_duration), 'window_extended':(window_start,window_end)!=(configured_start,configured_end),
             'visible_start':f'{window_start//60:02d}:{window_start%60:02d}', 'visible_end':f'{window_end//60:02d}:{window_end%60:02d}',

@@ -175,7 +175,7 @@ class CorrectiveTests(unittest.TestCase):
             resources.save_definition(db,'Laser modifié','Accent é & ponctuation','admin',a)
             self.assertEqual([r['authorization_uuid'] for r in resources.definitions(db)],[b,a])
             self.assertEqual(resources.definitions(db)[1]['description'],'Accent é & ponctuation')
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],14)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
             db.commit()
             with self.f.app.app_context():app.initialize_database()
             self.assertEqual(schema.ordered_keys(db,'authorizations'),[b,a])
@@ -307,7 +307,7 @@ class CorrectiveTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             archive=Path(folder)/'private.zip'
             manifest=private_backup.create_backup(self.f.database_path,archive,kind='test')
-            self.assertEqual(manifest['openfablab_version'],'2.7.1')
+            self.assertEqual(manifest['openfablab_version'],'2.8.0')
             target=Path(folder)/'restored/openfablab.db'
             private_backup.restore_backup(archive,target)
             from pin_security import check_pin
@@ -317,7 +317,7 @@ class CorrectiveTests(unittest.TestCase):
                 db.row_factory=sqlite3.Row
                 self.assertEqual(schema.ordered_keys(db,'categories'),keys)
                 self.assertEqual(schema.ordered_keys(db,'authorizations'),[key])
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],14)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
 
     def test_inactive_resource_keeps_archived_requirement(self):
         with self.f.database() as db:
@@ -345,7 +345,7 @@ class CorrectiveTests(unittest.TestCase):
             before={t:[tuple(r) for r in db.execute('SELECT * FROM '+t)] for t in tables}
             app.initialize_database();app.initialize_database()
             self.assertEqual({t:[tuple(r) for r in db.execute('SELECT * FROM '+t)] for t in tables},before)
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],14)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
             self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
 

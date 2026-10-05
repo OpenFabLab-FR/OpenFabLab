@@ -1,0 +1,18 @@
+<section class="form-section family-panel" aria-labelledby="family-title">
+  <div class="form-section-heading"><h2 id="family-title">Famille et responsables</h2><p>Chaque personne conserve son compte et son historique. Avant {{ family_settings.family_autonomy_age }} ans, un responsable rattaché est nécessaire.</p></div>
+  {% for warning in family_warnings %}<p class="family-warning" role="status">{{ warning }}</p>{% endfor %}
+  {% if family_status %}<p class="family-status">{{ family_status }}</p>{% endif %}
+  {% if family_managed_contact %}<p>Coordonnées de réservation gérées par <a href="{{ url_for('admin_edit_user',user_id=family_managed_contact.user_id) }}">{{ family_managed_contact.name }}</a></p>{% endif %}
+  {% for responsible in selected_responsibles %}<label class="family-choice"><input type="checkbox" name="responsible_ids" value="{{ responsible.id }}" checked><span>{{ responsible.first_name }} {{ responsible.last_name }}<small>Responsable sélectionné</small></span></label>{% endfor %}
+  {% if kiosk %}
+  <details {% if request.form.get('is_minor')=='1' %}open{% endif %}><summary>Identifier un responsable</summary><p>Le responsable renseigne son identifiant et une coordonnée déjà enregistrée. Aucun annuaire public n’est affiché.</p>
+    <div class="form-grid two-columns"><label class="form-field"><span>Identifiant du responsable</span><input name="guardian_public_id" inputmode="numeric" maxlength="4" autocomplete="off"></label><label class="form-field"><span>E-mail ou téléphone enregistré</span><input name="guardian_contact" autocomplete="off"></label></div>
+    <button class="admin-button secondary compact" name="family_step" value="verify" formnovalidate>Identifier le responsable</button>
+  </details>
+  {% else %}
+  <details {% if responsible_search_results is defined %}open{% endif %}><summary>Ajouter un responsable</summary><div class="family-search"><label class="form-field"><span>Nom, prénom ou identifiant</span><input name="responsible_search" maxlength="80" value="{{ request.form.get('responsible_search','') }}" autocomplete="off"></label><button class="admin-button secondary compact" name="family_step" value="search" formnovalidate>Rechercher</button></div>
+    <p class="form-help">Responsables actifs à partir de {{ family_settings.family_responsible_age }} ans, avec les coordonnées requises.</p>
+    {% for responsible in responsible_search_results|default([]) %}<label class="family-choice"><input type="checkbox" name="responsible_ids" value="{{ responsible.id }}"><span>{{ responsible.first_name }} {{ responsible.last_name }}<small>Identifiant {{ responsible.public_id }}</small></span></label>{% else %}{% if responsible_search_results is defined %}<p>Aucun responsable éligible trouvé.</p>{% endif %}{% endfor %}
+  </details>
+  {% endif %}
+</section>

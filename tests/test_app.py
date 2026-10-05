@@ -4349,7 +4349,7 @@ class OpenFabLabTestCase(unittest.TestCase):
             def post(self, route, payload):
                 if payload["environment"] == "production":
                     raise OSError("offline details must never appear")
-                return {"ok": True, "events": [], "cursor": ""}
+                return {"ok": True, "family_gateway_v1": True, "events": [], "cursor": ""}
         with self.database() as database:
             result = run_sync_cycle(database, self.database_path, "https://example.invalid", client=Client())
             self.assertEqual(result["errors"], [{"environment": "production", "error": "OSError"}])
@@ -4410,7 +4410,7 @@ class OpenFabLabTestCase(unittest.TestCase):
         page = self.client.get("/admin/reglages/structure").get_data(as_text=True)
         token = re.search(r'name="csrf_token" value="([^"]+)"', page).group(1)
         with mock.patch("reservations_sync.WordPressClient") as client_class:
-            client_class.return_value.post.return_value = {"ok": True, "events": [], "cursor": ""}
+            client_class.return_value.post.return_value = {"ok": True, "family_gateway_v1": True, "events": [], "cursor": ""}
             response = self.client.post("/admin/reglages/structure/synchroniser",
                                         data={"csrf_token": token}, follow_redirects=True)
         self.assertIn("Synchronisation réussie", response.get_data(as_text=True))
@@ -4640,7 +4640,7 @@ class OpenFabLabTestCase(unittest.TestCase):
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_latitude'").fetchone()[0], "")
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_longitude'").fetchone()[0], "")
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_privacy_policy_url'").fetchone()[0], "")
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0], 14)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],15)
             create_app({"TESTING": True, "DATABASE": path, "ADMIN_PIN": None,
                         "MODERATOR_PIN": None, "SEED_DEMO_USERS": False})
             with sqlite3.connect(path) as database:
@@ -4683,6 +4683,9 @@ class OpenFabLabTestCase(unittest.TestCase):
                 self.assertEqual(database.execute("SELECT COUNT(*) FROM users").fetchone()[0], 0)
 
     def test_v250_sync_retries_and_imports_once_with_mock_client(self):
+        # Historical protocol-2 replay on its original schema; never used by 2.8's worker.
+        with self.database() as database:
+            database.execute('PRAGMA user_version=14')
         from reservations_sync import (enqueue_booking_command, run_sync_cycle,
                                        save_sync_secret)
         with self.app.app_context():
@@ -5052,6 +5055,9 @@ class OpenFabLabTestCase(unittest.TestCase):
             self.assertEqual(booking_counts(rows)["absent"], 0)
 
     def test_v250_animation_remote_confirmation_waits_for_authoritative_sync(self):
+        # Historical rows retain their original protocol-2 semantics in this fixture.
+        with self.database() as database:
+            database.execute('PRAGMA user_version=14')
         from app import write_setting
         from reservations_sync import save_sync_secret, run_sync_cycle, booking_capacity_used
         service_id, token = self._animation_booking_fixture(1)
@@ -5081,6 +5087,9 @@ class OpenFabLabTestCase(unittest.TestCase):
             self.assertEqual(booking_capacity_used(database, service_id), 1)
 
     def test_v250_animation_remote_capacity_refusal_is_visible_and_retryable(self):
+        # Compatibility helper tested independently of the schema-15 family engine.
+        with self.database() as database:
+            database.execute('PRAGMA user_version=14')
         from app import write_setting
         from reservations_sync import save_sync_secret, run_sync_cycle, pending_confirmation_ids
         service_id, token = self._animation_booking_fixture(1)
@@ -5115,14 +5124,16 @@ class OpenFabLabTestCase(unittest.TestCase):
             for user_id, first, last in zip(ids, ("Éloi", "Anne", "Anne"), ("TEST", "ZED", "AUBE")):
                 database.execute("UPDATE users SET active=1,first_name=?,last_name=? WHERE id=?", (first, last, user_id))
         page = self.client.get(f"/admin/animations/{service_id}/inscriptions").get_data(as_text=True)
-        walkin = page[page.index("Ajouter un participant sur place"):]
-        self.assertLess(walkin.index('name="public_id"'), walkin.index('name="first_name"'))
+        walkin = page[page.index("Ajouter des participants"):]
+        self.assertIn('name="person_ids"', walkin)
+        self.assertNotIn('name="first_name"', walkin)
         self.assertLess(walkin.index("Anne AUBE"), walkin.index("Anne ZED"))
         self.assertLess(walkin.index("Anne ZED"), walkin.index("Éloi TEST"))
 
     def test_v250_animation_walkin_edits_do_not_change_user_or_forward_moderator_override(self):
         service_id, token = self._animation_booking_fixture(3)
         with self.database() as database:
+            database.execute("UPDATE users SET birth_year=1990,email='account@example.invalid' WHERE public_id='1001'")
             original = tuple(database.execute("SELECT first_name,last_name,birth_year,email,phone FROM users WHERE public_id='1001'").fetchone())
         values = {"public_id": "1001", "first_name": "Réservation", "last_name": "LOCALE",
                   "birth_year": "1990", "email": "reservation@example.invalid", "phone": "0600000000"}
@@ -5136,8 +5147,10 @@ class OpenFabLabTestCase(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             with self.database() as database:
                 self.assertEqual(tuple(database.execute("SELECT first_name,last_name,birth_year,email,phone FROM users WHERE public_id='1001'").fetchone()), original)
-                command = json.loads(database.execute("SELECT payload_json FROM reservation_outbox ORDER BY id DESC LIMIT 1").fetchone()[0])
-                self.assertEqual(command["capacity_override"], role_pin == "1379")
+                booking=database.execute("SELECT * FROM animation_bookings WHERE source='family_administration'").fetchone()
+                self.assertIsNotNone(booking)
+                self.assertIsNotNone(booking['user_id'])
+                self.assertEqual(database.execute("SELECT COUNT(*) FROM reservation_outbox WHERE command_type='booking'").fetchone()[0],0)
 
     def test_v250_plugin_zip_contains_only_wordpress_code(self):
         from build_wordpress_plugin import build
@@ -5149,9 +5162,9 @@ class OpenFabLabTestCase(unittest.TestCase):
                 booking_script = archive.read("openfablab-reservations/assets/reservations.js").decode("utf-8")
                 logo = archive.read("openfablab-reservations/assets/OpenFabLab-logo-horizontal.svg")
                 archive_header = archive.read("openfablab-reservations/openfablab-reservations.php")
-            self.assertEqual(len(names), 16)
+            self.assertEqual(len(names), 19)
             self.assertIn("openfablab-reservations/includes/class-openfablab-test-maintenance.php", names)
-            self.assertIn(b"Version: 2.7.0", archive_header)
+            self.assertIn(b"Version: 2.8.0", archive_header)
             self.assertTrue(all(name.startswith("openfablab-reservations/") for name in names))
             self.assertFalse(any(name.endswith((".db", ".sqlite", ".png")) for name in names))
             self.assertEqual(logo, Path("static/brand/OpenFabLab-logo-horizontal.svg").read_bytes())
@@ -5197,7 +5210,7 @@ class OpenFabLabTestCase(unittest.TestCase):
         self.assertNotIn("Pour une réservation en ligne, un composant", privacy)
         self.login_admin()
         animation = self.client.get("/admin/animations/nouveau").get_data(as_text=True)
-        self.assertIn("Usagers + visiteurs", animation)
+        self.assertIn("Une personne sélectionnée = une place", animation)
         self.assertNotIn("Tous, y compris les visiteurs", animation)
         structure = self.client.get("/admin/reglages/structure").get_data(as_text=True)
         self.assertIn("structure-settings-form", structure)
@@ -5514,7 +5527,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
             create_app(config)
             with sqlite3.connect(database_path) as database:
                 after = {table: database.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in before}
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0], 14)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],15)
                 self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
                 self.assertEqual(database.execute("PRAGMA foreign_key_check").fetchall(), [])
                 self.assertTrue(database.execute("SELECT 1 FROM sqlite_master WHERE name='security_events'").fetchone())
@@ -5576,7 +5589,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                 ("1001", "Victor", "EXEMPLE", "user", None, None,
                  None, "+33", None),
             )
-            self.assertEqual(schema_version, 14)
+            self.assertEqual(schema_version,15)
 
 
     def test_v23_schema_migrates_to_v240_without_losing_rows(self):
@@ -5608,7 +5621,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                 integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
                 foreign_keys = database.execute("PRAGMA foreign_key_check").fetchall()
             self.assertEqual(after, before)
-            self.assertEqual(schema_version, 14)
+            self.assertEqual(schema_version,15)
             self.assertIsNotNone(audit_table)
             self.assertEqual(integrity, "ok")
             self.assertEqual(foreign_keys, [])
@@ -5616,7 +5629,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
             # La migration doit être rejouable sur une base déjà au schéma 8.
             create_app({"TESTING": True, "DATABASE": database_path})
             with sqlite3.connect(database_path) as database:
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0], 14)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],15)
                 self.assertEqual(
                     database.execute("SELECT COUNT(*) FROM attendance_corrections").fetchone()[0],
                     0,
@@ -5676,7 +5689,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                     "precipitation_mm", "created_at",
                 },
             )
-            self.assertEqual(schema_version, 14)
+            self.assertEqual(schema_version,15)
             self.assertEqual(integrity, "ok")
             self.assertEqual(foreign_keys, [])
 
@@ -5816,7 +5829,7 @@ class NasDeploymentTestCase(unittest.TestCase):
                 ("TEST", "volunteer", "+33", "06 10 10 10 10"),
             )
             self.assertEqual(session_count, 1)
-            self.assertEqual(schema_version, 14)
+            self.assertEqual(schema_version,15)
 
 
 if __name__ == "__main__":

@@ -6,11 +6,11 @@ final class OpenFabLab_API {
         $private = [
             '/sync/capabilities' => 'capabilities',
             '/sync/snapshot' => 'snapshot',
-            '/sync/animations' => 'sync_animations',
-            '/sync/directory' => 'sync_directory',
-            '/sync/events' => 'sync_events',
-            '/sync/commands' => 'sync_commands',
-            '/heartbeat' => 'heartbeat',
+            '/sync/animations' => 'legacy_disabled',
+            '/sync/directory' => 'legacy_disabled',
+            '/sync/events' => 'legacy_disabled',
+            '/sync/commands' => 'legacy_disabled',
+            '/heartbeat' => 'legacy_disabled',
         ];
         foreach ($private as $route => $method) {
             register_rest_route('openfablab/v1', $route, [
@@ -22,7 +22,7 @@ final class OpenFabLab_API {
             'methods' => 'GET', 'callback' => [__CLASS__, 'public_animations'],
             'permission_callback' => '__return_true',
         ]);
-        foreach (['/public/verify' => 'public_verify', '/public/reserve' => 'public_reserve'] as $route => $method) {
+        foreach (['/public/verify' => 'public_verify', '/public/contact' => 'public_contact', '/public/reserve' => 'public_reserve'] as $route => $method) {
             register_rest_route('openfablab/v1', $route, [
                 'methods' => 'POST', 'callback' => [__CLASS__, $method],
                 'permission_callback' => [__CLASS__, 'public_permission'],
@@ -36,13 +36,17 @@ final class OpenFabLab_API {
     }
 
     public static function capabilities(WP_REST_Request $request) {
-        return ['ok' => true, 'animation_slots_v1' => true, 'catalog_snapshot_v1' => true,
-                'custom_categories_v1' => true, 'protocol_version' => 2,
+        return ['ok' => true, 'animation_slots_v1' => true, 'catalog_snapshot_v1' => false,
+                'custom_categories_v1' => true, 'protocol_version' => 3, 'family_gateway_v1' => true,
                 'plugin_version' => defined('OPENFABLAB_RES_VERSION') ? OPENFABLAB_RES_VERSION : '2.7.0'];
     }
 
+    public static function legacy_disabled(WP_REST_Request $request) {
+        return new WP_Error('openfablab_legacy_disabled', 'Le plugin 2.8 utilise le moteur OpenFabLab, pas l’ancien catalogue synchronisé.', ['status' => 409]);
+    }
+
     public static function snapshot(WP_REST_Request $request) {
-        return OpenFabLab_Reconciliation::snapshot($request);
+        return self::legacy_disabled($request);
     }
 
     public static function private_permission(WP_REST_Request $request) {
@@ -499,23 +503,18 @@ final class OpenFabLab_API {
     }
 
     public static function public_animations(WP_REST_Request $request) {
-        $environment = $request->get_param('environment');
-        $response = new WP_REST_Response(['animations' => OpenFabLab_Bookings::public_animations($environment)]);
-        $response->header('Cache-Control', 'no-store');
-        return $response;
+        return OpenFabLab_Family_Gateway::call('catalogue', ['environment' => $request->get_param('environment')]);
     }
 
     public static function public_verify(WP_REST_Request $request) {
-        $result = OpenFabLab_Bookings::verify(self::body($request));
-        if (is_wp_error($result)) { return $result; }
-        $response = new WP_REST_Response($result);
-        $response->header('Cache-Control', 'private, no-store, max-age=0');
-        $response->header('Pragma', 'no-cache');
-        $response->header('Referrer-Policy', 'no-referrer');
-        return $response;
+        return OpenFabLab_Family_Gateway::call('identify', self::body($request));
     }
 
     public static function public_reserve(WP_REST_Request $request) {
-        return OpenFabLab_Bookings::reserve(self::body($request));
+        return OpenFabLab_Family_Gateway::call('reserve', self::body($request));
+    }
+
+    public static function public_contact(WP_REST_Request $request) {
+        return OpenFabLab_Family_Gateway::call('contact', self::body($request));
     }
 }

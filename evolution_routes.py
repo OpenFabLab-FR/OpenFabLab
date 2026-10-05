@@ -113,6 +113,11 @@ def register(application, api):
                         subject,body=request.form.get('welcome_subject',''),request.form.get('welcome_body','')
                         welcome_mail.validate_template(subject,body)
                         a.write_setting(db,'welcome_subject',subject);a.write_setting(db,'welcome_body',body)
+                    elif request.form.get('action')=='family':
+                        from family_model import validate_settings
+                        for key,value in validate_settings(request.form).items():
+                            a.write_setting(db,key,value)
+                        db.execute("DELETE FROM app_settings WHERE key='family_age_checked_on'")
                     else:
                         raise ValueError('Action inconnue.')
                 if request.headers.get('X-OpenFabLab-Autosave') == '1':
@@ -218,8 +223,11 @@ def register(application, api):
         if count>=5:
             abort(429,'Trop de tentatives. Réessayez dans quelques minutes.')
         db.execute('INSERT INTO security_events(event_type,created_at,details_json) VALUES(?,?,?)',('enrollment_attempt',now(),details));db.commit()
-        values=dict(request.form)
-        values.update(public_id=a.next_available_public_id(db),category=default_category(db),active='1')
+        values=request.form.copy()
+        # MultiDict.update appends values; get() could otherwise retain a forged
+        # category or inactive flag. Assignment replaces all submitted values.
+        for key,value in {'public_id':a.next_available_public_id(db),'category':default_category(db),'active':'1'}.items():
+            values[key]=value
         user,errors=a.validate_user_form(values,db,public_enrollment=True)
         if errors:
             return render_template('user_form.html',user=user,form_mode='create',kiosk=True,errors=errors,duplicate_users=[],country_names=a.COUNTRY_NAMES),400

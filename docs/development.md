@@ -29,7 +29,9 @@ Pour un lancement direct de Python, utiliser les variables d'isolation décrites
 
 ## Packaging
 
-La version stable 2.7.1 ajoute des contrôles ciblés sur les ordres, les couleurs, les habilitations, les tarifs exacts et les formulaires SMTP. Sa validation finale comprend 396 tests Python, 461 contrôles PHP et 622 contrôles JavaScript réussis. Les suites corrective, finale et logo ont été exécutées sur Chromium et WebKit, de 320 à 1440 px (`npx playwright install webkit` pour installer ce moteur). Les captures facultatives vont hors de la copie publique. Les fixtures utilisent uniquement des identités fictives, jamais un export de production.
+La validation 2.8.0 comprend **451 tests Python, 724 contrôles PHP et 622 contrôles JavaScript**. Elle couvre familles/responsables, migration/restauration 14 → 15, capacité et concurrence, groupes indivisibles, attente/offres/réponses/expiration, SMTP simulé, droits, borne sans WordPress et relais WordPress simulé. Les contrôles additionnels Chromium/WebKit couvrent 320, 360, 375, 390, 430, 480, 720, 768, 820, 1024, 1280 et 1440 px : 818 contrôles de pages/parcours, 696 de footer, 120 de typographie et 146 de contacts/liste d'attente/réponses. Installer WebKit avec `npx playwright install webkit`. Les fixtures et captures automatisées sont fictives. La vérification d'une copie privée de migration reste hors du dépôt, sans diffusion de ses données ni rapports d'exploitation.
+
+NAS, migration réelle et liaison WordPress 2.8 ont été validés par l'exploitant du FougèresLab. Les suites locales ne constituent pas un test WordPress/MySQL réel ni un build Docker ; SMTP et SQL PHP y sont simulés. La concordance ID/contact n'est pas une authentification à usage unique ; la délivrabilité et HTTPS se vérifient par installation.
 
 ```sh
 .venv/bin/python build_openfablab.py
@@ -39,7 +41,7 @@ La version stable 2.7.1 ajoute des contrôles ciblés sur les ordres, les couleu
 
 Les constructeurs utilisent des listes autorisées et des dates/permissions ZIP fixes. Les deux ZIP doivent être identiques lors de deux constructions dans le même environnement. Pour une reconstruction strictement octet-identique, utiliser la même version de Python/zlib ; la compression peut différer entre versions. Le contrôleur compare également les octets des membres aux sources publiques et génère `dist/SHA256SUMS`. `dist/` n'est pas un contenu à committer.
 
-Pour la release stable 2.7.1, le ZIP applicatif approuvé n’a pas été reconstruit après la présentation de la documentation au statut stable dans le dépôt. Ces documents peuvent donc différer entre Git et l’archive approuvée, contrairement aux fichiers runtime qui doivent être identiques. La référence de téléchargement est l’asset de release et son `SHA256SUMS`, pas une nouvelle construction des guides de la branche principale. Le plugin 2.7.0 joint est réutilisé à l’identique.
+Pour la release stable **2.8.0**, les ZIP applicatif et plugin validés ne sont pas reconstruits pour actualiser la documentation. Les guides embarqués peuvent encore porter la mention de candidate ; les documents du tag sont la référence stable. **Tous les fichiers runtime et le plugin sont identiques aux archives approuvées**. Seuls les guides, manifestes de développement et leur test de statut sont actualisés dans Git. La référence de téléchargement est l'asset de release et son `SHA256SUMS` ; reconstruire depuis Git avec les guides actualisés produirait une autre empreinte.
 
 ## Docker
 

@@ -9,8 +9,8 @@
 {% block content %}
 <section class="login-card" aria-labelledby="login-title">
     <p class="eyebrow">Espace protégé</p>
-    <h1 id="login-title">Administration ou modération</h1>
-    <p>Entrez le code PIN correspondant à votre niveau d'accès.</p>
+    <h1 id="login-title">Administration</h1>
+    <p>Entrez le code PIN adapté à votre accès.</p>
     <form method="post" class="pin-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <fieldset class="access-roles"><legend>Accès souhaité</legend>
@@ -18,10 +18,10 @@
             <label><input type="radio" name="access_role" value="moderator" {% if request.form.get('access_role')=='moderator' %}checked{% endif %}><span>Modérateur</span></label>
         </fieldset>
         <label for="admin-pin">Code PIN</label>
-        <input id="admin-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="current-password" autofocus required aria-describedby="pin-help">
-        <small id="pin-help" class="form-help">Code PIN à quatre chiffres.</small>
-        <p id="login-error" class="login-error" {% if login_error %}role="alert"{% endif %}>{{ login_error or '' }}</p>
+        <input id="admin-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="current-password" autofocus required>
+        <p id="login-error" class="login-error" {% if login_error %}role="alert"{% else %}hidden{% endif %}>{{ login_error or '' }}</p>
         <button class="admin-button primary" type="submit">Déverrouiller</button>
     </form>
+    {% if (self_enrollment_enabled and modules.users) or (tablet_reservations_enabled and modules.public_reservations) %}<section class="public-quick-access" aria-label="Accès rapide public"><h2>Accès rapide</h2><p class="form-help">Ces démarches sont publiques, sans code PIN.</p><div class="quick-access-grid">{% if self_enrollment_enabled and modules.users %}<a class="quick-access-card" href="{{ url_for('evolution.enroll') }}">Créer un compte<span>Un compte pour chaque personne</span></a>{% endif %}{% if tablet_reservations_enabled and modules.public_reservations %}<a class="quick-access-card" href="{{ url_for('tablet_reservations.catalogue') }}">Réserver une animation<span>Consulter les animations à venir</span></a>{% endif %}</div></section>{% endif %}
 </section>
 {% endblock %}

@@ -1,0 +1,11 @@
+<form method="post" class="admin-form family-settings">
+{{ csrf(evolution_csrf,'family') }}
+<section class="form-section" id="ages-autonomie-familles"><div class="form-section-heading"><p class="eyebrow">Des comptes indépendants, des liens conservés</p><h2>Âges, autonomie et familles</h2><p>L’autonomie permet de participer sans accompagnateur. Elle ne signifie pas majorité juridique.</p></div>
+<div class="family-age-grid">
+{% for key,label,help in [('family_autonomy_age','Âge d’autonomie','Avant ce seuil, un responsable rattaché doit participer.'),('family_responsible_age','Peut être responsable dès','Ce seuil est un réglage métier, pas une définition de majorité juridique.')] %}
+<label class="family-age-card form-field"><span>{{ label }}</span><span class="number-with-unit"><input name="{{ key }}" type="number" min="0" max="120" step="1" value="{{ family_settings[key] }}" required><span>ans</span></span><small>{{ help }}</small></label>{% endfor %}
+</div>
+<div class="family-policy-grid">{% for key,label,help in [('dependent','Non autonome','Responsable requis ; coordonnées du participant minimisées.'),('autonomous','Autonome','Peut participer seul ; liens familiaux conservés.'),('responsible','Peut être responsable','Coordonnées nécessaires pour devenir responsable d’un autre usager.')] %}
+<article class="family-policy-card"><h3>{{ label }}</h3><p class="form-help">{{ help }}</p><label class="form-field"><span>Coordonnées obligatoires</span><select name="family_contact_{{ key }}">{% for value,name in contact_policies.items() %}<option value="{{ value }}" {% if family_settings['family_contact_'+key]==value %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label></article>{% endfor %}</div>
+<p class="form-help">Les anciennes fiches restent accessibles. Les informations manquantes sont signalées sans désactivation automatique.</p>
+<button class="admin-button primary compact">Enregistrer les règles</button></section></form>

@@ -405,7 +405,22 @@ def _sync_environment(database, client, environment, directory, now, notificatio
         capabilities = {}  # Original pre-capability plugin: incremental only.
     if not isinstance(capabilities,dict):
         raise ValueError('Capabilities WordPress invalides')
-    # Old 2.5/2.6 senders and plugins keep the original incremental protocol.
+    if capabilities.get('family_gateway_v1') is True:
+        # Protocol 3 reads the live catalogue and books on OpenFabLab. No
+        # directory, companion request, mirror upsert or booking replay is sent.
+        database.execute('INSERT OR REPLACE INTO app_settings(key,value) VALUES(?,?)',
+                         ('reservation_protocol_'+environment,'3'))
+        database.execute('INSERT OR REPLACE INTO app_settings(key,value) VALUES(?,?)',
+                         ('reservation_plugin_'+environment,str(capabilities.get('plugin_version','2.8.0'))))
+        database.execute('UPDATE reservation_sync_state SET last_success_at=?,last_error=NULL,last_error_at=NULL WHERE environment=?',
+                         ((now or datetime.now(timezone.utc)).isoformat(timespec='seconds'),environment))
+        database.commit()
+        return 0
+    if database.execute('PRAGMA user_version').fetchone()[0] >= 15:
+        # Never import/reconfirm seats from a separate legacy capacity engine.
+        # Historical records remain untouched, without replay.
+        raise ValueError('La candidate 2.8 nécessite le plugin WordPress 2.8 pour cette intégration.')
+    # Historical protocol helpers remain available for offline recovery tests.
     slots_supported = capabilities.get('animation_slots_v1') is True
     snapshot_supported = capabilities.get('catalog_snapshot_v1') is True
     if capabilities.get('custom_categories_v1') is not True and any(

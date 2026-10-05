@@ -105,11 +105,9 @@ def build_message(config, recipient, values, subject=SUBJECT, body=BODY):
         message['Reply-To'] = config['reply_to']
     message.set_content(body)
     # HTML generated solely from escaped text; no executable template engine.
-    cid = secrets.token_hex(16) + '@openfablab'
     message.add_alternative('<!doctype html><html><body><p>' + html.escape(body).replace('\n','<br>')
-                            + '</p><img width="240" height="240" alt="Votre QR Code" src="cid:' + cid + '"></body></html>', subtype='html')
+                            + '</p></body></html>', subtype='html')
     png = qr_png(values['public_id'])
-    message.get_payload()[1].add_related(png, maintype='image', subtype='png', cid='<' + cid + '>')
     message.add_attachment(png, maintype='image', subtype='png', filename='OpenFabLab-QR.png')
     return message
 

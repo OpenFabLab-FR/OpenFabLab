@@ -64,7 +64,7 @@ class EvolutionTests(unittest.TestCase):
                                           ADMIN_PIN=None,MODERATOR_PIN=None,WEATHER_ENABLED=False,AUTO_CLOSURE_WORKER=False))
             with a.app_context():
                 db=application.get_database()
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],14)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
                 self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],0)
                 self.assertEqual(db.execute('SELECT COUNT(*) FROM resources').fetchone()[0],0)
                 self.assertEqual(schema.default_category(db),'user')
@@ -134,11 +134,11 @@ class EvolutionTests(unittest.TestCase):
         page=self.client.get('/inscription')
         self.assertEqual(page.status_code,200)
         with self.client.session_transaction() as s:self.assertNotIn('access_role',s);self.assertNotIn('admin_authenticated',s)
-        self.assertEqual(self.post('/inscription',dict(first_name='Camille',last_name='Exemple',public_id='7998',category='staff',active='0')).status_code,302)
+        self.assertEqual(self.post('/inscription',dict(first_name='Camille',last_name='Exemple',public_id='7998',category='staff',active='0',birth_year='1990',email='camille@example.invalid',phone='0600000000')).status_code,302)
         with self.db() as db:
             user=db.execute("SELECT * FROM users WHERE created_source='kiosk'").fetchone()
             self.assertNotEqual(user['public_id'],'7998');self.assertEqual(user['category'],'user');self.assertEqual(user['active'],1)
-            self.assertFalse(user['email'])
+            self.assertEqual(user['email'],'camille@example.invalid')
         self.assertEqual(self.client.get('/inscription/qr.png').status_code,200)
         self.assertIn('no-store',self.client.get('/inscription/terminee').headers['Cache-Control'])
         self.assertEqual(self.client.get('/admin/ressources').status_code,302)
@@ -165,8 +165,8 @@ class EvolutionTests(unittest.TestCase):
         message=mail.build_message(self.config(),'camille@example.invalid',values)
         self.assertIn('Bienvenue à Atelier',message['Subject'])
         png=[p for p in message.walk() if p.get_content_type()=='image/png']
-        self.assertEqual(len(png),2);self.assertEqual(png[0].get_payload(decode=True),png[1].get_payload(decode=True))
-        self.assertIn('inline',[p.get_content_disposition() for p in png]);self.assertIn('attachment',[p.get_content_disposition() for p in png])
+        self.assertEqual(len(png),1);self.assertEqual(png[0].get_filename(),'OpenFabLab-QR.png')
+        self.assertNotIn('inline',[p.get_content_disposition() for p in png]);self.assertIn('attachment',[p.get_content_disposition() for p in png])
         Image.open(io.BytesIO(png[0].get_payload(decode=True))).verify()
         with self.db() as db:self.assertNotIn('fictional-only','\n'.join(db.iterdump()))
 
@@ -429,7 +429,7 @@ class EvolutionMigrationTests(unittest.TestCase):
                 self.assertEqual(db.execute("SELECT created_source FROM users").fetchone()[0],'historical')
                 self.assertEqual(db.execute("SELECT value FROM app_settings WHERE key='structure_name'").fetchone()[0],'Atelier Exemple configuré')
                 self.assertEqual(db.execute("SELECT seq FROM sqlite_sequence WHERE name='users'").fetchone()[0],999)
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],14)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
                 self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
                 application.initialize_database();self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
             backups=list(set((Path(folder)/'migration-backups').glob('*.db'))-previous_backups);self.assertEqual(len(backups),1)

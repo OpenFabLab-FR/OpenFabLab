@@ -18,7 +18,7 @@ def now():
 def backup_before_evolution(database, path):
     """Called before any initialization writes; SQLite backup includes its WAL."""
     version = database.execute('PRAGMA user_version').fetchone()[0]
-    if version>14:
+    if version>15:
         raise RuntimeError('Schéma plus récent que cette version ; démarrage refusé.')
     exists = database.execute("SELECT 1 FROM sqlite_master WHERE name='user_categories'").fetchone()
     if not version or exists:
@@ -40,7 +40,8 @@ def migrate(database, new_installation=False):
         reorder(database, 'categories')
         reorder(database, 'resource_types')
         reorder(database, 'authorizations')
-        database.execute('PRAGMA user_version=14')
+        if database.execute('PRAGMA user_version').fetchone()[0] < 14:
+            database.execute('PRAGMA user_version=14')
         return
     database.commit()
     database.execute('PRAGMA foreign_keys=OFF')

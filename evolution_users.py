@@ -14,6 +14,8 @@ def create_user(database, values, source, creator=None):
             'postal_code','nationality','nationality_normalized','email','phone_country_code','phone')
     cursor = database.execute('INSERT INTO users(' + ','.join(keys) + ',statistics_key,created_at,updated_at,created_source,created_by_role) VALUES(' + ','.join('?' for _ in range(len(keys)+5)) + ')',
                               tuple(values.get(key) for key in keys) + (secrets.token_hex(16),now(),now(),source,creator))
+    from family_model import apply_details
+    apply_details(database,cursor.lastrowid,values)
     return cursor.lastrowid
 
 

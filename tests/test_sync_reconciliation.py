@@ -7,7 +7,11 @@ from reservations_sync import _sync_environment, enqueue_animation
 
 
 class SyncReconciliationTests(unittest.TestCase):
-    setUp = fixtures.OpenFabLabTestCase.setUp
+    def setUp(self):
+        fixtures.OpenFabLabTestCase.setUp(self)
+        # Explicitly exercise archived protocol-2 helpers, never the 2.8 worker.
+        # Schema-15 refusal and protocol-3 behavior are covered in test_families.
+        with self.database() as db:db.execute('PRAGMA user_version=14')
     tearDown = fixtures.OpenFabLabTestCase.tearDown
     database = fixtures.OpenFabLabTestCase.database
 

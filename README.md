@@ -1,23 +1,26 @@
 <p align="center"><img src="static/brand/OpenFabLab-logo-horizontal.svg" width="420" alt="OpenFabLab"></p>
 
-# OpenFabLab 2.7.1
+# OpenFabLab 2.8.0
 
-**Version stable 2.7.1 · SQLite schéma 14 · OpenFabLab Reservations 2.7.0 inchangé**
+**Version stable · SQLite schéma 15 · plugin optionnel Reservations 2.8.0**
+
+Télécharger l'application, le plugin facultatif et leurs empreintes depuis la [release 2.8.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.0). Lire les [règles familiales et réservations](docs/families-2.8.md) et la [mise à jour depuis 2.7.1](docs/upgrade.md) avant de changer une installation existante.
 
 OpenFabLab est un logiciel libre de gestion de FabLab créé par **William Aumand**, distribué sous licence MIT. Il réunit la fréquentation du lieu, les usagers et les activités dans une application web installée sur le serveur de votre structure.
 
 Site du projet : [openfablab.fr](https://openfablab.fr).
 
-OpenFabLab 2.7.1 consolide la 2.7.0 et améliore l’ergonomie sur ordinateur, tablette et smartphone : catégories, vue Journée, connexion Administration/Modération, calendrier, ressources et habilitations. Elle ajoute les demandes de réservation d’animations depuis la borne, avec conservation locale en attente de confirmation. La version a été testée puis déployée en conditions réelles au FougèresLab. Voir [les corrections 2.7.1](docs/corrections-2.7.1.md). Une installation neuve reste générique ; chaque structure active et configure ses modules. Voir [les nouveautés de la branche 2.7](docs/evolution-2.7.md) et [la personnalisation](docs/branding.md).
+OpenFabLab 2.8.0 introduit les comptes rattachés à des responsables et les réservations familiales : une personne, un compte, une place. La borne, l'administration et WordPress utilisent désormais le même moteur local, avec groupes indivisibles, liste d'attente et propositions automatiques par e-mail. Le calendrier et l'interface ont aussi été harmonisés. La version a été migrée puis déployée et vérifiée en conditions réelles au FougèresLab. Une installation neuve reste générique ; chaque structure active et configure ses modules. Voir le [changelog](CHANGELOG.md) et la [personnalisation](docs/branding.md).
 
-La navigation Réglages comporte sept onglets courts et des formulaires compacts. Le calendrier Semaine/Mois propose une plage visible configurable, 09:00–19:00 par défaut, sans double défilement vertical. Les modules Ressources et Formations restent facultatifs. Une installation neuve propose Usager, Bénévole et Manager ; une migration conserve les catégories historiques, y compris celles sans usager actuel. Le lien facultatif **Créer un compte** reste discret dans le pied de la borne.
+La navigation Réglages comporte sept onglets courts et des formulaires compacts. Le calendrier Semaine/Mois propose une plage visible configurable, 09:00–19:00 par défaut, sans double défilement vertical. Les modules Ressources et Formations restent facultatifs. Une installation neuve propose Usager, Bénévole et Manager ; une migration conserve les catégories historiques, y compris celles sans usager actuel. Les accès facultatifs **Créer un compte** et **Réserver une animation** figurent sur la page **Gestion**, sans exiger de PIN pour ces parcours publics. L'espace **Administration / Modération** reste protégé.
 
 ## Fonctionnalités
 
 - Suivi des arrivées/départs, visiteurs anonymes, usagers, identifiants QR et badges.
 - Statistiques de fréquentation et exports, bilans d'activité.
 - Animations, inscriptions, présence distincte de la réservation, listes d'attente, CSV et PDF.
-- Consultation des animations et demandes de réservation depuis la borne, facultatives et désactivées par défaut ; dépôt local durable, sans place garantie avant confirmation.
+- Réservation d'animations depuis la borne, facultative ; comptes liés, responsables et une place par personne, confirmation ou attente pour le groupe entier par le moteur local.
+- Seuils d'autonomie et de responsabilité et coordonnées requises configurables ; comptes indépendants et rattachements conservés dans le temps.
 - Réservation pour toute une animation ou par créneaux internes, capacité et attente par créneau.
 - Locations, catalogue de machines, clients et dossiers de facturation.
 - Identité visuelle configurable, modules activables, météo et notifications Discord facultatives.
@@ -28,13 +31,13 @@ La navigation Réglages comporte sept onglets courts et des formulaires compacts
 - Calendrier Semaine/Mois : OpenLab et fréquentation, activités, réservations, locations et formations.
 - Machines et autres ressources réservables, catégories de ressources, gratuité ou tarif, confirmation automatique ou validation par l’équipe et lien avec la facturation existante.
 - Formations et habilitations permanentes ou expirables, révocation et historique ; une ressource peut exiger une habilitation valide, avec dérogation Administrateur motivée et auditée.
-- Plugin WordPress : réservation publique, Normal/Test séparés, préremplissage contrôlé, six modèles d'e-mails texte, réconciliation du catalogue, reprise des synchronisations manquées et maintenance réservée à l'administration.
+- Plugin WordPress 2.8 optionnel : parcours familial, Normal/Test séparés, relais HTTPS signé vers le même moteur ; anciens e-mails et outils conservés pour l'historique, sans reprise automatique pour les nouvelles demandes.
 
 Les captures ne sont pas distribuées : aucun écran comportant des données personnelles n'est nécessaire à l'installation.
 
 ## Architecture
 
-Une application **Python/Flask + SQLite** sert l'interface locale. Docker utilise Gunicorn. Le plugin PHP s'installe séparément sur WordPress. Le serveur du FabLab initie les échanges **HTTPS signés HMAC** vers WordPress ; la synchronisation ne nécessite aucun accès entrant vers ce serveur. Elle est facultative et désactivée sur une installation neuve.
+Une application **Python/Flask + SQLite** sert l'interface locale. Docker utilise Gunicorn. Le plugin PHP s'installe séparément sur WordPress. Pour les nouvelles réservations 2.8, **OpenFabLab est l'unique autorité de capacité** : WordPress lui adresse des appels **HTTPS signés HMAC**. Il faut donc que ce serveur soit accessible au site WordPress via un accès HTTPS sécurisé ; cela diffère du protocole sortant 2.7. WordPress n'est pas nécessaire aux réservations locales.
 
 Voir [l'architecture](docs/architecture.md) et les [recommandations de sécurité](SECURITY.md). Les PIN à quatre chiffres ne suffisent pas à protéger une administration exposée sur Internet.
 
@@ -60,7 +63,7 @@ docker compose build application
 docker compose up -d application
 ```
 
-Ouvrir `http://localhost:5080/stat/` ; santé : `/stat/sante`. Le projet/conteneur s'appelle `openfablab`, l'image `openfablab:v2.7.1`. Données : `./data:/data`, base `/data/openfablab.db`. Sauvegardes : `./backups:/nas-backups`, sous-dossier `OpenFabLab`. `.env.example` documente uniquement la racine de sauvegarde facultative. Protéger l'accès réseau et configurer HTTPS avant toute utilisation réelle ; aucun reverse proxy propre à une structure n'est livré.
+Ouvrir `http://localhost:5080/stat/` ; santé : `/stat/sante`. Le projet/conteneur s'appelle `openfablab`, l'image `openfablab:v2.8.0`. Données : `./data:/data`, base `/data/openfablab.db`. Sauvegardes : `./backups:/nas-backups`, sous-dossier `OpenFabLab`. `.env.example` documente uniquement la racine de sauvegarde facultative. Employer des volumes et ports d'essai distincts ; ne pas exécuter ces commandes dans une installation de production. Protéger l'accès réseau et configurer HTTPS avant toute utilisation réelle ; aucun reverse proxy propre à une structure n'est livré.
 
 ## Première initialisation
 
@@ -78,18 +81,16 @@ Fréquentation, usagers, activités, réservations publiques, créneaux réserva
 
 ## Réservations depuis la borne, WordPress et créneaux
 
-WordPress reste **facultatif pour OpenFabLab**. Dans la 2.7.1, la fonction de demandes depuis la borne utilise toutefois le moteur du plugin configuré pour confirmer les inscriptions : elle ne constitue pas un moteur de confirmation autonome hors ligne. L’activer dans les réglages des réservations publiques après configuration de l’URL et du secret. La tablette doit pouvoir joindre le serveur local ; une coupure Internet retarde la confirmation, pas l’enregistrement de la demande.
+En **2.8.0**, le moteur commun est OpenFabLab : une personne sélectionnée = une place, responsables compris s'ils participent. Les groupes sont confirmés ou mis en attente ensemble, sans confirmation partielle. La borne fonctionne sans Internet si le serveur local reste accessible. Activer **Réglages → Usagers → Autoriser la réservation d’animations depuis la borne**. L'accès public figure sur la page Gestion, sans PIN.
 
-**Plugin WordPress Reservations : version 2.7.0 inchangée, compatible avec OpenFabLab 2.7.1.** Ne pas réinstaller ni modifier un plugin 2.7.0 déjà configuré pour la seule mise à jour de l’application.
-
-Installer le ZIP autonome Reservations 2.7.0 dans WordPress, après un essai sur une installation séparée, puis configurer l'URL HTTPS racine du site et le même secret privé des deux côtés. N'autoriser qu'une instance OpenFabLab à synchroniser avec ce WordPress.
+WordPress reste **facultatif**. **OpenFabLab Reservations 2.8.0** utilise les mêmes comptes liés et règles, après identification par ID/contact connu, et exige un accès HTTPS signé au serveur OpenFabLab. Le plugin 2.7 ne peut pas traiter les nouvelles réservations 2.8. Les anciennes références du plugin peuvent être nettoyées manuellement après sauvegarde, sans toucher aux données OpenFabLab. La liste d’attente propose automatiquement les places au plus ancien groupe compatible ; e-mail natif, blocage temporaire, réponse et expiration sont gérés par OpenFabLab. Un e-mail valide est obligatoire ; le téléphone peut être exigé par la structure. Voir [familles et compatibilité](docs/families-2.8.md).
 
 ```text
 [openfablab_reservations environment="test"]
 [openfablab_reservations environment="production"]
 ```
 
-Normal correspond à la valeur technique `production`. Test reste entièrement séparé. Les pages sont choisies par chaque structure ; aucun chemin n'est imposé. La cadence initiale est de 1,5 minute (90 secondes), administrable, avec synchronisation manuelle. La borne peut déposer des demandes locales d’animations, en attente de confirmation par le moteur WordPress commun ; aucune place n’est garantie pendant une coupure. [Fonctionnement et limites de la corrective](docs/corrections-2.7.1.md). Le plugin reste compatible avec le parcours classique OpenFabLab 2.5.0 ; les créneaux nécessitent OpenFabLab 2.6.x et la capability `animation_slots_v1`.
+Normal correspond à la valeur technique `production`. Test reste séparé. Les pages sont choisies par chaque structure ; aucun chemin n'est imposé. Les nouvelles demandes sont traitées directement dans OpenFabLab : elles n'attendent pas une synchronisation du moteur historique WordPress. La compatibilité de l'ancien couple application 2.7.1/plugin 2.7.0 reste documentée dans [les corrections 2.7.1](docs/corrections-2.7.1.md).
 
 Exemple : **Découverte casque VR**, 10:00–12:00, durée 20 minutes, battement 10 minutes, une place par créneau : **10:00–10:20, 10:30–10:50, 11:00–11:20, 11:30–11:50**. Les créneaux ont des capacités et files d'attente indépendantes. [Guide WordPress](docs/wordpress.md), [créneaux](docs/animation-slots.md), [modèles d'e-mails](docs/email-templates.md).
 
@@ -104,6 +105,10 @@ Dans **Réglages → Données**, choisir le niveau adapté :
 Ces fichiers peuvent contenir des données personnelles et des secrets : ils ne sont pas chiffrés et **ne doivent jamais être publiés**. Conserver aussi la configuration de déploiement et tester la restauration sur une instance isolée. Un profil `.openfablab-profile.zip` ne remplace pas une sauvegarde d’installation. [Procédure complète](docs/backup-restore.md), [format privé et restauration](docs/private-backup.md).
 
 ## Mise à jour
+
+**2.7.1 → 2.8.0 : schéma SQLite 14 → 15**, migration additive et transactionnelle, sans conversion ni suppression des anciennes réservations. Une copie SQLite cohérente 14 précède l'initialisation ; conserver aussi une sauvegarde complète privée et le runtime 2.7.1. Ne jamais démarrer 2.7.1 sur la base 15. Le rollback exige la PRE 14 avec ses fichiers privés, installation arrêtée ; après de nouvelles écritures, aucune restauration automatique. [Procédure de mise à jour](docs/upgrade.md), [guide de vérification isolée](docs/candidate-2.8-guide.md).
+
+### Référence historique des schémas
 
 **2.7.0 → 2.7.1 : schéma SQLite 14 inchangé**, aucune migration métier destructive attendue. Sauvegarder tout le persistant et conserver le runtime précédent, puis vérifier santé, intégrité/FK, données et configuration. Ne pas rejouer la migration historique 13 → 14. [Procédure de mise à jour](docs/upgrade.md).
 
@@ -128,7 +133,7 @@ PHP 8.1+ est recommandé pour les tests natifs ; une alternative PHP WebAssembly
 
 ## Contribution et sécurité
 
-La gestion des familles, profils enfants rattachés et parcours « Réserver pour moi / Réserver pour un enfant » reste une **évolution future, non disponible en 2.7.1**, sans version cible fixée. Voir la [roadmap](ROADMAP.md).
+Les comptes enfants/responsables et réservations familiales sont disponibles en **2.8.0**. Les extensions futures restent distinguées dans la [roadmap](ROADMAP.md).
 
 Voir [CONTRIBUTING.md](CONTRIBUTING.md) et [SECURITY.md](SECURITY.md). Utiliser des données fictives, garder les migrations additives et respecter les licences des ressources. Signaler les vulnérabilités par le canal privé du dépôt lorsqu'il est activé, pas dans une issue publique contenant des secrets.
 

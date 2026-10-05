@@ -16,9 +16,9 @@ Créneaux : **10:00–10:20, 10:30–10:50, 11:00–11:20, 11:30–11:50**. Quat
 
 Une clé `slot_uuid` stable identifie le créneau, selon animation, environnement et horaires. La géométrie ne dépend pas d'un libellé affiché. Les changements de capacité peuvent conserver les identifiants ; une modification qui invaliderait des réservations est refusée. Ne pas déplacer/supprimer silencieusement une inscription existante.
 
-## Capacité, attente et accompagnants
+## Capacité, attente et responsables
 
-Chaque créneau a sa propre capacité. Une réservation ne consomme rien sur les autres créneaux. Si un accompagnant occupe une place, il est dans le même créneau et consomme une place supplémentaire ; une paire ne tient pas dans une capacité de un. La liste d'attente et ses offres FIFO restent rattachées au créneau demandé. Une annulation ne libère/promote que ce créneau.
+Chaque créneau a sa propre capacité. Une réservation ne consomme rien sur les autres créneaux. En 2.8.0, chaque participant sélectionné possède son compte et consomme exactement une place. Un responsable lié et éligible doit être sélectionné dans le même groupe/créneau pour tout membre non autonome. Un responsable et deux enfants demandent trois places, jamais quatre ; le groupe ne peut pas être confirmé partiellement. La liste d'attente propose les places au plus ancien groupe tenant entièrement dans la capacité libre. Une annulation ne relance que la file concernée. L'ancien accompagnateur spécifique reste uniquement lisible dans les réservations historiques. Voir [les règles communes](families-2.8.md).
 
 ## Suivi et exports
 

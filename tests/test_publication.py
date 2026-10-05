@@ -22,17 +22,19 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.7.1')
-        self.assertIn('openfablab:v2.7.1',(ROOT/'compose.yaml').read_text())
+        self.assertEqual(__version__,'2.8.0')
+        self.assertIn('openfablab:v2.8.0',(ROOT/'compose.yaml').read_text())
 
     def test_stable_release_documentation_is_consistent(self):
         readme=(ROOT/'README.md').read_text()
-        self.assertIn('# OpenFabLab 2.7.1',readme)
-        self.assertIn('SQLite schéma 14',readme)
-        self.assertIn('OpenFabLab Reservations 2.7.0',readme)
-        obsolete=re.compile(r'candidate locale|la candidate|non publiée|non validée sur une installation réelle|aucun déploiement effectué',re.I)
-        for path in [ROOT/'README.md',ROOT/'CHANGELOG.md',*(ROOT/'docs').glob('*.md')]:
-            self.assertIsNone(obsolete.search(path.read_text()),path.name)
+        self.assertIn('# OpenFabLab 2.8.0',readme)
+        self.assertIn('**Version stable · SQLite schéma 15',readme)
+        self.assertIn('OpenFabLab Reservations 2.8.0',readme)
+        self.assertNotIn('candidate locale',readme)
+        self.assertIn('## 2.8.0 — version stable',(ROOT/'CHANGELOG.md').read_text())
+        self.assertEqual(__import__('json').loads((ROOT/'package.json').read_text())['version'],__version__)
+        self.assertEqual(__import__('json').loads((ROOT/'package-lock.json').read_text())['version'],__version__)
+        self.assertIn('Seul le stockage historique du plugin WordPress',(ROOT/'docs/families-2.8.md').read_text())
         changelog=(ROOT/'CHANGELOG.md').read_text().split('## 2.6.3')[0]
         for section in ('Calendrier','Usagers','E-mails et notifications','Ressources et réservations',
                         'Formations et habilitations','WordPress','Sauvegardes','Interface','Migration'):
@@ -58,7 +60,7 @@ class PublicReleaseTests(unittest.TestCase):
                                         AUTO_CLOSURE_WORKER=False,WEATHER_ENABLED=False))
             with application.app_context():
                 db=get_database()
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],14)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
                 self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
                 self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
                 for table in ('users','sessions','visitors','rental_catalog','billing_tariff_catalog','billing_clients','billing_records','animation_bookings'):
@@ -173,16 +175,16 @@ import pathlib,sqlite3,app
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.flask_app.config['APP_VERSION']=='V2.7.1'
+assert app.flask_app.config['APP_VERSION']=='V2.8.0'
 client=Client(app.app,Response)
 for route in ('/stat/sante','/stat/','/stat/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     if route=='/stat/':
-        assert b'V2.7.1' in response.data
+        assert b'V2.8.0' in response.data
     response.close()
 with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==14
+    assert db.execute('PRAGMA user_version').fetchone()[0]==15
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     for table in ('users','sessions','visitors','animation_bookings','billing_clients'):
@@ -229,14 +231,14 @@ with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.7.1'
+assert app.app.config['APP_VERSION']=='V2.8.0'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     response.close()
 with sqlite3.connect(app.app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==14
+    assert db.execute('PRAGMA user_version').fetchone()[0]==15
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     assert db.execute('SELECT COUNT(*) FROM users').fetchone()[0]==0

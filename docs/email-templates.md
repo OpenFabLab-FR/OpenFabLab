@@ -1,5 +1,7 @@
 # Modèles d'e-mails WordPress
 
+**Portée 2.8.0 :** les nouvelles confirmations, attentes, propositions, modifications et annulations utilisent le moteur SMTP natif OpenFabLab et son journal durable, pas les modèles WordPress ci-dessous. Configurer SMTP, l'adresse HTTPS publique et le délai d'acceptation dans OpenFabLab ; voir [familles et e-mails](families-2.8.md). Le message de bienvenue reste personnalisable et joint un unique QR PNG. Les anciens modèles/rappels WordPress suivants sont conservés pour l'historique, pas pour piloter les nouvelles demandes.
+
 Dans **Réglages → OpenFabLab Reservations → Modèles d'e-mails**, personnaliser sujet/corps des six modèles : confirmation, inscription en liste d'attente, place disponible, premier rappel, deuxième rappel, confirmation d'annulation. Texte brut UTF-8, sans exécution de PHP ou HTML. Les variables inconnues sont signalées.
 
 Les modèles et la signature commune appartiennent au site WordPress concerné, pas au serveur du FabLab. Nom/e-mail expéditeur, Répondre à, préfixe Test et lien de confidentialité restent configurables. Les valeurs distribuées sont génériques.

@@ -3,7 +3,7 @@
 {% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil</a>{% endblock %}
 {% block content %}
 <section class="content-heading"><p class="eyebrow">Depuis la borne</p><h1>Animations à venir</h1><p>Découvrez les prochaines animations proposées par le FabLab et demandez votre place.</p></section>
-<p class="form-help">Les disponibilités affichées proviennent de la dernière synchronisation. Votre place est confirmée après traitement de la demande, pas au moment de son dépôt.</p>
+<p class="form-help">Les disponibilités sont lues dans OpenFabLab. Elles sont vérifiées à nouveau à la validation pour tous les participants sélectionnés : tout le groupe est confirmé ou placé ensemble en attente.</p>
 <div class="evolution-cards">
 {% for item in animations %}<article class="admin-section tablet-animation-card"><h2>{{ item.title }}</h2><p><strong>{{ item.date }} · {{ item.hours }}</strong></p><p class="multiline">{{ item.description or '' }}</p><p>{{ item.capacity }} places{% if item.booking_mode=='slots' %} · créneaux disponibles{% endif %} · {% if item.available %}{{ item.available }} place(s) disponible(s), à confirmer{% else %}Complet{% if item.waitlist_enabled %} · liste d’attente possible{% endif %}{% endif %}</p><a class="admin-button primary" href="{{ url_for('tablet_reservations.detail',service_id=item.service_id) }}">Voir l’animation</a></article>
 {% else %}<section class="admin-section"><p>Aucune animation ouverte aux inscriptions pour le moment.</p><a class="admin-button secondary" href="{{ url_for('index') }}">Retour à l’accueil</a></section>{% endfor %}

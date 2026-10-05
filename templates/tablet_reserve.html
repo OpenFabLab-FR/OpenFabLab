@@ -13,6 +13,7 @@
 </div>{% endmacro %}
 {% block content %}
 <section class="content-heading"><h1>Demander une place</h1><p>{{ animation.title }} · {{ animation.date }} · {{ animation.hours }}</p></section>
+<section class="family-panel form-section"><h2>Je suis usager</h2><p>Réserver pour moi ou pour les membres rattachés à mon compte.</p><a class="admin-button primary" href="{{ url_for('family.booking',service_id=animation.service_id) }}">Identifier mon compte</a></section>
 {% for error in errors %}<p class="flash flash-error" role="alert">{{ error }}</p>{% endfor %}
 <form method="post" class="admin-form tablet-request-form">
 <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="form_token" value="{{ form_token }}">

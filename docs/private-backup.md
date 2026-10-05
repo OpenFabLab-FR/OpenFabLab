@@ -1,5 +1,7 @@
 # Sauvegardes privées complètes et copies de test
 
+OpenFabLab 2.8.0 conserve le format v1 et prend en charge le schéma 15, avec naissance précise et relations familiales. Ces éléments sont privés et exclus des exports publics de configuration. Conserver la PRE 14 complète pour un éventuel retour avec le runtime 2.7.1.
+
 Réglages → Données distingue trois exports : SQLite seul (données métier),
 sauvegarde complète privée (installation) et copie privée pour test (clone isolé).
 Les deux archives privées contiennent des données personnelles et des dérivations

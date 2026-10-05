@@ -104,7 +104,7 @@ class AnimationSlotTests(unittest.TestCase):
         with self.database() as db:
             self.assertEqual(db.execute('SELECT booking_mode FROM animation_reservation_config').fetchone()[0],'whole')
             self.assertIsNone(db.execute('SELECT slot_uuid FROM animation_bookings WHERE external_uuid=?',(booking,)).fetchone()[0])
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],14)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
             self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
             self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
@@ -158,10 +158,13 @@ class AnimationSlotTests(unittest.TestCase):
 
     def test_walkin_only_target_slot_capacity_and_permissions(self):
         service,token,_,_=self.create();slots=self.slots(service)
-        base=dict(csrf_token=token,first_name='Fictif',last_name='LOCAL',birth_year='1990')
+        with self.database() as db:
+            db.execute("UPDATE users SET birth_year=1990,email='fictional-walkin@example.invalid'")
+            people=[row[0] for row in db.execute('SELECT id FROM users WHERE active=1 ORDER BY id LIMIT 3')]
+        base=dict(csrf_token=token)
         route=f'/admin/animations/{service}/inscriptions/sur-place'
-        for slot in (slots[0]['slot_uuid'],slots[0]['slot_uuid'],slots[1]['slot_uuid']):
-            self.client.post(route,data=dict(base,slot_uuid=slot))
+        for person,slot in zip(people,(slots[0]['slot_uuid'],slots[0]['slot_uuid'],slots[1]['slot_uuid'])):
+            self.client.post(route,data=dict(base,person_ids=str(person),slot_uuid=slot))
         self.assertEqual([s['occupied'] for s in self.slots(service)],[1,1,0,0])
         self.client.post(route,data=base)
         self.assertEqual(sum(s['occupied'] for s in self.slots(service)),2)
@@ -171,6 +174,9 @@ class AnimationSlotTests(unittest.TestCase):
 
     def test_concurrent_walkins_no_overbooking(self):
         service,token,_,_=self.create(slot_capacity='2');slot=self.slots(service)[0]['slot_uuid']
+        with self.database() as db:
+            db.execute("UPDATE users SET birth_year=1990,email='fictional-walkin@example.invalid'")
+            people=[row[0] for row in db.execute('SELECT id FROM users WHERE active=1 ORDER BY id LIMIT 3')]
         barrier=threading.Barrier(3)
         def add(n):
             client=self.app.test_client()
@@ -178,7 +184,7 @@ class AnimationSlotTests(unittest.TestCase):
             with client.session_transaction() as target:target.update(session)
             barrier.wait()
             return client.post(f'/admin/animations/{service}/inscriptions/sur-place',data=dict(csrf_token=token,
-                first_name=f'Fictif{n}',last_name='LOCAL',birth_year='1990',slot_uuid=slot)).status_code
+                person_ids=str(people[n]),slot_uuid=slot)).status_code
         with ThreadPoolExecutor(max_workers=3) as pool:self.assertEqual(list(pool.map(add,range(3))),[302]*3)
         self.assertEqual(self.slots(service)[0]['occupied'],2)
 
@@ -215,14 +221,14 @@ class AnimationSlotTests(unittest.TestCase):
             def __init__(self,supported):self.supported=supported;self.routes=[]
             def post(self,route,payload):
                 self.routes.append(route)
-                if route=='/sync/capabilities':return {'ok':True,'animation_slots_v1':self.supported}
+                if route=='/sync/capabilities':return {'ok':True,'family_gateway_v1':self.supported}
                 return {'ok':True,'events':[],'cursor':0}
         with self.database() as db:
             old=Client(False)
             with self.assertRaises(ValueError):_sync_environment(db,old,'test',[],datetime.now(timezone.utc),[],[])
             self.assertNotIn('/sync/animations',old.routes)
             new=Client(True);_sync_environment(db,new,'test',[],datetime.now(timezone.utc),[],[])
-            self.assertIn('/sync/animations',new.routes)
+            self.assertEqual(new.routes,['/sync/capabilities'])
 
     def test_exports_and_single_global_calendar(self):
         service,_,_,_=self.create();self.add(service,self.slots(service)[1]['slot_uuid'])
@@ -258,7 +264,7 @@ class AnimationSlotTests(unittest.TestCase):
                 before={table:old.execute('SELECT * FROM '+table+' ORDER BY rowid').fetchall() for table in tables}
             fixture.create_app(dict(TESTING=True,SEED_DEMO_USERS=False,DATABASE=str(target),ADMIN_PIN=None,MODERATOR_PIN=None,WEATHER_ENABLED=False,SECRET_KEY='fictional-test'))
             with sqlite3.connect(target) as migrated:
-                self.assertEqual(migrated.execute('PRAGMA user_version').fetchone()[0],14)
+                self.assertEqual(migrated.execute('PRAGMA user_version').fetchone()[0],15)
                 self.assertEqual(migrated.execute('PRAGMA integrity_check').fetchone()[0],'ok')
                 self.assertEqual(migrated.execute('PRAGMA foreign_key_check').fetchall(),[])
                 for table,rows in before.items():

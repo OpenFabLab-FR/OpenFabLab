@@ -1,4 +1,39 @@
-# OpenFabLab Reservations 2.7.0
+# OpenFabLab Reservations 2.8.0
+
+## Plugin facultatif, moteur commun OpenFabLab
+
+Le plugin **2.8.0** est compatible avec l'application **2.8.0**. WordPress → HTTPS signé → OpenFabLab : l'application reste la source de vérité des animations, participants, familles/responsables, capacités, réservations et listes d'attente. Le plugin ne maintient aucun second moteur de places ni annuaire familial. La borne réserve directement sans WordPress, et sans Internet tant que le serveur local est accessible.
+
+Chaque personne sélectionnée = une place ; un responsable lié et éligible doit participer avec un membre non autonome. Un adulte et deux enfants demandent **trois places**. S'il n'en reste que deux, tout le groupe attend : aucune confirmation partielle. E-mail valide obligatoire, téléphone selon le réglage de structure. OpenFabLab assure les propositions, réponses et expirations avec son SMTP natif. Voir [familles et liste d'attente](families-2.8.md).
+
+### Installer et raccorder 2.8.0
+
+Sauvegarder WordPress et essayer d'abord sur une installation séparée. Installer `openfablab-reservations-2.8.0.zip` dans **Extensions → Ajouter → Téléverser**, puis activer. PHP 8.1+, JavaScript, REST et HTTPS sont nécessaires. Aucun secret n'est fourni dans le ZIP.
+
+Dans **Réglages → OpenFabLab Reservations**, saisir l'**adresse HTTPS de l'application OpenFabLab, préfixe inclus**, par exemple `https://lab.example.invalid/stat` (exemple non fonctionnel), et le secret privé partagé avec OpenFabLab. Ne pas ajouter la route API : le plugin la compose. Vérifier certificat, accès réseau et absence de cache privé ; ne pas désactiver TLS pour contourner un problème.
+
+Dans OpenFabLab **Structure → Réservations publiques**, conserver la configuration du site WordPress et le secret pour les contrôles de liaison ; configurer aussi l'adresse HTTPS publique **d'OpenFabLab** pour les liens personnels et son SMTP natif. Ces deux adresses ont des fonctions différentes. Le protocole annonce `family_gateway_v1` ; les nouvelles demandes vont directement à l'API familiale. Les anciens diagnostics/options de réconciliation restent historiques, sans import de leurs réservations dans un second moteur. Le plugin 2.7 n'est pas compatible avec les nouvelles demandes familiales.
+
+Placer les shortcodes sur les pages choisies par la structure :
+
+```text
+[openfablab_reservations environment="test"]
+[openfablab_reservations environment="production"]
+```
+
+`production` porte le libellé Normal. Test/Normal restent séparés ; les réservations Test n'envoient pas automatiquement de vrais e-mails. Tester les deux environnements avant ouverture. Sans réponse OpenFabLab, WordPress ne peut pas annoncer une confirmation.
+
+### Confidentialité et ancien stockage
+
+L'identifiant et une coordonnée déjà connue doivent concorder avant affichage des membres rattachés, sous autorisation courte et choix opaques. Aucun répertoire familial, date de naissance ou identifiant interne énumérable n'apparaît dans le catalogue. Cette identification ne constitue pas une preuve d'autorité parentale ni un code e-mail/SMS à usage unique. Validation et capacité sont contrôlées côté serveur.
+
+Le nettoyage historique est **volontaire, séparé et jamais automatique à l'installation** : administrateur, sauvegarde privée téléchargée, confirmation et transaction sur six tables explicitement ciblées ; options et secret conservés. **Aucune donnée passée OpenFabLab n'est purgée.** Les anciens liens/réservations propres au plugin ne sont pas repris dans sa nouvelle interface. Ne nettoyer qu'après vérification des réservations actives et sauvegarde WordPress complète. Voir [la transition](families-2.8.md) et [les essais isolés](candidate-2.8-guide.md).
+
+Liaison et protocole 2.8.0 ont été validés au FougèresLab par l'exploitant. Les suites PHP/SQL locales restent simulées : vérifier votre hébergement, HTTPS et la délivrabilité SMTP.
+
+## Référence historique : application 2.7.1 / plugin 2.7.0
+
+**Tout ce qui suit documente exclusivement l'ancien couple application 2.7.1/plugin 2.7.0, pas le parcours 2.8.0.** Ne pas appliquer ses règles d'accompagnateur ou son sens réseau aux nouvelles demandes.
 
 **Plugin WordPress Reservations : version 2.7.0 inchangée, compatible avec OpenFabLab 2.7.1.** Un plugin 2.7.0 déjà en place n’a pas à être réinstallé pour mettre à jour l’application. WordPress reste facultatif pour l’ensemble du logiciel ; la fonction de demandes d’animations depuis la borne de la 2.7.1 nécessite cependant ce moteur configuré pour confirmer les inscriptions. Le dépôt local hors Internet conserve une demande en attente, jamais une place garantie. [Fonctionnement de la borne](corrections-2.7.1.md).
 

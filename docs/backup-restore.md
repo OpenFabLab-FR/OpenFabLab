@@ -1,8 +1,10 @@
 # Sauvegarde et restauration
 
+En **2.8.0**, ces formats incluent le schéma **15**, les dates de naissance, rattachements privés, groupes, propositions et journal d'e-mails. Migration additive avec PRE 14 ; restauration POST 15 dans un dossier distinct à vérifier. Rien n'est purgé dans OpenFabLab. Voir [la mise à jour](upgrade.md) et [les vérifications isolées](candidate-2.8-guide.md).
+
 Depuis OpenFabLab 2.7.0, **Réglages → Données** distingue trois niveaux.
 
-Ces formats sont conservés en **2.7.1, schéma SQLite 14**. Une sauvegarde complète est fortement recommandée avant le passage de 2.7.0 à 2.7.1 ; conserver aussi le runtime et la configuration précédents. Voir [la mise à jour](upgrade.md).
+Avant le passage de **2.7.1/schéma 14 à 2.8.0/schéma 15**, arrêter proprement et conserver une PRE 14 complète, le runtime et la configuration précédents. Ne jamais donner une base 15 à la 2.7.1. Une restauration ancienne après de nouvelles écritures exige une décision explicite.
 
 ## 1. Sauvegarde SQLite
 

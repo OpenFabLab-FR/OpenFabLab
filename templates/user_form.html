@@ -17,7 +17,7 @@
 <section class="content-heading">
     <p class="eyebrow">{{ 'Inscription sur borne' if kiosk else 'Administration des usagers' }}</p>
     <h1>{{ 'Créer mon compte' if kiosk else page_title }}</h1>
-    <p>{% if kiosk %}Renseignez votre prénom et votre nom. Les autres informations sont facultatives ; une adresse e-mail valide permet de recevoir votre QR Code si vous le souhaitez.{% elif form_mode == 'create' %}L’année de naissance, la commune, la nationalité, l’e-mail et le téléphone sont nécessaires pour créer une fiche.{% else %}Une ancienne fiche peut rester incomplète et être complétée progressivement.{% endif %}</p>
+    <p>{% if form_mode == 'create' %}Un compte par personne. Les coordonnées requises s’adaptent aux règles d’âge de la structure ; celles du responsable peuvent suffire pour un enfant.{% else %}Une ancienne fiche peut rester incomplète et être complétée progressivement.{% endif %}</p>
 </section>
 
 {% if errors %}
@@ -100,19 +100,22 @@
             <h2 id="optional-title">Informations complémentaires</h2>
         </div>
 
-        <p class="data-guidance">{% if kiosk %}Ces coordonnées sont facultatives. L’e-mail permet de recevoir votre identifiant et votre QR si vous le souhaitez.{% elif form_mode == 'create' %}Ces informations servent aussi à vérifier les réservations en ligne. Le genre et le code postal restent facultatifs.{% else %}Les anciennes fiches incomplètes restent actives. Complétez les informations disponibles avec l’accord de l’usager.{% endif %}</p>
+        <p class="data-guidance">{% if kiosk %}Les coordonnées nécessaires dépendent des règles d’âge de la structure. L’e-mail permet aussi de recevoir votre identifiant et votre QR si vous le souhaitez.{% elif form_mode == 'create' %}Ces informations servent aussi à vérifier les réservations en ligne. Le genre et le code postal restent facultatifs.{% else %}Les anciennes fiches incomplètes restent actives. Complétez les informations disponibles avec l’accord de l’usager.{% endif %}</p>
 
+        <label class="checkbox-field compact-check"><input name="is_minor" type="checkbox" value="1" data-minor-toggle {% if request.form.get('is_minor')=='1' or (user.birth_date and (user|family_age) is not none and (user|family_age)<18) %}checked{% endif %}><span>Je suis mineur<small>Une date exacte permet d’appliquer les seuils le bon jour.</small></span></label>
         <div class="form-grid">
-            <div class="form-field">
+            <label class="form-field" data-birth-date><span>Date de naissance (mineur)</span><input name="birth_date" type="date" value="{{ user.birth_date|default('') or '' }}"><small>Obligatoire lorsque « Je suis mineur » est coché. Cette date reste privée.</small></label>
+            <div class="form-field" data-birth-year>
                 <label for="birth-year">Année de naissance{% if form_mode == 'create' and not kiosk %} *{% endif %}</label>
                 <input id="birth-year" name="birth_year" type="number" inputmode="numeric" min="1900" max="2100" value="{{ user.birth_year or '' }}" placeholder="1985" {% if form_mode == 'create' and not kiosk %}required{% endif %}>
                 <small>L'année suffit pour établir des tranches d'âge.</small>
             </div>
             {% if form_mode == 'edit' and admin_access_role == 'admin' %}
             <div class="form-field age-summary">
-                <strong>Âge en {{ age_year }}</strong>
-                <span>{% if age_in_year is not none %}{{ age_in_year }} ans{% else %}Non renseigné{% endif %}</span>
-                <small>Âge atteint dans l’année, calculé à partir de l’année de naissance.</small>
+                {% set displayed_age = user|family_age %}
+                <strong>{{ 'Âge actuel' if user.birth_date else 'Âge en ' ~ age_year }}</strong>
+                <span>{% if displayed_age is not none %}{{ displayed_age }} ans{% else %}Non renseigné{% endif %}</span>
+                <small>{{ 'Calculé à partir de la date exacte, anniversaire pris en compte.' if user.birth_date else 'Âge atteint dans l’année, calculé à partir de l’année de naissance.' }}</small>
             </div>
             {% endif %}
 
@@ -148,13 +151,13 @@
             </div>
 
             <div class="form-field">
-                <label for="email">Adresse e-mail{% if form_mode == 'create' and not kiosk %} *{% endif %}</label>
-                <input id="email" name="email" type="email" maxlength="254" value="{{ user.email or '' }}" autocomplete="email" {% if form_mode == 'create' and not kiosk %}required{% endif %}>
+                <label for="email">Adresse e-mail</label>
+                <input id="email" name="email" type="email" maxlength="254" value="{{ user.email or '' }}" autocomplete="email">
                 <small>Utilisée pour la vérification des réservations et les messages utiles aux activités.</small>
             </div>
 
             <div class="form-field">
-                <label for="phone">Numéro de téléphone{% if form_mode == 'create' and not kiosk %} *{% endif %}</label>
+                <label for="phone">Numéro de téléphone</label>
                 <div class="phone-field-row" data-phone-fields>
                     <label class="phone-country-code" for="phone-country-code">
                         <span>Indicatif</span>
@@ -162,7 +165,7 @@
                     </label>
                     <label class="phone-national-number" for="phone">
                         <span>Numéro</span>
-                        <input id="phone" name="phone" type="tel" maxlength="30" value="{{ user.phone or '' }}" autocomplete="tel-national" inputmode="tel" placeholder="06 10 10 10 10" data-phone-number {% if form_mode == 'create' and not kiosk %}required{% endif %}>
+                        <input id="phone" name="phone" type="tel" maxlength="30" value="{{ user.phone or '' }}" autocomplete="tel-national" inputmode="tel" placeholder="06 10 10 10 10" data-phone-number>
                     </label>
                 </div>
                 <small>L'indicatif français +33 est proposé par défaut. Le numéro est automatiquement présenté par paires.</small>
@@ -170,6 +173,7 @@
         </div>
     </section>
 
+    {% include '_family_fields.html' %}
     {% if form_mode=='create' %}<label class="checkbox-field"><input type="checkbox" name="send_welcome" value="1" data-welcome-email data-smtp-ready="{{ '1' if smtp_ready else '0' }}" data-welcome-default="{{ '1' if welcome_default else '0' }}" disabled><span>Envoyer l’e-mail de bienvenue et le QR Code<small>Envoi facultatif si SMTP est configuré et l’adresse est valide.</small></span></label>{% endif %}
     <div class="form-actions">
         <button class="admin-button primary" type="submit">
@@ -181,6 +185,9 @@
 </form>
 
 {% if form_mode == 'edit' %}
+    <section class="admin-section family-panel"><h2>Liens familiaux</h2>
+    {% for responsible in family_responsibles %}<div class="family-link-row"><a href="{{ url_for('admin_edit_user',user_id=responsible.id) }}">{{ responsible.first_name }} {{ responsible.last_name }}</a><form method="post" action="{{ url_for('family.unlink',user_id=user.id,key=responsible.link_uuid) }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><button class="admin-button secondary compact">Terminer le rattachement</button></form></div>{% endfor %}
+    <h3>Membres rattachés</h3>{% for member in family_members %}<div class="family-link-row"><a href="{{ url_for('admin_edit_user',user_id=member.id) }}">{{ member.first_name }} {{ member.last_name }}<small>{{ member|family_state }}</small></a><form method="post" action="{{ url_for('family.unlink',user_id=user.id,key=member.link_uuid) }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><button class="admin-button secondary compact">Terminer le rattachement</button></form></div>{% else %}<p class="form-help">Aucun membre rattaché.</p>{% endfor %}</section>
     <section class="admin-section"><h2>Création et bienvenue</h2><p>{% if user.created_at %}Créé le {{ user.created_at|paris_datetime }}{% endif %} · {% if user.created_source in ('admin','moderator','kiosk') %}Origine : {{ creation_sources[user.created_source] }}{% else %}Création antérieure au suivi de provenance{% endif %}</p><p>Dernier e-mail : {{ user.welcome_sent_at|paris_datetime if user.welcome_sent_at else 'aucun' }} · {{ user.welcome_status or 'non envoyé' }}</p><form method="post" action="{{ url_for('evolution.resend_welcome',user_id=user.id) }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="confirmation" value="ENVOYER"><button class="admin-button secondary" {% if not user.email or not smtp_ready %}disabled{% endif %} onclick="return confirm('Renvoyer l’e-mail de bienvenue et le QR Code ?')">Renvoyer l’e-mail de bienvenue / QR Code</button></form></section>
     <section class="admin-section"><h2>Formations et habilitations</h2>{% for grant in user_grants %}<article class="authorization-card"><h3>{{ grant.name }}</h3><p><strong>{{ grant.state }}</strong>{% if grant.expires_on %} · échéance {{ grant.expires_on|date_fr }}{% endif %}</p><p>Formation effectuée le {{ grant.performed_on|date_fr }} · validée par {{ grant.validated_by }}</p>{% if grant.revoked_at %}<p>Révoquée le {{ grant.revoked_at|paris_datetime }} · accès {{ {'admin':'Administrateur','moderator':'Modérateur'}.get(grant.revoked_by,'non renseigné') }} · Motif : {{ grant.revoked_reason }}</p>{% endif %}</article>{% else %}<p>Aucune formation enregistrée.</p>{% endfor %}</section>
     <section class="danger-zone" aria-labelledby="delete-title">

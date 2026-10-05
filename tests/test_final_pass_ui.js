@@ -82,12 +82,12 @@ async function check(name,fn){await fn();checks++;console.log('OK '+name);}
      assert(await tab.evaluate(el=>el.getBoundingClientRect().left-el.parentElement.getBoundingClientRect().left>=10));
      assert.notEqual(await tab.evaluate(el=>getComputedStyle(el).boxShadow),'none');
     });
-    await check(name+' public receipt masks contacts and locks session',async()=>{
-     await page.goto(base+detail+'/reserver');await page.getByRole('radio',{name:'Je suis visiteur'}).check();
-     for(const [key,value] of Object.entries({first_name:'Camille '+name,last_name:'EXEMPLE',birth_year:'2000',email:name.toLowerCase()+'@example.invalid',phone:'+330600000000'}))await page.locator('[name="'+key+'"]').fill(value);
-     await page.locator('[name="consent"]').check();await Promise.all([page.waitForNavigation(),page.getByRole('button',{name:'Enregistrer la demande'}).click()]);
-     assert(await page.getByRole('heading',{name:'Votre demande est enregistrée.'}).count());assert(await page.getByText('En attente de confirmation',{exact:true}).count());
-     assert(!await page.getByText(name.toLowerCase()+'@example.invalid',{exact:true}).count());
+    await check(name+' public identity challenge replaces companion form and locks session',async()=>{
+     await page.goto(base+detail+'/reserver');
+     assert(await page.getByRole('heading',{name:'Identifier mon compte'}).count());
+     assert.equal(await page.locator('[name="public_id"]').count(),1);
+     assert.equal(await page.locator('[name="contact"]').count(),1);
+     assert.equal(await page.locator('[name="companion_first_name"]').count(),0);
      await page.goto(base+'/admin/usagers');assert(page.url().includes('/admin/connexion'));
     });
     await check(name+' no JS exceptions or external request',async()=>{assert.deepEqual(errors,[]);assert.deepEqual(external,[]);});

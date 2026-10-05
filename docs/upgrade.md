@@ -1,5 +1,22 @@
 # Mettre à jour OpenFabLab
 
+## 2.7.1 → 2.8.0 stable, schéma 14 → 15
+
+La migration est additive et transactionnelle. Aucune animation, réservation passée, statistique, fiche usager ou facture OpenFabLab n'est supprimée ni réinterprétée. L'ancien mécanisme d'accompagnateur reste lisible pour l'historique ; les nouvelles demandes utilisent les comptes rattachés. Une migration d'une copie réelle puis le déploiement 2.8.0 ont été validés au FougèresLab ; chaque structure doit néanmoins vérifier sa propre installation.
+
+1. Relever version 2.7.1/schéma 14, montages, fichiers privés, configuration et compteurs métier. Vérifier intégrité, clés étrangères et espace disque ; conserver le runtime/image 2.7.1.
+2. Vérifier les empreintes des ZIP 2.8.0, préparer le runtime puis essayer la migration sur une copie privée isolée, jamais sur l'unique base réelle. Voir [le guide](candidate-2.8-guide.md).
+3. Arrêter proprement le service avant la migration réelle. Créer une sauvegarde **PRE 14** complète et cohérente : SQLite, fichiers privés, PIN dérivés, clés/secrets, réglages, branding et configuration externe. Calculer les empreintes et conserver cette PRE après la bascule. La copie automatique dans `migration-backups/` ne la remplace pas.
+4. Installer uniquement le nouveau runtime en conservant le persistant réel. L'initialisation normale applique 14 → 15 ; ne pas forcer `user_version`, réinitialiser la base ou rejouer une migration historique. Les protections d'une copie de test ne doivent pas remplacer la configuration réelle.
+5. Avant réouverture, contrôler schéma 15, `integrity_check = ok`, zéro erreur FK, données anciennes/compteurs, volumes, branding, droits et HTTP/version. Vérifier les seuils/coordonnées et SMTP sans créer de fausse réservation réelle.
+6. Réouvrir le service puis créer une sauvegarde **POST 15** distincte. Après réouverture ou toute nouvelle écriture, **aucun rollback automatique** vers la PRE : préserver l'état courant et décider explicitement d'une reprise.
+
+Un retour avant réouverture exige le runtime 2.7.1 **avec la PRE 14 et ses fichiers privés correspondants**, service arrêté. **Ne jamais lancer 2.7.1 sur la base 15.**
+
+Le plugin **2.8.0** est mis à jour séparément et devient un relais HTTPS vers OpenFabLab ; le plugin 2.7 ne traite pas les nouvelles demandes familiales. Vérifier la nouvelle URL OpenFabLab et le secret partagé, puis les environnements Test/Normal. Le nettoyage du stockage historique WordPress est une opération volontaire distincte, avec sauvegarde, jamais un préalable automatique ni une suppression de données OpenFabLab. S'il existe des réservations WordPress actives, arrêter et préparer leur traitement avant tout nettoyage. Voir [le guide WordPress](wordpress.md).
+
+Les procédures ci-dessous concernent les anciennes versions.
+
 ## 2.7.0 → 2.7.1
 
 SQLite reste au **schéma 14** et Reservations au **2.7.0**. L’initialisation normalise les ordres des catégories et initialise l’ordre des habilitations dans la configuration existante. Elle ajoute l’option de demandes d’animations depuis la borne, désactivée par défaut, et remplace une fois l’ancienne cadence de deux minutes par 1,5 minute ; les autres intervalles personnalisés sont préservés. Elle ne migre pas les données métier, ne remplace pas les ressources privées et ne modifie pas les PIN ou les secrets. Les nouvelles ressources et catégories restent configurées par la structure, sans valeurs institutionnelles imposées. Les demandes publiques utilisent l’outbox existante, sans nouvelle table.

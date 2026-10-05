@@ -5,23 +5,24 @@
 {% include '_admin_nav.html' %}{% include '_settings_nav.html' %}
 <form class="admin-form" method="post">{{ csrf(evolution_csrf,'preferences') }}
 <section class="form-section"><h2>Inscription et bienvenue</h2>
-{{ check('self_enrollment_enabled','Autoriser « Créer un compte » dans le bas de la borne',enrollment) }}
+{{ check('self_enrollment_enabled','Autoriser « Créer un compte » dans l’accès rapide public',enrollment) }}
 {{ check('tablet_reservations_enabled','Autoriser la réservation d’animations depuis la borne',tablet_reservations_enabled) }}
-<p class="form-help">Animations uniquement. La borne conserve une demande même sans Internet, en attente de confirmation. Le moteur WordPress configuré reste la référence pour les places et les listes d’attente.</p>
+<p class="form-help">Animations uniquement. Le moteur OpenFabLab confirme tout le groupe ou l’inscrit ensemble en liste d’attente. Une place par personne, avec ou sans WordPress. La borne doit pouvoir joindre le serveur local, mais Internet n’est pas nécessaire.</p>
 <p>Ce parcours verrouille la session de l’équipe ; aucune fonction administrative n’y est accessible.</p>
 {{ check('welcome_default','Présélectionner l’e-mail de bienvenue lorsqu’une adresse valide est renseignée',welcome_default) }}
 <p>Envoi facultatif, avec consentement de la personne. <a href="{{ url_for('admin_settings_structure') }}#smtp">Configurer SMTP</a>.</p>
 {{ field('welcome_subject','Sujet de bienvenue',welcome_subject,required=true) }}
 <label class="form-field"><span>Message de bienvenue (texte brut)</span><textarea name="welcome_body" rows="8" maxlength="8000" required>{{ welcome_body }}</textarea></label>
-<p>Variables : {% raw %}{{structure_name}}, {{first_name}}, {{last_name}}, {{public_id}}, {{contact}}, {{website}}{% endraw %}. Le QR Code est intégré et joint automatiquement.</p>
+<p>Variables : {% raw %}{{structure_name}}, {{first_name}}, {{last_name}}, {{public_id}}, {{contact}}, {{website}}{% endraw %}. Une seule pièce jointe QR Code est ajoutée automatiquement.</p>
 <button class="admin-button primary compact">Enregistrer</button></section></form>
+{% include '_family_settings.html' %}
 <section class="category-section"><h2>Catégories</h2><p class="form-help">Une catégorie inactive reste conservée dans l’historique mais n’est plus proposée pour les nouvelles fiches.</p>
 <p data-order-status role="status" aria-live="polite"></p>
 <div class="category-cards" data-order-list data-order-url="{{ url_for('evolution.save_order',kind='categories') }}" data-csrf="{{ evolution_csrf }}">
-{% for item in entries %}<section class="admin-section category-card" data-order-key="{{ item.category_key }}">{{ order_controls(item.name) }}<form method="post" class="compact-form category-form">{{ csrf(evolution_csrf,'category') }}<input name="key" type="hidden" value="{{ item.category_key }}">
+{% for item in entries %}<section class="admin-section category-card" data-order-key="{{ item.category_key }}"><form method="post" class="compact-form category-form">{{ csrf(evolution_csrf,'category') }}<input name="key" type="hidden" value="{{ item.category_key }}">
 {{ field('name','Nom',item.name,required=true) }}{{ field('color','Couleur',item.color,'color') }}
 {{ check('active','Activer cette catégorie',item.active) }}{{ check('default','Catégorie par défaut',item.is_default) }}
-<button class="admin-button secondary compact">Enregistrer</button></form>
+<button class="admin-button secondary compact">Enregistrer</button>{{ order_controls(item.name) }}</form>
 {% if not item.is_default %}<details class="category-danger"><summary>Supprimer ou réaffecter cette catégorie</summary><form method="post" class="danger-form">{{ csrf(evolution_csrf,'remove_category') }}<input type="hidden" name="key" value="{{ item.category_key }}">
 <p>Si elle est utilisée, les fiches sont réaffectées et la catégorie est archivée pour préserver l’historique.</p><label class="form-field">Remplacement<select name="replacement"><option value="">Aucun (uniquement si jamais utilisée)</option>{% for other in entries if other.active and other.category_key!=item.category_key %}<option value="{{ other.category_key }}">{{ other.name }}</option>{% endfor %}</select></label>
 {{ field('confirmation','Saisir SUPPRIMER') }}<button class="admin-button danger compact">Confirmer</button></form></details>{% endif %}</section>{% endfor %}

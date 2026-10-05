@@ -158,8 +158,10 @@ class CandidateRevisionTests(unittest.TestCase):
     def test_footer_only_account_link_and_optional_activation(self):
         self.configure(self_enrollment_enabled='1')
         page=self.client.get('/').get_data(as_text=True)
-        self.assertEqual(page.count('>Créer un compte</a>'),1)
-        self.assertIn('Créer un compte',page.split('<footer')[1])
+        self.assertEqual(page.count('>Créer un compte</a>'),0)
+        self.assertNotIn('Créer un compte',page.split('<footer')[1])
+        with self.client.session_transaction() as s:s.clear()
+        self.assertIn('Créer un compte',self.client.get('/admin/connexion').get_data(as_text=True))
         self.assertNotIn('Créer un compte',page.split('<footer')[0])
         self.configure(self_enrollment_enabled='0')
         self.assertNotIn('>Créer un compte</a>',self.client.get('/').get_data(as_text=True))

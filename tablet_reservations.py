@@ -1,8 +1,7 @@
-"""Private durable kiosk requests; WordPress remains the only booking authority.
+"""Current local catalogue plus read-only compatibility for historical receipts.
 
-The kiosk never performs a network action or promises a place. Requests live in
-the existing SQLite outbox. The existing synchronizer submits them to the same
-public WordPress booking service and imports its canonical reservation events.
+New requests redirect to the common OpenFabLab family engine. Protocol-2 outbox
+helpers remain for historical reading/tests, but schema 15 never replays them.
 """
 import hashlib
 import hmac
@@ -20,22 +19,22 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 from evolution_routes import require_csrf, require_team
 from reservations_sync import booking_capacity_used, load_sync_secret, normalize_email, normalize_phone
 
-STATES = {'pending':'En attente de confirmation', 'sending':'En attente de confirmation',
+STATES = {'review':'Demande familiale à traiter par l’équipe', 'pending':'En attente de confirmation', 'sending':'En attente de confirmation',
           'uncertain':'À vérifier par l’équipe', 'confirmed':'Confirmée',
           'waitlisted':'Liste d’attente', 'rejected':'Demande refusée', 'cancelled':'Demande annulée'}
-ACTIVE = {'pending', 'sending', 'uncertain', 'confirmed', 'waitlisted'}
+ACTIVE = {'review', 'pending', 'sending', 'uncertain', 'confirmed', 'waitlisted'}
 
 
 def timestamp():
     return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
 
-def local_catalogue(database, settings, current=None):
+def local_catalogue(database, settings, current=None, environment='production'):
     """Read-only local projection; availability is indicative, never a promise."""
     current = current or datetime.now(timezone.utc)
     zone = ZoneInfo(settings(database, 'structure_timezone', 'Europe/Paris'))
     result = []
-    for row in database.execute('SELECT s.*,c.* FROM fablab_services s JOIN animation_reservation_config c ON c.service_id=s.id WHERE s.service_type=\'animation\' AND c.enabled=1 AND c.environment=\'production\' AND s.service_date>=? ORDER BY s.service_date,s.start_time LIMIT 100', (current.astimezone(zone).date().isoformat(),)):
+    for row in database.execute('SELECT s.*,c.* FROM fablab_services s JOIN animation_reservation_config c ON c.service_id=s.id WHERE s.service_type=\'animation\' AND c.enabled=1 AND c.environment=? AND s.service_date>=? ORDER BY s.service_date,s.start_time LIMIT 100', (environment,current.astimezone(zone).date().isoformat())):
         item = dict(row)
         if not row['start_time'] or not row['end_time']:
             continue
@@ -136,6 +135,8 @@ def reconcile_requests(database, environment):
     """
     for row in requests_for(database):
         payload = row['payload']; data = payload['request']
+        if payload['state']=='review':
+            continue  # Protocol 2 cannot reconcile an arbitrary family group.
         if row['environment'] != environment or payload['state'] not in ACTIVE:
             continue
         if payload.get('booking_uuid'):
@@ -167,6 +168,8 @@ events, otherwise left for the team. Transport failure before this step leaves
 the durable request pending. WP HTTP 409 is a business refusal, not a retry.
 """
     from runtime_policy import external_allowed
+    if database.execute('PRAGMA user_version').fetchone()[0]>=15:
+        return  # Historical requests stay readable; never replay old companions.
     path=database.execute('PRAGMA database_list').fetchone()[2]
     if not external_allowed(path):
         return
@@ -175,6 +178,8 @@ the durable request pending. WP HTTP 409 is a business refusal, not a retry.
         if row['environment'] != environment or row['sent_at'] is not None:
             continue
         payload = row['payload']; data = payload['request']
+        if payload['state']=='review':
+            continue  # Never split/send an unsupported atomic group.
         matches = matching_bookings(database,data)
         if matches:
             payload['booking_uuid'] = matches[0]['external_uuid']
@@ -249,59 +254,8 @@ def register(application, api):
 
     @bp.route('/animations/<int:service_id>/reserver',methods=['GET','POST'])
     def reserve(service_id):
-        db = a.get_database(); item = animation(service_id)
-        errors=[]
-        if request.method=='GET':
-            session['tablet_form']={'token':secrets.token_urlsafe(32),'started':time.time(),'service_id':service_id}
-        else:
-            require_csrf()
-            form=session.get('tablet_form',{})
-            if (form.get('service_id')!=service_id or time.time()-form.get('started',0)>900
-                    or not hmac.compare_digest(form.get('token',''),request.form.get('form_token',''))):
-                abort(400,'Formulaire expiré. Revenez aux animations.')
-            bucket=hmac.new(str(application.secret_key).encode(),(request.remote_addr or '').encode(),hashlib.sha256).hexdigest()
-            since=(datetime.now(timezone.utc)-timedelta(minutes=10)).isoformat()
-            if db.execute("SELECT COUNT(*) FROM security_events WHERE event_type='tablet_request_attempt' AND created_at>? AND details_json=?",(since,json.dumps({'bucket':bucket}))).fetchone()[0]>=5:
-                abort(429)
-            db.execute('INSERT INTO security_events(event_type,created_at,details_json) VALUES(?,?,?)',('tablet_request_attempt',timestamp(),json.dumps({'bucket':bucket})));db.commit()
-            try:
-                if request.form.get('website') or request.form.get('consent')!='1':
-                    raise ValueError('Acceptez l’utilisation de ces informations pour gérer votre demande.')
-                if not a.read_setting(db,'reservation_wordpress_url','') or not load_sync_secret(application.config['DATABASE']):
-                    raise ValueError('Le service de réservation n’est pas configuré. Adressez-vous à l’équipe.')
-                data=person(request.form)
-                kind=request.form.get('participant_kind')
-                if kind not in ('user','visitor') or (kind=='user' and not data['public_id']) or (kind=='visitor' and data['public_id']):
-                    raise ValueError('Choisissez Usager ou Visiteur et renseignez votre identifiant si nécessaire.')
-                if kind=='user':
-                    user=db.execute('SELECT * FROM users WHERE public_id=? AND active=1',(data['public_id'],)).fetchone()
-                    if not user or not (normalize_email(user['email'])==normalize_email(data['email']) or (user['phone'] and normalize_phone(user['phone_country_code'],user['phone'])==normalize_phone('',data['phone']))):
-                        raise ValueError('Identifiant ou coordonnées non concordants. Adressez-vous à l’équipe.')
-                if item['audience']=='registered' and kind!='user':
-                    raise ValueError('Cette animation est réservée aux usagers inscrits.')
-                data.update(environment=item['environment'],service_id=service_id)
-                if item['booking_mode']=='slots':
-                    slot=request.form.get('slot_uuid','')
-                    if not any(s['slot_uuid']==slot for s in item['slots']):
-                        raise ValueError('Choisissez un créneau ouvert.')
-                    data['slot_uuid']=slot
-                if request.form.get('with_companion')=='1':
-                    data['companion']=person(request.form,'companion_')
-                db.execute('BEGIN IMMEDIATE')
-                if matching_bookings(db,data) or any(row['payload']['state'] in ACTIVE and row['environment']==data['environment'] and (row['payload']['request'].get('slot_uuid') or '')==(data.get('slot_uuid') or '') and same_person(row['payload']['request'],data) for row in requests_for(db,service_id)):
-                    raise ValueError('Une inscription ou une demande existe déjà pour cette personne.')
-                key=str(uuid4())
-                payload={'state':'pending','request':data,'title':item['title'],'date':item['date'],'hours':item['hours']}
-                if item['booking_mode']=='slots':
-                    payload['hours']=next(s['label'] for s in item['slots'] if s['slot_uuid']==data['slot_uuid'])
-                db.execute("INSERT INTO reservation_outbox(environment,command_type,entity_key,payload_json,created_at) VALUES(?,'public_request',?,?,?)",(item['environment'],key,json.dumps(payload,ensure_ascii=False),timestamp()))
-                db.commit()
-                session.pop('tablet_form',None)
-                session['tablet_receipt']={'key':key,'until':time.time()+900}
-                return redirect(url_for('tablet_reservations.done'))
-            except ValueError as error:
-                db.rollback();errors.append(str(error))
-        return render_template('tablet_reserve.html',animation=item,errors=errors,form_token=session.get('tablet_form',{}).get('token',''),values=request.form),400 if errors else 200
+        animation(service_id)
+        return redirect(url_for('family.booking',service_id=service_id),code=303)
 
     @bp.get('/animations/demande')
     def done():
@@ -318,7 +272,7 @@ def register(application, api):
         require_csrf();db=a.get_database()
         row=next((row for row in requests_for(db,service_id) if row['entity_key']==key),None)
         if not row:abort(404)
-        if row['payload']['state']!='pending':abort(409)
+        if row['payload']['state'] not in ('pending','review'):abort(409)
         if not save_state(db,row,row['payload'],'cancelled',done=True):
             abort(409)  # The worker may already have claimed it for transmission.
         return redirect(url_for('admin_animation_bookings',service_id=service_id))

@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: OpenFabLab Reservations
- * Description: Réservations publiques d'animations synchronisées avec OpenFabLab.
- * Version: 2.7.0
+ * Description: Réservations publiques via le moteur familial OpenFabLab.
+ * Version: 2.8.0
  * Requires PHP: 8.1
  * License: MIT
  * Text Domain: openfablab-reservations
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('OPENFABLAB_RES_VERSION', '2.7.0');
+define('OPENFABLAB_RES_VERSION', '2.8.0');
 // Schema revision also upgrades an already installed 2.5.0 corrective build.
 define('OPENFABLAB_RES_SCHEMA_VERSION', '2.6.0');
 define('OPENFABLAB_RES_FILE', __FILE__);
@@ -23,6 +23,10 @@ require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-slots.php';
 require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-emails.php';
 require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-bookings.php';
 require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-api.php';
+require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-family-gateway.php';
+require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-legacy-reset.php';
+add_action('admin_post_openfablab_legacy_backup', ['OpenFabLab_Legacy_Reset', 'backup']);
+add_action('admin_post_openfablab_legacy_reset', ['OpenFabLab_Legacy_Reset', 'reset']);
 require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-test-maintenance.php';
 require_once OPENFABLAB_RES_PATH . 'includes/class-openfablab-reconciliation.php';
 add_action('admin_post_openfablab_catalog_maintenance', ['OpenFabLab_Reconciliation', 'admin_action']);
@@ -61,11 +65,12 @@ function openfablab_res_shortcode($attributes) {
     wp_enqueue_style('openfablab-reservations', plugins_url('assets/reservations.css', __FILE__), [], $style_version);
     wp_enqueue_script('openfablab-jsqr', plugins_url('assets/jsQR-1.4.0.js', __FILE__), [], '1.4.0', true);
     // Content hashes invalidate stale forms independently of the plugin version.
-    $script_version = substr(hash_file('sha256', OPENFABLAB_RES_PATH . 'assets/reservations.js'), 0, 12);
-    wp_enqueue_script('openfablab-reservations', plugins_url('assets/reservations.js', __FILE__), ['openfablab-jsqr'], $script_version, true);
+    $script_version = substr(hash_file('sha256', OPENFABLAB_RES_PATH . 'assets/family.js'), 0, 12);
+    wp_enqueue_script('openfablab-reservations', plugins_url('assets/family.js', __FILE__), [], $script_version, true);
     wp_add_inline_script('openfablab-reservations', 'window.OpenFabLabReservations=' . wp_json_encode([
         'api' => esc_url_raw(rest_url('openfablab/v1/public/')),
         'privacy' => esc_url_raw(get_option('openfablab_res_privacy_url', '')),
+        'family' => true,
     ]) . ';', 'before');
     $id = 'openfablab-res-' . wp_generate_password(8, false, false);
     ob_start();
@@ -75,6 +80,7 @@ function openfablab_res_shortcode($attributes) {
         <div class="openfablab-status" role="status" aria-live="polite">Chargement des animations…</div>
         <div class="openfablab-animation-list"></div>
         <div class="openfablab-form-host"></div>
+        <noscript>Pour réserver sans JavaScript, contactez l’équipe ou utilisez la borne OpenFabLab.</noscript>
     </section>
     <?php
     return ob_get_clean();
@@ -119,6 +125,11 @@ function openfablab_res_admin_page() {
             update_option('openfablab_res_reply_to', sanitize_email(wp_unslash($_POST['reply_to'] ?? '')), false);
             update_option('openfablab_res_test_prefix', sanitize_text_field(wp_unslash($_POST['test_prefix'] ?? '')), false);
             update_option('openfablab_res_privacy_url', esc_url_raw(wp_unslash($_POST['privacy_url'] ?? '')), false);
+            $core = rtrim(esc_url_raw(wp_unslash($_POST['core_url'] ?? '')), '/');
+            if ($core && wp_parse_url($core, PHP_URL_SCHEME) !== 'https') {
+                wp_die('L’adresse OpenFabLab doit utiliser HTTPS.');
+            }
+            update_option('openfablab_res_core_url', $core, false);
             update_option('openfablab_res_remove_on_uninstall', isset($_POST['remove_on_uninstall']) ? '1' : '0', false);
             echo '<div class="notice notice-success"><p>Réglages enregistrés.</p></div>';
         }
@@ -160,6 +171,7 @@ function openfablab_res_admin_page() {
         'reply_to' => ['Répondre à', 'openfablab_res_reply_to', get_option('admin_email')],
         'test_prefix' => ['Préfixe des e-mails de test', 'openfablab_res_test_prefix', '[TEST OpenFabLab]'],
         'privacy_url' => ['Lien de confidentialité', 'openfablab_res_privacy_url', ''],
+        'core_url' => ['Adresse HTTPS de l’application OpenFabLab (préfixe inclus)', 'openfablab_res_core_url', ''],
     ];
     echo '<table class="form-table"><tbody>';
     foreach ($fields as $key => $field) {
@@ -169,8 +181,10 @@ function openfablab_res_admin_page() {
     echo '<label><input type="checkbox" name="remove_on_uninstall" value="1" ' . checked(get_option('openfablab_res_remove_on_uninstall'), '1', false) . '> Supprimer les données seulement lors d’une désinstallation volontaire</label>';
     submit_button('Enregistrer'); echo '</form>';
     openfablab_res_admin_shortcodes();
+    echo '<p><strong>Modèles historiques :</strong> ces courriels ne sont pas envoyés pour les nouvelles réservations familiales 2.8. Les nouvelles attentes sont confirmées par l’équipe dans OpenFabLab.</p>';
     OpenFabLab_Emails::render($email_result);
     OpenFabLab_Test_Maintenance::render($test_result);
+    OpenFabLab_Legacy_Reset::render();
     echo '</div>';
 }
 

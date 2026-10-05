@@ -507,6 +507,8 @@ def create_app(test_config=None):
     register_evolution(application, globals())
     from tablet_reservations import register as register_tablet_reservations
     register_tablet_reservations(application, globals())
+    from family_routes import register as register_family
+    register_family(application, globals())
     register_error_handlers(application)
 
     from runtime_policy import storage_guard
@@ -516,6 +518,10 @@ def create_app(test_config=None):
 
     if application.config["AUTO_CLOSURE_WORKER"]:
         start_automatic_closure_worker(application)
+    elif (not application.config.get('TESTING') and application.config.get('EXTERNAL_ACTIONS') is not False
+          and os.environ.get('OPENFABLAB_ENABLE_SCHEDULER') != '0'):
+        from family_waitlist import start_worker
+        start_worker(application,get_database,load_modules)
 
     return application
 
@@ -591,6 +597,8 @@ def close_database(_exception=None):
 def initialize_database():
     """Crée les tables et ajoute les comptes de démonstration une seule fois."""
     database = get_database()
+    from family_model import backup_before as backup_before_family
+    backup_before_family(database, current_database_path())
     backup_before_evolution(database, current_database_path())
     legacy_installation = database.execute("PRAGMA user_version").fetchone()[0] > 0
     existing_users_table = database.execute("SELECT 1 FROM sqlite_master WHERE name='users'").fetchone() is not None
@@ -816,18 +824,20 @@ def initialize_database():
         """
     )
 
-    migrate_users_schema(database)
-    migrate_sessions_schema(database)
-    migrate_billing_schema(database)
-    migrate_services_schema(database)
-    migrate_attendance_corrections_schema(database)
-    migrate_weather_snapshots_schema(database)
-    migrate_security_events_schema(database)
-    migrate_reservations_schema(database)
-    migrate_catalog_schema(database)
-    migrate_animation_slots_schema(database)
-    migrate_evolution(database, new_installation=not legacy_installation and not existing_users_table
-                      and not (current_app.config.get('TESTING') and current_app.config.get('SEED_DEMO_USERS', True)))
+    # Do not replay historical migrations against an already current database.
+    if database.execute('PRAGMA user_version').fetchone()[0] < 14:
+        migrate_users_schema(database)
+        migrate_sessions_schema(database)
+        migrate_billing_schema(database)
+        migrate_services_schema(database)
+        migrate_attendance_corrections_schema(database)
+        migrate_weather_snapshots_schema(database)
+        migrate_security_events_schema(database)
+        migrate_reservations_schema(database)
+        migrate_catalog_schema(database)
+        migrate_animation_slots_schema(database)
+        migrate_evolution(database, new_installation=not legacy_installation and not existing_users_table
+                          and not (current_app.config.get('TESTING') and current_app.config.get('SEED_DEMO_USERS', True)))
     create_statistics_triggers(database)
 
     # Existing installation settings win; only missing keys receive neutral defaults.
@@ -912,6 +922,8 @@ def initialize_database():
         )
 
     database.commit()
+    from family_model import migrate as migrate_family
+    migrate_family(database)
 
 
 def default_application_settings(_legacy_installation=False):
@@ -1037,7 +1049,7 @@ def default_application_settings(_legacy_installation=False):
         ("reservation_minimum_age", "10"),
         ("reservation_accompaniment_under_age", "15"),
         ("reservation_waitlist_enabled", "1"),
-        ("reservation_offer_hours", "12"),
+        ("reservation_offer_hours", "24"),
         ("reservation_last_offer_hours", "24"),
         ("reservation_close_minutes", "60"),
         ("reservation_reminder_one_hours", "24"),
@@ -1996,7 +2008,7 @@ def validate_user_form(form, database, current_user_id=None, public_enrollment=F
         "public_id": form.get("public_id", "").strip(),
         "first_name": normalize_first_name(form.get("first_name", "")),
         "last_name": normalize_last_name(form.get("last_name", "")),
-        "birth_year": form.get("birth_year", "").strip(),
+        "birth_year": (form.get('birth_date', '')[:4] if form.get('birth_date') else form.get("birth_year", "").strip()),
         "gender": form.get("gender", "").strip(),
         "city": form.get("city", "").strip(),
         "postal_code": form.get("postal_code", "").strip(),
@@ -2051,9 +2063,7 @@ def validate_user_form(form, database, current_user_id=None, public_enrollment=F
     if current_user_id is None and not public_enrollment:
         for key, label in (("birth_year", "L'année de naissance"),
                            ("city", "La commune"),
-                           ("nationality", "La nationalité"),
-                           ("email", "L'adresse e-mail"),
-                           ("phone", "Le numéro de téléphone")):
+                           ("nationality", "La nationalité")):
             if not data[key]:
                 errors.append(f"{label} est obligatoire pour un nouvel usager.")
 
@@ -2096,6 +2106,8 @@ def validate_user_form(form, database, current_user_id=None, public_enrollment=F
     data["nationality"] = canonical_country_name(data["nationality"])
     data["nationality_normalized"] = normalize_nationality(data["nationality"])
 
+    from family_model import validate_form as validate_family_form
+    validate_family_form(database, form, data, errors, current_user_id, public_enrollment)
     return data, errors
 
 
@@ -5379,6 +5391,8 @@ def start_automatic_closure_worker(application):
                     collect_openlab_weather_snapshot(database, application)
                     run_automatic_backup(database, application)
                     if load_modules(database)["public_reservations"]:
+                        from family_waitlist import run as run_family_waitlist
+                        run_family_waitlist(database, application.config["DATABASE"])
                         site_url = read_setting(database, "reservation_wordpress_url")
                         secret_set = bool(load_sync_secret(application.config["DATABASE"]))
                         if site_url and secret_set:
@@ -5893,7 +5907,7 @@ def register_admin_protection(application):
         "users": {
             "admin_users_directory", "admin_add_user", "admin_edit_user", "admin_delete_user",
             "admin_user_qr", "admin_user_badge", "admin_communes_api",
-            'evolution.resend_welcome',
+            'evolution.resend_welcome', 'family.unlink',
         },
         "activities": {
             "admin_services", "admin_services_legacy", "admin_service_form",
@@ -6937,7 +6951,7 @@ def register_routes(application):
                 for key in ("minimum_age", "accompaniment_under_age", "waitlist_enabled",
                             "offer_hours", "last_offer_hours", "close_minutes",
                             "reminder_one_hours", "reminder_two_hours",
-                            "sync_interval_minutes", "wordpress_url")
+                            "sync_interval_minutes", "wordpress_url", "phone_required", "public_url")
             },
             reservation_secret_set=bool(load_sync_secret(application.config["DATABASE"])),
             reservation_sync_states=database.execute(
@@ -7029,7 +7043,7 @@ def register_routes(application):
             errors.append('La synchronisation doit être comprise entre 1 et 60 minutes, par pas de 30 secondes.')
         for key, (minimum, maximum) in limits.items():
             try:
-                value = int(request.form.get(key, ""))
+                value = int(request.form.get(key, read_setting(database,f'reservation_{key}')))
                 if not minimum <= value <= maximum:
                     raise ValueError
                 values[key] = value
@@ -7040,6 +7054,10 @@ def register_routes(application):
                     or not urllib.parse.urlparse(url).hostname):
             errors.append("L'adresse WordPress doit être une URL HTTPS valide.")
         secret = request.form.get("sync_secret", "").strip()
+        public_url=request.form.get('public_url',read_setting(database,'reservation_public_url','')).strip().rstrip('/')
+        parsed=urllib.parse.urlsplit(public_url)
+        if public_url and (parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment):
+            errors.append('L’adresse publique OpenFabLab doit être une URL HTTPS valide, sans mot de passe ni paramètres.')
         if secret and (len(secret) < 40 or not re.fullmatch(r"[A-Za-z0-9_-]+", secret)):
             errors.append("Le secret WordPress est invalide.")
         if errors:
@@ -7051,6 +7069,8 @@ def register_routes(application):
             write_setting(database, "reservation_waitlist_enabled",
                           "1" if request.form.get("waitlist_enabled") == "1" else "0")
             write_setting(database, "reservation_wordpress_url", url)
+            write_setting(database,'reservation_public_url',public_url)
+            write_setting(database,'reservation_phone_required','1' if request.form.get('phone_required')=='1' else '0')
             if secret:
                 save_sync_secret(application.config["DATABASE"], secret)
             for row in database.execute(
@@ -8255,6 +8275,8 @@ def register_routes(application):
     @application.get("/admin/animations/<int:service_id>/inscriptions")
     def admin_animation_bookings(service_id):
         database = get_database()
+        from family_waitlist import process_due, contact
+        process_due(database)
         service, config = booking_service(database, service_id)
         bookings = database.execute(
             "SELECT b.*, u.category, sl.starts_at, sl.ends_at, "
@@ -8276,6 +8298,21 @@ def register_routes(application):
         for booking in bookings:
             if booking["group_uuid"]:
                 groups.setdefault(booking["group_uuid"], []).append(booking)
+        from family_model import responsibles, age
+        for booking in bookings:
+            booking['family_new']=booking['source'].startswith('family_')
+            person=database.execute('SELECT * FROM users WHERE id=?',(booking['user_id'],)).fetchone() if booking['user_id'] else None
+            booking['exact_age']=age(person,datetime.fromisoformat(service['service_date']).date()) if person else None
+            booking['responsibles']=responsibles(database,booking['user_id']) if person else []
+            booking['group_count']=sum(b['status'] not in ('cancelled','expired','declined') for b in groups.get(booking['group_uuid'],[booking]))
+            booking['owner']=database.execute('SELECT u.id,u.first_name,u.last_name FROM family_booking_requests r LEFT JOIN users u ON u.id=r.owner_id WHERE r.group_uuid=?',(booking['group_uuid'],)).fetchone()
+            booking['family_contact']=contact(database,booking['user_id']) if person and booking['family_new'] else None
+            meta=database.execute('SELECT contact_email,contact_phone,offer_expires_at FROM family_booking_groups WHERE group_uuid=?',(booking['group_uuid'],)).fetchone()
+            booking['offer_expires_at']=meta['offer_expires_at'] if meta and booking['status']=='offer_pending' else None
+            if booking['family_new']:
+                booking['email']=meta['contact_email'] if meta else (person['email'] if person else None)
+                booking['phone']=meta['contact_phone'] if meta else (person['phone'] if person else None)
+                booking['history']=database.execute('SELECT status,created_at FROM family_booking_history WHERE group_uuid=? ORDER BY id',(booking['group_uuid'],)).fetchall()
         confirmable = {booking["external_uuid"] for booking in bookings if config is not None
                        and all(member["status"] in {"waitlisted", "offer_pending"}
                                and member["external_uuid"] not in pending
@@ -8322,6 +8359,8 @@ def register_routes(application):
             "LEFT JOIN animation_slots sl ON sl.slot_uuid=b.slot_uuid WHERE b.service_id = ? ORDER BY COALESCE(sl.starts_at,''), b.created_at", (service_id,)
         )
         for row in rows:
+            from family_waitlist import export_contact
+            row=export_contact(database,row)
             presence = booking_presence(row)
             writer.writerow([service["title"], service["service_date"], booking_reservation_status(row),
                              row["first_name"], row["last_name"], row["birth_year"] or "",
@@ -8344,7 +8383,8 @@ def register_routes(application):
             "SELECT b.*, u.category, sl.starts_at, sl.ends_at FROM animation_bookings b LEFT JOIN users u ON u.id = b.user_id "
             "LEFT JOIN animation_slots sl ON sl.slot_uuid=b.slot_uuid WHERE b.service_id = ? ORDER BY COALESCE(sl.starts_at,''), b.created_at, b.external_uuid", (service_id,)
         ).fetchall()
-        bookings = [dict(row, slot_label=slot_label(row, read_setting(database, "structure_timezone", "Europe/Paris"))) for row in bookings]
+        from family_waitlist import export_contact
+        bookings = [dict(export_contact(database,row), slot_label=slot_label(row, read_setting(database, "structure_timezone", "Europe/Paris"))) for row in bookings]
         structure, institution, main, _signature = document_brand_assets(database)
         content = generate_animation_bookings_pdf(service, config, bookings, structure,
                                                   {r['category_key']:r['name'] for r in categories(database,True)}, main, institution)
@@ -8377,6 +8417,15 @@ def register_routes(application):
         if not pin_csrf_valid():
             abort(400)
         database = get_database()
+        current=database.execute('SELECT source FROM animation_bookings WHERE service_id=? AND external_uuid=?',(service_id,booking_uuid)).fetchone()
+        if current and current['source'].startswith('family_'):
+            from family_reservations import team_action
+            try:
+                team_action(database,service_id,booking_uuid,request.form.get('action',''),session.get('access_role','admin'),request.form.get('person_id'))
+                flash('Réservation mise à jour.','success')
+            except ValueError as error:
+                flash(str(error),'error')
+            return redirect(url_for('admin_animation_bookings',service_id=service_id))
         _service, config = booking_service(database, service_id)
         database.execute("BEGIN IMMEDIATE")
         booking = database.execute(
@@ -8481,67 +8530,22 @@ def register_routes(application):
     def admin_animation_booking_walkin(service_id):
         if not pin_csrf_valid():
             abort(400)
-        database = get_database()
-        service, config = booking_service(database, service_id)
-        if config is None:
-            abort(400)
-        first_name = normalize_first_name(request.form.get("first_name", ""))
-        last_name = request.form.get("last_name", "").strip().upper()
-        public_id = request.form.get("public_id", "").strip()
-        birth_year_text = request.form.get("birth_year", "").strip()
-        if not first_name or not last_name or not birth_year_text.isdigit():
-            flash("Prénom, nom et année de naissance sont nécessaires.", "error")
-            return redirect(url_for("admin_animation_bookings", service_id=service_id))
-        birth_year = int(birth_year_text)
-        if not 1900 <= birth_year <= int(service["service_date"][:4]):
-            abort(400)
-        user = database.execute(
-            "SELECT id, category FROM users WHERE public_id = ? AND active = 1", (public_id,)
-        ).fetchone() if public_id else None
-        if public_id and user is None:
-            flash("L'identifiant usager n'existe pas.", "error")
-            return redirect(url_for("admin_animation_bookings", service_id=service_id))
-        database.execute("BEGIN IMMEDIATE")
-        slot_uuid = request.form.get("slot_uuid", "") or None
-        slot = database.execute("SELECT * FROM animation_slots WHERE service_id=? AND slot_uuid=? AND active=1",
-                                (service_id, slot_uuid)).fetchone() if config["booking_mode"] == "slots" else None
-        if (config["booking_mode"] == "slots" and not slot) or (config["booking_mode"] == "whole" and slot_uuid):
-            database.rollback()
-            flash("Choisissez un créneau valide de cette animation.", "error")
-            return redirect(url_for("admin_animation_bookings", service_id=service_id))
-        active = booking_capacity_used(database, service_id, slot_uuid)
-        override = session.get("access_role") == "admin" and request.form.get("capacity_override") == "1"
-        if active >= (slot["capacity"] if slot else config["capacity"]) and not override:
-            database.rollback()
-            flash("La capacité est atteinte. Seul l'administrateur peut la dépasser explicitement.", "error")
-            return redirect(url_for("admin_animation_bookings", service_id=service_id))
-        environment = config["environment"]
-        booking_uuid = str(uuid4())
-        now = utc_now_iso()
-        email = request.form.get("email", "").strip()
-        phone = request.form.get("phone", "").strip()
-        database.execute(
-            "INSERT INTO animation_bookings (external_uuid, service_id, environment, first_name, "
-            "last_name, birth_year, email, phone, status, link_status, public_id, user_id, "
-            "source, is_present, created_at, updated_at, slot_uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "
-            "'confirmed', ?, ?, ?, 'walkin', 1, ?, ?, ?)",
-            (booking_uuid, service_id, environment, first_name, last_name, birth_year,
-             email, phone, "manual" if user else "visitor", public_id or None,
-             user["id"] if user else None, now, now, slot_uuid),
-        )
-        enqueue_booking_command(database, environment, booking_uuid, "walkin",
-                                service_id=service_id, first_name=first_name,
-                                last_name=last_name, birth_year=birth_year, email=email,
-                                phone=phone, public_id=public_id or None,
-                                capacity_override=override, slot_uuid=slot_uuid)
-        database.execute(
-            "INSERT INTO reservation_actions (booking_uuid, action, actor_role, created_at) VALUES (?, 'walkin', ?, ?)",
-            (booking_uuid, session.get("access_role", "admin"), now),
-        )
-        update_booking_presence_total(database, service_id)
-        database.commit()
-        flash("Participant sur place ajouté ; la transmission vers WordPress est en attente.", "success")
-        return redirect(url_for("admin_animation_bookings", service_id=service_id))
+        database=get_database()
+        from family_reservations import reserve
+        selected=request.form.getlist('person_ids')
+        if not selected and request.form.get('public_id'):
+            found=database.execute('SELECT id FROM users WHERE public_id=? AND active=1',(request.form['public_id'],)).fetchone()
+            selected=[found['id']] if found else []
+        try:
+            if not selected:
+                raise ValueError('Sélectionnez les comptes usagers des participants. Chaque personne doit avoir sa propre fiche.')
+            config=database.execute('SELECT environment FROM animation_reservation_config WHERE service_id=?',(service_id,)).fetchone()
+            value=reserve(database,int(selected[0]),selected,service_id,request.form.get('slot_uuid') or None,
+                          secrets.token_urlsafe(32),config['environment'] if config else 'production','administration',True)
+            flash('Groupe confirmé.' if value['status']=='confirmed' else 'Tout le groupe est en liste d’attente.','success')
+        except ValueError as error:
+            database.rollback();flash(str(error),'error')
+        return redirect(url_for('admin_animation_bookings',service_id=service_id))
 
     @application.get("/admin/activites/<int:service_id>/calendrier.ics")
     def admin_service_calendar_legacy(service_id):
@@ -10175,6 +10179,8 @@ def register_routes(application):
             )
             source = session.get('access_role') or 'admin'
             database.execute('UPDATE users SET created_source=?,created_by_role=? WHERE id=?', (source,source,cursor.lastrowid))
+            from family_model import apply_details
+            apply_details(database,cursor.lastrowid,user_data)
             database.commit()
             from evolution_routes import after_creation
             after_creation(__import__('types').SimpleNamespace(**globals()),database,cursor.lastrowid,request.form.get('send_welcome')=='1')
@@ -10182,7 +10188,7 @@ def register_routes(application):
                 f"L'usager {user_data['first_name']} {user_data['last_name']} a été créé avec l'identifiant {user_data['public_id']}.",
                 "success",
             )
-        except sqlite3.Error:
+        except (sqlite3.Error, ValueError):
             database.rollback()
             application.logger.exception("Erreur lors de la création d'un usager")
             flash("L'usager n'a pas pu être créé. Merci de réessayer.", "error")
@@ -10262,12 +10268,14 @@ def register_routes(application):
                     user_id,
                 ),
             )
+            from family_model import apply_details
+            apply_details(database,user_id,user_data)
             database.commit()
             flash(
                 f"La fiche de {user_data['first_name']} {user_data['last_name']} a été mise à jour.",
                 "success",
             )
-        except sqlite3.Error:
+        except (sqlite3.Error, ValueError):
             database.rollback()
             application.logger.exception("Erreur lors de la modification d'un usager")
             flash("La fiche n'a pas pu être modifiée. Merci de réessayer.", "error")
