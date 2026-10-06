@@ -138,7 +138,7 @@ class PrivacyResourceTests(unittest.TestCase):
             self.assertEqual(settings['dpo'],'Service historique fictif');self.assertEqual(settings['dpo_email'],'legacy@example.invalid')
             for key in RESOURCE_USAGE_KEYS:self.assertTrue(settings[key])
             self.assertEqual(before,{table:[tuple(r) for r in db.execute('SELECT * FROM '+table)] for table in tables})
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],16)
             self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
             self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
         self.assertEqual(before_files,{p.name:p.read_bytes() for p in self.branding.iterdir()})

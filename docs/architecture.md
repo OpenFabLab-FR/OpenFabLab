@@ -1,8 +1,8 @@
 # Architecture
 
-## Moteur commun 2.8.0
+## Moteur commun 2.8.1 — version stable
 
-`family_model.py` : naissance, seuils, rattachements privés et migration 15. `family_reservations.py` : moteur unique transactionnel, une personne réelle par ligne/place, demande idempotente et groupe entier confirmé/attente. `family_routes.py` et `family_reservation_routes.py` : interface progressive et API privée signée. WordPress 2.8 est un relais HTTPS vers cette API, sans copie d'annuaire ni seconde autorité de capacité. Le protocole 2 historique est refusé avant export/rejeu sur le schéma 15. Les anciennes données restent lisibles.
+`family_model.py` : naissance, seuils, rattachements privés et migrations additives 15 puis 16. `family_reservations.py` : moteur unique transactionnel, une personne réelle par ligne/place, demande idempotente et groupe entier confirmé/attente. `family_routes.py` et `family_reservation_routes.py` : interface progressive et routes historiques conservées. `outbound_actions.py` et `outbound_sync.py` : journal atomique et échanges HTTPS initiés seulement par OpenFabLab vers WordPress, protocole 4. Aucun annuaire global ni seconde autorité de capacité ; aucune adresse entrante du NAS requise. Voir [le relais 2.8.1](outbound-2.8.1.md). Les anciennes données restent lisibles.
 
 `calendar_visibility` ne touche pas aux données métier. Les backups privés incluent relations/naissance, hors profils publics. Voir [conception 2.8](families-2.8.md). La description du protocole sortant ci-dessous est historique.
 
@@ -16,7 +16,7 @@ privées et les environnements Test bloquent les envois réels.
 
 - `app.py` : application Flask, routes, droits, réglages et initialisation/migrations SQLite.
 - `animation_slots.py` : génération de créneaux, identifiants stables, validations et synthèses.
-- `reservations_sync.py` : contrôles de liaison/capabilities et compatibilité historique. Les nouvelles réservations 2.8 viennent par l'API HTTPS familiale, pas par l'import d'une seconde autorité de capacité.
+- `reservations_sync.py` : contrôles de liaison/capabilities et déclenchement de la relève sortante sur le schéma 16 ; aucun ancien consommateur d'événements WordPress. Le moteur reçoit des actions, jamais des décisions de capacité WordPress. Les anciennes données OpenFabLab restent lisibles indépendamment de ce transport.
 - `pin_security.py` : dérivations des PIN et récupération privée à usage unique. Aucun PIN par défaut.
 - `billing.py`, `annual_report.py`, `animation_report.py`, `calendar_export.py` : documents, bilans et exports.
 - `profile_archive.py` : profil privé de structure, distinct des données métier et des secrets.
@@ -26,9 +26,20 @@ privées et les environnements Test bloquent les envois réels.
 - `welcome_mail.py` : SMTP natif optionnel ; credentials séparés de SQLite.
 - `resource_booking.py`, `fablab_calendar.py` : ressources, habilitations, transitions et projection du calendrier local.
 - `templates/`, `static/`, `badge_templates/` : interface, ressources redistribuables et badge neutre.
-- `wordpress/openfablab-reservations/` : relais public facultatif vers OpenFabLab ; ancien stockage, e-mails et maintenance conservés pour l'historique et le nettoyage protégé.
+- `wordpress/openfablab-reservations/` : relais public facultatif vers OpenFabLab ; catalogue et file durable uniquement ; aucune classe de capacité, annuaire, e-mail ni tâche de décision WordPress.
 
-SQLite stocke les données métier et les réglages non secrets. Clé Flask, dérivations PIN, secret HMAC, webhook et images privées restent dans le dossier persistant de l'installation. Le plugin possède son propre stockage privé WordPress et les options d'e-mails propres au site. Les exports SQLite ne sont donc pas des sauvegardes complètes des credentials.
+SQLite stocke les données métier et les réglages non secrets. Clé Flask, dérivations PIN, secret HMAC, webhook et images privées restent dans le dossier persistant de l'installation. Le plugin possède son stockage de relais et sa configuration de connexion privée dans WordPress ; il n'envoie pas les e-mails métier. Les exports SQLite ne sont donc pas des sauvegardes complètes des credentials.
+
+### Ajouts SQLite du schéma 16
+
+Aucune colonne métier existante n'est supprimée ou réinterprétée. Deux tables sont ajoutées transactionnellement :
+
+- `wordpress_action_receipts` : `environment`, `action_id`, `payload_hash`, `action_type`, `result_json`, `created_at`, `private_until`, `acknowledged_at`. Clé primaire composée de l'environnement et de l'action ; le reçu et l'effet métier partagent le même commit. Les résultats privés ont un délai d'expurgation.
+- `wordpress_relay_state` : `environment` (clé), `catalogue_at`, `catalogue_count`, `polled_at`, `results_at`, `last_error`, `pending`, `processing`, `failed`, `retrying`. Un état diagnostic par environnement, jamais une autorité de capacité.
+
+Les réglages manquants `reservation_action_interval_seconds=15` et `reservation_link_mode=auto` sont initialisés sans remplacer les valeurs existantes. Les indicateurs `reservation_outbound_ready_production` et `reservation_outbound_ready_test` attestent séparément la liaison correspondante ; une réussite Test ne valide pas les liens Normal. La version du schéma passe à 16 dans la transaction d'initialisation. Les réglages, tables et fichiers privés antérieurs restent conservés. Une seconde initialisation est idempotente.
+
+WordPress ajoute uniquement `relay_catalogues` (catalogue public et date) et `relay_actions` (dépôt, session opaque, bail, résultat chiffré, acquittement et expiration), dans le préfixe de tables configuré. La table de nonces anti-rejeu est conservée. Les cinq anciennes tables métier vides sont retirées sous verrou ; si une table contient encore des lignes, elles sont toutes conservées mais ne sont jamais lues par le nouveau relais. Les anciennes classes et routes sont supprimées du runtime ; leur couverture reste exercée séparément dans les fixtures de développement, hors ZIP.
 
 ### Référence historique 2.7 et versions précédentes
 

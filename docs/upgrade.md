@@ -1,5 +1,23 @@
 # Mettre à jour OpenFabLab
 
+## Depuis une installation prépublication déjà en 2.8.1
+
+La stable 2.8.1 inclut le correctif de suppression d'animation, validé en conditions réelles. Le schéma reste **16** : aucune nouvelle migration ni suppression automatique de données. Seule une suppression administrative explicitement confirmée retire l'animation et ses dépendances terminées ; une inscription active, une attente, une proposition, un dossier incohérent ou facturé reste protégé.
+
+Sauvegarder à froid une **PRE 16 complète**, conserver le runtime/image exact précédent et vérifier les empreintes avant de remplacer uniquement l'application. Ne pas appliquer une procédure exigeant un départ 2.8.0/schéma 15 sur une installation déjà en 16. Le plugin final 2.8.1, protocole 4/révision 2, est inchangé par ce correctif : pas de réinstallation ni de rotation de secret si ce plugin final est déjà installé. Avant réouverture, contrôler données, réglages, intégrité, clés étrangères, volumes et service. Restaurer la PRE 16 avec son runtime correspondant uniquement avant toute possibilité de nouvelles écritures ; après ouverture, préserver l'état et décider humainement d'une reprise.
+
+## 2.8.0 → 2.8.1 stable, schéma 15 → 16
+
+Tester la version sur une copie isolée et préparer une procédure propre à l'installation avant de déployer. Installer le plugin 2.8.1 (révision de relais 2), puis le moteur : l'attente du premier catalogue est normale. Les deux composants passent ensemble au protocole 4 ; conserver leurs secrets existants. Aucun accès entrant, reverse proxy ni port public OpenFabLab n'est nécessaire pour cette liaison. Voir [le flux et ses limites](outbound-2.8.1.md).
+
+1. Sauvegarder WordPress et relever version/schéma, volumes, réglages, comptes et compteurs métier. Préparer et vérifier les artefacts publics sur une copie isolée.
+2. Arrêter proprement OpenFabLab ; sauvegarder à froid **PRE 15 complète**, avec base, fichiers privés, PIN, secrets, branding, réglages et configuration externe. Vérifier intégrité/FK et hashes ; conserver le runtime 2.8.0.
+3. La migration normale ajoute deux tables techniques et les réglages manquants ; aucune purge historique. Ne pas forcer `user_version`. WordPress gère trois tables techniques : catalogue, actions/résultats et nonces anti-rejeu. Les cinq anciennes tables métier sont retirées uniquement si toutes sont vides, sous verrou ; aucune donnée non vide n'est effacée.
+4. Avant réouverture, comparer les données PRE/POST, contrôler schéma 16, intégrité/FK, santé/version, persistant et protocole 4 dans Normal/Test. Exclure les routes REST et la page personnelle du cache WordPress. Vérifier le shortcode Test explicitement.
+5. Réouvrir puis sauvegarder **POST 16**. Avant nouvelles écritures, un retour exige le runtime 2.8.0 avec **PRE 15 correspondante**, jamais le runtime ancien sur une base 16. Après écritures, aucun retour automatique destructif : préserver l'état et demander une décision humaine.
+
+La distribution publique ne contient aucune commande ni configuration propre à une installation privée. Préparer séparément sa procédure d'exploitation. Les paragraphes suivants décrivent les versions historiques, pas la configuration du relais 2.8.1.
+
 ## 2.7.1 → 2.8.0 stable, schéma 14 → 15
 
 La migration est additive et transactionnelle. Aucune animation, réservation passée, statistique, fiche usager ou facture OpenFabLab n'est supprimée ni réinterprétée. L'ancien mécanisme d'accompagnateur reste lisible pour l'historique ; les nouvelles demandes utilisent les comptes rattachés. Une migration d'une copie réelle puis le déploiement 2.8.0 ont été validés au FougèresLab ; chaque structure doit néanmoins vérifier sa propre installation.

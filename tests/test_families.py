@@ -15,7 +15,8 @@ from tests import test_app as fixtures
 from app import write_setting
 import family_model as family
 import family_reservations as engine
-from reservations_sync import save_sync_secret, _sync_environment
+from reservations_sync import save_sync_secret
+from tests.historical_reservations_sync import _sync_environment
 
 
 class FamilyTests(unittest.TestCase):
@@ -236,7 +237,7 @@ class FamilyTests(unittest.TestCase):
         self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],14)
         self.assertEqual([tuple(r) for r in self.db.execute('SELECT * FROM users ORDER BY id')],before)
         family.migrate(self.db);family.migrate(self.db)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],15)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],16)
         columns=[r['name'] for r in self.db.execute('PRAGMA table_info(users)') if r['name'] not in ('birth_date','birth_precision')]
         self.assertEqual([tuple(r) for r in self.db.execute('SELECT '+','.join(columns)+' FROM users ORDER BY id')],before)
         self.assertEqual(self.db.execute('PRAGMA integrity_check').fetchone()[0],'ok');self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])

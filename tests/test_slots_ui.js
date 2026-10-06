@@ -50,9 +50,9 @@ async function check(name,task){await task();tests++;console.log('OK '+name);}
       await check('public slots '+name+' availability and no overflow',async()=>{
         await publicPage.setViewportSize({width,height});
         await publicPage.setContent('<section class="openfablab-reservations" data-environment="test"><div class="openfablab-status"></div><div class="openfablab-animation-list"></div><div class="openfablab-form-host"></div></section>');
-        await publicPage.addStyleTag({path:path.join(root,'wordpress/openfablab-reservations/assets/reservations.css')});
+        await publicPage.addStyleTag({path:path.join(root,'tests/historical-wordpress/assets/reservations.css')});
         await publicPage.evaluate(()=>window.OpenFabLabReservations={api:'https://example.invalid/'});
-        await publicPage.addScriptTag({path:path.join(root,'wordpress/openfablab-reservations/assets/reservations.js')});
+        await publicPage.addScriptTag({path:path.join(root,'tests/historical-wordpress/assets/reservations.js')});
         await publicPage.locator('.openfablab-card button').click();
         const select=publicPage.locator('[name="slot_uuid"]');assert.equal(await select.getAttribute('required'),'');
         const options=await select.locator('option').allTextContents();assert(options[1].includes('10:00–10:20'));assert(options[2].includes('Complet · liste d’attente'));

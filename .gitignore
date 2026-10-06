@@ -70,5 +70,14 @@ playwright-report/
 .DS_Store
 ._*
 .AppleDouble/
+.AppleDesktop/
+__MACOSX/
+.LSOverride
+.Spotlight-V100/
+.Trashes/
+.TemporaryItems/
+.fseventsd/
+.VolumeIcon.icns
+.apdisk
 .idea/
 .vscode/

@@ -51,7 +51,7 @@ class SlotDatabase {
     public function insert($table,$row,$format=[]){$q=$this->execute('INSERT INTO '.$table.' ('.implode(',',array_keys($row)).') VALUES ('.implode(',',array_map(fn($v)=>$v===null?'NULL':$this->pdo->quote((string)$v),array_values($row))).')');return$q===false?false:$q->rowCount();}
     public function update($table,$row,$where){$set=[];$filters=[];foreach($row as$key=>$v)$set[]=$key.'='.($v===null?'NULL':$this->pdo->quote((string)$v));foreach($where as$key=>$v)$filters[]=$key.($v===null?' IS NULL':'='.$this->pdo->quote((string)$v));$q=$this->execute('UPDATE '.$table.' SET '.implode(',',$set).' WHERE '.implode(' AND ',$filters));return$q===false?false:$q->rowCount();}
 }
-$plugin=dirname(__DIR__).'/wordpress/openfablab-reservations/includes/';
+$plugin=__DIR__.'/historical-wordpress/includes/';
 foreach(['database','slots','emails','bookings','api']as$name)require$plugin.'class-openfablab-'.$name.'.php';
 $tests=0;$uuid=0;$mails=[];$wpdb=new SlotDatabase();
 function check($ok,$label){if(!$ok)throw new RuntimeException($label);$GLOBALS['tests']++;}

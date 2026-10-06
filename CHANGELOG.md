@@ -1,5 +1,21 @@
 # Historique public
 
+## 2.8.1 — version stable — 6 octobre 2026
+
+- Réservations WordPress par échanges HTTPS initiés uniquement par OpenFabLab : correction du parcours public qui exigeait une adresse entrante vers le NAS en 2.8.0.
+- Protocole 4 et capacité `outbound_actions_v1`, requêtes et réponses authentifiées. Les anciennes versions ne confirment pas de nouvelles demandes par un moteur de secours.
+- Catalogue public séparé de la relève légère des actions : 90 secondes et 15 secondes par défaut, relève configurable de 10 à 60 secondes.
+- File WordPress InnoDB chiffrée, reprise par bail, résultat durable ; effet métier et reçu d'idempotence dans la même transaction SQLite. WordPress ne décide jamais des places.
+- Suppression réelle des classes et routes de l'ancien moteur WordPress, de ses cron métier, e-mails, annuaire et interfaces. Le relais ne gère que catalogue, actions et nonces. Retrait verrouillé des anciennes tables uniquement si elles sont toutes vides ; les données non vides et l'historique OpenFabLab restent préservés.
+- Administration WordPress allégée : Normal prioritaire, badges et compteurs compacts, Test/diagnostic repliables, secret jamais affiché. Régénération secondaire confirmée et bloquée pendant une demande/résultat utilisable ; aucune adresse du NAS requise.
+- Liens personnels d'e-mail via une page WordPress dédiée, jeton dans le fragment, lecture sans mutation et actions explicites protégées. Les anciens liens OpenFabLab restent lisibles.
+- Schéma SQLite 15 → 16 additif : deux tables techniques et réglages, sans purge ni réinterprétation de l'historique. Familles, capacité, groupes indivisibles, FIFO, SMTP et réservations locales restent gérés par le moteur existant.
+- Suppression administrative d'une animation terminée sécurisée : retrait transactionnel des dépendances de ses inscriptions familiales annulées, expirées ou refusées ; les autres animations, comptes, passages et facturations restent intacts. Refus explicite en présence d'inscriptions actives, attente, places proposées, dossier incohérent ou facturation liée. Reçus anti-rejeu conservés.
+
+- Confidentialité et packaging renforcés : liste explicite de fichiers publics, exclusion des fichiers privés et rejet des métadonnées macOS parasites dans les sources et archives.
+
+Version corrective et d'architecture de la 2.8.0, déployée et vérifiée en conditions réelles au FougèresLab ; le dernier correctif de suppression a également été confirmé par l'exploitant. Dernière validation locale : **505 tests Python (dont 13 de suppression), 770 contrôles PHP, 622 JavaScript et 108 contrôles de suppression Chromium/WebKit**, sur neuf largeurs de 320 à 1920 px, sans erreur JavaScript ni débordement. Intégrité SQLite, clés étrangères et migration/restauration vers le schéma 16 vérifiées. Les validations antérieures WordPress/MariaDB isolé et du relais ne sont pas présentées comme de nouveaux passages du correctif. Aucun accès entrant, reverse proxy ni port public OpenFabLab n'est nécessaire pour le plugin. JavaScript est requis pour son interface publique ; utiliser **l'application et le plugin 2.8.1 ensemble**, protocole **4 / révision 2**, et lire les [instructions de mise à jour](docs/upgrade.md) avant installation. Les [résultats techniques détaillés](docs/development.md) précisent la couverture et ses limites ; cette publication ne modifie aucun service de production.
+
 ## 2.8.0 — version stable — 5 octobre 2026
 
 Version validée localement, migrée depuis la 2.7.1 puis déployée et vérifiée au FougèresLab, avec le plugin WordPress 2.8.0 relié et testé en conditions réelles.

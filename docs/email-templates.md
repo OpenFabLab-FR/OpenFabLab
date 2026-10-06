@@ -1,34 +1,13 @@
-# Modèles d'e-mails WordPress
+# E-mails et liens personnels — 2.8.1
 
-**Portée 2.8.0 :** les nouvelles confirmations, attentes, propositions, modifications et annulations utilisent le moteur SMTP natif OpenFabLab et son journal durable, pas les modèles WordPress ci-dessous. Configurer SMTP, l'adresse HTTPS publique et le délai d'acceptation dans OpenFabLab ; voir [familles et e-mails](families-2.8.md). Le message de bienvenue reste personnalisable et joint un unique QR PNG. Les anciens modèles/rappels WordPress suivants sont conservés pour l'historique, pas pour piloter les nouvelles demandes.
+Les confirmations, attentes, propositions, modifications et annulations sont envoyées par le moteur SMTP **OpenFabLab**, avec son journal durable. WordPress n'envoie plus d'e-mails de réservation et ne fournit plus de modèles ni de rappels métier indépendants. Les anciennes options peuvent subsister sans être utilisées.
 
-Dans **Réglages → OpenFabLab Reservations → Modèles d'e-mails**, personnaliser sujet/corps des six modèles : confirmation, inscription en liste d'attente, place disponible, premier rappel, deuxième rappel, confirmation d'annulation. Texte brut UTF-8, sans exécution de PHP ou HTML. Les variables inconnues sont signalées.
+Configurer SMTP, les coordonnées de la structure et les délais de proposition dans OpenFabLab. Le message de bienvenue conserve son modèle personnalisable et un QR Code unique. Voir [familles, réservations et e-mails](families-2.8.md).
 
-Les modèles et la signature commune appartiennent au site WordPress concerné, pas au serveur du FabLab. Nom/e-mail expéditeur, Répondre à, préfixe Test et lien de confidentialité restent configurables. Les valeurs distribuées sont génériques.
+En mode WordPress ou automatique avec un site configuré, les liens d'annulation et de proposition reviennent au site WordPress. Aucune URL publique NAS n'est requise et aucune redirection de secours vers le NAS n'est faite si la liaison n'est pas validée dans le bon environnement.
 
-Variables proposées dans l'interface : `{{first_name}}`, `{{last_name}}`, `{{participant_name}}`, `{{public_id}}`, `{{public_id_or_not_provided}}`, `{{animation_title}}`, `{{date}}`, `{{time}}`, `{{duration_minutes}}`, `{{slot_details}}`, `{{minimum_age}}`, `{{accompaniment_age}}`, `{{age_rule}}`, `{{cancel_url}}`, `{{offer_url}}`, `{{offer_deadline}}`, `{{signature}}`. Utiliser celles disponibles pour le modèle choisi.
+Le jeton signé, limité à son action et à son environnement, est dans le fragment du lien, absent de la requête HTTP et du Referer. Le chargement GET ne confirme ni n'annule rien. Une case de confirmation et un POST protégé déposent l'action dans le relais ; seul OpenFabLab applique la décision et l'expiration. Un clic tardif suivi d'une coupure peut être traité après l'expiration : le dépôt ne garantit pas l'acceptation.
 
-`{{public_id_or_not_provided}}` donne « non renseigné » en l'absence d'identifiant. `{{slot_details}}` donne une ligne de créneau uniquement en mode créneaux ; aucune ligne superflue pour une animation classique. La durée usager n'inclut pas le battement.
+Normal et Test restent séparés ; aucun e-mail réel en Test. Les anciens liens natifs OpenFabLab restent lisibles. Les installations sans WordPress peuvent utiliser les liens natifs avec leur propre accès contrôlé, sans ouverture réseau automatique. Voir [relève, conservation et limites](outbound-2.8.1.md).
 
-Exemple générique de confirmation :
-
-```text
-Bonjour {{first_name}} {{last_name}},
-
-Réservation confirmée : {{animation_title}}
-Date et heure : {{date}} à {{time}}
-{{slot_details}}
-Durée estimée : {{duration_minutes}} minutes
-Participant : {{participant_name}}
-Identifiant : {{public_id_or_not_provided}}
-Âge minimum : {{age_rule}}
-
-Vous ne pouvez pas venir ? Annulez ici :
-{{cancel_url}}
-
-{{signature}}
-```
-
-Prévisualiser avec les données fictives intégrées, puis envoyer un test explicite vers votre adresse d'administration si souhaité. Aucun test ne doit utiliser une réservation réelle. Le reset d'un modèle demande confirmation et remet uniquement ce modèle à sa valeur générique.
-
-Les rappels ont des textes distincts et conservent les délais de l'animation ; deuxième rappel à zéro = désactivé. Pas de rappel pour une annulation ou une simple attente. La confirmation d'annulation concerne l'annulation normale par lien public, pas la maintenance Test ni une purge technique. Les tokens ne doivent jamais être copiés dans un journal public.
+Une coupure après acceptation par SMTP peut exceptionnellement répéter un e-mail, jamais doubler une réservation. Ne copier aucun jeton, secret ou contenu privé dans un journal public.

@@ -5,6 +5,7 @@ Development environments and generated release ZIPs are deliberately outside Git
 """
 import hashlib
 import re
+import sys
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -15,6 +16,8 @@ PRIVATE_INFRA=re.compile(rb'/Users/[A-Za-z][A-Za-z0-9_.-]*/|/volume[0-9]+/(?:doc
 
 
 def check():
+    sys.path.insert(0, str(ROOT))
+    from build_openfablab import is_macos_metadata
     names=(ROOT/'PUBLIC_FILES.txt').read_text().splitlines()
     if names!=sorted(set(names)):
         raise ValueError('Public manifest must be sorted and unique')
@@ -23,6 +26,8 @@ def check():
         relative=path.relative_to(ROOT)
         if any(part in GENERATED for part in relative.parts):
             continue
+        if is_macos_metadata(relative):
+            raise ValueError('macOS metadata is not permitted in the public source tree')
         if path.is_symlink():
             raise ValueError('Symlink not permitted: '+relative.as_posix())
         if path.is_file():
@@ -30,6 +35,8 @@ def check():
     if sorted(actual)!=names:
         raise ValueError('Public manifest does not match the source tree')
     for name in names:
+        if is_macos_metadata(name):
+            raise ValueError('macOS metadata is not permitted in the public manifest')
         path=ROOT/name
         if name.endswith(FORBIDDEN_SUFFIXES):
             raise ValueError('Generated or private file in manifest: '+name)

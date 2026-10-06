@@ -160,59 +160,6 @@ def reconcile_requests(database, environment):
                 save_state(database,row,payload,state,done=True)
 
 
-def process_requests(database, client, environment):
-    """Called only by the already guarded worker, after fetching WP events.
-
-No blind replay: a sending/uncertain request is reconciled against canonical
-events, otherwise left for the team. Transport failure before this step leaves
-the durable request pending. WP HTTP 409 is a business refusal, not a retry.
-"""
-    from runtime_policy import external_allowed
-    if database.execute('PRAGMA user_version').fetchone()[0]>=15:
-        return  # Historical requests stay readable; never replay old companions.
-    path=database.execute('PRAGMA database_list').fetchone()[2]
-    if not external_allowed(path):
-        return
-    reconcile_requests(database,environment)
-    for row in requests_for(database):
-        if row['environment'] != environment or row['sent_at'] is not None:
-            continue
-        payload = row['payload']; data = payload['request']
-        if payload['state']=='review':
-            continue  # Never split/send an unsupported atomic group.
-        matches = matching_bookings(database,data)
-        if matches:
-            payload['booking_uuid'] = matches[0]['external_uuid']
-            state = 'waitlisted' if matches[0]['status']=='waitlisted' else 'confirmed'
-            save_state(database,row,payload,state,done=True)
-            continue
-        if payload['state'] in ('sending','uncertain'):
-            save_state(database,row,payload,'uncertain','Réponse non reçue : vérifier l’inscription avant toute nouvelle demande.')
-            continue
-        config = database.execute('SELECT enabled,environment FROM animation_reservation_config WHERE service_id=?',(data['service_id'],)).fetchone()
-        if not config or not config['enabled'] or config['environment'] != environment:
-            save_state(database,row,payload,'rejected','Animation indisponible.',True)
-            continue
-        # Persist before I/O: a crash cannot cause an automatic double submission.
-        if not save_state(database,row,payload,'sending'):
-            continue  # Cancelled or claimed concurrently: never submit stale data.
-        database.execute('UPDATE reservation_outbox SET attempts=attempts+1 WHERE id=?',(row['id'],));database.commit()
-        try:
-            result = client.post('/public/reserve',data)
-            if not isinstance(result,dict) or result.get('status') not in {'confirmed','waitlisted'} or result.get('count') != (2 if data.get('companion') else 1):
-                raise ValueError('Réponse de réservation non vérifiable')
-            save_state(database,row,payload,result['status'],done=True)
-        except urllib.error.HTTPError as error:
-            if error.code == 429:
-                save_state(database,row,payload,'pending','Service occupé : nouvel essai au prochain cycle.')
-            elif error.code in (400,403,404,409):
-                save_state(database,row,payload,'rejected','Demande refusée par le service de réservation. Contactez l’équipe.',True)
-            else:
-                save_state(database,row,payload,'uncertain','Réponse non reçue : vérification par l’équipe nécessaire.')
-        except (OSError, ValueError):
-            save_state(database,row,payload,'uncertain','Réponse non reçue : vérification par l’équipe nécessaire.')
-
-
 def register(application, api):
     a = SimpleNamespace(**api)
     bp = Blueprint('tablet_reservations',__name__)

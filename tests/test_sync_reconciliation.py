@@ -3,7 +3,7 @@ import json
 import unittest
 from datetime import datetime, timezone
 from tests import test_app as fixtures
-from reservations_sync import _sync_environment, enqueue_animation
+from tests.historical_reservations_sync import _sync_environment, enqueue_animation
 
 
 class SyncReconciliationTests(unittest.TestCase):

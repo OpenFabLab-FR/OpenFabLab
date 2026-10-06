@@ -31,6 +31,7 @@ def check(path, expected):
         for info in archive.infolist():
             name = info.filename.lower()
             assert not name.startswith("/") and ".." not in Path(name).parts
+            assert not application.is_macos_metadata(info.filename), "macOS metadata"
             assert not name.endswith((".db", ".sqlite", ".sqlite3", ".sql", ".openfablab-profile.zip"))
             assert not any(part in {".env", "data", "saves", "__pycache__", ".venv", "tests", "branding"} for part in Path(name).parts)
             assert not any(word in name for word in ("screenshot", "capture", "secret_key", "signature.png", "phase2_"))

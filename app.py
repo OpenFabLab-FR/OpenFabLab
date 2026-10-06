@@ -523,6 +523,11 @@ def create_app(test_config=None):
         from family_waitlist import start_worker
         start_worker(application,get_database,load_modules)
 
+    if (not application.config.get('TESTING') and application.config.get('EXTERNAL_ACTIONS') is not False
+            and os.environ.get('OPENFABLAB_ENABLE_SCHEDULER') != '0'):
+        from outbound_sync import start_worker as start_outbound_worker
+        start_outbound_worker(application,get_database,load_modules)
+
     return application
 
 
@@ -5395,7 +5400,7 @@ def start_automatic_closure_worker(application):
                         run_family_waitlist(database, application.config["DATABASE"])
                         site_url = read_setting(database, "reservation_wordpress_url")
                         secret_set = bool(load_sync_secret(application.config["DATABASE"]))
-                        if site_url and secret_set:
+                        if site_url and secret_set and database.execute('PRAGMA user_version').fetchone()[0]<16:
                             try:
                                 interval = sync_interval_seconds(read_setting(database, "reservation_sync_interval_minutes", "1.5"))
                                 last_attempt = read_setting(database, "reservation_sync_last_attempt")
@@ -5473,7 +5478,7 @@ def start_local_reservation_sync_worker(application):
                     database = get_database()
                     if load_modules(database)["public_reservations"]:
                         site_url = read_setting(database, "reservation_wordpress_url")
-                        if site_url and load_sync_secret(application.config["DATABASE"]):
+                        if site_url and load_sync_secret(application.config["DATABASE"]) and database.execute('PRAGMA user_version').fetchone()[0]<16:
                             interval = sync_interval_seconds(read_setting(database, "reservation_sync_interval_minutes", "1.5"))
                             last = read_setting(database, "reservation_sync_last_attempt")
                             due = not last or datetime.now(timezone.utc) - parse_timestamp(last) >= timedelta(seconds=interval)
@@ -6951,9 +6956,11 @@ def register_routes(application):
                 for key in ("minimum_age", "accompaniment_under_age", "waitlist_enabled",
                             "offer_hours", "last_offer_hours", "close_minutes",
                             "reminder_one_hours", "reminder_two_hours",
-                            "sync_interval_minutes", "wordpress_url", "phone_required", "public_url")
+                            "sync_interval_minutes", "wordpress_url", "phone_required", "public_url",
+                            "action_interval_seconds", "link_mode")
             },
             reservation_secret_set=bool(load_sync_secret(application.config["DATABASE"])),
+            reservation_relay_states=database.execute('SELECT * FROM wordpress_relay_state ORDER BY environment').fetchall(),
             reservation_sync_states=database.execute(
                 "SELECT e.environment, s.last_attempt_at, s.last_success_at, s.last_error_at, s.last_error, "
                 "(SELECT COUNT(*) FROM animation_bookings b WHERE b.environment = e.environment) "
@@ -7033,6 +7040,16 @@ def register_routes(application):
         }
         values = {}
         errors = []
+        action_interval=request.form.get('action_interval_seconds',read_setting(database,'reservation_action_interval_seconds','15'))
+        if not action_interval.isdigit() or not 10<=int(action_interval)<=60:
+            errors.append('La relève des demandes doit être comprise entre 10 et 60 secondes.')
+        else:
+            values['action_interval_seconds']=int(action_interval)
+        link_mode=request.form.get('link_mode',read_setting(database,'reservation_link_mode','auto'))
+        if link_mode not in ('auto','wordpress','local'):
+            errors.append('Choisissez une destination valide pour les liens personnels.')
+        else:
+            values['link_mode']=link_mode
         interval_text = request.form.get('sync_interval_minutes', '').replace(',', '.')
         try:
             interval = Decimal(interval_text)
@@ -7050,8 +7067,9 @@ def register_routes(application):
             except ValueError:
                 errors.append(f"La valeur {key} doit être comprise entre {minimum} et {maximum}.")
         url = request.form.get("wordpress_url", "").strip().rstrip("/")
-        if url and (not url.startswith("https://") or urllib.parse.urlparse(url).username
-                    or not urllib.parse.urlparse(url).hostname):
+        parsed_site=urllib.parse.urlsplit(url)
+        if url and (parsed_site.scheme!='https' or parsed_site.username or parsed_site.password
+                    or not parsed_site.hostname or parsed_site.query or parsed_site.fragment):
             errors.append("L'adresse WordPress doit être une URL HTTPS valide.")
         secret = request.form.get("sync_secret", "").strip()
         public_url=request.form.get('public_url',read_setting(database,'reservation_public_url','')).strip().rstrip('/')
@@ -7064,6 +7082,9 @@ def register_routes(application):
             for error in errors:
                 flash(error, "error")
         else:
+            if secret or url != read_setting(database,'reservation_wordpress_url',''):
+                for environment in ('production','test'):
+                    write_setting(database,'reservation_outbound_ready_'+environment,'0')
             for key, value in values.items():
                 write_setting(database, f"reservation_{key}", value)
             write_setting(database, "reservation_waitlist_enabled",
@@ -7095,7 +7116,11 @@ def register_routes(application):
             else:
                 try:
                     with RESERVATION_SYNC_LOCK:
-                        result = run_sync_cycle(database, application.config["DATABASE"], site_url)
+                        from outbound_sync import catalogue, poll
+                        result = catalogue(database, application.config['DATABASE'], site_url, force=True)
+                        if not result.get('errors'):
+                            polled = poll(database, application.config['DATABASE'], site_url)
+                            result.setdefault('errors', []).extend(polled.get('errors', []))
                     notify_sync_events(database, result)
                     if result.get("errors"):
                         reasons = "; ".join(("Test" if item["environment"] == "test" else "Normal")
@@ -8241,13 +8266,12 @@ def register_routes(application):
             return redirect(
                 url_for("admin_billing_detail", record_id=linked_billing["id"])
             )
-        enqueue_animation(database, service_id, command="delete")
-        cursor = database.execute(
-            "DELETE FROM fablab_services WHERE id = ?", (service_id,)
-        )
-        database.commit()
-        if cursor.rowcount == 0:
-            abort(404)
+        from family_reservations import delete_animation
+        try:
+            delete_animation(database, service_id)
+        except ValueError as error:
+            flash(str(error), "error")
+            return redirect(url_for("admin_service_form", service_id=service_id))
         flash("L'enregistrement a été supprimé.", "success")
         return redirect(url_for("admin_services"))
 

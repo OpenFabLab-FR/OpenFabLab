@@ -124,7 +124,7 @@ class FamilyEvolutionTests(unittest.TestCase):
                 self.assertEqual(response.status_code,200)
                 footer=re.search(r'<footer class="site-footer">(.*?)</footer>',response.get_data(as_text=True),re.S).group(1)
                 self.assertEqual(re.findall(r'<a href="([^"]+)">([^<]+)</a>',footer),[('/admin','Gestion')])
-                self.assertIn('2.8.0',footer)
+                self.assertIn('2.8.1',footer)
                 self.assertNotIn('Gestion des données',footer)
                 with self.client.session_transaction() as session:
                     self.assertEqual(session.get('access_role'),role)
@@ -170,9 +170,9 @@ class FamilyEvolutionTests(unittest.TestCase):
         self.assertNotIn('dernière synchronisation',public)
         self.f.f.login_admin()
         page=self.client.get('/admin/reglages/structure').get_data(as_text=True)
-        self.assertIn('joignable depuis WordPress',page)
+        self.assertIn('sans ouvrir d’accès public au NAS',page)
         self.assertIn('Réglages historiques conservés',page)
-        self.assertNotIn('WordPress ne se connecte jamais au NAS',page)
+        self.assertNotIn('joignable depuis WordPress',page)
 
     def test_empty_past_openlab_returns_with_presence_unless_manually_hidden(self):
         day=self.f.today-timedelta(days=14+self.f.today.weekday())

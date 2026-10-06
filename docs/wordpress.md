@@ -1,89 +1,48 @@
-# OpenFabLab Reservations 2.8.0
+# OpenFabLab Reservations 2.8.1 — version stable
 
-## Plugin facultatif, moteur commun OpenFabLab
+## Plugin facultatif, moteur commun
 
-Le plugin **2.8.0** est compatible avec l'application **2.8.0**. WordPress → HTTPS signé → OpenFabLab : l'application reste la source de vérité des animations, participants, familles/responsables, capacités, réservations et listes d'attente. Le plugin ne maintient aucun second moteur de places ni annuaire familial. La borne réserve directement sans WordPress, et sans Internet tant que le serveur local est accessible.
+Le plugin 2.8.1 utilise le **protocole 4, révision 2**, avec OpenFabLab 2.8.1 / SQLite 16. **OpenFabLab initie les échanges HTTPS vers WordPress**, pas l'inverse. Il reste l'autorité pour animations, comptes liés, participants, capacité et liste d'attente. WordPress affiche un catalogue public et conserve temporairement des demandes/actions chiffrées. Il ne décide jamais des places. La borne réserve directement sans WordPress.
 
-Chaque personne sélectionnée = une place ; un responsable lié et éligible doit participer avec un membre non autonome. Un adulte et deux enfants demandent **trois places**. S'il n'en reste que deux, tout le groupe attend : aucune confirmation partielle. E-mail valide obligatoire, téléphone selon le réglage de structure. OpenFabLab assure les propositions, réponses et expirations avec son SMTP natif. Voir [familles et liste d'attente](families-2.8.md).
+Une personne sélectionnée = une place ; un responsable rattaché éligible doit participer avec un membre non autonome. Un adulte et deux enfants demandent trois places. S'il en reste deux, le groupe entier attend. E-mail valide obligatoire, téléphone selon le réglage de structure. SMTP, propositions, réponses et expirations sont gérés par OpenFabLab. Voir [familles](families-2.8.md).
 
-### Installer et raccorder 2.8.0
+## Préparer le raccordement
 
-Sauvegarder WordPress et essayer d'abord sur une installation séparée. Installer `openfablab-reservations-2.8.0.zip` dans **Extensions → Ajouter → Téléverser**, puis activer. PHP 8.1+, JavaScript, REST et HTTPS sont nécessaires. Aucun secret n'est fourni dans le ZIP.
+Sauvegarder WordPress et OpenFabLab avant toute intervention ; essayer d'abord sur une installation séparée. Le ZIP `openfablab-reservations-2.8.1.zip` de la [release stable 2.8.1](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.1) est installable par les extensions WordPress. PHP 8.1+, OpenSSL AES-GCM, InnoDB, HTTPS, REST et JavaScript sont nécessaires. Aucun secret n'est fourni. Utiliser exclusivement ce plugin avec OpenFabLab 2.8.1 et lire [les instructions de mise à jour](upgrade.md).
 
-Dans **Réglages → OpenFabLab Reservations**, saisir l'**adresse HTTPS de l'application OpenFabLab, préfixe inclus**, par exemple `https://lab.example.invalid/stat` (exemple non fonctionnel), et le secret privé partagé avec OpenFabLab. Ne pas ajouter la route API : le plugin la compose. Vérifier certificat, accès réseau et absence de cache privé ; ne pas désactiver TLS pour contourner un problème.
+Conserver le secret partagé existant dans le plugin et dans les fichiers privés OpenFabLab. Dans OpenFabLab, renseigner l'URL HTTPS du **site WordPress**, puis vérifier la liaison dans Normal et Test. Aucun champ d'adresse du moteur n'est utilisé. Une option d'une ancienne installation peut rester comme donnée inactive, mais aucune requête ne l'utilise. **Ne pas ouvrir de port NAS ni modifier le réseau pour ce flux.**
 
-Dans OpenFabLab **Structure → Réservations publiques**, conserver la configuration du site WordPress et le secret pour les contrôles de liaison ; configurer aussi l'adresse HTTPS publique **d'OpenFabLab** pour les liens personnels et son SMTP natif. Ces deux adresses ont des fonctions différentes. Le protocole annonce `family_gateway_v1` ; les nouvelles demandes vont directement à l'API familiale. Les anciens diagnostics/options de réconciliation restent historiques, sans import de leurs réservations dans un second moteur. Le plugin 2.7 n'est pas compatible avec les nouvelles demandes familiales.
+Les deux versions doivent négocier `outbound_actions_v1`. La version stable annonce aussi `transport_only_v1` et `relay_revision: 2` ; sa révision de stockage est `2.8.1-relay2`. Un plugin 2.8.0/2.7 ne traite pas les nouvelles actions ; aucune reprise de son ancien moteur de capacité. Une installation neuve reste neutre, modules à activer par l'équipe.
 
-Placer les shortcodes sur les pages choisies par la structure :
+## Pages publiques
 
-```text
-[openfablab_reservations environment="test"]
-[openfablab_reservations environment="production"]
-```
+- Normal : `[openfablab_reservations environment="production"]`.
+- Test : `[openfablab_reservations environment="test"]`.
 
-`production` porte le libellé Normal. Test/Normal restent séparés ; les réservations Test n'envoient pas automatiquement de vrais e-mails. Tester les deux environnements avant ouverture. Sans réponse OpenFabLab, WordPress ne peut pas annoncer une confirmation.
+Le nom de la page n'indique pas l'environnement. Une page appelée « Test » avec un shortcode production reste Normal. Aucun contenu réel n'est corrigé automatiquement.
 
-### Confidentialité et ancien stockage
+Catalogue toutes les 90 secondes par défaut, demandes toutes les 15 secondes (réglage OpenFabLab entier 10–60). Le visiteur voit une demande reçue puis la décision réelle ; un rechargement reprend le suivi de sa session. Une panne réseau retarde la réponse. Un catalogue de plus de 15 minutes bloque les nouvelles demandes. Capacité indiquée provisoire, toujours recontrôlée transactionnellement par OpenFabLab.
 
-L'identifiant et une coordonnée déjà connue doivent concorder avant affichage des membres rattachés, sous autorisation courte et choix opaques. Aucun répertoire familial, date de naissance ou identifiant interne énumérable n'apparaît dans le catalogue. Cette identification ne constitue pas une preuve d'autorité parentale ni un code e-mail/SMS à usage unique. Validation et capacité sont contrôlées côté serveur.
+Le navigateur n'accède qu'au même site WordPress. Après identification validée par OpenFabLab, il reçoit des choix opaques temporaires liés au compte, jamais un annuaire public. Les familles ne sont pas énumérables par un endpoint public. Une modification publique des participants n'est pas ajoutée : l'administration conserve ses droits et contrôles.
 
-Le nettoyage historique est **volontaire, séparé et jamais automatique à l'installation** : administrateur, sauvegarde privée téléchargée, confirmation et transaction sur six tables explicitement ciblées ; options et secret conservés. **Aucune donnée passée OpenFabLab n'est purgée.** Les anciens liens/réservations propres au plugin ne sont pas repris dans sa nouvelle interface. Ne nettoyer qu'après vérification des réservations actives et sauvegarde WordPress complète. Voir [la transition](families-2.8.md) et [les essais isolés](candidate-2.8-guide.md).
+## Liens d'e-mail et caches
 
-Liaison et protocole 2.8.0 ont été validés au FougèresLab par l'exploitant. Les suites PHP/SQL locales restent simulées : vérifier votre hébergement, HTTPS et la délivrabilité SMTP.
+Le mode WordPress/automatique ramène les liens d'annulation et de proposition à la page dédiée du site. Jeton signé privé dans le fragment, retiré de l'adresse par le navigateur ; aucune donnée privée dans les journaux HTTP. GET de scanner sans mutation. Une case explicite et un POST protégé déposent l'action, ensuite appliquée par OpenFabLab. Une proposition est expirée selon l'heure de traitement du moteur, même si l'utilisateur a cliqué avant une coupure. Les anciens liens OpenFabLab restent compatibles.
 
-## Référence historique : application 2.7.1 / plugin 2.7.0
+Exclure les routes REST OpenFabLab, pages de réservation et `?openfablab_action=1` de tout cache HTML/CDN. La page dédiée n'appelle ni analytics ni thème, utilise no-store/noindex/no-referrer et une politique de contenu restrictive. Ne pas désactiver TLS ni le contrôle de session pour contourner un cache.
 
-**Tout ce qui suit documente exclusivement l'ancien couple application 2.7.1/plugin 2.7.0, pas le parcours 2.8.0.** Ne pas appliquer ses règles d'accompagnateur ou son sens réseau aux nouvelles demandes.
+## Diagnostic et sauvegardes
 
-**Plugin WordPress Reservations : version 2.7.0 inchangée, compatible avec OpenFabLab 2.7.1.** Un plugin 2.7.0 déjà en place n’a pas à être réinstallé pour mettre à jour l’application. WordPress reste facultatif pour l’ensemble du logiciel ; la fonction de demandes d’animations depuis la borne de la 2.7.1 nécessite cependant ce moteur configuré pour confirmer les inscriptions. Le dépôt local hors Internet conserve une demande en attente, jamais une place garantie. [Fonctionnement de la borne](corrections-2.7.1.md).
+Le panneau distingue catalogue reçu, dernière relève et dernier résultat pour Normal/Test. Les compteurs techniques ne sont pas des confirmations de capacité. Un contact signé en 2.8.0 ne prouve pas que le parcours public était raccordé ; la 2.8.1 vérifie explicitement le protocole sortant et le catalogue.
 
-Installer le ZIP autonome `openfablab-reservations-2.7.0.zip` dans **Extensions → Ajouter → Téléverser**, puis activer, après un essai sur un **WordPress séparé**. La source est dans `wordpress/openfablab-reservations/`. Le plugin conserve réservations, créneaux, e-mails et maintenance Test, sans migration supplémentaire de schéma depuis le plugin 2.6.1. Il ajoute réconciliation, diagnostics et actualisation au prochain passage sortant du serveur. La purge confirmée porte uniquement sur la configuration reconstruisible, jamais les transactions. Voir [le protocole et ses limites](evolution-2.7.md).
+La sauvegarde WordPress inclut les trois tables techniques (catalogue, actions/résultats et nonces), options et secret ; la sauvegarde complète OpenFabLab inclut base et fichiers privés. Rotation du secret/sel pendant des actions en vol à éviter. Voir [conservation, sécurité et limites détaillées](outbound-2.8.1.md) et [migration/retour](upgrade.md).
 
-## Connexion
+## Administration et retrait de l'ancien moteur
 
-Dans WordPress **Réglages → OpenFabLab Reservations**, configurer les options du plugin et conserver le secret dans son stockage privé. Dans OpenFabLab **Réglages → Structure et modules → Réservations publiques**, renseigner **la racine HTTPS du site**, par exemple `https://example.invalid` (exemple non fonctionnel), et exactement le même secret. OpenFabLab ajoute les routes REST `/wp-json/openfablab/v1/...` : ne pas saisir cette route comme URL racine.
+Normal est prioritaire : badge de connexion, réception du catalogue, relève et résultat, compteurs de la file. Test et le diagnostic avancé sont repliables. « En attente du premier échange » est normal avant le raccordement du moteur. Les nombres affichés proviennent du catalogue reçu et du transport, jamais d'un calcul de capacité WordPress.
 
-Enregistrer URL/secret avant d'activer le module. Ne jamais afficher le secret dans des logs ou captures. Une seule instance OpenFabLab synchronise ce site ; conserver le module désactivé dans les autres installations locales. Intervalle initial : **1,5 minute (90 secondes)**. La première initialisation 2.7.1 remplace l’ancienne cadence de deux minutes ; les autres valeurs personnalisées restent inchangées. Demi-minutes acceptées entre 1 et 60 minutes. Les réveils du worker, le transport et le traitement s’ajoutent : aucun délai maximal garanti. Tester la connexion puis « Synchroniser maintenant » lorsque la configuration est cohérente. Voir les [demandes de la borne et leurs limites](corrections-2.7.1.md).
+Le secret est présenté uniquement comme configuré ou manquant. Sa régénération est secondaire, protégée par droits administrateur, HTTPS, POST, nonce et confirmation. Elle est refusée pendant une demande ou un résultat encore utilisable. Le fichier téléchargé doit rester privé ; mettre la même clé dans OpenFabLab avant de reprendre les échanges. Ne jamais régénérer pour corriger l'absence du premier catalogue.
 
-Le sens réseau est **OpenFabLab → HTTPS signé HMAC → WordPress** : aucun port entrant dédié ni ouverture Internet vers le serveur OpenFabLab n’est requis. WordPress ne se connecte pas au serveur pour déclencher une synchronisation.
+Les classes de réservation/capacité, annuaire, e-mails WordPress, anciens endpoints, cron métier et outils de nettoyage de l'ancien moteur ont été retirés du plugin. L'installation ne crée que les trois tables techniques. Les cinq anciennes tables métier ne sont supprimées que si toutes sont vides, sous verrou ; si des données subsistent, les tables restent intactes et inutilisées. La base et l'historique OpenFabLab ne sont jamais concernés.
 
-## Protocole 2, réconciliation et diagnostics
-
-Le plugin annonce `protocol_version: 2`, `animation_slots_v1`, `catalog_snapshot_v1` et `custom_categories_v1`. Les capabilities sont négociées ; un ancien plugin conserve le parcours incrémental compatible, sans bénéficier des nouvelles fonctions de catalogue/catégories.
-
-Avec `catalog_snapshot_v1`, OpenFabLab transmet l’état actuel du catalogue de l’environnement. WordPress applique une réconciliation transactionnelle, masque les animations absentes et conserve les réservations, événements et tokens. Une modification incompatible avec un créneau réservé est refusée, jamais appliquée silencieusement. La capacité continue à compter les réservations WordPress récentes.
-
-Les commandes de catalogue sont recalculées depuis l’état courant et les suppressions nécessaires traitées en priorité. Les actions de réservation gardent leur ordre. Seul un accusé positif valide une commande ; après une erreur, elle reste rejouable. La pagination et le curseur sont contrôlés, avec un état indépendant pour Test et Normal.
-
-OpenFabLab distingue **dernière tentative**, **dernière réussite**, erreur, commandes en attente et version du protocole/plugin. WordPress distingue le dernier contact signé de la réussite de son cycle : celle-ci ne prouve pas à elle seule l’import SQLite. « Actualiser » côté WordPress est traité au prochain passage sortant du serveur ; « Synchroniser maintenant » côté OpenFabLab lance ce passage.
-
-La **purge/resynchronisation du catalogue** exige Administrateur WordPress, POST, nonce, réconciliation 2.7 préalable et confirmation `RESYNCHRONISER TEST` ou `RESYNCHRONISER PRODUCTION`. Elle masque uniquement le catalogue et vide son annuaire reconstruisible dans l’environnement choisi. Réservations, événements et tokens sont préservés ; le prochain passage reconstruit la configuration. Ce mécanisme est distinct de la maintenance d’inscriptions Test décrite plus bas.
-
-Les tests automatiques couvrent ces parcours avec des données fictives. Ils ne prouvent pas le fonctionnement de toutes les combinaisons WordPress, hébergement, cache ou moteur SQL : vérifier votre propre installation et la concurrence InnoDB avant une bascule.
-
-## Pages et environnements
-
-Placer un shortcode dans une page choisie par votre structure :
-
-```text
-[openfablab_reservations environment="test"]
-[openfablab_reservations environment="production"]
-```
-
-Test et Normal sont isolés, y compris animations, réservations et capacités. La valeur technique de Normal reste `production`. Chaque animation publique indique son environnement ; aucune activation globale supplémentaire du mode Normal n'est nécessaire. Une bascule depuis un autre outil nécessite de préparer les animations publiées dans le bon environnement et de décider explicitement du remplacement de l'ancien outil/page. Ne pas créer deux parcours concurrents involontaires.
-
-## Identification et données
-
-La vérification demande identifiant usager actif et au moins un contact concordant. Avant concordance : aucune identité nominative ; après : identité masquée puis préremplissage modifiable. La réservation finale exige prénom, nom, année, e-mail **et** téléphone. Modifier la réservation ne modifie pas la fiche maître.
-
-L'annuaire privé WordPress contient les données nécessaires des usagers actifs, avec empreintes HMAC des contacts. Aucun listing public ni donnée nominative injectée dans le HTML initial. Les contrôles et limitations de fréquence ne constituent pas une vérification par code e-mail/SMS ; informer les usagers de ce compromis et protéger le stockage.
-
-## Créneaux et e-mails
-
-Les créneaux nécessitent OpenFabLab 2.6.x et la capability `animation_slots_v1`. Avec OpenFabLab 2.5.0, le fonctionnement classique reste compatible. Voir [créneaux](animation-slots.md) et [modèles d'e-mails](email-templates.md).
-
-## Maintenance Test
-
-**Outils de données Test** exige administrateur WordPress, nonce, POST et environnement `test` vérifié côté serveur. Diagnostic, sélection individuelle non précochée, prévisualisation et confirmation textuelle `PURGER TEST <service_id>` précèdent l'annulation locale des réservations explicitement déclarées orphelines. Historique et animation sont conservés ; pas d'e-mail, événement NAS parasite ou promotion de file. Production est refusé. Ne pas rejouer une ancienne maintenance déjà effectuée.
-
-Cette fonction n'est pas une purge générale ni une manière d'annuler une vraie réservation connue du serveur. Vérifier IDs, dates et provenance avant toute opération.
+La désinstallation conserve par défaut les données. L'option volontaire de suppression concerne uniquement le stockage du plugin : sauvegarder avant de l'activer.

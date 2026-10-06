@@ -12,6 +12,7 @@ final class OpenFabLab_Reconciliation {
     }
 
     public static function snapshot(WP_REST_Request $request) {
+        if (OpenFabLab_Bookings::historical_engine_disabled()) { return OpenFabLab_API::legacy_disabled($request); }
         global $wpdb;
         $body = json_decode($request->get_body(), true);
         try {

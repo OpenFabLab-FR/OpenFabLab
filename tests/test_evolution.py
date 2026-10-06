@@ -64,7 +64,7 @@ class EvolutionTests(unittest.TestCase):
                                           ADMIN_PIN=None,MODERATOR_PIN=None,WEATHER_ENABLED=False,AUTO_CLOSURE_WORKER=False))
             with a.app_context():
                 db=application.get_database()
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],16)
                 self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],0)
                 self.assertEqual(db.execute('SELECT COUNT(*) FROM resources').fetchone()[0],0)
                 self.assertEqual(schema.default_category(db),'user')
@@ -429,7 +429,7 @@ class EvolutionMigrationTests(unittest.TestCase):
                 self.assertEqual(db.execute("SELECT created_source FROM users").fetchone()[0],'historical')
                 self.assertEqual(db.execute("SELECT value FROM app_settings WHERE key='structure_name'").fetchone()[0],'Atelier Exemple configuré')
                 self.assertEqual(db.execute("SELECT seq FROM sqlite_sequence WHERE name='users'").fetchone()[0],999)
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],16)
                 self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
                 application.initialize_database();self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
             backups=list(set((Path(folder)/'migration-backups').glob('*.db'))-previous_backups);self.assertEqual(len(backups),1)

@@ -1,5 +1,11 @@
 # Configuration de la structure
 
+## Réservations publiques — candidate 2.8.1
+
+Dans Structure, conserver l’URL HTTPS du **site WordPress** et le secret déjà partagé ; aucune URL publique du NAS n’est nécessaire. Le catalogue est publié toutes les 1,5 minute par défaut. Les nouvelles demandes sont relevées séparément toutes les 15 secondes, réglables de 10 à 60 secondes entières. Le bouton de vérification force une publication du catalogue et une relève, sans créer de réservation fictive.
+
+Le choix « Liens personnels dans les e-mails » permet de revenir vers WordPress (automatique si configuré), ou de conserver des liens OpenFabLab lorsque cette adresse est réellement accessible aux participants. Les anciennes URL restent enregistrées. Les diagnostics distinguent Normal et Test, le catalogue, la relève, les retours et les demandes en cours ; un contact signé seul ne prouve jamais qu’une réservation a réussi. Voir [le guide sortant 2.8.1](outbound-2.8.1.md).
+
 Après initialisation Admin, ouvrir **Réglages → Structure et modules**. Compléter nom/nom court, description, coordonnées publiques, fuseau horaire, lieu et couleur. Les valeurs initiales sont « Mon FabLab » et une description générique ; les coordonnées, paramètres bancaires et localisation sont vides. Aucun catalogue ou tarif n'est imposé.
 
 Importer uniquement des logos et une signature que votre structure est autorisée à utiliser. Les fichiers sont persistants dans `data/branding/`, pas dans les assets publics du logiciel. Le pied de page utilise le nom et la description configurés. Les documents utilisent l'identité enregistrée, pas celle d'une installation de référence.

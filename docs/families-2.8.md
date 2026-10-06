@@ -1,7 +1,7 @@
-# Familles et réservations — OpenFabLab 2.8.0
+# Familles et réservations — OpenFabLab 2.8.1 stable
 
-Fonctions disponibles dans la version stable 2.8.0, avec le plugin facultatif
-Reservations 2.8.0. OpenFabLab reste la source de vérité, quel que soit le canal.
+Le modèle familial introduit en 2.8.0 est conservé dans la version stable 2.8.1,
+avec le plugin facultatif Reservations 2.8.1. OpenFabLab reste la source de vérité, quel que soit le canal. La migration technique 15 → 16 est décrite dans [le relais sortant](outbound-2.8.1.md).
 
 ## Une personne, un compte, une place
 
@@ -41,14 +41,14 @@ présences restent individuelles.
 
 La borne identifie le compte par son identifiant et une coordonnée déjà connue avant
 de présenter les comptes liés. WordPress n'héberge plus d'annuaire familial : il
-relaie des appels privés signés vers OpenFabLab via HTTPS. Des autorisations courtes,
+conserve des demandes temporaires relevées par OpenFabLab en HTTPS sortant. Des autorisations courtes,
 des choix opaques, une limitation des tentatives et une protection anti-rejeu sont
 vérifiés côté serveur. Ni dates de naissance ni identifiants internes des membres
 ne sont exposés dans le catalogue public. Les écrans identifiés ne sont pas mis en cache.
 
 OpenFabLab fonctionne sans WordPress et sans Internet lorsque le serveur local reste
-accessible. À l'inverse, la réservation WordPress exige que ce serveur soit joignable :
-une coupure ne doit jamais être présentée comme une confirmation.
+accessible. La réservation WordPress ne nécessite aucun accès entrant vers le serveur :
+une coupure retarde son traitement et ne doit jamais être présentée comme une confirmation.
 
 ## Liste d’attente automatique et e-mail
 
@@ -75,8 +75,8 @@ fonctionne sans WordPress, toutes les 30 secondes environ ; les actions de libé
 et modifications d’équipe recalculent aussi la file après validation. Ce délai
 n’est pas une garantie de livraison des e-mails.
 
-Configurer **Structure → Réservations publiques** : adresse HTTPS publique exacte
-d’OpenFabLab (préfixe inclus) et délai de réponse en heures. Valeur initiale :
+Configurer **Structure → Réservations publiques** : site WordPress, destination des liens
+personnels et délai de réponse en heures. L'adresse publique OpenFabLab n'est nécessaire qu'en mode local sans relais WordPress. Valeur initiale du délai :
 24 heures ; une valeur existante est conservée. L’échéance ne dépasse jamais la
 clôture des inscriptions. Configurer également le SMTP natif de la structure.
 
@@ -93,12 +93,18 @@ avec échéance et historique. Le groupe reste indivisible. Les valeurs historiq
 de rappels du plugin sont conservées, mais ne déclenchent pas de relances 2.8 ;
 le nouveau moteur assure ses propres notifications et propositions.
 
-La nouvelle interface WordPress nécessite JavaScript ; le parcours borne et la
-réponse aux propositions sont utilisables sans JavaScript.
+La nouvelle interface WordPress, y compris les liens personnels relayés, nécessite
+JavaScript. Les formulaires natifs de la borne et les anciennes pages de réponse
+OpenFabLab restent utilisables sans JavaScript, dans leur périmètre d'accès contrôlé.
 
 ## Données et migration
 
-Le passage au schéma SQLite 15 est additif et transactionnel : deux champs de
+La version 2.8.1 passe de 15 à 16 en ajoutant seulement les deux tables techniques
+du relais et ses réglages manquants. Elle ne convertit ni ne purge aucune ancienne
+réservation. Voir [les champs ajoutés](architecture.md#ajouts-sqlite-du-schéma-16)
+et [la sauvegarde PRE 15 et le retour contrôlé](upgrade.md).
+
+Le passage historique au schéma SQLite 15 est additif et transactionnel : deux champs de
 naissance sur les usagers, rattachements avec dates de création/fin, demandes
 familiales, autorisations temporaires, anti-rejeu, suivi des transitions d'âge et
 visibilité du calendrier, états et historique des groupes, propositions et journal
@@ -123,23 +129,7 @@ animations passées, inscriptions, statistiques, usagers et facturations OpenFab
 restent conservés.** Les anciens liens et réservations propres au plugin ne sont
 pas migrés vers sa nouvelle interface.
 
-Le nettoyage n'est jamais automatique à l'installation. Il nécessite les droits
-administrateur WordPress, une sauvegarde privée préalable téléchargée, une case de
-confirmation et la saisie « NETTOYER LE PLUGIN ». Les six tables du plugin sont
-explicitement ciblées, dans une transaction ; aucune API OpenFabLab n'est appelée.
-Les options de configuration et le secret sont conservés. Garder également une
-sauvegarde WordPress complète pour permettre une restauration de cet ancien stockage.
-Ne procéder qu'après vérification qu'aucune réservation active n'est à reprendre.
-
-Configurer l'adresse HTTPS d'OpenFabLab dans le plugin 2.8 et conserver le secret
-privé partagé. Le couple application 2.8/plugin 2.7 n'est pas utilisable pour de
-nouvelles réservations. Les anciens endpoints de synchronisation sont refusés,
-afin d'empêcher deux moteurs indépendants de confirmer les mêmes places.
-
-Les tests automatisés utilisent des données et transports fictifs. Le déploiement
-NAS, le raccordement du plugin 2.8.0 et le nettoyage volontaire de son ancien stockage
-ont été vérifiés par l'exploitant du FougèresLab. La publication ne modifie aucun de
-ces services et ne remplace pas la validation SMTP/HTTPS de chaque structure.
+La version 2.8.1 finale ne contient plus d'outil ni de moteur historique WordPress. Elle retire uniquement les anciennes tables métier toutes vides, sous verrou ; les tables non vides restent intactes et inutilisées. Aucun historique OpenFabLab n'est supprimé. Les anciens liens natifs restent lisibles ; les nouvelles actions utilisent exclusivement le relais sortant.
 
 ## Évolutions ultérieures
 

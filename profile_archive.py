@@ -79,6 +79,7 @@ RESERVATION_RANGES = {
     "reservation_reminder_one_hours": (0, 168),
     "reservation_reminder_two_hours": (0, 168),
     "reservation_sync_interval_minutes": (1, 60),
+    "reservation_action_interval_seconds": (10,60),
 }
 
 
@@ -99,6 +100,7 @@ def allowed_setting(key):
             "reservation_last_offer_hours", "reservation_close_minutes",
             "reservation_reminder_one_hours", "reservation_reminder_two_hours",
             "reservation_sync_interval_minutes",
+            "reservation_action_interval_seconds", "reservation_link_mode",
         }
     if key in DISCORD_MESSAGE_KEYS | DISCORD_NOTIFY_KEYS | DISCORD_RESERVATION_KEYS:
         return True
@@ -188,6 +190,10 @@ def parse_profile(raw):
                     raise ValueError('Couleur du calendrier invalide.')
                 if key.startswith('family_contact_') and value not in {'none','email','phone','either','both'}:
                     raise ValueError('Règle de coordonnées invalide.')
+                if key=='reservation_link_mode' and value not in {'auto','wordpress','local'}:
+                    raise ValueError('Destination des liens invalide.')
+                if key=='reservation_action_interval_seconds' and (not value.isdecimal() or not 10<=int(value)<=60):
+                    raise ValueError('Relève des demandes invalide.')
                 if key in {'family_autonomy_age','family_responsible_age'} and (not value.isdecimal() or not 0<=int(value)<=120):
                     raise ValueError('Seuil d’âge invalide.')
             if int(settings.get('family_autonomy_age','15'))>int(settings.get('family_responsible_age','18')):

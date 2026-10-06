@@ -14,8 +14,8 @@ class WordPressPatchTests(unittest.TestCase):
     def test_application_public_version_is_canonical(self):
         from openfablab import __version__
         import build_openfablab
-        self.assertEqual(__version__,'2.8.0')
-        self.assertEqual(build_openfablab.OUTPUT.name,'OpenFabLab-2.8.0.zip')
+        self.assertEqual(__version__,'2.8.1')
+        self.assertEqual(build_openfablab.OUTPUT.name,'OpenFabLab-2.8.1.zip')
 
     def test_protocol_advertises_slots_and_keeps_both_environments(self):
         api=(builder.PLUGIN/'includes/class-openfablab-api.php').read_text()
@@ -30,10 +30,10 @@ class WordPressPatchTests(unittest.TestCase):
 
     def test_additive_version_and_schema(self):
         source = (builder.PLUGIN / 'openfablab-reservations.php').read_text()
-        self.assertIn('Version: 2.8.0', source)
-        self.assertIn("define('OPENFABLAB_RES_VERSION', '2.8.0')", source)
-        self.assertIn("define('OPENFABLAB_RES_SCHEMA_VERSION', '2.6.0')", source)
-        self.assertEqual(builder.OUTPUT.name, 'openfablab-reservations-2.8.0.zip')
+        self.assertIn('Version: 2.8.1', source)
+        self.assertIn("define('OPENFABLAB_RES_VERSION','2.8.1')", source)
+        self.assertIn("define('OPENFABLAB_RES_SCHEMA_VERSION','2.8.1-relay2')", source)
+        self.assertEqual(builder.OUTPUT.name, 'openfablab-reservations-2.8.1.zip')
 
     def test_build_is_reproducible_and_allowlisted(self):
         with tempfile.TemporaryDirectory(prefix='openfablab-plugin-patch-') as directory:
@@ -82,8 +82,55 @@ class WordPressPatchTests(unittest.TestCase):
         self.assertIn('Apache',(builder.PLUGIN/'THIRD_PARTY_NOTICES.md').read_text())
         self.assertIn('Apache License',(builder.PLUGIN/'assets/jsQR-LICENSE.txt').read_text())
 
+    def test_runtime_has_no_historical_wordpress_engine_or_network_client(self):
+        files=list(builder.PLUGIN.rglob('*.php'))
+        source='\n'.join(path.read_text() for path in files)
+        for name in ('OpenFabLab_Bookings','OpenFabLab_Slots','OpenFabLab_Emails','OpenFabLab_Legacy_Reset',
+                     'OpenFabLab_Test_Maintenance','OpenFabLab_Reconciliation','OpenFabLab_Family_Gateway'):
+            self.assertNotIn(name,source)
+        self.assertNotRegex(source,r'\b(?:wp_remote_get|wp_remote_post|wp_mail|promote_waitlist)\s*\(')
+        self.assertNotIn('/sync/snapshot',source)
+        self.assertNotIn('/sync/commands',source)
+
+    def test_only_empty_historical_storage_can_be_removed(self):
+        source=(builder.PLUGIN/'includes/class-openfablab-database.php').read_text()
+        self.assertIn('LOCK TABLES',source)
+        self.assertIn('UNLOCK TABLES',source)
+        self.assertIn("if ((int)$count!==0)",source)
+        self.assertIn("$state='retained'",source)
+        self.assertNotIn('DELETE FROM',source)
+        self.assertNotIn('TRUNCATE',source)
+        self.assertNotIn('sync_secret',source)
+
+    def test_admin_secret_rotation_is_secondary_and_guarded(self):
+        source=(builder.PLUGIN/'includes/class-openfablab-admin.php').read_text()
+        self.assertIn('Diagnostic avancé',source)
+        self.assertIn('Environnement Test',source)
+        self.assertIn("current_user_can('manage_options')",source)
+        self.assertIn("$_SERVER['REQUEST_METHOD']!=='POST'",source)
+        self.assertIn("check_admin_referer('openfablab_connection_secret')",source)
+        self.assertIn('connection_lock()',source)
+        self.assertIn('expires_at>',source)
+        self.assertIn('Content-Disposition: attachment',source)
+
+    def test_packaged_core_does_not_contain_previous_wordpress_routes(self):
+        root=Path(__file__).resolve().parents[1]
+        source=(root/'reservations_sync.py').read_text()
+        tablet=(root/'tablet_reservations.py').read_text()
+        self.assertNotIn('def _sync_environment',source)
+        self.assertNotIn('def receive_events',source)
+        self.assertNotIn('def process_requests',tablet)
+        self.assertNotIn('/sync/directory',source)
+        self.assertNotIn('/public/reserve',tablet)
+
+    def test_historical_test_fixtures_are_excluded_from_both_archives(self):
+        import build_openfablab
+        paths=[path.relative_to(build_openfablab.ROOT).as_posix() for path in build_openfablab.included_paths()]
+        self.assertFalse(any(name.startswith('tests/') for name in paths))
+        self.assertFalse(any('historical' in name for name in builder.INCLUDED))
+
     def test_maintenance_has_no_destructive_or_sync_side_effect_calls(self):
-        source = (builder.PLUGIN / 'includes/class-openfablab-test-maintenance.php').read_text()
+        source = (Path(__file__).parent / 'historical-wordpress/includes/class-openfablab-test-maintenance.php').read_text()
         self.assertNotRegex(source, r'\b(?:DELETE\s+FROM|TRUNCATE|DROP\s+TABLE)\b')
         self.assertNotRegex(source, r'\b(?:wp_mail|promote_waitlist|run_due_tasks|OpenFabLab_Database::event)\s*\(')
         self.assertNotIn('openfablab_res_sync_secret', source)

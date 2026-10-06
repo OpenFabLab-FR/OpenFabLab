@@ -1,158 +1,92 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+/** Only anti-replay nonces and the two durable transport tables are managed. */
 final class OpenFabLab_Database {
     public static function table($name) {
         global $wpdb;
-        $allowed = ['animations', 'reservations', 'directory', 'events', 'tokens', 'nonces'];
-        if (!in_array($name, $allowed, true)) { throw new InvalidArgumentException('Table inconnue'); }
-        return $wpdb->prefix . 'openfablab_' . $name;
+        if (!in_array($name,['nonces','relay_catalogues','relay_actions'],true)) {
+            throw new InvalidArgumentException('Table inconnue');
+        }
+        return $wpdb->prefix.'openfablab_'.$name;
     }
-
     public static function install() {
         global $wpdb;
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        $collation = $wpdb->get_charset_collate();
-        $animations = self::table('animations');
-        $reservations = self::table('reservations');
-        $directory = self::table('directory');
-        $events = self::table('events');
-        $tokens = self::table('tokens');
-        $nonces = self::table('nonces');
-        $queries = [];
-        $queries[] = "CREATE TABLE $animations (
-            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-            environment varchar(12) NOT NULL,
-            service_id bigint(20) unsigned NOT NULL,
-            title varchar(160) NOT NULL,
-            description text NOT NULL,
-            starts_at datetime NOT NULL,
-            ends_at datetime NOT NULL,
-            timezone varchar(80) NOT NULL,
-            capacity int(11) NOT NULL,
-            booking_mode varchar(12) NOT NULL DEFAULT 'whole',
-            slot_duration_minutes int(11) NOT NULL DEFAULT 20,
-            slot_gap_minutes int(11) NOT NULL DEFAULT 0,
-            slot_capacity int(11) NOT NULL DEFAULT 1,
-            slots_json longtext DEFAULT NULL,
-            minimum_age int(11) NOT NULL,
-            audience varchar(20) NOT NULL,
-            accompaniment_under_age int(11) NOT NULL,
-            waitlist_enabled tinyint(1) NOT NULL,
-            close_minutes int(11) NOT NULL,
-            signup_open_at datetime DEFAULT NULL,
-            reminder_one_hours int(11) DEFAULT NULL,
-            reminder_two_hours int(11) DEFAULT NULL,
-            offer_hours int(11) NOT NULL DEFAULT 12,
-            last_offer_hours int(11) NOT NULL DEFAULT 24,
-            published tinyint(1) NOT NULL DEFAULT 0,
-            updated_at datetime NOT NULL,
-            PRIMARY KEY  (id),
-            UNIQUE KEY environment_service (environment,service_id),
-            KEY starts_at (starts_at)
-        ) ENGINE=InnoDB $collation;";
-        $queries[] = "CREATE TABLE $reservations (
-            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-            uuid char(36) NOT NULL,
-            environment varchar(12) NOT NULL,
-            animation_id bigint(20) unsigned NOT NULL,
-            first_name varchar(80) NOT NULL,
-            last_name varchar(80) NOT NULL,
-            birth_year int(11) DEFAULT NULL,
-            email varchar(254) NOT NULL,
-            phone varchar(40) NOT NULL,
-            status varchar(24) NOT NULL,
-            link_status varchar(24) NOT NULL,
-            public_id varchar(4) DEFAULT NULL,
-            group_uuid char(36) DEFAULT NULL,
-            slot_uuid char(36) DEFAULT NULL,
-            identity_key char(64) NOT NULL,
-            is_present tinyint(1) DEFAULT NULL,
-            source varchar(24) NOT NULL DEFAULT 'online',
-            reminder_one_sent_at datetime DEFAULT NULL,
-            reminder_two_sent_at datetime DEFAULT NULL,
-            offer_expires_at datetime DEFAULT NULL,
-            created_at datetime NOT NULL,
-            updated_at datetime NOT NULL,
-            PRIMARY KEY  (id),
-            UNIQUE KEY uuid (uuid),
-            KEY animation_status (animation_id,status),
-            KEY animation_slot_status (animation_id,slot_uuid,status),
-            KEY environment_updated (environment,updated_at),
-            KEY group_uuid (group_uuid),
-            KEY identity_key (animation_id,identity_key)
-        ) ENGINE=InnoDB $collation;";
-        $queries[] = "CREATE TABLE $directory (
-            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-            environment varchar(12) NOT NULL,
-            public_id varchar(4) NOT NULL,
-            active tinyint(1) NOT NULL,
-            birth_year int(11) DEFAULT NULL,
-            category varchar(40) NOT NULL,
-            first_name varchar(80) NOT NULL DEFAULT '',
-            last_name varchar(80) NOT NULL DEFAULT '',
-            email varchar(254) NOT NULL DEFAULT '',
-            phone varchar(40) NOT NULL DEFAULT '',
-            email_hmac char(64) NOT NULL,
-            phone_hmac char(64) NOT NULL,
-            updated_at datetime NOT NULL,
-            PRIMARY KEY  (id),
-            UNIQUE KEY environment_public (environment,public_id),
-            KEY environment_email (environment,email_hmac),
-            KEY environment_phone (environment,phone_hmac)
-        ) ENGINE=InnoDB $collation;";
-        $queries[] = "CREATE TABLE $events (
-            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-            environment varchar(12) NOT NULL,
-            event_type varchar(40) NOT NULL,
-            reservation_uuid char(36) NOT NULL,
-            created_at datetime NOT NULL,
-            PRIMARY KEY  (id),
-            KEY environment_id (environment,id)
-        ) ENGINE=InnoDB $collation;";
-        $queries[] = "CREATE TABLE $tokens (
-            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-            reservation_uuid char(36) NOT NULL,
-            token_type varchar(20) NOT NULL,
-            token_hash char(64) NOT NULL,
-            expires_at datetime NOT NULL,
-            used_at datetime DEFAULT NULL,
-            created_at datetime NOT NULL,
-            PRIMARY KEY  (id),
-            UNIQUE KEY token_hash (token_hash),
-            KEY reservation_type (reservation_uuid,token_type)
-        ) ENGINE=InnoDB $collation;";
-        $queries[] = "CREATE TABLE $nonces (
+        require_once ABSPATH.'wp-admin/includes/upgrade.php';
+        $collation=$wpdb->get_charset_collate();
+        $nonces=self::table('nonces');
+        dbDelta("CREATE TABLE $nonces (
             nonce_hash char(64) NOT NULL,
             expires_at datetime NOT NULL,
             PRIMARY KEY  (nonce_hash),
             KEY expires_at (expires_at)
-        ) ENGINE=InnoDB $collation;";
-        foreach ($queries as $query) { dbDelta($query); }
-        if (self::tables_are_innodb()) {
-            update_option('openfablab_res_schema_version', OPENFABLAB_RES_SCHEMA_VERSION, false);
+        ) ENGINE=InnoDB $collation;");
+        OpenFabLab_Relay::install($collation);
+        self::assert_transactional();
+        self::retire_empty_storage();
+        wp_clear_scheduled_hook('openfablab_res_maintenance');
+        update_option('openfablab_res_schema_version',OPENFABLAB_RES_SCHEMA_VERSION,false);
+    }
+    public static function assert_transactional() {
+        global $wpdb;
+        foreach (['nonces','relay_catalogues','relay_actions'] as $name) {
+            $table=self::table($name);
+            $engine=$wpdb->get_var($wpdb->prepare(
+                'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s',$table));
+            if (strtoupper((string)$engine)!=='INNODB') { throw new RuntimeException('Stockage transactionnel indisponible.'); }
         }
     }
-
-    public static function tables_are_innodb() {
+    public static function connection_lock() {
         global $wpdb;
-        foreach (['animations', 'reservations', 'directory', 'events', 'tokens', 'nonces'] as $name) {
-            $table = self::table($name);
-            $status = $wpdb->get_row($wpdb->prepare('SHOW TABLE STATUS LIKE %s', $table));
-            if (!$status || strcasecmp((string) $status->Engine, 'InnoDB') !== 0) {
-                return false;
+        $name='ofl_connection_'.substr(hash('sha256',$wpdb->prefix),0,32);
+        if ((string)$wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s,5)',$name))!=='1') {
+            throw new RuntimeException('Connexion occupée.');
+        }
+    }
+    public static function connection_unlock() {
+        global $wpdb;
+        $name='ofl_connection_'.substr(hash('sha256',$wpdb->prefix),0,32);
+        $wpdb->get_var($wpdb->prepare('SELECT RELEASE_LOCK(%s)',$name));
+    }
+    private static function quoted($table) { return chr(96).str_replace(chr(96),chr(96).chr(96),$table).chr(96); }
+    private static function retire_empty_storage() {
+        global $wpdb;
+        $tables=[];
+        foreach (['tokens','events','reservations','directory','animations'] as $name) {
+            $table=$wpdb->prefix.'openfablab_'.$name;
+            if ($wpdb->get_var($wpdb->prepare(
+                'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s',$table))) {
+                $tables[]=$table;
             }
         }
-        return true;
-    }
-
-    public static function event($environment, $type, $uuid) {
-        global $wpdb;
-        $wpdb->insert(self::table('events'), [
-            'environment' => $environment,
-            'event_type' => $type,
-            'reservation_uuid' => $uuid,
-            'created_at' => current_time('mysql', true),
-        ], ['%s', '%s', '%s', '%s']);
+        $state='absent';
+        if ($tables) {
+            $quoted=array_map([__CLASS__,'quoted'],$tables);
+            $locked=false;
+            try {
+                if ($wpdb->query('LOCK TABLES '.implode(',',array_map(fn($name)=>$name.' WRITE',$quoted)))===false) {
+                    throw new RuntimeException();
+                }
+                $locked=true;
+                foreach ($quoted as $name) {
+                    $count=$wpdb->get_var('SELECT COUNT(*) FROM '.$name);
+                    if ($wpdb->last_error || $count===null) { throw new RuntimeException(); }
+                    if ((int)$count!==0) { $state='retained'; break; }
+                }
+                if ($state!=='retained') {
+                    if ($wpdb->query('DROP TABLE '.implode(',',$quoted))===false) { throw new RuntimeException(); }
+                    $state='removed_empty';
+                }
+            } catch (Throwable $error) { $state='retained_review'; }
+            finally { if ($locked) { $wpdb->query('UNLOCK TABLES'); } }
+        }
+        // Never erase nonempty historical storage, nor any OpenFabLab data.
+        update_option('openfablab_res_retired_storage',$state,false);
+        if (in_array($state,['absent','removed_empty'],true)) {
+            foreach (['core_url','last_sync','from_name','from_email','reply_to','test_prefix','email_settings'] as $key) {
+                delete_option('openfablab_res_'.$key);
+            }
+            foreach (['production','test'] as $env) { delete_option('openfablab_res_attempt_'.$env); }
+        }
     }
 }

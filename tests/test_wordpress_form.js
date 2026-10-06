@@ -6,7 +6,7 @@ const path = require('node:path');
 const {spawnSync} = require('node:child_process');
 const {chromium} = require('playwright');
 const root = path.resolve(__dirname, '..');
-const plugin = path.join(root, 'wordpress/openfablab-reservations');
+const plugin = path.join(root, 'tests/historical-wordpress');
 const names = ['first_name', 'last_name', 'birth_year', 'email', 'phone'];
 const user = {status:'matched', first_name:'Élise-Anne', last_name:'DU PONT', birth_year:1990,
   email:'elise@example.invalid', phone:'+33600000000', masked_identity:'É****-A*** D* P***',

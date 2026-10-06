@@ -84,7 +84,7 @@ class MaintenanceDatabase {
         return $result;
     }
 }
-require dirname(__DIR__) . '/wordpress/openfablab-reservations/includes/class-openfablab-test-maintenance.php';
+require __DIR__ . '/historical-wordpress/includes/class-openfablab-test-maintenance.php';
 $tests = 0;
 function check($ok, $label) { if (!$ok) throw new RuntimeException($label); $GLOBALS['tests']++; }
 function fixture() {

@@ -20,7 +20,8 @@ from unittest import mock
 
 from tests import test_app as fixture
 from animation_slots import generate_slots, save_slots, slots_summary
-from reservations_sync import enqueue_animation, import_events, _sync_environment
+from reservations_sync import enqueue_animation, import_events
+from tests.historical_reservations_sync import _sync_environment
 
 
 class AnimationSlotTests(unittest.TestCase):
@@ -104,7 +105,7 @@ class AnimationSlotTests(unittest.TestCase):
         with self.database() as db:
             self.assertEqual(db.execute('SELECT booking_mode FROM animation_reservation_config').fetchone()[0],'whole')
             self.assertIsNone(db.execute('SELECT slot_uuid FROM animation_bookings WHERE external_uuid=?',(booking,)).fetchone()[0])
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],16)
             self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
             self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
@@ -264,7 +265,7 @@ class AnimationSlotTests(unittest.TestCase):
                 before={table:old.execute('SELECT * FROM '+table+' ORDER BY rowid').fetchall() for table in tables}
             fixture.create_app(dict(TESTING=True,SEED_DEMO_USERS=False,DATABASE=str(target),ADMIN_PIN=None,MODERATOR_PIN=None,WEATHER_ENABLED=False,SECRET_KEY='fictional-test'))
             with sqlite3.connect(target) as migrated:
-                self.assertEqual(migrated.execute('PRAGMA user_version').fetchone()[0],15)
+                self.assertEqual(migrated.execute('PRAGMA user_version').fetchone()[0],16)
                 self.assertEqual(migrated.execute('PRAGMA integrity_check').fetchone()[0],'ok')
                 self.assertEqual(migrated.execute('PRAGMA foreign_key_check').fetchall(),[])
                 for table,rows in before.items():

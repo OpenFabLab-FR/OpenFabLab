@@ -6,21 +6,19 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parent
 PLUGIN = ROOT / "wordpress" / "openfablab-reservations"
-OUTPUT = ROOT / "dist" / "openfablab-reservations-2.8.0.zip"
+OUTPUT = ROOT / "dist" / "openfablab-reservations-2.8.1.zip"
 INCLUDED = (
     "openfablab-reservations.php",
     "uninstall.php",
     "includes/class-openfablab-database.php",
     "includes/class-openfablab-api.php",
-    "includes/class-openfablab-family-gateway.php",
-    "includes/class-openfablab-legacy-reset.php",
-    'includes/class-openfablab-reconciliation.php',
-    "includes/class-openfablab-bookings.php",
-    "includes/class-openfablab-test-maintenance.php",
-    "includes/class-openfablab-slots.php",
-    "includes/class-openfablab-emails.php",
+    "includes/class-openfablab-admin.php",
+    "assets/admin.css",
+    "assets/admin.js",
+    "includes/class-openfablab-relay.php",
+    "includes/public-link.php",
+    "assets/link.js",
     "assets/reservations.css",
-    "assets/reservations.js",
     "assets/family.js",
     "assets/OpenFabLab-logo-horizontal.svg",
     "assets/jsQR-1.4.0.js",
@@ -28,6 +26,9 @@ INCLUDED = (
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
 )
+MACOS_METADATA = {".DS_Store", ".AppleDouble", ".AppleDesktop", "__MACOSX",
+                  ".LSOverride", ".Spotlight-V100", ".Trashes", ".TemporaryItems",
+                  ".fseventsd", ".VolumeIcon.icns", ".apdisk"}
 
 
 def build(output=OUTPUT):
@@ -35,7 +36,9 @@ def build(output=OUTPUT):
     output.parent.mkdir(parents=True, exist_ok=True)
     sources = [PLUGIN / name for name in INCLUDED]
     for source in sources:
-        if not source.is_file() or source.is_symlink():
+        if not source.is_file() or source.is_symlink() or any(
+            part in MACOS_METADATA or part.startswith("._") for part in source.relative_to(PLUGIN).parts
+        ):
             raise ValueError("Fichier de distribution absent ou lien symbolique interdit : " + source.name)
     with ZipFile(output, "w", ZIP_DEFLATED) as archive:
         for name, source in zip(INCLUDED, sources):

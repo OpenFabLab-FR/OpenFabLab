@@ -75,6 +75,7 @@ function dbDelta($sql) { $GLOBALS['queries'][] = $sql; }
 function add_query_arg($args, $url) { return $url . '?' . http_build_query($args); }
 function admin_url($path) { return 'https://example.invalid/' . $path; }
 function home_url($path) { return 'https://example.invalid' . $path; }
+function wp_parse_url($url) { return parse_url($url); }
 function wp_mail(...$args) { $GLOBALS['mails'][] = $args; return true; }
 
 class PublicMemoryDatabase {
@@ -136,20 +137,16 @@ class PublicMemoryDatabase {
     }
 }
 $wpdb = new PublicMemoryDatabase(); $uuid_counter = 0;
-require dirname(__DIR__) . '/wordpress/openfablab-reservations/openfablab-reservations.php';
+// Exercise every historical validation with no running plugin/version, then
+// load the actual 2.8.1 entry point and prove these same helpers are disabled.
+$plugin_root = __DIR__ . '/historical-wordpress/';
+foreach (['database','relay','slots','emails','bookings','api'] as $class) {
+    require_once $plugin_root . 'includes/class-openfablab-' . $class . '.php';
+}
 function check($condition, $message) {
     if (!$condition) { throw new RuntimeException($message); }
     ++$GLOBALS['tests'];
 }
-// Upgrade a first 2.5.0 build without dropping any existing tables.
-$options['openfablab_res_schema_version'] = '2.5.0'; $hooks['plugins_loaded']();
-check($options['openfablab_res_schema_version']===OPENFABLAB_RES_SCHEMA_VERSION, 'corrective schema upgrade');
-$schema = implode("\n", $queries);
-foreach (['first_name varchar(80)', 'last_name varchar(80)', 'email varchar(254)', 'phone varchar(40)'] as $column) {
-    check(str_contains($schema, $column), 'private directory column ' . $column);
-}
-check(!str_contains($schema, 'DROP '), 'non-destructive schema');
-$queries = []; $hooks['plugins_loaded'](); check(!$queries, 'schema upgrade idempotent');
 $secret = $options['openfablab_res_sync_secret'];
 $user = ['public_id'=>'1234', 'active'=>true, 'first_name'=>'Élise-Anne', 'last_name'=>'DU PONT',
     'birth_year'=>1990, 'email'=>'elise@example.invalid', 'phone'=>'+33600000000', 'category'=>'user',
@@ -194,8 +191,12 @@ $transients = []; $_SERVER['REMOTE_ADDR'] = '192.0.2.1';
 $ssl=false;
 check(OpenFabLab_API::public_permission(new WP_REST_Request([]))->data['status']===403, 'plaintext HTTP rejected');
 $ssl=true;
-for ($i=0; $i<15; $i++) { check(OpenFabLab_API::public_permission(new WP_REST_Request([]))===true, 'allowed attempt'); }
-check(OpenFabLab_API::public_permission(new WP_REST_Request([]))->data['status']===429, 'rate limit');
+$_COOKIE['ofl_relay_session']=str_repeat('a',64);$until=time()+1200;
+$csrf=$until.'.'.hash_hmac('sha256','csrf/v1|'.$_COOKIE['ofl_relay_session'].'|test|'.$until,wp_salt('auth'));
+$secure=new WP_REST_Request(['environment'=>'test'],['origin'=>'https://example.invalid','x-openfablab-csrf'=>$csrf]);
+check(OpenFabLab_API::public_permission(new WP_REST_Request(['environment'=>'test']))->data['status']===403,'missing CSRF refused');
+for ($i=0; $i<120; $i++) { check(OpenFabLab_API::public_permission($secure)===true, 'allowed attempt'); }
+check(OpenFabLab_API::public_permission($secure)->data['status']===429, 'rate limit');
 check(!str_contains(json_encode(array_keys($transients)), '192.0.2.1'), 'hashed limiter key');
 $token = verify('1234','elise@example.invalid')->data['verification_token'];
 $booking = ['environment'=>'test','service_id'=>1,'public_id'=>'1234', 'first_name'=>'Autre prénom',
@@ -256,10 +257,62 @@ $wrong_nonce=str_repeat('b',32);
 $wrong_signature=hash_hmac('sha256', "$timestamp\n$wrong_nonce\nPOST\n/openfablab/v1/sync/directory\n".hash('sha256',json_encode($body)), 'fictional-incorrect-secret');
 $wrong_signed=new WP_REST_Request($body,['x-openfablab-timestamp'=>$timestamp,'x-openfablab-nonce'=>$wrong_nonce,'x-openfablab-signature'=>$wrong_signature],'/openfablab/v1/sync/directory');
 check(is_wp_error(OpenFabLab_API::private_permission($wrong_signed)), 'incorrect secret refused without changing synchronization settings');
+require_once $plugin_root . 'openfablab-reservations.php';
+// Upgrade a first 2.5.0 build without dropping any existing tables.
+$options['openfablab_res_schema_version'] = '2.5.0'; $hooks['plugins_loaded']();
+check($options['openfablab_res_schema_version']===OPENFABLAB_RES_SCHEMA_VERSION, 'corrective schema upgrade');
+$schema = implode("\n", $queries);
+foreach (['first_name varchar(80)', 'last_name varchar(80)', 'email varchar(254)', 'phone varchar(40)'] as $column) {
+    check(str_contains($schema, $column), 'private directory column ' . $column);
+}
+check(!str_contains($schema, 'DROP '), 'non-destructive schema');
+$queries = []; $hooks['plugins_loaded'](); check(!$queries, 'schema upgrade idempotent');
+// Every historical business entry point fails before SQL or mail in 2.8.1.
+$historical_before = serialize([$wpdb->directory,$wpdb->bookings,$wpdb->tokens,$options,$mails ?? []]);
+foreach ([['identity',['test','1234','elise@example.invalid','']],['verify',[$booking]],
+          ['public_animations',['test']],['reserve',[$booking]],['send_confirmation',['old',[]]],
+          ['cancel',['old',str_repeat('a',64)]],['promote_waitlist',[1]],
+          ['respond_offer',['old',str_repeat('a',64),true]]] as [$name,$args]) {
+    $refused=OpenFabLab_Bookings::$name(...$args);
+    check(is_wp_error($refused)&&$refused->data['status']===409, 'historical method disabled: '.$name);
+}
+foreach (['sync_directory','sync_animations','sync_events','sync_commands','heartbeat','snapshot'] as $name) {
+    check(is_wp_error(OpenFabLab_API::$name($signed)), 'historical API helper disabled: '.$name);
+}
+check(is_wp_error(OpenFabLab_Reconciliation::snapshot($signed)), 'historical snapshot class disabled');
+$blocked=false;try { OpenFabLab_Slots::used($wpdb->animation); } catch (RuntimeException $e) { $blocked=true; }
+check($blocked,'WordPress cannot recompute business capacity');
+OpenFabLab_Bookings::run_due_tasks();
+foreach (['cancellation_page','offer_page'] as $name) {
+    $blocked=false;try { OpenFabLab_Bookings::$name(); } catch (RuntimeException $e) { $blocked=true; }
+    check($blocked,'historical action page disabled: '.$name);
+}
+check($historical_before===serialize([$wpdb->directory,$wpdb->bookings,$wpdb->tokens,$options,$mails ?? []]),'historical calls preserve all data and send no mail');
+check(!$queries,'disabled historical methods make no SQL writes');
+check($hooks['openfablab_res_maintenance']===[OpenFabLab_Relay::class,'maintenance'],'cron maintains transport only');
+// Authenticated storage encryption and signed action scope.
+$encrypt=new ReflectionMethod(OpenFabLab_Relay::class,'encrypt');$decrypt=new ReflectionMethod(OpenFabLab_Relay::class,'decrypt');
+$plain='fictitious-private-payload';$cipher=$encrypt->invoke(null,$plain);
+check($decrypt->invoke(null,$cipher)===$plain&&!str_contains($cipher,$plain),'encrypted storage round trip without plaintext');
+foreach ([0,12,28] as $position) {
+    $bytes=base64_decode($cipher);$bytes[$position]=chr(ord($bytes[$position])^1);$blocked=false;
+    try { $decrypt->invoke(null,base64_encode($bytes)); } catch (RuntimeException $e) { $blocked=true; }
+    check($blocked,'authenticated cipher tamper rejected: '.$position);
+}
+$options['openfablab_res_sync_secret']='different-fictional-key';$blocked=false;
+try { $decrypt->invoke(null,$cipher); } catch (RuntimeException $e) { $blocked=true; }
+check($blocked,'different key cannot read private payload');$options['openfablab_res_sync_secret']=$secret;
+$link_method=new ReflectionMethod(OpenFabLab_Relay::class,'verify_link');
+$make_link=function($env,$kind,$expiry)use($secret){$encoded=rtrim(strtr(base64_encode(json_encode(['v'=>1,'t'=>str_repeat('a',48),'e'=>$env,'k'=>$kind,'x'=>$expiry])),'+/','-_'),'=');return $encoded.'.'.hash_hmac('sha256',"link/v1\n".$encoded,$secret);};
+$valid=$make_link('production','offer',time()+60);$link_method->invoke(null,$valid,'production','accept');check(true,'scoped signed offer accepted');
+foreach ([[$valid,'test','accept'],[$valid.'x','production','accept'],[$make_link('production','manage',0),'production','accept'],[$make_link('production','offer',time()-1),'production','accept']] as $args) {
+    $blocked=false;try {$link_method->invoke(null,...$args);}catch(InvalidArgumentException $e){$blocked=true;}
+    check($blocked,'invalid/wrong-environment/wrong-scope/expired link refused');
+}
 $html = openfablab_res_shortcode(['environment'=>'test']);
 check(!str_contains($html . $inline_script, 'Élise') && !str_contains($html . $inline_script, 'elise@example.invalid'), 'initial public HTML has no directory PII');
 check(!str_contains($html, 'openfablab-test-maintenance'), 'maintenance not public');
-check(OPENFABLAB_RES_VERSION==='2.8.0'&&OPENFABLAB_RES_SCHEMA_VERSION==='2.6.0', 'legacy storage retained without destructive upgrade');
+check(OPENFABLAB_RES_VERSION==='2.8.1'&&OPENFABLAB_RES_SCHEMA_VERSION==='2.8.1', 'additive relay schema version');
 $_SERVER['REQUEST_METHOD']='GET'; ob_start(); openfablab_res_admin_page(); $admin=ob_get_clean();
 foreach (['Normal :','Test :','Shortcodes des pages de réservation', 'Réservations normales', 'Réservations de test', 'data-openfablab-copy'] as $text) {
     check(str_contains($admin, $text), 'admin displays ' . $text);

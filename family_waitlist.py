@@ -123,7 +123,8 @@ def complete_contact(db, owner_id, email, phone=None):
         raise ValueError('Renseignez un téléphone valide.')
     if family.setting(db,'reservation_phone_required','0')=='1' and not valid_phone(number):
         raise ValueError('Un téléphone valide est nécessaire pour réserver.')
-    with db:
+    from outbound_actions import transaction
+    with transaction(db):
         db.execute('UPDATE users SET email=?,phone=?,updated_at=? WHERE id=?',
                    (email.strip(),number or None,family.timestamp(),owner_id))
 
@@ -235,11 +236,9 @@ def settle(db, now=None):
 
 
 def process_due(db, now=None):
-    db.execute('BEGIN IMMEDIATE')
-    try:
-        adopt_candidates(db);settle(db,now);db.commit()
-    except Exception:
-        db.rollback();raise
+    from outbound_actions import transaction
+    with transaction(db):
+        adopt_candidates(db);settle(db,now)
 
 
 def lookup(db, token):
@@ -257,16 +256,21 @@ def respond(db, token, action, now=None):
     if action not in ('accept','decline','cancel'):
         raise ValueError('Choisissez une action disponible.')
     process_due(db,now)
-    db.execute('BEGIN IMMEDIATE')
+    owns_transaction = not db.in_transaction
+    if owns_transaction: db.execute('BEGIN IMMEDIATE')
     try:
         settle(db,now);group=lookup(db,token)
         if action in ('accept','decline'):
             if group['offer_token_hash']!=digest(token):
                 raise ValueError('Utilisez le lien de proposition reçu par e-mail.')
             if group['status']=='confirmed' and action=='accept':
-                value=result(db,group['group_uuid']);db.commit();return value
+                value=result(db,group['group_uuid'])
+                if owns_transaction: db.commit()
+                return value
             if group['status']=='declined' and action=='decline':
-                value=result(db,group['group_uuid']);db.commit();return value
+                value=result(db,group['group_uuid'])
+                if owns_transaction: db.commit()
+                return value
             if group['status']!='offer_pending' or group['offer_expires_at']<=now.isoformat():
                 raise ValueError('Cette proposition n’est plus disponible. Aucune place n’a été confirmée.')
             if action=='accept':
@@ -281,12 +285,15 @@ def respond(db, token, action, now=None):
             transition(db,group['group_uuid'],'confirmed' if action=='accept' else 'declined','usager',now)
         elif group['status'] not in TERMINAL:
             transition(db,group['group_uuid'],'cancelled','usager',now)
-        settle(db,now);value=result(db,group['group_uuid']);db.commit();return value
+        settle(db,now);value=result(db,group['group_uuid'])
+        if owns_transaction: db.commit()
+        return value
     except Exception:
-        db.rollback();raise
+        if owns_transaction: db.rollback()
+        raise
 
 
-def build_message(config, row, base_url):
+def build_message(config, row, base_url, link_url=None):
     from welcome_mail import validate_config
     config=validate_config(config);parsed=urlsplit(base_url)
     if not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.scheme not in ('http','https'):
@@ -295,7 +302,7 @@ def build_message(config, row, base_url):
     subjects={'confirmed':'Réservation confirmée', 'waitlisted':'Inscription en liste d’attente',
               'offer_pending':'Une place est disponible pour votre groupe', 'expired':'Proposition expirée',
               'declined':'Proposition refusée', 'cancelled':'Réservation annulée', 'modified':'Réservation modifiée'}
-    title=subjects[kind];url=base_url.rstrip('/')+'/animations/demande/'+payload['token']
+    title=subjects[kind];url=link_url or base_url.rstrip('/')+'/animations/demande/'+payload['token']
     body=title+'\n\n'+payload['title']+'\n'+payload['date']+' · '+payload['hours']+'\n\nParticipants :\n'
     body+='\n'.join('- '+name for name in payload['participants'])+'\n\n'+str(payload['count'])+' place(s) pour le groupe entier.\n'
     if kind=='offer_pending':
@@ -325,7 +332,8 @@ def deliver(db, database_path, sender=None, now=None, base_url=None):
     if sender is None and not external_allowed(database_path):
         return 0
     config=load_config(database_path)
-    base_url=base_url or family.setting(db,'reservation_public_url','')
+    explicit_base=base_url is not None
+    base_url=base_url or family.setting(db,'reservation_wordpress_url','') or family.setting(db,'reservation_public_url','')
     if not base_url or (sender is None and urlsplit(base_url).scheme!='https') or not config:
         return 0
     # Recover claims after a process restart. A live claim never exceeds SMTP's
@@ -336,7 +344,7 @@ def deliver(db, database_path, sender=None, now=None, base_url=None):
     for item in db.execute("SELECT e.message_uuid FROM family_booking_emails e JOIN family_booking_groups g USING(group_uuid) WHERE e.state='pending' AND (e.next_attempt_at IS NULL OR e.next_attempt_at<=?) AND (? OR g.environment='production') ORDER BY e.created_at,e.rowid LIMIT 30",(now.isoformat(),sender is not None)).fetchall():
         db.execute('BEGIN IMMEDIATE')
         claimed=db.execute("UPDATE family_booking_emails SET state='sending',claimed_at=?,attempts=attempts+1 WHERE message_uuid=? AND state='pending'",(now.isoformat(),item[0]))
-        row=db.execute('SELECT * FROM family_booking_emails WHERE message_uuid=?',(item[0],)).fetchone();db.commit()
+        row=db.execute('SELECT e.*,g.environment FROM family_booking_emails e JOIN family_booking_groups g USING(group_uuid) WHERE message_uuid=?',(item[0],)).fetchone();db.commit()
         if not claimed.rowcount:continue
         try:
             # Recheck that a pending proposal has not expired before delivery.
@@ -346,7 +354,9 @@ def deliver(db, database_path, sender=None, now=None, base_url=None):
                 if not group or group['status']!='offer_pending' or group['offer_expires_at']<=delivery_now.isoformat():
                     with db:db.execute("UPDATE family_booking_emails SET state='superseded' WHERE message_uuid=?",(item[0],))
                     continue
-            message=build_message(config,row,base_url)
+            from outbound_actions import email_link
+            link=None if explicit_base else email_link(db,database_path,json.loads(row['payload_json']),row['kind'],row['environment'])
+            message=build_message(config,row,base_url,link)
             (sender or (lambda message:send(config,message)))(message)
         except Exception as error:
             # Store only an exception class, never SMTP payloads or credentials.

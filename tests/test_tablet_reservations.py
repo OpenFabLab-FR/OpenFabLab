@@ -94,6 +94,9 @@ class TabletTests(unittest.TestCase):
     def test_schema15_does_not_send_historical_pending_requests(self):
         self.legacy(companion=True);transport=mock.Mock()
         with mock.patch('runtime_policy.external_allowed',return_value=True):
-            tablet.process_requests(self.db,transport,'production')
+            self.assertFalse(hasattr(tablet,'process_requests'))
+            # Removed entirely from runtime; archived helper remains test-only.
+            from tests.historical_tablet_reservations import process_requests
+            process_requests(self.db,transport,'production')
         transport.post.assert_not_called()
         self.assertEqual(tablet.requests_for(self.db)[0]['payload']['state'],'pending')

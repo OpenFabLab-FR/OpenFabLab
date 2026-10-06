@@ -2,6 +2,17 @@
 if (!defined('ABSPATH')) { exit; }
 
 final class OpenFabLab_Bookings {
+    /** Historical helpers are exercised only by isolated pre-2.8.1 fixtures.
+     * The running plugin defines its immutable version before loading classes.
+     * Refuse before any SQL, token, capacity calculation or notification.
+     */
+    public static function historical_engine_disabled() {
+        return defined('OPENFABLAB_RES_VERSION') && version_compare(OPENFABLAB_RES_VERSION, '2.8.1', '>=');
+    }
+
+    private static function disabled() {
+        return self::error('openfablab_legacy_disabled', 'Ce parcours historique est désactivé. Utilisez la page de réservation actuelle.', 409);
+    }
     private static function now() { return current_time('mysql', true); }
 
     private static function error($code, $message, $status = 400) {
@@ -25,6 +36,7 @@ final class OpenFabLab_Bookings {
     }
 
     public static function identity($environment, $public_id, $email, $phone) {
+        if (self::historical_engine_disabled()) { return self::disabled(); }
         global $wpdb;
         $table = OpenFabLab_Database::table('directory');
         $email_hash = self::fingerprint('email', $email);
@@ -62,6 +74,7 @@ final class OpenFabLab_Bookings {
     }
 
     public static function verify($data) {
+        if (self::historical_engine_disabled()) { return self::disabled(); }
         global $wpdb;
         $environment = $data['environment'] ?? '';
         if (!in_array($environment, ['test', 'production'], true)) {
@@ -134,6 +147,7 @@ final class OpenFabLab_Bookings {
     }
 
     public static function public_animations($environment) {
+        if (self::historical_engine_disabled()) { return self::disabled(); }
         global $wpdb;
         if (!in_array($environment, ['test', 'production'], true)) { return []; }
         $table = OpenFabLab_Database::table('animations');
@@ -217,6 +231,7 @@ final class OpenFabLab_Bookings {
     }
 
     public static function reserve($data) {
+        if (self::historical_engine_disabled()) { return self::disabled(); }
         global $wpdb;
         if (!OpenFabLab_Database::tables_are_innodb()) {
             return self::error('storage_unavailable', 'La réservation est momentanément indisponible.', 503);
@@ -351,6 +366,7 @@ final class OpenFabLab_Bookings {
     }
 
     public static function send_confirmation($uuid, $animation) {
+        if (self::historical_engine_disabled()) { return self::disabled(); }
         self::mail_booking($uuid, $animation, 'confirmed');
     }
 
@@ -375,6 +391,7 @@ final class OpenFabLab_Bookings {
     }
 
     public static function cancel($uuid, $token) {
+        if (self::historical_engine_disabled()) { return self::disabled(); }
         global $wpdb;
         $reservations = OpenFabLab_Database::table('reservations');
         $animations = OpenFabLab_Database::table('animations');
@@ -424,6 +441,7 @@ final class OpenFabLab_Bookings {
     }
 
     public static function promote_waitlist($animation_id, $slot_uuid = null) {
+        if (self::historical_engine_disabled()) { return self::disabled(); }
         global $wpdb;
         $reservations = OpenFabLab_Database::table('reservations');
         $animations = OpenFabLab_Database::table('animations');
@@ -487,6 +505,7 @@ final class OpenFabLab_Bookings {
     }
 
     public static function respond_offer($uuid, $token, $accept) {
+        if (self::historical_engine_disabled()) { return self::disabled(); }
         global $wpdb;
         $reservations = OpenFabLab_Database::table('reservations');
         $animations = OpenFabLab_Database::table('animations');
@@ -697,7 +716,12 @@ final class OpenFabLab_Bookings {
         exit;
     }
 
-    public static function cancellation_page() { self::action_page('cancel'); }
+    public static function cancellation_page() {
+        if (defined('OPENFABLAB_RES_VERSION') && version_compare(OPENFABLAB_RES_VERSION, '2.8.1', '>=')) {
+            wp_die('Ce lien historique WordPress n’est plus actif. Contactez l’équipe du FabLab. Aucune donnée n’a été modifiée.');
+        }
+        self::action_page('cancel');
+    }
     public static function offer_page() {
         if (defined('OPENFABLAB_RES_VERSION') && version_compare(OPENFABLAB_RES_VERSION, '2.8.0', '>=')) {
             wp_die('Cette ancienne proposition n’est plus active. Contactez l’équipe du FabLab.');

@@ -22,16 +22,18 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.8.0')
-        self.assertIn('openfablab:v2.8.0',(ROOT/'compose.yaml').read_text())
+        self.assertEqual(__version__,'2.8.1')
+        self.assertIn('openfablab:v2.8.1',(ROOT/'compose.yaml').read_text())
 
     def test_stable_release_documentation_is_consistent(self):
         readme=(ROOT/'README.md').read_text()
-        self.assertIn('# OpenFabLab 2.8.0',readme)
-        self.assertIn('**Version stable · SQLite schéma 15',readme)
-        self.assertIn('OpenFabLab Reservations 2.8.0',readme)
-        self.assertNotIn('candidate locale',readme)
-        self.assertIn('## 2.8.0 — version stable',(ROOT/'CHANGELOG.md').read_text())
+        self.assertIn('# OpenFabLab 2.8.1',readme)
+        self.assertIn('**Version stable actuelle · SQLite schéma 16',readme)
+        self.assertIn('OpenFabLab Reservations 2.8.1',readme)
+        self.assertIn('2.8.1 est la dernière version stable',readme)
+        self.assertIn('releases/tag/v2.8.1',readme)
+        self.assertNotIn('releases/tag/v2.8.0',readme)
+        self.assertIn('## 2.8.1 — version stable',(ROOT/'CHANGELOG.md').read_text())
         self.assertEqual(__import__('json').loads((ROOT/'package.json').read_text())['version'],__version__)
         self.assertEqual(__import__('json').loads((ROOT/'package-lock.json').read_text())['version'],__version__)
         self.assertIn('Seul le stockage historique du plugin WordPress',(ROOT/'docs/families-2.8.md').read_text())
@@ -60,7 +62,7 @@ class PublicReleaseTests(unittest.TestCase):
                                         AUTO_CLOSURE_WORKER=False,WEATHER_ENABLED=False))
             with application.app_context():
                 db=get_database()
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],15)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],16)
                 self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
                 self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
                 for table in ('users','sessions','visitors','rental_catalog','billing_tariff_catalog','billing_clients','billing_records','animation_bookings'):
@@ -175,16 +177,16 @@ import pathlib,sqlite3,app
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.flask_app.config['APP_VERSION']=='V2.8.0'
+assert app.flask_app.config['APP_VERSION']=='V2.8.1'
 client=Client(app.app,Response)
 for route in ('/stat/sante','/stat/','/stat/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     if route=='/stat/':
-        assert b'V2.8.0' in response.data
+        assert b'V2.8.1' in response.data
     response.close()
 with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==15
+    assert db.execute('PRAGMA user_version').fetchone()[0]==16
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     for table in ('users','sessions','visitors','animation_bookings','billing_clients'):
@@ -231,14 +233,14 @@ with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.8.0'
+assert app.app.config['APP_VERSION']=='V2.8.1'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     response.close()
 with sqlite3.connect(app.app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==15
+    assert db.execute('PRAGMA user_version').fetchone()[0]==16
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     assert db.execute('SELECT COUNT(*) FROM users').fetchone()[0]==0
@@ -255,6 +257,44 @@ with sqlite3.connect(app.app.config['DATABASE']) as db:
         self.assertNotIn('test_phase2a_script.py','\n'.join(names))
         self.assertNotIn('test_phase2_migration.py','\n'.join(names))
         self.assertNotIn('test_nas_update_v26.py','\n'.join(names))
+
+    def test_macos_metadata_never_enters_application_or_plugin_zip(self):
+        import build_openfablab as application,build_wordpress_plugin as plugin
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/'source';root.mkdir()
+            for path in application.included_paths():
+                target=root/path.relative_to(ROOT);target.parent.mkdir(parents=True,exist_ok=True)
+                shutil.copy2(path,target)
+            for name in ('.DS_Store','templates/._home.html','templates/.AppleDouble/home.html',
+                         'templates/__MACOSX/home.html','openfablab/._app.py'):
+                target=root/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(b'macOS metadata fixture')
+            archive=application.build(Path(directory)/'clean-app.zip',root=root)
+            with ZipFile(archive) as zipfile:
+                self.assertFalse(any(application.is_macos_metadata(n) for n in zipfile.namelist()))
+                self.assertEqual(zipfile.namelist(),[p.relative_to(ROOT).as_posix() for p in application.included_paths()])
+            fake_plugin=Path(directory)/'plugin';fake_plugin.mkdir()
+            for name in ('.DS_Store','assets/._family.js','__MACOSX/family.js'):
+                target=fake_plugin/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(b'metadata')
+                with patch.object(plugin,'PLUGIN',fake_plugin),patch.object(plugin,'INCLUDED',(name,)):
+                    with self.assertRaises(ValueError):plugin.build(Path(directory)/'refused.zip')
+        for name in ('.DS_Store','._*','.AppleDouble','__MACOSX'):
+            self.assertIn(name,(ROOT/'.gitignore').read_text())
+            self.assertIn(name,(ROOT/'.dockerignore').read_text())
+
+    def test_strict_source_guard_still_refuses_macos_metadata(self):
+        from tools import check_public_tree
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'PUBLIC_FILES.txt').write_text('PUBLIC_FILES.txt\n')
+            for name in ('.DS_Store','._README.md','__MACOSX/README.md'):
+                target=root/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(b'metadata')
+                with patch.object(check_public_tree,'ROOT',root):
+                    with self.assertRaisesRegex(ValueError,'macOS metadata is not permitted'):
+                        check_public_tree.check()
+                target.unlink()
+                if target.parent!=root:target.parent.rmdir()
 
 
 if __name__=='__main__':

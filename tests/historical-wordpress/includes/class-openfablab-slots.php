@@ -30,6 +30,7 @@ final class OpenFabLab_Slots {
         return $wpdb->prepare(' AND ' . $alias . 'slot_uuid = %s', $uuid);
     }
     public static function used($animation, $uuid = null) {
+        if (OpenFabLab_Bookings::historical_engine_disabled()) { throw new RuntimeException('La capacité est calculée uniquement par OpenFabLab.'); }
         global $wpdb;
         $table = OpenFabLab_Database::table('reservations');
         $used = $wpdb->get_var($wpdb->prepare(

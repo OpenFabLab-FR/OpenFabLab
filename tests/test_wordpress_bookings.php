@@ -3,7 +3,7 @@
 define('ABSPATH', __DIR__);
 define('ARRAY_A', 'ARRAY_A');
 define('YEAR_IN_SECONDS', 365 * 86400);
-define('OPENFABLAB_RES_FILE', dirname(__DIR__) . '/wordpress/openfablab-reservations/openfablab-reservations.php');
+define('OPENFABLAB_RES_FILE', __DIR__ . '/historical-wordpress/openfablab-reservations.php');
 define('OPENFABLAB_RES_PATH', dirname(OPENFABLAB_RES_FILE) . '/');
 class WP_Error {
     public function __construct(public $code, public $message, public $data = []) {}

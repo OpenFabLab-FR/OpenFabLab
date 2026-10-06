@@ -13,6 +13,7 @@ FILES = (
     "app.py", "billing.py", "annual_report.py", "animation_report.py", "calendar_export.py",
     "pin_security.py", "profile_archive.py", "reservations_sync.py", "animation_slots.py", "branding.py",
     "private_backup.py", "runtime_policy.py", "docs/private-backup.md",
+    "outbound_actions.py", "outbound_sync.py", "docs/outbound-2.8.1.md",
     'evolution_schema.py', 'evolution_users.py', 'evolution_routes.py', 'welcome_mail.py', 'resource_booking.py', 'fablab_calendar.py', 'tablet_reservations.py', 'family_model.py', 'family_routes.py', 'family_reservations.py', 'family_reservation_routes.py', 'family_waitlist.py',
     "build_openfablab.py", "Dockerfile", ".dockerignore", "compose.yaml", "AppStart.command",
     "requirements.txt", "requirements-nas.txt", "LICENSE", "README.md",
@@ -40,6 +41,13 @@ DIRECTORIES = {
     "templates": {".html"},
 }
 FORBIDDEN_PARTS = {".venv", "__pycache__", "Saves", "data", "branding", "wordpress", "dist"}
+MACOS_METADATA = {".DS_Store", ".AppleDouble", ".AppleDesktop", "__MACOSX",
+                  ".LSOverride", ".Spotlight-V100", ".Trashes", ".TemporaryItems",
+                  ".fseventsd", ".VolumeIcon.icns", ".apdisk"}
+
+
+def is_macos_metadata(relative):
+    return any(part in MACOS_METADATA or part.startswith("._") for part in Path(relative).parts)
 
 
 def included_paths(root=ROOT):
@@ -47,10 +55,11 @@ def included_paths(root=ROOT):
     paths = [root / name for name in FILES]
     for directory, suffixes in DIRECTORIES.items():
         base = root / directory
-        paths.extend(path for path in base.rglob("*") if path.is_file() and path.suffix.lower() in suffixes)
+        paths.extend(path for path in base.rglob("*") if path.is_file() and path.suffix.lower() in suffixes
+                     and not is_macos_metadata(path.relative_to(root)))
     for path in paths:
         relative = path.relative_to(root)
-        if not path.is_file() or path.is_symlink() or any(part in FORBIDDEN_PARTS or (part.startswith(".") and part not in {".dockerignore", ".env.example"}) for part in relative.parts):
+        if not path.is_file() or path.is_symlink() or is_macos_metadata(relative) or any(part in FORBIDDEN_PARTS or (part.startswith(".") and part not in {".dockerignore", ".env.example"}) for part in relative.parts):
             raise ValueError(f"Fichier de distribution manquant ou interdit : {relative}")
     return sorted(set(paths), key=lambda path: path.relative_to(root).as_posix())
 

@@ -44,34 +44,35 @@ class FamilyMemoryDB {
         return 1;
     }
 }
-require __DIR__.'/../wordpress/openfablab-reservations/includes/class-openfablab-family-gateway.php';
-require __DIR__.'/../wordpress/openfablab-reservations/includes/class-openfablab-legacy-reset.php';
-$response=['status'=>200,'body'=>'{"count":3,"status":"confirmed"}'];
-$_SERVER['REMOTE_ADDR']='fictional-ip';
-$value=OpenFabLab_Family_Gateway::call('identify',['service_id'=>1,'client_bucket'=>'browser-forged']);
-assert_family($value instanceof WP_REST_Response,'gateway accepts core answer');
-assert_family(str_contains($value->headers['Cache-Control'],'no-store'),'private choices not cached');
-$body=json_decode($remote[1]['body'],true);
-assert_family($body['client_bucket']===hash_hmac('sha256','fictional-ip','fictional-auth-salt'),'client bucket fixed server-side');
-assert_family(!str_contains($remote[1]['body'],'fictional-shared-secret'),'secret not in payload');
-$value=OpenFabLab_Family_Gateway::call('reserve',['participants'=>['opaque1','opaque2','opaque3'],'request_key'=>'fictional-request-key']);
-assert_family($value->data['count']===3,'real participant count returned unchanged');
-$response=['status'=>200,'body'=>'{"token":"opaque","contact_required":false,"phone_required":true,"participants":[]}'];
-$value=OpenFabLab_Family_Gateway::call('contact',['token'=>'opaque','email'=>'contact@example.invalid','phone'=>'0600000000']);
-assert_family($value instanceof WP_REST_Response,'contact completion relayed to core');
-assert_family($value->data['contact_required']===false,'core decides missing contact');
-assert_family(str_ends_with($remote[0],'/api/reservations/familles/contact'),'same signed HTTPS API for contacts');
-assert_family(str_contains($value->headers['Cache-Control'],'no-store'),'contact answer remains private');
-$response=new WP_Error('network','fictional error');
-assert_family(OpenFabLab_Family_Gateway::call('reserve',[])->data['status']===503,'network failure never confirms');
-$response=['status'=>409,'body'=>'{"message":"Capacité insuffisante"}'];
-assert_family(OpenFabLab_Family_Gateway::call('reserve',[])->data['status']===409,'capacity refusal preserved');
-$response=['status'=>200,'body'=>'broken'];
-assert_family(OpenFabLab_Family_Gateway::call('catalogue',[])->data['status']===503,'invalid response refused');
-$options['openfablab_res_core_url']='http://example.invalid';
-assert_family(OpenFabLab_Family_Gateway::call('catalogue',[])->data['status']===503,'HTTP core URL forbidden');
-$options['openfablab_res_core_url']='https://example.invalid/stat';
-assert_family(OpenFabLab_Family_Gateway::call('delete',[])->data['status']===503,'gateway cannot purge core');
+require __DIR__.'/historical-wordpress/includes/class-openfablab-family-gateway.php';
+require __DIR__.'/historical-wordpress/includes/class-openfablab-legacy-reset.php';
+// The gateway is now a transport adapter, never an HTTP client of the NAS.
+class OpenFabLab_Relay {
+    public static function public_catalogue($env) {
+        assert_family(in_array($env,['test','production'],true),'explicit catalogue environment');
+        return new WP_REST_Response(['animations'=>[]]);
+    }
+    public static function enqueue($action,$data) {
+        $GLOBALS['deposited']=[$action,$data];
+        if (!in_array($action,['identify','contact','reserve','view','cancel','accept','decline'],true)) return new WP_Error('invalid','Unknown action',['status'=>400]);
+        $answer=new WP_REST_Response(['state'=>'pending','request_key'=>$data['request_key']??'']);
+        $answer->header('Cache-Control','private, no-store');return $answer;
+    }
+}
+foreach (['identify','contact','reserve','view','cancel','accept','decline'] as $action) {
+    $data=['environment'=>'production','participants'=>['opaque1','opaque2','opaque3'],'request_key'=>'fictional-key'];
+    $value=OpenFabLab_Family_Gateway::call($action,$data);
+    assert_family($value instanceof WP_REST_Response,'accepted only as a queued request');
+    assert_family($value->data['state']==='pending'&&!isset($value->data['status']),'no premature confirmation');
+    assert_family($deposited===[$action,$data],'selection forwarded unchanged to queue');
+    assert_family(str_contains($value->headers['Cache-Control'],'no-store'),'private result not cached');
+    assert_family(!isset($GLOBALS['remote']),'no WordPress to core HTTP request');
+}
+$options['openfablab_res_core_url']='';$value=OpenFabLab_Family_Gateway::call('catalogue',['environment'=>'test']);
+assert_family($value instanceof WP_REST_Response,'empty inbound URL does not break catalogue');
+$options['openfablab_res_core_url']='http://unreachable.invalid';$value=OpenFabLab_Family_Gateway::call('catalogue',['environment'=>'production']);
+assert_family($value instanceof WP_REST_Response,'historical core URL ignored');
+assert_family(OpenFabLab_Family_Gateway::call('delete',[])->data['status']===400,'gateway cannot purge core');
 $wpdb=new FamilyMemoryDB();$original_options=$options;$original_core=$core_history;
 $snapshot=new ReflectionMethod(OpenFabLab_Legacy_Reset::class,'snapshot');$digest=new ReflectionMethod(OpenFabLab_Legacy_Reset::class,'stable_digest');
 $saved=$snapshot->invoke(null);$transients['openfablab_legacy_reset_7']=$digest->invoke(null,$saved);

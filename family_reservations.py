@@ -8,6 +8,7 @@ import hmac
 import json
 import re
 import secrets
+import sqlite3
 import time
 from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
@@ -89,6 +90,55 @@ def result(db, group):
             'booking_uuids':[r['external_uuid'] for r in rows]}
 
 
+def delete_animation(db, service_id):
+    """Delete only a closed animation's dependencies, under the booking lock.
+
+    No schema/FK changes or global history purge. Durable relay receipts remain
+    for anti-replay; requests already queued cannot reserve a deleted service.
+    """
+    from outbound_actions import transaction
+    from reservations_sync import enqueue_animation
+    with transaction(db):
+        service = db.execute('SELECT service_type FROM fablab_services WHERE id=?', (service_id,)).fetchone()
+        if not service or service['service_type'] != 'animation':
+            raise ValueError('Cette animation est introuvable ou ne peut pas être supprimée ici.')
+        if db.execute('SELECT 1 FROM billing_records WHERE service_id=?', (service_id,)).fetchone():
+            raise ValueError('Cette animation est liée à un dossier de facturation. Gérez-la depuis ce dossier.')
+        terminal = "('cancelled','expired','declined')"
+        if (db.execute('SELECT 1 FROM animation_bookings WHERE service_id=? AND status NOT IN '+terminal+' LIMIT 1', (service_id,)).fetchone()
+                or db.execute('SELECT 1 FROM family_booking_groups WHERE service_id=? AND status NOT IN '+terminal+' LIMIT 1', (service_id,)).fetchone()):
+            raise ValueError('Cette animation possède encore des inscriptions actives, des demandes en attente ou des places proposées. Annulez-les avant de la supprimer.')
+        groups = {row[0] for row in db.execute('SELECT group_uuid FROM family_booking_groups WHERE service_id=?', (service_id,))}
+        groups.update(row[0] for row in db.execute("SELECT group_uuid FROM animation_bookings WHERE service_id=? AND source LIKE 'family_%' AND group_uuid IS NOT NULL", (service_id,)))
+        # Never cascade into another animation, even with inconsistent old data.
+        for group in groups:
+            if (db.execute('SELECT 1 FROM animation_bookings WHERE group_uuid=? AND service_id<>? LIMIT 1', (group, service_id)).fetchone()
+                    or db.execute('SELECT 1 FROM family_booking_groups WHERE group_uuid=? AND service_id<>?', (group, service_id)).fetchone()):
+                raise ValueError('Un dossier d’inscription est lié à une autre animation. La suppression a été interrompue ; vérifiez ce dossier avec l’équipe.')
+        db.execute('SAVEPOINT animation_deletion')
+        try:
+            # Create the catalogue tombstone before the config disappears.
+            enqueue_animation(db, service_id, command='delete')
+            for group in groups:
+                # Cascades only this group's history and undelivered mail.
+                db.execute('DELETE FROM family_booking_requests WHERE group_uuid=?', (group,))
+                db.execute('DELETE FROM family_booking_groups WHERE group_uuid=? AND service_id=?', (group, service_id))
+            db.execute('DELETE FROM reservation_actions WHERE booking_uuid IN (SELECT external_uuid FROM animation_bookings WHERE service_id=?)', (service_id,))
+            db.execute("DELETE FROM reservation_outbox WHERE command_type='booking' AND entity_key IN (SELECT external_uuid FROM animation_bookings WHERE service_id=?)", (service_id,))
+            # Explicit ordering also handles the historical slot FK (RESTRICT).
+            db.execute('DELETE FROM animation_bookings WHERE service_id=?', (service_id,))
+            db.execute("DELETE FROM calendar_visibility WHERE event_kind='animation' AND event_key=?", (str(service_id),))
+            db.execute('DELETE FROM fablab_services WHERE id=?', (service_id,))
+        except BaseException as error:
+            db.execute('ROLLBACK TO animation_deletion')
+            db.execute('RELEASE animation_deletion')
+            if isinstance(error, sqlite3.IntegrityError):
+                raise ValueError('Cette animation est encore liée à un autre dossier. Rien n’a été supprimé ; vérifiez les liens avant de réessayer.') from error
+            raise
+        else:
+            db.execute('RELEASE animation_deletion')
+
+
 def reserve(db, owner_id, ids, service_id, slot_uuid, request_key, environment='production', source='kiosk', staff=False):
     if source not in ('kiosk','wordpress','administration') or not re.fullmatch(r'[A-Za-z0-9_-]{24,100}',str(request_key)):
         raise ValueError('Demande invalide.')
@@ -97,7 +147,9 @@ def reserve(db, owner_id, ids, service_id, slot_uuid, request_key, environment='
     except (TypeError,ValueError):
         raise ValueError('Sélection invalide.')
     fingerprint=hashlib.sha256(json.dumps([owner_id,selected,service_id,slot_uuid or '',environment],separators=(',',':')).encode()).hexdigest()
-    db.execute('BEGIN IMMEDIATE')
+    owns_transaction = not db.in_transaction
+    if owns_transaction:
+        db.execute('BEGIN IMMEDIATE')
     try:
         import family_waitlist as waiting
         waiting.adopt_candidates(db)
@@ -106,7 +158,9 @@ def reserve(db, owner_id, ids, service_id, slot_uuid, request_key, environment='
         if prior:
             if not hmac.compare_digest(prior['request_hash'],fingerprint):
                 raise ValueError('Cette demande a déjà été utilisée pour un autre choix.')
-            value=result(db,prior['group_uuid']);db.commit();return value
+            value=result(db,prior['group_uuid'])
+            if owns_transaction: db.commit()
+            return value
         service=effective_service(db,service_id,slot_uuid,environment,check_open=not staff)
         people=participants(db,owner_id,selected,service,staff)
         details=waiting.require_contact(db,owner_id,people)
@@ -126,25 +180,31 @@ def reserve(db, owner_id, ids, service_id, slot_uuid, request_key, environment='
                 (str(uuid4()),service_id,environment,person['first_name'],person['last_name'],person['birth_year'],None,None,state,'registered',person['public_id'],person['id'],group,'family_'+source,None,now,now,slot_uuid or None))
         db.execute('INSERT INTO family_booking_requests VALUES(?,?,?,?,?,?)',(request_key,fingerprint,owner_id,group,source,now))
         waiting.create_group(db,group,owner_id,service_id,slot_uuid,environment,state,details)
-        value=result(db,group);db.commit();return value
+        value=result(db,group)
+        if owns_transaction: db.commit()
+        return value
     except Exception:
-        db.rollback();raise
+        if owns_transaction: db.rollback()
+        raise
 
 
 def limit_identification(db, bucket):
     # Server-side rate limit survives new cookies; hashes avoid storing contacts.
     now=int(time.time())
     safe_bucket=hashlib.sha256(str(bucket).encode()).hexdigest()
-    db.execute('BEGIN IMMEDIATE')
+    owns_transaction = not db.in_transaction
+    if owns_transaction: db.execute('BEGIN IMMEDIATE')
     try:
         since=(datetime.now(timezone.utc)-timedelta(minutes=10)).isoformat()
         detail=json.dumps({'family_bucket':safe_bucket})
         attempts=db.execute("SELECT COUNT(*) FROM security_events WHERE event_type='family_identify_attempt' AND created_at>? AND details_json=?",(since,detail)).fetchone()[0]
         if attempts>=5:
             raise ValueError('Trop de tentatives. Patientez avant de réessayer.')
-        db.execute('INSERT INTO security_events(event_type,created_at,details_json) VALUES(?,?,?)',('family_identify_attempt',family.timestamp(),detail));db.commit()
+        db.execute('INSERT INTO security_events(event_type,created_at,details_json) VALUES(?,?,?)',('family_identify_attempt',family.timestamp(),detail))
+        if owns_transaction: db.commit()
     except Exception:
-        db.rollback();raise
+        if owns_transaction: db.rollback()
+        raise
     return now
 
 
@@ -156,8 +216,8 @@ def matching_account(db, public_id, contact):
     return user if matched else None
 
 
-def identify(db, service_id, public_id, contact, bucket, environment='production'):
-    now=limit_identification(db,bucket)
+def identify(db, service_id, public_id, contact, bucket, environment='production', rate_checked=False):
+    now=int(time.time()) if rate_checked else limit_identification(db,bucket)
     config=db.execute('SELECT enabled,environment FROM animation_reservation_config WHERE service_id=?',(service_id,)).fetchone()
     if not config or not config['enabled'] or config['environment']!=environment:
         raise ValueError('Animation indisponible.')
@@ -165,7 +225,8 @@ def identify(db, service_id, public_id, contact, bucket, environment='production
     if not user:
         raise ValueError('Identifiant ou coordonnée non concordants. Adressez-vous à l’équipe.')
     token=secrets.token_urlsafe(32)
-    with db:
+    from outbound_actions import transaction
+    with transaction(db):
         db.execute('DELETE FROM family_booking_grants WHERE expires_at<?',(now,))
         db.execute('INSERT INTO family_booking_grants VALUES(?,?,?,?,?)',(hashlib.sha256(token.encode()).hexdigest(),user['id'],service_id,environment,now+900))
     return token,user['id']
