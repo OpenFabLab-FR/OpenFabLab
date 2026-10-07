@@ -496,6 +496,7 @@ h2 {
 }
 
 .present-list li {
+    min-width: 0;
     min-height: 70px;
     padding: 0;
     display: flex;
@@ -505,6 +506,7 @@ h2 {
 }
 
 .present-person-button {
+    min-width: 0;
     width: 100%;
     height: 100%;
     min-height: inherit;
@@ -549,8 +551,9 @@ h2 {
 
 .present-details .category-badge {
     max-width: 100%;
-    flex: 0 0 auto;
-    white-space: nowrap;
+    flex: 0 1 auto;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .avatar {
@@ -2542,7 +2545,15 @@ body.dialog-open {
     vertical-align: middle;
 }
 
-.category-badge { background:var(--surface-soft); color:var(--text); }
+.category-badge {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    background: var(--category-background, #f1f3f3);
+    color: var(--category-ink, #2e3437);
+    box-shadow: inset 0 0 0 1px var(--category-border, #eaeced);
+}
 .category-badge::before {
     content: "";
     width: 7px;
@@ -2552,6 +2563,7 @@ body.dialog-open {
     background: var(--category-color, #72828a);
     box-shadow: inset 0 0 0 1px rgba(20,35,40,.18);
 }
+#anonymous-visitor-color .form-actions { align-items: center; }
 .tablet-animation-card h2 { font-size:1.3rem; }
 .tablet-animation-card { margin:0; }
 .tablet-honeypot { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
@@ -6229,10 +6241,6 @@ tbody tr:last-child td {
     box-sizing: border-box;
 }
 
-.category-visitor {
-    color: #52616a;
-    background: #e7eef1;
-}
 
 @media (max-width: 760px) {
     .admin-page main,

@@ -1,5 +1,14 @@
 # OpenFabLab — Roadmap et conception
 
+## Disponible en 2.8.2 stable — compte facultatif, QR et badges pastel
+
+Le parcours public sans compte devient une option de structure,
+autorisée par défaut, sans création de fiche usager. Le parcours familial avec
+compte reste inchangé et propose QR et saisie avec vérification de coordonnée.
+Protocole 4/révision 3, SQLite 17, badges pastel calculés à partir des couleurs
+configurées, couleur indépendante des visiteurs anonymes et catalogue public
+harmonisé. Voir le [guide 2.8.2](docs/reservations-2.8.2.md).
+
 ## Disponible en 2.8.1 stable — intégration WordPress sortante
 
 La version stable 2.8.1 remplace les appels WordPress → OpenFabLab du protocole 3 par un relais sortant protocole 4 : catalogue public reçu toutes les 90 secondes par défaut, demandes et résultats relevés toutes les 15 secondes (10 à 60 configurables). WordPress ne décide jamais des places. Les liens d’e-mail peuvent revenir vers une page WordPress protégée ; aucun accès entrant au NAS n’est nécessaire. Voir [le fonctionnement et les limites](docs/outbound-2.8.1.md).
@@ -39,7 +48,7 @@ Voir [la conception](docs/families-2.8.md) et [le guide d'essai](docs/candidate-
 4. Évaluer un moyen d'identification renforcée (code à usage unique, QR privé, etc.) : la concordance ID/contact ne prouve pas une autorité parentale. Aucune gestion publique arbitraire des rattachements.
 5. Décider plus tard d'une extension aux autres personnes liées, sans fusionner leurs comptes.
 
-### Évolutions ultérieures, non disponibles en 2.8.1
+### Évolutions ultérieures, non disponibles en 2.8.2
 
 Réutiliser les seuils/responsabilités pour les machines et autres ressources, avec habilitations et contraintes propres à chaque ressource. Ne pas déduire une autorisation machine du seul lien familial. Une notion générale de compte Famille reste éventuelle, jamais une fusion d'historiques.
 

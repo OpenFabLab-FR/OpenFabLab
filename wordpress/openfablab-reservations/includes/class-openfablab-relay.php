@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) { exit; }
 
 /** Temporary transport only: NO capacity, identity or family business rules. */
 final class OpenFabLab_Relay {
-    private const TYPES = ['identify','contact','reserve','view','cancel','accept','decline'];
+    private const TYPES = ['identify','contact','reserve','guest','view','cancel','accept','decline'];
     private static $signed = [];
     private static function secret() { return (string) get_option('openfablab_res_sync_secret', ''); }
     private static function env($data) {
@@ -169,7 +169,7 @@ final class OpenFabLab_Relay {
                 || !preg_match('/^[a-f0-9]{48}$/D',(string)($data['request_key'] ?? ''))) {
                 return self::error('Demande invalide.',400);
             }
-            if (in_array($type,['identify','contact','reserve'],true) && is_wp_error(self::public_catalogue($env))) {
+            if (in_array($type,['identify','contact','reserve','guest'],true) && is_wp_error(self::public_catalogue($env))) {
                 return self::error('Les inscriptions ne sont pas disponibles pour le moment. Réessayez dans quelques instants.');
             }
             $client_key=$data['request_key']; unset($data['request_key']);
@@ -209,12 +209,14 @@ final class OpenFabLab_Relay {
         global $wpdb;
         try {
             $data=self::body($request,1000000);$env=self::env($data);$items=$data['animations'] ?? null;
-            if (($data['protocol_version'] ?? 0)!==4 || !is_array($items) || count($items)>100) { return self::error('Catalogue invalide.',400); }
-            $allowed=['service_id','title','description','date','hours','minimum_age','booking_mode','slots','available','waitlist_enabled'];
+            if (($data['protocol_version'] ?? 0)!==4 || ($data['relay_revision'] ?? 0)!==3 || !is_array($items) || count($items)>100) { return self::error('Catalogue invalide.',400); }
+            $allowed=['service_id','title','description','date','hours','minimum_age','booking_mode','slots','available','waitlist_enabled','account_required','phone_required','autonomy_age'];
             foreach ($items as $item) {
                 if (!is_array($item) || array_diff(array_keys($item),$allowed) || array_diff($allowed,array_keys($item))) { return self::error('Catalogue invalide.',400); }
                 if (!is_int($item['service_id']) || $item['service_id']<=0 || !is_array($item['slots']) || count($item['slots'])>100
-                    || !is_int($item['available']) || $item['available']<0 || !is_bool($item['waitlist_enabled'])) { return self::error('Catalogue invalide.',400); }
+                    || !is_int($item['available']) || $item['available']<0 || !is_bool($item['waitlist_enabled'])
+                    || !is_bool($item['account_required']) || !is_bool($item['phone_required'])
+                    || !is_int($item['autonomy_age']) || $item['autonomy_age']<0 || $item['autonomy_age']>120) { return self::error('Catalogue invalide.',400); }
                 foreach (['title','description','date','hours','booking_mode'] as $field) {
                     if (!is_string($item[$field]) || strlen($item[$field])>12000) { return self::error('Catalogue invalide.',400); }
                 }
@@ -245,7 +247,7 @@ final class OpenFabLab_Relay {
         global $wpdb;
         try {
             $data=self::body($request);$env=self::env($data);
-            if (($data['protocol_version'] ?? 0)!==4) { return self::error('Versions incompatibles.',409); }
+            if (($data['protocol_version'] ?? 0)!==4 || ($data['relay_revision'] ?? 0)!==3) { return self::error('Versions incompatibles.',409); }
             OpenFabLab_Database::assert_transactional();
             self::prune(); $table=OpenFabLab_Database::table('relay_actions');
             if ($wpdb->query('START TRANSACTION')===false) { throw new RuntimeException(); }
@@ -259,7 +261,7 @@ final class OpenFabLab_Relay {
             }
             if ($wpdb->query('COMMIT')===false) { throw new RuntimeException(); }
             update_option('openfablab_relay_poll_'.$env,time(),false);
-            return ['protocol_version'=>4,'outbound_actions_v1'=>true,'actions'=>$result,'queue'=>self::queue_state($env)];
+            return ['protocol_version'=>4,'relay_revision'=>3,'outbound_actions_v1'=>true,'actions'=>$result,'queue'=>self::queue_state($env)];
         } catch (Throwable $error) { $wpdb->query('ROLLBACK'); return self::error('Demandes indisponibles.'); }
     }
     public static function results($request) {
@@ -270,7 +272,7 @@ final class OpenFabLab_Relay {
             if (strlen($raw)>524288) { return self::error('Résultats invalides.',400); }
             $data=json_decode($raw,true);$env=self::env($data);
             $results=$data['results'] ?? null;
-            if (($data['protocol_version'] ?? 0)!==4 || !is_array($results) || count($results)>20) { return self::error('Résultats invalides.',400); }
+            if (($data['protocol_version'] ?? 0)!==4 || ($data['relay_revision'] ?? 0)!==3 || !is_array($results) || count($results)>20) { return self::error('Résultats invalides.',400); }
             $table=OpenFabLab_Database::table('relay_actions'); $ack=[];
             OpenFabLab_Database::assert_transactional();
             if ($wpdb->query('START TRANSACTION')===false) { throw new RuntimeException(); }

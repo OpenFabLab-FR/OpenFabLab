@@ -14,6 +14,13 @@ from evolution_schema import categories, default_category, save_category, remove
 from evolution_users import create_user, creation_message, SOURCES
 import resource_booking as resources
 import welcome_mail
+from badge_palette import DEFAULT_REFERENCE, normalize_color, pastel_palette, validate_color
+
+
+def category_palette(color):
+    """Pastel background and related, accessible dark foreground."""
+    palette = pastel_palette(color)
+    return palette['background'], palette['ink']
 
 
 def csrf_token():
@@ -75,18 +82,42 @@ def register(application, api):
     def evolution_context():
         db = a.get_database()
         colors = {row['category_key']:row['color'] for row in categories(db,True)}
+        visitor_color = normalize_color(a.read_setting(db, 'anonymous_visitor_color', DEFAULT_REFERENCE))
         # Keys/colors are validated registry values, never CSS supplied by a user.
         styles = []
         import re
+        selectors = []
         for key, color in colors.items():
-            if re.fullmatch(r'[a-zA-Z0-9_-]+', key) and re.fullmatch(r'#[0-9a-fA-F]{6}', color):
-                styles.append('.category-badge.category-' + key + '{--category-color:' + color + ';background:' + color + '18;color:#203e47;}')
+            if re.fullmatch(r'[a-zA-Z0-9_-]+', key):
+                selectors.append(('.category-badge.category-' + key, color))
+        # A custom account category named "visitor" must remain independent.
+        selectors.append(('.category-badge.anonymous-visitor-badge', visitor_color))
+        for selector, color in selectors:
+            palette = pastel_palette(color)
+            styles.append(selector + '{--category-color:' + palette['reference'] +
+                ';--category-background:' + palette['background'] + ';--category-ink:' + palette['ink'] +
+                ';--category-border:' + palette['border'] + ';}')
         return {'evolution_csrf':csrf_token(), 'category_colors':colors, 'category_styles': ''.join(styles),
+                'anonymous_visitor_color': visitor_color,
                 'user_grants': resources.grants_for_user(db, request.view_args['user_id']) if request.endpoint == 'admin_edit_user' else [],
                 'creation_sources':SOURCES, 'self_enrollment_enabled':a.read_setting(db,'self_enrollment_enabled','0')=='1',
                 'tablet_reservations_enabled':a.read_setting(db,'tablet_reservations_enabled','0')=='1',
                 'welcome_default':a.read_setting(db,'welcome_default','0')=='1',
                 'smtp_ready':bool(welcome_mail.load_config(application.config['DATABASE']))}
+
+    @bp.post('/admin/reglages/affichage/visiteurs')
+    def visitor_color_settings():
+        require_team(True)
+        require_csrf()
+        try:
+            color = validate_color(request.form.get('anonymous_visitor_color'))
+        except ValueError as error:
+            abort(400, str(error))
+        db = a.get_database()
+        with db:
+            a.write_setting(db, 'anonymous_visitor_color', color)
+        flash('Couleur des visiteurs enregistrée.', 'success')
+        return redirect(url_for('admin_settings_display', _anchor='anonymous-visitor-color'))
 
     @bp.route('/admin/reglages/usagers', methods=['GET','POST'])
     def users_settings():

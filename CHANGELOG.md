@@ -1,5 +1,24 @@
 # Historique public
 
+## 2.8.2 — version stable — 7 octobre 2026
+
+- Compte facultatif par défaut pour une nouvelle réservation publique : parcours avec compte et parcours simple sans compte, coordonnées obligatoires vérifiées par OpenFabLab, aucune création de fiche usager.
+- QR Code/webcam dans le parcours avec compte : badges à quatre chiffres inchangés, caméra frontale préférée, décodage local jsQR, saisie manuelle disponible ; vérification e-mail/téléphone conservée.
+- Moteur transactionnel commun, capacité, fermeture, autonomie, attente, propositions, annulation et reçu durable pour les demandes sans compte ; aucune décision de place WordPress.
+- Protocole 4 / révision 3, incompatibilités détectées explicitement, communications exclusivement sortantes et cadences indépendantes inchangées.
+- Badges de catégorie pastel sur la borne et les pages internes : fond fortement éclairci, texte sombre de la même teinte, pastille conservant la couleur configurée et contraste contrôlé, y compris catégories personnalisées.
+- Couleur des visiteurs anonymes configurable dans Affichage, persistante et incluse dans le profil de configuration. Aucun compte ni catégorie assignable ajouté ; couleurs du calendrier inchangées.
+- Migration SQLite additive 16 → 17, date de naissance de l’inscription sans compte et réglage exportable/importable. Historique conservé.
+
+Application et plugin **2.8.2**, protocole **4 / révision 3**, SQLite **17**.
+OpenFabLab reste l'unique moteur de réservation ; aucun accès entrant vers le NAS
+n'est nécessaire. JavaScript est requis pour l'interface WordPress ; HTTPS et une
+caméra autorisée sont nécessaires au scan, avec saisie manuelle disponible.
+Lire les [instructions de mise à jour](docs/upgrade.md) avant installation.
+La suppression transactionnelle d'une animation terminée, avec protection des
+inscriptions actives, attentes, propositions et factures, est conservée.
+
+
 ## 2.8.1 — version stable — 6 octobre 2026
 
 - Réservations WordPress par échanges HTTPS initiés uniquement par OpenFabLab : correction du parcours public qui exigeait une adresse entrante vers le NAS en 2.8.0.

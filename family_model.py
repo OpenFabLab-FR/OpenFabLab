@@ -12,12 +12,13 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-SCHEMA = 16
+SCHEMA = 17
 POLICIES = {'none':'Aucun', 'email':'E-mail', 'phone':'Téléphone',
             'either':'E-mail ou téléphone', 'both':'E-mail et téléphone'}
 DEFAULTS = {'family_autonomy_age':'15', 'family_responsible_age':'18',
             'family_contact_dependent':'none', 'family_contact_autonomous':'none',
-            'family_contact_responsible':'both', 'home_title':'Aujourd’hui au FabLab'}
+            'family_contact_responsible':'both', 'home_title':'Aujourd’hui au FabLab',
+            'reservation_account_required':'0'}
 LABELS = {'dependent':'Responsable nécessaire', 'autonomous':'Participant autonome',
           'responsible':'Peut être responsable', 'unknown':'Âge à renseigner'}
 
@@ -39,9 +40,9 @@ def backup_before(db, path):
     """Coherent offline PRE before *any* initialization writes, not a DB copy."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
     if version > SCHEMA:
-        raise RuntimeError('Base plus récente que la candidate 2.8.1 ; démarrage refusé.')
+        raise RuntimeError('Base plus récente que la candidate 2.8.2 ; démarrage refusé.')
     extra_needed = (version == 15 and not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_booking_groups'").fetchone())
-    if version not in (14, 15) and not extra_needed:
+    if version not in (14, 15, 16) and not extra_needed:
         return None
     root = Path(path).parent / 'migration-backups'
     root.mkdir(mode=0o700, exist_ok=True)
@@ -55,9 +56,9 @@ def backup_before(db, path):
 
 
 def migrate(db, fail_after=None):
-    """Additive schema 14/15→16, including atomic outbound action receipts."""
+    """Additive schema 14/15/16→17; guest birthday is a booking snapshot."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
-    if version not in (14, 15, SCHEMA):
+    if version not in (14, 15, 16, SCHEMA):
         # Earlier schemas must first complete the existing evolution migration.
         # In particular, never stamp an incomplete old database as schema 15.
         if version > SCHEMA:
@@ -101,6 +102,9 @@ def migrate(db, fail_after=None):
         ensure_schema(db)
         from outbound_actions import ensure_schema as ensure_outbound_schema
         ensure_outbound_schema(db)
+        booking_columns={row['name'] for row in db.execute('PRAGMA table_info(animation_bookings)')}
+        if 'guest_birth_date' not in booking_columns:
+            db.execute('ALTER TABLE animation_bookings ADD COLUMN guest_birth_date TEXT')
         for key, value in DEFAULTS.items():
             db.execute('INSERT OR IGNORE INTO app_settings(key,value) VALUES(?,?)', (key,value))
         # Baseline existing adults: a migration is not a birthday notification.
@@ -112,7 +116,7 @@ def migrate(db, fail_after=None):
             fail_after(db)
         if db.execute('PRAGMA foreign_key_check').fetchall() or db.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
             raise RuntimeError('Migration famille refusée : intégrité invalide.')
-        db.execute('PRAGMA user_version=16')
+        db.execute('PRAGMA user_version=17')
         db.commit()
     except Exception:
         db.rollback()

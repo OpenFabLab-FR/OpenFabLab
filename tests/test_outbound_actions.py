@@ -83,7 +83,8 @@ class OutboundTests(unittest.TestCase):
     def test_catalogue_contains_no_accounts_or_contacts(self):
         data=relay.public_catalogue(self.db,'production');raw=json.dumps(data)
         self.assertEqual(len(data),1)
-        for word in ('Fictif','@','public_id','user_id','responsible','phone','email'):self.assertNotIn(word,raw)
+        for word in ('Fictif','@','public_id','user_id','responsible','"phone":','"email":'):self.assertNotIn(word,raw)
+        self.assertIs(type(data[0]['phone_required']),bool)
     def test_intervals(self):
         for value in (0,1,9,61,'15.1','nan',None):self.assertEqual(relay.action_interval(value),15)
         for value in (10,15,60):self.assertEqual(relay.action_interval(str(value)),value)
@@ -128,7 +129,7 @@ class OutboundTests(unittest.TestCase):
         client=mock.Mock();client.post.return_value={'protocol_version':3,'family_gateway_v1':True}
         with self.assertRaises(ValueError):sync.negotiate(client,'production')
     def test_sqlite_schema_and_integrity(self):
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],16)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],17)
         self.assertEqual(self.db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
         self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
@@ -147,12 +148,12 @@ class OutboundTests(unittest.TestCase):
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM sqlite_master WHERE name LIKE 'wordpress_%'").fetchone()[0],0)
         family.migrate(self.db);after=list(self.db.iterdump());family.migrate(self.db)
         self.assertEqual(list(self.db.iterdump()),after)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],16)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],17)
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM animation_bookings WHERE status='confirmed'").fetchone()[0],3)
         self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
     def test_idle_poll_reads_no_accounts_or_catalogue(self):
-        client=mock.Mock();client.post.return_value={'protocol_version':4,'outbound_actions_v1':True,'actions':[]}
+        client=mock.Mock();client.post.return_value={'protocol_version':4,'relay_revision':3,'outbound_actions_v1':True,'actions':[]}
         statements=[];self.db.set_trace_callback(statements.append)
         with mock.patch('runtime_policy.external_allowed',return_value=True),mock.patch('outbound_sync.load_sync_secret',return_value=self.secret):
             self.assertEqual(sync.poll(self.db,self.f.f.database_path,'https://example.invalid',client)['processed'],0)
@@ -206,7 +207,7 @@ class OutboundTests(unittest.TestCase):
         client=mock.Mock()
         def post(route,payload):
             if payload['environment']=='production':raise ValueError('fictional network failure')
-            return {'protocol_version':4,'outbound_actions_v1':True,'actions':[],'queue':{'pending':2,'processing':1,'failed':0,'retrying':0}}
+            return {'protocol_version':4,'relay_revision':3,'outbound_actions_v1':True,'actions':[],'queue':{'pending':2,'processing':1,'failed':0,'retrying':0}}
         client.post.side_effect=post
         with mock.patch('runtime_policy.external_allowed',return_value=True),mock.patch('outbound_sync.load_sync_secret',return_value=self.secret):
             result=sync.poll(self.db,self.f.f.database_path,'https://example.invalid',client)

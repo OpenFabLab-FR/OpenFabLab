@@ -1,4 +1,9 @@
-# Liaison sortante 2.8.1 — version stable
+# Liaison sortante — architecture introduite en 2.8.1
+
+**Version actuelle : application/plugin 2.8.2, protocole 4 / révision 3, SQLite 17.**
+L'architecture sortante décrite ici est conservée ; les mentions de révision 2
+et de schéma 16 ci-dessous documentent la 2.8.1 historique. Pour les demandes
+sans compte et la compatibilité actuelle, lire le [guide 2.8.2](reservations-2.8.2.md).
 
 ## Un seul moteur, aucun port entrant
 

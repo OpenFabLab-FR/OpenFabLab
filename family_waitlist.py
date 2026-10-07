@@ -220,7 +220,8 @@ def settle(db, now=None):
             cutoff=_cutoff(db,service,group['slot_uuid'])
             if now>=cutoff:
                 transition(db,group['group_uuid'],'expired','cloture',now);continue
-            participants(db,group['owner_id'],[r['user_id'] for r in rows],service,True)
+            from family_reservations import validate_group
+            validate_group(db,group,rows,service)
         except (ValueError,TypeError):
             # Invalidated relationship/account is not silently confirmed.
             continue
@@ -278,7 +279,8 @@ def respond(db, token, action, now=None):
                 service=effective_service(db,group['service_id'],group['slot_uuid'],group['environment'],False)
                 if now>=_cutoff(db,service,group['slot_uuid']):
                     raise ValueError('Les inscriptions sont closes.')
-                participants(db,group['owner_id'],[r['user_id'] for r in rows],service,True)
+                from family_reservations import validate_group
+                validate_group(db,group,rows,service)
                 from reservations_sync import booking_capacity_used
                 if booking_capacity_used(db,group['service_id'],group['slot_uuid'])>service['capacity']:
                     raise ValueError('La capacité a changé. Contactez l’équipe.')

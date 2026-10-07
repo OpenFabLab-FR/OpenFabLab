@@ -72,6 +72,16 @@
     </section>
 </form>
 {% include '_calendar_colors.html' %}
+<section class="form-section" id="anonymous-visitor-color">
+    <div class="form-section-heading"><h2>Visiteurs anonymes</h2><p>La couleur repère leurs passages, sans créer de compte ni de catégorie d’usager.</p></div>
+    <form method="post" action="{{ url_for('evolution.visitor_color_settings') }}">
+        <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+        <div class="calendar-color-grid">
+            <label class="calendar-color-row"><span>Visiteur anonyme</span><input name="anonymous_visitor_color" type="color" value="{{ anonymous_visitor_color }}" aria-label="Couleur des visiteurs anonymes"></label>
+        </div>
+        <div class="form-actions"><span class="category-badge category-visitor anonymous-visitor-badge">Visiteur</span><button class="admin-button primary compact" type="submit">Enregistrer la couleur</button></div>
+    </form>
+</section>
 <section class="form-section options-section">
         <h3>Plage horaire visible du Calendrier</h3>
         <p>Ces heures concernent uniquement l’affichage. Les horaires OpenLab et les réservations restent inchangés. La semaine est étendue si un événement déborde exceptionnellement.</p>

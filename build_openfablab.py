@@ -11,9 +11,10 @@ ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "dist" / f"OpenFabLab-{__version__}.zip"
 FILES = (
     "app.py", "billing.py", "annual_report.py", "animation_report.py", "calendar_export.py",
+    "badge_palette.py",
     "pin_security.py", "profile_archive.py", "reservations_sync.py", "animation_slots.py", "branding.py",
     "private_backup.py", "runtime_policy.py", "docs/private-backup.md",
-    "outbound_actions.py", "outbound_sync.py", "docs/outbound-2.8.1.md",
+    "outbound_actions.py", "outbound_sync.py", "docs/outbound-2.8.1.md", "docs/reservations-2.8.2.md",
     'evolution_schema.py', 'evolution_users.py', 'evolution_routes.py', 'welcome_mail.py', 'resource_booking.py', 'fablab_calendar.py', 'tablet_reservations.py', 'family_model.py', 'family_routes.py', 'family_reservations.py', 'family_reservation_routes.py', 'family_waitlist.py',
     "build_openfablab.py", "Dockerfile", ".dockerignore", "compose.yaml", "AppStart.command",
     "requirements.txt", "requirements-nas.txt", "LICENSE", "README.md",

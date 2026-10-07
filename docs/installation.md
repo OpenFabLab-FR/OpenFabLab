@@ -1,8 +1,8 @@
 # Installer une nouvelle instance
 
-## OpenFabLab 2.8.1 stable
+## OpenFabLab 2.8.2 stable
 
-OpenFabLab **2.8.1 stable**, schéma SQLite **16**, et plugin facultatif Reservations **2.8.1**, protocole **4 / révision 2**. Télécharger les ZIP et `SHA256SUMS` depuis la [release 2.8.1](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.1), vérifier leurs empreintes puis utiliser un dossier neuf. Pour une installation existante, suivre [la procédure de mise à jour](upgrade.md), sans remplacer ses données par une base de test.
+OpenFabLab **2.8.2 stable**, schéma SQLite **17**, et plugin facultatif Reservations **2.8.2**, protocole **4 / révision 3**. Télécharger les ZIP et `SHA256SUMS` depuis la [release 2.8.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.2), vérifier leurs empreintes puis utiliser un dossier neuf. Pour une installation existante, suivre [la procédure de mise à jour](upgrade.md), sans remplacer ses données par une base de test.
 
 Prérequis : Python 3.10+ (3.12 dans Docker), navigateur moderne, disque persistant. Le plugin demande WordPress avec PHP 8.1+, OpenSSL AES-GCM, InnoDB, JavaScript et HTTPS ; seul OpenFabLab doit pouvoir joindre WordPress en HTTPS sortant. La borne et l'application fonctionnent sans plugin. Voir [le guide WordPress](wordpress.md) et [les vérifications isolées](candidate-2.8-guide.md).
 
@@ -34,4 +34,4 @@ docker compose exec application python -m openfablab reset-admin-pin --database 
 
 Ouvrir le chemin privé émis sur **votre** instance dans les dix minutes, définir un nouveau PIN, puis configurer le Modérateur si nécessaire. Ne publier ni ce lien ni les PIN. Compléter [la configuration](configuration.md), les informations aux usagers et la protection réseau avant ouverture.
 
-Le packaging Docker inclut les modules du moteur familial et de liste d'attente. Les fichiers des instructions de copie et l'entrée WSGI sont contrôlés par démarrage local. Docker n'est pas disponible pour un nouveau build d'image sur le poste de publication ; le déploiement NAS 2.8.1 et son dernier correctif ont en revanche été confirmés en conditions réelles par l'exploitant du FougèresLab. Vérifier l'image et les montages sur chaque installation cible.
+Le packaging Docker inclut les modules du moteur familial, de liste d'attente et de palette pastel. Les fichiers des instructions de copie et l'entrée WSGI sont contrôlés par démarrage local. Aucun nouveau build Docker réel n'est revendiqué sur le poste de publication. Vérifier l'image et les montages sur chaque installation cible.

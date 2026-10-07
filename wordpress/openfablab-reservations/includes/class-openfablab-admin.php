@@ -98,7 +98,7 @@ final class OpenFabLab_Admin {
         echo '<input type="hidden" name="action" value="openfablab_connection_secret"><label class="ofl-checkbox"><input required type="checkbox" name="confirm" value="1"> Je confirme et conserverai la nouvelle clé dans un fichier privé.</label><p><button class="button" '
             .(!$secure?'disabled':'').'>'.($secret?'Régénérer':'Générer').' et télécharger la clé</button></p></form></details></section>';
         echo '<details class="ofl-card ofl-details"><summary>Diagnostic avancé</summary><dl class="ofl-diagnostic"><div><dt>Connexion HTTPS</dt><dd>'.($secure?'Disponible':'À vérifier')
-            .'</dd></div><div><dt>Stockage InnoDB</dt><dd>'.($storage?'Disponible':'À vérifier').'</dd></div><div><dt>Protocole du relais</dt><dd>4 · révision 2</dd></div><div><dt>Échanges interactifs</dt><dd>15 secondes par défaut (réglage OpenFabLab)</dd></div><div><dt>Catalogue</dt><dd>90 secondes par défaut (réglage OpenFabLab)</dd></div></dl>';
+            .'</dd></div><div><dt>Stockage InnoDB</dt><dd>'.($storage?'Disponible':'À vérifier').'</dd></div><div><dt>Protocole du relais</dt><dd>4 · révision 3</dd></div><div><dt>Échanges interactifs</dt><dd>15 secondes par défaut (réglage OpenFabLab)</dd></div><div><dt>Catalogue</dt><dd>90 secondes par défaut (réglage OpenFabLab)</dd></div></dl>';
         $old=get_option('openfablab_res_retired_storage','absent');
         if (in_array($old,['retained','retained_review'],true)) {
             echo '<p class="ofl-help">D’anciennes tables ont été conservées par précaution. Elles ne sont ni lues ni utilisées pour les nouvelles inscriptions.</p>';

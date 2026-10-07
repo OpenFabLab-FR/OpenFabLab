@@ -15,6 +15,7 @@ animation_report.py
 animation_slots.py
 annual_report.py
 app.py
+badge_palette.py
 badge_templates/OpenFabLab-template.svg
 billing.py
 branding.py
@@ -37,6 +38,7 @@ docs/installation.md
 docs/legacy-migration.md
 docs/outbound-2.8.1.md
 docs/private-backup.md
+docs/reservations-2.8.2.md
 docs/upgrade.md
 docs/wordpress.md
 evolution_routes.py
@@ -171,6 +173,7 @@ tests/slots_artifact_fixture.py
 tests/test_animation_deletion.py
 tests/test_animation_slots.py
 tests/test_app.py
+tests/test_badge_palette.py
 tests/test_branding.py
 tests/test_candidate_revision.py
 tests/test_corrective_271.py
@@ -181,6 +184,7 @@ tests/test_families.py
 tests/test_family_evolution.py
 tests/test_family_waitlist.py
 tests/test_final_pass_ui.js
+tests/test_guest_reservations.py
 tests/test_logo_shadow_ui.js
 tests/test_naming.py
 tests/test_outbound_actions.py
@@ -188,6 +192,7 @@ tests/test_participants_ui.js
 tests/test_privacy_resources.py
 tests/test_privacy_resources_ui.js
 tests/test_private_backup.py
+tests/test_public_guest_qr.js
 tests/test_publication.py
 tests/test_slots_ui.js
 tests/test_sync_reconciliation.py
@@ -209,6 +214,7 @@ tools/check_public_tree.py
 tools/run_checks.py
 welcome_mail.py
 wordpress/openfablab-reservations/LICENSE
+wordpress/openfablab-reservations/README.md
 wordpress/openfablab-reservations/THIRD_PARTY_NOTICES.md
 wordpress/openfablab-reservations/assets/OpenFabLab-logo-horizontal.svg
 wordpress/openfablab-reservations/assets/admin.css
@@ -217,6 +223,7 @@ wordpress/openfablab-reservations/assets/family.js
 wordpress/openfablab-reservations/assets/jsQR-1.4.0.js
 wordpress/openfablab-reservations/assets/jsQR-LICENSE.txt
 wordpress/openfablab-reservations/assets/link.js
+wordpress/openfablab-reservations/assets/qr-scanner.js
 wordpress/openfablab-reservations/assets/reservations.css
 wordpress/openfablab-reservations/includes/class-openfablab-admin.php
 wordpress/openfablab-reservations/includes/class-openfablab-api.php

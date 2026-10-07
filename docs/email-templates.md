@@ -11,3 +11,9 @@ Le jeton signé, limité à son action et à son environnement, est dans le frag
 Normal et Test restent séparés ; aucun e-mail réel en Test. Les anciens liens natifs OpenFabLab restent lisibles. Les installations sans WordPress peuvent utiliser les liens natifs avec leur propre accès contrôlé, sans ouverture réseau automatique. Voir [relève, conservation et limites](outbound-2.8.1.md).
 
 Une coupure après acceptation par SMTP peut exceptionnellement répéter un e-mail, jamais doubler une réservation. Ne copier aucun jeton, secret ou contenu privé dans un journal public.
+# Candidate 2.8.2 : inscriptions sans compte
+
+Les confirmations, propositions et annulations utilisent les mêmes e-mails et
+liens personnels protégés que les comptes. Aucun compte n’est requis pour
+répondre à son lien ; aucune action métier par GET. En mode WordPress, les liens
+reviennent au site WordPress sans accès entrant NAS. Voir [le guide 2.8.2](reservations-2.8.2.md).

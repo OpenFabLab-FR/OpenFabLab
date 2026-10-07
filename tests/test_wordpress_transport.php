@@ -1,7 +1,7 @@
 <?php
 // Current distributed plugin only; no historical engine is loaded.
-define('ABSPATH',__DIR__);define('OPENFABLAB_RES_VERSION','2.8.1');
-define('OPENFABLAB_RES_SCHEMA_VERSION','2.8.1-relay2');
+define('ABSPATH',__DIR__);define('OPENFABLAB_RES_VERSION','2.8.2');
+define('OPENFABLAB_RES_SCHEMA_VERSION','2.8.2-relay3');
 define('OPENFABLAB_RES_PATH',dirname(__DIR__).'/wordpress/openfablab-reservations/');
 define('OPENFABLAB_RES_FILE',OPENFABLAB_RES_PATH.'openfablab-reservations.php');
 $checks=0;$options=['openfablab_res_sync_secret'=>str_repeat('f',64)];$routes=[];$assets=[];
@@ -47,7 +47,7 @@ foreach(['Bookings','Slots','Emails','Reconciliation','Legacy_Reset','Test_Maint
 foreach(['animations','reservations','directory','events','tokens']as$name){try{OpenFabLab_Database::table($name);check(false,'old table exposed');}catch(InvalidArgumentException $error){check(true,'old table not managed');}}
 foreach(['nonces','relay_catalogues','relay_actions']as$name)check(OpenFabLab_Database::table($name)==='wp_openfablab_'.$name,'only transport table');
 $request=new WP_REST_Request;$request->body='{"environment":"production"}';
-$caps=OpenFabLab_API::capabilities($request);check($caps['transport_only_v1']===true&&$caps['relay_revision']===2,'transport revision');check($caps['relay_state']['environment']==='production','scoped metadata');
+$caps=OpenFabLab_API::capabilities($request);check($caps['transport_only_v1']===true&&$caps['relay_revision']===3,'transport revision');check($caps['relay_state']['environment']==='production','scoped metadata');
 $request->headers=['x-openfablab-timestamp'=>(string)time(),'x-openfablab-nonce'=>str_repeat('a',24)];
 $canonical=$request->headers['x-openfablab-timestamp']."\n".$request->headers['x-openfablab-nonce']."\nPOST\n".$request->get_route()."\n".hash('sha256',$request->body);
 $request->headers['x-openfablab-signature']=hash_hmac('sha256',$canonical,$options['openfablab_res_sync_secret']);

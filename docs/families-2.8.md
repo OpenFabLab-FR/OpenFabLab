@@ -1,7 +1,14 @@
-# Familles et réservations — OpenFabLab 2.8.1 stable
+# Familles et réservations
 
-Le modèle familial introduit en 2.8.0 est conservé dans la version stable 2.8.1,
-avec le plugin facultatif Reservations 2.8.1. OpenFabLab reste la source de vérité, quel que soit le canal. La migration technique 15 → 16 est décrite dans [le relais sortant](outbound-2.8.1.md).
+En version stable 2.8.2, le parcours familial avec comptes reste inchangé.
+Une personne autonome peut aussi réserver seule sans compte si la structure
+le permet, sans créer de fiche ni de lien familial. Le réglage est facultatif
+par défaut ; [voir le guide 2.8.2](reservations-2.8.2.md).
+« Une personne, un compte, une place » ci-dessous concerne le parcours familial,
+pas l’inscription simple sans compte.
+
+Le modèle familial introduit en 2.8.0 est conservé dans la version stable 2.8.2,
+avec le plugin facultatif Reservations 2.8.2. OpenFabLab reste la source de vérité, quel que soit le canal. La migration technique 15 → 16 est décrite dans [le relais sortant](outbound-2.8.1.md).
 
 ## Une personne, un compte, une place
 

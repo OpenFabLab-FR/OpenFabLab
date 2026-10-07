@@ -22,18 +22,18 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.8.1')
-        self.assertIn('openfablab:v2.8.1',(ROOT/'compose.yaml').read_text())
+        self.assertEqual(__version__,'2.8.2')
+        self.assertIn('openfablab:v2.8.2',(ROOT/'compose.yaml').read_text())
 
     def test_stable_release_documentation_is_consistent(self):
         readme=(ROOT/'README.md').read_text()
-        self.assertIn('# OpenFabLab 2.8.1',readme)
-        self.assertIn('**Version stable actuelle · SQLite schéma 16',readme)
-        self.assertIn('OpenFabLab Reservations 2.8.1',readme)
-        self.assertIn('2.8.1 est la dernière version stable',readme)
-        self.assertIn('releases/tag/v2.8.1',readme)
+        self.assertIn('# OpenFabLab 2.8.2',readme)
+        self.assertIn('**Version stable actuelle · SQLite schéma 17',readme)
+        self.assertIn('OpenFabLab Reservations 2.8.2',readme)
+        self.assertIn('2.8.2 est la dernière version stable',readme)
+        self.assertIn('releases/tag/v2.8.2',readme)
         self.assertNotIn('releases/tag/v2.8.0',readme)
-        self.assertIn('## 2.8.1 — version stable',(ROOT/'CHANGELOG.md').read_text())
+        self.assertIn('## 2.8.2 — version stable',(ROOT/'CHANGELOG.md').read_text())
         self.assertEqual(__import__('json').loads((ROOT/'package.json').read_text())['version'],__version__)
         self.assertEqual(__import__('json').loads((ROOT/'package-lock.json').read_text())['version'],__version__)
         self.assertIn('Seul le stockage historique du plugin WordPress',(ROOT/'docs/families-2.8.md').read_text())
@@ -62,7 +62,7 @@ class PublicReleaseTests(unittest.TestCase):
                                         AUTO_CLOSURE_WORKER=False,WEATHER_ENABLED=False))
             with application.app_context():
                 db=get_database()
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],16)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],17)
                 self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
                 self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
                 for table in ('users','sessions','visitors','rental_catalog','billing_tariff_catalog','billing_clients','billing_records','animation_bookings'):
@@ -177,16 +177,16 @@ import pathlib,sqlite3,app
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.flask_app.config['APP_VERSION']=='V2.8.1'
+assert app.flask_app.config['APP_VERSION']=='V2.8.2'
 client=Client(app.app,Response)
 for route in ('/stat/sante','/stat/','/stat/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     if route=='/stat/':
-        assert b'V2.8.1' in response.data
+        assert b'V2.8.2' in response.data
     response.close()
 with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==16
+    assert db.execute('PRAGMA user_version').fetchone()[0]==17
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     for table in ('users','sessions','visitors','animation_bookings','billing_clients'):
@@ -233,14 +233,14 @@ with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.8.1'
+assert app.app.config['APP_VERSION']=='V2.8.2'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     response.close()
 with sqlite3.connect(app.app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==16
+    assert db.execute('PRAGMA user_version').fetchone()[0]==17
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     assert db.execute('SELECT COUNT(*) FROM users').fetchone()[0]==0

@@ -1,6 +1,6 @@
 """Single transactional booking engine for kiosk, team and optional WP gateway.
 
-Every booking row represents one real user and consumes one seat. No companion
+Every booking row represents one real person and consumes one seat. No companion
 row or split submission is generated. Historical rows retain their old data.
 """
 import hashlib
@@ -10,6 +10,7 @@ import re
 import secrets
 import sqlite3
 import time
+import unicodedata
 from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -90,6 +91,114 @@ def result(db, group):
             'booking_uuids':[r['external_uuid'] for r in rows]}
 
 
+GUEST_SOURCE = 'family_guest_wordpress'
+
+
+def _name(value):
+    if not isinstance(value,str):
+        raise ValueError('Renseignez un prénom et un nom valides.')
+    value=unicodedata.normalize('NFKC',value)
+    if any(unicodedata.category(c).startswith('C') for c in value) or any(c in value for c in '<>'):
+        raise ValueError('Renseignez un prénom et un nom valides.')
+    value=' '.join(value.split())
+    if not value or len(value)>120 or value[0] in '=+-@':
+        raise ValueError('Renseignez un prénom et un nom valides (120 caractères maximum).')
+    return value
+
+
+def guest_person(db, data, service):
+    """One autonomous person, never an account or a substitute guardian."""
+    first,last=_name(data.get('first_name')),_name(data.get('last_name'))
+    try:
+        born=date.fromisoformat(data.get('birth_date',''))
+    except (ValueError,TypeError):
+        raise ValueError('Renseignez une date de naissance valide.')
+    if born>family.local_day(db) or family.age({'birth_date':born.isoformat()},family.local_day(db))>120:
+        raise ValueError('Renseignez une date de naissance valide.')
+    person={'first_name':first,'last_name':last,'birth_year':born.year,
+            'birth_date':born.isoformat(),'id':None,'public_id':None}
+    years=family.age(person,date.fromisoformat(service['service_date']))
+    if years<int(service['minimum_age']):
+        raise ValueError('L’âge minimum de cette animation doit être respecté.')
+    if years<int(family.setting(db,'family_autonomy_age','15')):
+        raise ValueError('Cette personne doit participer avec un responsable. Utilisez le parcours avec compte pour réserver ensemble.')
+    return person
+
+
+def validate_group(db, group, rows, service):
+    """Recheck the same age/family policy for offers and team confirmations."""
+    if group['owner_id'] is None and rows and all(r['source']==GUEST_SOURCE for r in rows):
+        if len(rows)!=1 or rows[0]['user_id'] is not None or rows[0]['public_id']:
+            raise ValueError('Cette demande sans compte est incohérente. Contactez l’équipe.')
+        row=rows[0]
+        return [guest_person(db,dict(row,birth_date=row['guest_birth_date']),service)]
+    return participants(db,group['owner_id'],[r['user_id'] for r in rows],service,True)
+
+
+def _same_person(db, person, details, service_id, slot_uuid, environment):
+    """Bounded to this animation/slot; no directory lookup or auto-linking."""
+    names=(_name(person['first_name']).casefold(),_name(person['last_name']).casefold())
+    for row in db.execute("SELECT b.first_name,b.last_name,b.email,g.contact_email FROM animation_bookings b LEFT JOIN family_booking_groups g USING(group_uuid) WHERE b.service_id=? AND b.environment=? AND COALESCE(b.slot_uuid,'')=? AND b.status NOT IN('cancelled','expired','declined')",(service_id,environment,slot_uuid or '')):
+        if (' '.join(unicodedata.normalize('NFKC',row['first_name']).split()).casefold(),
+            ' '.join(unicodedata.normalize('NFKC',row['last_name']).split()).casefold())==names and (row['contact_email'] or row['email'] or '').casefold()==details['email'].casefold():
+            raise ValueError('Une inscription existe déjà pour cette personne.')
+
+
+def _store(db, owner_id, people, details, service, slot_uuid, environment, request_key, fingerprint, source):
+    """Only capacity decision/insertion path, under the caller's write lock."""
+    import family_waitlist as waiting
+    from reservations_sync import booking_capacity_used
+    for person in people:
+        _same_person(db,person,details,service['service_id'],slot_uuid,environment)
+    available=service['capacity']-booking_capacity_used(db,service['service_id'],slot_uuid)
+    state='confirmed' if available>=len(people) else 'waitlisted'
+    if state=='waitlisted' and not service['waitlist_enabled']:
+        raise ValueError('Il ne reste pas assez de places pour tout le groupe. La liste d’attente est fermée.')
+    group=str(uuid4());now=family.timestamp()
+    for person in people:
+        guest=source=='guest_wordpress'
+        db.execute('''INSERT INTO animation_bookings(external_uuid,service_id,environment,first_name,last_name,birth_year,email,phone,status,link_status,public_id,user_id,group_uuid,source,is_present,created_at,updated_at,slot_uuid,guest_birth_date)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+            (str(uuid4()),service['service_id'],environment,person['first_name'],person['last_name'],person['birth_year'],None,None,state,
+             'visitor' if guest else 'registered',person['public_id'],person['id'],group,'family_'+source,None,now,now,slot_uuid or None,person['birth_date'] if guest else None))
+    db.execute('INSERT INTO family_booking_requests VALUES(?,?,?,?,?,?)',(request_key,fingerprint,owner_id,group,source,now))
+    waiting.create_group(db,group,owner_id,service['service_id'],slot_uuid,environment,state,details)
+    return result(db,group)
+
+
+def reserve_guest(db, data, service_id, slot_uuid, request_key, environment='production'):
+    """Guest requests use the exact account engine lock, queue and receipt."""
+    from outbound_actions import transaction
+    import family_waitlist as waiting
+    if not isinstance(data,dict) or not re.fullmatch(r'[A-Za-z0-9_-]{24,100}',str(request_key)):
+        raise ValueError('Demande invalide.')
+    if any(key in data for key in ('participants','public_id','user_id','owner_id','companion')):
+        raise ValueError('Une réservation sans compte concerne une seule personne.')
+    fingerprint=hashlib.sha256(json.dumps([data,service_id,slot_uuid or '',environment],sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    with transaction(db):
+        waiting.adopt_candidates(db);waiting.settle(db)
+        prior=db.execute('SELECT * FROM family_booking_requests WHERE request_key=?',(request_key,)).fetchone()
+        if prior:
+            if not hmac.compare_digest(prior['request_hash'],fingerprint):
+                raise ValueError('Cette demande a déjà été utilisée pour un autre choix.')
+            return result(db,prior['group_uuid'])
+        if family.setting(db,'reservation_account_required','0')=='1':
+            raise ValueError('Un compte OpenFabLab est nécessaire pour réserver. Identifiez votre compte.')
+        service=effective_service(db,service_id,slot_uuid,environment)
+        person=guest_person(db,data,service)
+        email=data.get('email','');phone=data.get('phone','')
+        if not isinstance(email,str) or not waiting.valid_email(email.strip()):
+            raise ValueError('Un e-mail valide est obligatoire pour réserver une animation.')
+        if not isinstance(phone,str) or (phone.strip() and not waiting.valid_phone(phone.strip())):
+            raise ValueError('Renseignez un numéro de téléphone valide.')
+        if family.setting(db,'reservation_phone_required','0')=='1' and not waiting.valid_phone(phone.strip()):
+            raise ValueError('Un numéro de téléphone valide est obligatoire pour réserver.')
+        details={'email':email.strip(),'phone':phone.strip(),'name':person['first_name']+' '+person['last_name']}
+        if service['capacity']<1:
+            raise ValueError('Cette animation ne propose aucune place.')
+        return _store(db,None,[person],details,service,slot_uuid,environment,request_key,fingerprint,'guest_wordpress')
+
+
 def delete_animation(db, service_id):
     """Delete only a closed animation's dependencies, under the booking lock.
 
@@ -168,19 +277,7 @@ def reserve(db, owner_id, ids, service_id, slot_uuid, request_key, environment='
             duplicate=db.execute("SELECT 1 FROM animation_bookings WHERE service_id=? AND environment=? AND COALESCE(slot_uuid,'')=? AND (user_id=? OR public_id=?) AND status NOT IN('cancelled','expired','declined')",(service_id,environment,slot_uuid or '',person['id'],person['public_id'])).fetchone()
             if duplicate:
                 raise ValueError('Une inscription existe déjà pour un participant sélectionné.')
-        from reservations_sync import booking_capacity_used
-        available=service['capacity']-booking_capacity_used(db,service_id,slot_uuid)
-        state='confirmed' if available>=len(people) else 'waitlisted'
-        if state=='waitlisted' and not service['waitlist_enabled']:
-            raise ValueError('Il ne reste pas assez de places pour tout le groupe. La liste d’attente est fermée.')
-        group=str(uuid4());now=family.timestamp()
-        for person in people:
-            db.execute('''INSERT INTO animation_bookings(external_uuid,service_id,environment,first_name,last_name,birth_year,email,phone,status,link_status,public_id,user_id,group_uuid,source,is_present,created_at,updated_at,slot_uuid)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
-                (str(uuid4()),service_id,environment,person['first_name'],person['last_name'],person['birth_year'],None,None,state,'registered',person['public_id'],person['id'],group,'family_'+source,None,now,now,slot_uuid or None))
-        db.execute('INSERT INTO family_booking_requests VALUES(?,?,?,?,?,?)',(request_key,fingerprint,owner_id,group,source,now))
-        waiting.create_group(db,group,owner_id,service_id,slot_uuid,environment,state,details)
-        value=result(db,group)
+        value=_store(db,owner_id,people,details,service,slot_uuid,environment,request_key,fingerprint,source)
         if owns_transaction: db.commit()
         return value
     except Exception:
@@ -256,6 +353,8 @@ def team_action(db, service_id, booking_uuid, action, role, person_id=None):
         group=db.execute("SELECT * FROM animation_bookings WHERE group_uuid=? AND status NOT IN('cancelled','expired','declined')",(booking['group_uuid'],)).fetchall()
         now=family.timestamp()
         if action=='add':
+            if booking['source']==GUEST_SOURCE:
+                raise ValueError('Cette réservation sans compte concerne une seule personne. Créez une demande distincte pour un autre participant.')
             if not group or len({b['status'] for b in group})!=1 or group[0]['status'] not in ('confirmed','waitlisted'):
                 raise ValueError('Ce groupe ne peut pas être complété dans son état actuel.')
             service=effective_service(db,service_id,booking['slot_uuid'],booking['environment'],False)
@@ -277,7 +376,8 @@ def team_action(db, service_id, booking_uuid, action, role, person_id=None):
             if not group or any(b['status'] not in ('waitlisted','offer_pending') for b in group):
                 raise ValueError('Le groupe ne peut pas être confirmé dans son état actuel.')
             service=effective_service(db,service_id,booking['slot_uuid'],booking['environment'],False)
-            participants(db,group[0]['user_id'],[b['user_id'] for b in group],service,True)
+            meta=db.execute('SELECT * FROM family_booking_groups WHERE group_uuid=?',(booking['group_uuid'],)).fetchone()
+            validate_group(db,meta,group,service)
             from reservations_sync import booking_capacity_used
             if booking_capacity_used(db,service_id,booking['slot_uuid'])+sum(b['status']=='waitlisted' for b in group)>service['capacity']:
                 raise ValueError('Il ne reste pas assez de places pour confirmer tout le groupe.')

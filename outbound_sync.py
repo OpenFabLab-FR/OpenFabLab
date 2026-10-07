@@ -48,8 +48,8 @@ class OutboundClient(WordPressClient):
 
 def negotiate(client, environment):
     value=client.post('/sync/capabilities',{'environment':environment})
-    if value.get('protocol_version')!=4 or value.get('outbound_actions_v1') is not True:
-        raise ValueError('OpenFabLab et son plugin doivent utiliser la version 2.8.1 ou compatible. Aucune demande n’a été confirmée.')
+    if value.get('protocol_version')!=4 or value.get('relay_revision')!=3 or value.get('outbound_actions_v1') is not True:
+        raise ValueError('OpenFabLab et son plugin doivent utiliser la version 2.8.2 (protocole 4, révision 3). Aucune demande n’a été confirmée.')
 
 
 def catalogue(db, database_path, site_url, client=None, environments=actions.ENVIRONMENTS, force=True):
@@ -73,11 +73,11 @@ def catalogue(db, database_path, site_url, client=None, environments=actions.ENV
             from runtime_policy import storage_guard
             with storage_guard(database_path):
                 public=actions.public_catalogue(db,env)
-            result=client.post('/outbound/catalogue',{'environment':env,'animations':public,'protocol_version':4})
+            result=client.post('/outbound/catalogue',{'environment':env,'animations':public,'protocol_version':4,'relay_revision':3})
             if result.get('ok') is not True: raise ValueError('Catalogue refusé.')
             with actions.transaction(db):
                 db.execute('INSERT INTO wordpress_relay_state(environment,catalogue_at,catalogue_count,last_error) VALUES(?,?,?,NULL) ON CONFLICT(environment) DO UPDATE SET catalogue_at=excluded.catalogue_at,catalogue_count=excluded.catalogue_count,last_error=NULL',(env,stamp,len(public)))
-                for key,value in [('reservation_protocol_'+env,'4'),('reservation_plugin_'+env,result.get('plugin_version','2.8.1')),('reservation_outbound_ready_'+env,'1')]:
+                for key,value in [('reservation_protocol_'+env,'4'),('reservation_plugin_'+env,result.get('plugin_version','2.8.2')),('reservation_outbound_ready_'+env,'1')]:
                     db.execute('INSERT INTO app_settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(key,value))
                 db.execute("INSERT INTO reservation_sync_state(environment,cursor,last_attempt_at,last_success_at,last_error) VALUES(?,'',?,?,NULL) ON CONFLICT(environment) DO UPDATE SET last_attempt_at=excluded.last_attempt_at,last_success_at=excluded.last_success_at,last_error=NULL",(env,stamp,stamp))
         except (OSError,ValueError,sqlite3.Error):
@@ -113,8 +113,8 @@ def poll(db, database_path, site_url, client=None, environments=actions.ENVIRONM
 
 def _poll_environment(db,database_path,client,env,secret):
     # An idle cycle needs only technical state, never accounts or a catalogue.
-    value=client.post('/outbound/poll',{'environment':env,'protocol_version':4})
-    if value.get('protocol_version')!=4 or value.get('outbound_actions_v1') is not True:
+    value=client.post('/outbound/poll',{'environment':env,'protocol_version':4,'relay_revision':3})
+    if value.get('protocol_version')!=4 or value.get('relay_revision')!=3 or value.get('outbound_actions_v1') is not True:
         raise ValueError('Plugin incompatible : aucune action traitée.')
     envelopes=value.get('actions',[])
     if not isinstance(envelopes,list) or len(envelopes)>20: raise ValueError('File WordPress invalide.')
@@ -131,7 +131,7 @@ def _poll_environment(db,database_path,client,env,secret):
             result=actions.process_action(db,envelope,env,secret)
         results.append({'id':envelope['id'],'hash':envelope['hash'],'lease':envelope.get('lease'),'result':result})
     if results:
-        ack=client.post('/outbound/results',{'environment':env,'protocol_version':4,'results':results})
+        ack=client.post('/outbound/results',{'environment':env,'protocol_version':4,'relay_revision':3,'results':results})
         if ack.get('acknowledged')!=[r['id'] for r in results]:raise ValueError('Résultats non acquittés, ils seront retransmis.')
         with actions.transaction(db):
             for r in results:

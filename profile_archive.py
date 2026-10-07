@@ -39,6 +39,7 @@ BILLING_KEYS = {
     "billing_rental_contract_fee_cents", "billing_rental_delivery_fee_cents",
 }
 EXACT_KEYS = {
+    'anonymous_visitor_color',
     'home_title','family_autonomy_age','family_responsible_age','family_contact_dependent','family_contact_autonomous','family_contact_responsible',
     'calendar_color_openlab','calendar_color_animation','calendar_color_reservation','calendar_color_rental','calendar_color_training',
     "home_theme", "keep_screen_awake", "lock_home_scroll", "wake_lock_start",
@@ -96,7 +97,7 @@ def allowed_setting(key):
     if key.startswith("reservation_"):
         return key in {
             "reservation_minimum_age", "reservation_accompaniment_under_age",
-            "reservation_waitlist_enabled", "reservation_phone_required", "reservation_offer_hours",
+            "reservation_waitlist_enabled", "reservation_phone_required", "reservation_account_required", "reservation_offer_hours",
             "reservation_last_offer_hours", "reservation_close_minutes",
             "reservation_reminder_one_hours", "reservation_reminder_two_hours",
             "reservation_sync_interval_minutes",
@@ -188,6 +189,8 @@ def parse_profile(raw):
                     raise ValueError('Titre d’accueil invalide.')
                 if key.startswith('calendar_color_') and not re.fullmatch(r'#[a-fA-F0-9]{6}',value):
                     raise ValueError('Couleur du calendrier invalide.')
+                if key == 'anonymous_visitor_color' and not re.fullmatch(r'#[a-fA-F0-9]{6}', value):
+                    raise ValueError('Couleur des visiteurs invalide.')
                 if key.startswith('family_contact_') and value not in {'none','email','phone','either','both'}:
                     raise ValueError('Règle de coordonnées invalide.')
                 if key=='reservation_link_mode' and value not in {'auto','wordpress','local'}:
@@ -223,7 +226,7 @@ def parse_profile(raw):
                         valid = value.isdecimal() and minimum <= int(value) <= maximum
                     if not valid:
                         raise ValueError("Paramètre de réservation invalide.")
-                if key in {"reservation_waitlist_enabled", "reservation_phone_required"} and value not in {"0", "1"}:
+                if key in {"reservation_waitlist_enabled", "reservation_phone_required", "reservation_account_required"} and value not in {"0", "1"}:
                     raise ValueError("Paramètre de réservation invalide.")
                 if key == "structure_color" and value and not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
                     raise ValueError("Couleur de structure invalide.")

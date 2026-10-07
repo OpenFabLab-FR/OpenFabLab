@@ -15,7 +15,7 @@ import time
 from urllib.parse import urlsplit
 
 ENVIRONMENTS = ('production', 'test')
-ACTION_TYPES = ('identify', 'contact', 'reserve', 'view', 'cancel', 'accept', 'decline')
+ACTION_TYPES = ('identify', 'contact', 'reserve', 'guest', 'view', 'cancel', 'accept', 'decline')
 IDENTITY_TTL = 1200
 
 
@@ -72,6 +72,9 @@ def public_catalogue(db, environment):
     for item in local_catalogue(db, lambda _db,k,default='':family.setting(_db,k,default), environment=environment):
         public={k:item[k] for k in keys}
         public['waitlist_enabled']=bool(public['waitlist_enabled'])
+        public['account_required']=family.setting(db,'reservation_account_required','0')=='1'
+        public['phone_required']=family.setting(db,'reservation_phone_required','0')=='1'
+        public['autonomy_age']=int(family.setting(db,'family_autonomy_age','15'))
         public['slots']=[{k:s[k] for k in ('slot_uuid','label','available')} for s in item['slots']]
         result.append(public)
     return result
@@ -150,6 +153,12 @@ def dispatch(db, data, action, environment, secret, request_key):
         return waiting.respond(db,link['t'],action)
     if type(data.get('service_id')) is not int or data['service_id']<=0: raise ValueError('Animation invalide.')
     service_id=data['service_id']
+    if action=='guest':
+        if data.get('consent') is not True: raise ValueError('Consentement requis.')
+        if set(data)-{'environment','service_id','slot_uuid','first_name','last_name','birth_date','email','phone','consent'}:
+            raise ValueError('Une réservation sans compte concerne une seule personne.')
+        details={k:data.get(k,'') for k in ('first_name','last_name','birth_date','email','phone')}
+        return engine.reserve_guest(db,details,service_id,data.get('slot_uuid'),request_key,environment)
     if action=='identify':
         token,owner=engine.identify(db,service_id,data.get('public_id'),data.get('contact',''),
                                     data.get('client_bucket',''),environment,rate_checked=True)

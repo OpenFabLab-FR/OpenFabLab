@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir --disable-pip-version-check -r requirements-nas.t
 COPY app.py billing.py annual_report.py animation_report.py calendar_export.py pin_security.py profile_archive.py reservations_sync.py animation_slots.py branding.py ./
 COPY evolution_schema.py evolution_users.py evolution_routes.py welcome_mail.py resource_booking.py fablab_calendar.py ./
 COPY private_backup.py runtime_policy.py ./
+COPY badge_palette.py ./
 COPY outbound_actions.py outbound_sync.py ./
 COPY tablet_reservations.py ./
 COPY family_model.py family_routes.py family_reservations.py family_reservation_routes.py family_waitlist.py ./

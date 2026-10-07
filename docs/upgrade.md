@@ -1,5 +1,33 @@
 # Mettre à jour OpenFabLab
 
+## 2.8.1 → 2.8.2 stable, schéma 16 → 17
+
+Voir la [procédure 2.8.2](reservations-2.8.2.md) et vérifier les ZIP officiels avec leur `SHA256SUMS`.
+Application et plugin 2.8.2 doivent passer ensemble au protocole 4 / révision 3.
+PRE 16 complète à froid, image 2.8.1 conservée, page WordPress temporairement
+fermée et demandes terminées avant bascule. Nouvelle colonne nullable et réglage
+sans compte facultatif par défaut ; aucune donnée métier supprimée.
+Retour seulement avec PRE 16 et ancien runtime, avant nouvelles écritures.
+Après utilisation, conserver une POST et décider humainement, sans downgrade.
+Les sections suivantes restent la documentation des mises à jour antérieures.
+
+## Depuis une installation prépublication déjà en 2.8.2 / schéma17
+
+La distribution finale comprend les badges pastel et le réglage d'affichage des
+visiteurs anonymes. Si l'installation est déjà en 2.8.2/schéma17, ne pas refaire
+le parcours 16 → 17 : sauvegarder à froid une **PRE17 complète**, conserver l'ID
+exact du runtime précédent et remplacer uniquement les fichiers applicatifs.
+Compose, volumes, secrets, PIN et configuration existante restent conservés.
+Le plugin final 2.8.2/révision3 est inchangé par cette finition : aucune
+réinstallation ni rotation du secret si son contenu est déjà celui de la release.
+
+Contrôler version, schéma17, intégrité/FK, réglages, fichiers persistants,
+service et relais Normal/Test avant ouverture. Un retour nécessite la PRE17 et
+son runtime exact, uniquement avant toute possibilité de nouvelles écritures.
+Dès qu'un redémarrage public a pu écrire, conserver l'état et décider humainement
+d'une reprise ; jamais de downgrade2.8.1, restaurationPRE16 ou rollback automatique.
+Aucun lanceur propre à une infrastructure privée n'est distribué publiquement.
+
 ## Depuis une installation prépublication déjà en 2.8.1
 
 La stable 2.8.1 inclut le correctif de suppression d'animation, validé en conditions réelles. Le schéma reste **16** : aucune nouvelle migration ni suppression automatique de données. Seule une suppression administrative explicitement confirmée retire l'animation et ses dépendances terminées ; une inscription active, une attente, une proposition, un dossier incohérent ou facturé reste protégé.

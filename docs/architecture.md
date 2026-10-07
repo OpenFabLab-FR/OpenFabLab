@@ -1,10 +1,19 @@
 # Architecture
 
-## Moteur commun 2.8.1 — version stable
+## Version stable 2.8.2
 
-`family_model.py` : naissance, seuils, rattachements privés et migrations additives 15 puis 16. `family_reservations.py` : moteur unique transactionnel, une personne réelle par ligne/place, demande idempotente et groupe entier confirmé/attente. `family_routes.py` et `family_reservation_routes.py` : interface progressive et routes historiques conservées. `outbound_actions.py` et `outbound_sync.py` : journal atomique et échanges HTTPS initiés seulement par OpenFabLab vers WordPress, protocole 4. Aucun annuaire global ni seconde autorité de capacité ; aucune adresse entrante du NAS requise. Voir [le relais 2.8.1](outbound-2.8.1.md). Les anciennes données restent lisibles.
+Protocole 4 / révision 3, SQLite 17 : [architecture et migration 2.8.2](reservations-2.8.2.md).
+L’action `guest` utilise le même moteur, verrou de capacité, journal de reçus et
+liste d’attente que les comptes. Aucun compte synthétique ni moteur WordPress.
+La colonne `guest_birth_date` est un instantané d’inscription privé. Le QR
+historique quatre chiffres remplace seulement la saisie, pas la vérification.
+Le moteur décrit ci-dessous conserve l’architecture sortante introduite en 2.8.1 ; les évolutions de schéma sont distinguées par version.
 
-`calendar_visibility` ne touche pas aux données métier. Les backups privés incluent relations/naissance, hors profils publics. Voir [conception 2.8](families-2.8.md). La description du protocole sortant ci-dessous est historique.
+## Moteur commun 2.8.2
+
+`family_model.py` : naissance, seuils, rattachements privés et migrations additives jusqu’au schéma 17. `family_reservations.py` : moteur unique transactionnel, une personne réelle par ligne/place, demande idempotente et groupe entier confirmé/attente. `family_routes.py` et `family_reservation_routes.py` : interface progressive et routes historiques conservées. `outbound_actions.py` et `outbound_sync.py` : journal atomique et échanges HTTPS initiés seulement par OpenFabLab vers WordPress, protocole 4. Aucun annuaire global ni seconde autorité de capacité ; aucune adresse entrante du NAS requise. Voir [le relais 2.8.1](outbound-2.8.1.md). Les anciennes données restent lisibles.
+
+`calendar_visibility` ne touche pas aux données métier. Les backups privés incluent relations/naissance, hors profils publics. Voir [conception 2.8](families-2.8.md). La section 2.7 ci-dessous est historique ; elle ne décrit pas le relais actuel.
 
 `family_waitlist.py` ajoute au même moteur la sélection FIFO compatible, les
 propositions temporaires, leur historique, les liens opaques de réponse et le
@@ -16,7 +25,7 @@ privées et les environnements Test bloquent les envois réels.
 
 - `app.py` : application Flask, routes, droits, réglages et initialisation/migrations SQLite.
 - `animation_slots.py` : génération de créneaux, identifiants stables, validations et synthèses.
-- `reservations_sync.py` : contrôles de liaison/capabilities et déclenchement de la relève sortante sur le schéma 16 ; aucun ancien consommateur d'événements WordPress. Le moteur reçoit des actions, jamais des décisions de capacité WordPress. Les anciennes données OpenFabLab restent lisibles indépendamment de ce transport.
+- `reservations_sync.py` : contrôles de liaison/capabilities et déclenchement de la relève sortante sur le schéma 17 ; aucun ancien consommateur d'événements WordPress. Le moteur reçoit des actions, jamais des décisions de capacité WordPress. Les anciennes données OpenFabLab restent lisibles indépendamment de ce transport.
 - `pin_security.py` : dérivations des PIN et récupération privée à usage unique. Aucun PIN par défaut.
 - `billing.py`, `annual_report.py`, `animation_report.py`, `calendar_export.py` : documents, bilans et exports.
 - `profile_archive.py` : profil privé de structure, distinct des données métier et des secrets.

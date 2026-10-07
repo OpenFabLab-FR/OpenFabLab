@@ -2,14 +2,14 @@
 /**
  * Plugin Name: OpenFabLab Reservations
  * Description: Catalogue public et relais sécurisé sortant du moteur OpenFabLab.
- * Version: 2.8.1
+ * Version: 2.8.2
  * Requires PHP: 8.1
  * License: MIT
  * Text Domain: openfablab-reservations
  */
 if (!defined('ABSPATH')) { exit; }
-define('OPENFABLAB_RES_VERSION','2.8.1');
-define('OPENFABLAB_RES_SCHEMA_VERSION','2.8.1-relay2');
+define('OPENFABLAB_RES_VERSION','2.8.2');
+define('OPENFABLAB_RES_SCHEMA_VERSION','2.8.2-relay3');
 define('OPENFABLAB_RES_FILE',__FILE__);
 define('OPENFABLAB_RES_PATH',plugin_dir_path(__FILE__));
 foreach (['database','relay','api','admin'] as $name) {
@@ -51,7 +51,8 @@ function openfablab_res_shortcode($attributes) {
     wp_enqueue_script('openfablab-jsqr', plugins_url('assets/jsQR-1.4.0.js', __FILE__), [], '1.4.0', true);
     // Content hashes invalidate stale forms independently of the plugin version.
     $script_version = substr(hash_file('sha256', OPENFABLAB_RES_PATH . 'assets/family.js'), 0, 12);
-    wp_enqueue_script('openfablab-reservations', plugins_url('assets/family.js', __FILE__), [], $script_version, true);
+    wp_enqueue_script('openfablab-qr-scanner', plugins_url('assets/qr-scanner.js', __FILE__), ['openfablab-jsqr'], substr(hash_file('sha256',OPENFABLAB_RES_PATH.'assets/qr-scanner.js'),0,12), true);
+    wp_enqueue_script('openfablab-reservations', plugins_url('assets/family.js', __FILE__), ['openfablab-qr-scanner'], $script_version, true);
     wp_add_inline_script('openfablab-reservations', 'window.OpenFabLabReservations=' . wp_json_encode([
         'api' => esc_url_raw(rest_url('openfablab/v1/public/')),
         'privacy' => esc_url_raw(get_option('openfablab_res_privacy_url', '')),

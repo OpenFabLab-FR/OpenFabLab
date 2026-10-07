@@ -21,7 +21,7 @@
         {% if event.kind == 'session' %}
         <tr><td data-label="Identité"><strong>{{ item.first_name }} {{ item.last_name }}</strong></td><td data-label="Catégorie"><span class="category-badge category-{{ item.category }}">{{ item.category|category_label }}</span></td><td data-label="Arrivée">{{ item.check_in|paris_datetime }}</td><td data-label="Départ">{% if item.check_out %}{{ item.check_out|paris_datetime }}{% else %}<span class="table-present">Présent</span>{% endif %}</td><td data-label="Durée">{{ item.check_in|duration(item.check_out) }}</td><td data-label="Méthode">{{ item.entry_method|method_label }}{% if item.exit_method %} / {{ item.exit_method|method_label }}{% endif %}</td></tr>
         {% else %}
-        <tr class="visitor-identification"><td data-label="Identité"><strong>Visiteur</strong></td><td data-label="Catégorie"><span class="category-badge category-visitor">Visiteur</span></td><td data-label="Arrivée">{{ item.created_at|paris_datetime }}</td><td data-label="Départ">—</td><td data-label="Durée">—</td><td data-label="Méthode">{{ 'anonymous'|method_label }}</td></tr>
+        <tr class="visitor-identification"><td data-label="Identité"><strong>Visiteur</strong></td><td data-label="Catégorie"><span class="category-badge category-visitor anonymous-visitor-badge">Visiteur</span></td><td data-label="Arrivée">{{ item.created_at|paris_datetime }}</td><td data-label="Départ">—</td><td data-label="Durée">—</td><td data-label="Méthode">{{ 'anonymous'|method_label }}</td></tr>
         {% endif %}
     {% else %}<tr><td colspan="6" class="table-empty">Aucune identification enregistrée.</td></tr>{% endfor %}
     </tbody></table></div>

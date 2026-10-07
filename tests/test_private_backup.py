@@ -48,7 +48,7 @@ class PrivateBackupTests(unittest.TestCase):
             for name,data in contents.items():z.writestr(name,data)
 
     def test_complete_manifest_schema_and_components(self):
-        m=self.export(); self.assertEqual((m['format_version'],m['kind'],m['sqlite_schema']),(1,'complete',16))
+        m=self.export(); self.assertEqual((m['format_version'],m['kind'],m['sqlite_schema']),(1,'complete',17))
         self.assertTrue(m['components']['admin_pin']);self.assertTrue(m['components']['branding'])
         self.assertTrue(m['components']['smtp']);self.assertTrue(m['components']['wordpress'])
 
@@ -97,7 +97,7 @@ class PrivateBackupTests(unittest.TestCase):
         with self.assertRaises(ValueError):backup.validate_backup(self.archive)
 
     def test_newer_schema_refused(self):
-        with sqlite3.connect(self.db) as db:db.execute('PRAGMA user_version=17')
+        with sqlite3.connect(self.db) as db:db.execute('PRAGMA user_version=18')
         with self.assertRaises(ValueError):self.export()
 
     def test_wrong_sqlite_refused(self):
@@ -125,7 +125,7 @@ class PrivateBackupTests(unittest.TestCase):
         m,safety=backup.restore_backup(self.archive,self.db)
         self.assertFalse((self.db.parent/'obsolete-resource').exists())
         self.assertTrue((safety/'before-restore.zip').is_file());backup.validate_backup(safety/'before-restore.zip')
-        self.assertEqual(backup.sqlite_check(self.db),16)
+        self.assertEqual(backup.sqlite_check(self.db),17)
 
     def test_restore_failure_rolls_back_all_files(self):
         self.export();(self.db.parent/'old-only').write_text('preserved')
@@ -136,7 +136,7 @@ class PrivateBackupTests(unittest.TestCase):
         with mock.patch('private_backup.os.replace',side_effect=failure):
             with self.assertRaises(OSError):backup.restore_backup(self.archive,self.db)
         self.assertEqual((self.db.parent/'old-only').read_text(),'preserved')
-        self.assertTrue(check_pin(self.db,'admin','1379'));self.assertEqual(backup.sqlite_check(self.db),16)
+        self.assertTrue(check_pin(self.db,'admin','1379'));self.assertEqual(backup.sqlite_check(self.db),17)
 
     def test_custom_flask_path_restored(self):
         backup.create_backup(self.db,self.archive,extras={'flask':self.db.parent/'.openfablab_flask_secret'})
@@ -243,9 +243,9 @@ class PrivateBackupTests(unittest.TestCase):
         target=self.restore()
         self.assertEqual(backup.sqlite_check(target),13)
         application=app.create_app({'DATABASE':str(target),'SECRET_KEY':'fictional','TESTING':True})
-        self.assertEqual(backup.sqlite_check(target),16)
+        self.assertEqual(backup.sqlite_check(target),17)
         backup.create_backup(target,self.root/'after.zip',kind='test')
-        self.assertEqual(backup.validate_backup(self.root/'after.zip')['sqlite_schema'],16)
+        self.assertEqual(backup.validate_backup(self.root/'after.zip')['sqlite_schema'],17)
 
     def test_initialization_failure_rolls_back(self):
         self.export();(self.db.parent/'must-survive').write_text('before')

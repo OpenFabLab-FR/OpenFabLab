@@ -6,7 +6,7 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parent
 PLUGIN = ROOT / "wordpress" / "openfablab-reservations"
-OUTPUT = ROOT / "dist" / "openfablab-reservations-2.8.1.zip"
+OUTPUT = ROOT / "dist" / "openfablab-reservations-2.8.2.zip"
 INCLUDED = (
     "openfablab-reservations.php",
     "uninstall.php",
@@ -20,11 +20,13 @@ INCLUDED = (
     "assets/link.js",
     "assets/reservations.css",
     "assets/family.js",
+    "assets/qr-scanner.js",
     "assets/OpenFabLab-logo-horizontal.svg",
     "assets/jsQR-1.4.0.js",
     "assets/jsQR-LICENSE.txt",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
+    "README.md",
 )
 MACOS_METADATA = {".DS_Store", ".AppleDouble", ".AppleDesktop", "__MACOSX",
                   ".LSOverride", ".Spotlight-V100", ".Trashes", ".TemporaryItems",

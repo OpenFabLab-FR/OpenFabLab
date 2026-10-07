@@ -70,7 +70,10 @@ def generate_animation_bookings_pdf(service, config, bookings, structure, catego
     data = [[cell(label, header_style) for label in headings]]
     for row in bookings:
         age = f"{int(service['service_date'][:4]) - row['birth_year']} ans" if row["birth_year"] else "Âge non renseigné"
-        category = category_labels.get(row["category"], "Usager") if row["user_id"] else "Visiteur"
+        category = 'Sans compte' if row['source']=='family_guest_wordpress' else category_labels.get(row["category"], "Usager") if row["user_id"] else "Visiteur"
+        if dict(row).get('guest_birth_date'):
+            from family_model import age as exact_age
+            age=str(exact_age({'birth_date':row['guest_birth_date']},date.fromisoformat(service['service_date'])))+' ans'
         presence = booking_presence(row)
         label = "Présent" if presence is True else "Absent" if presence is False else "Non renseignée"
         companions = [f"{other['first_name']} {other['last_name']}"

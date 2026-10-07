@@ -27,6 +27,12 @@ Renseigner la personne morale responsable du traitement, son adresse, le **Repr�
 
 La page Gestion des données distingue le responsable du traitement et le DPO. Elle précise qu’aucune télémétrie n’est transmise automatiquement à `https://openfablab.fr`. Les échanges facultatifs météo/Discord/WordPress restent ceux configurés pour le fonctionnement de l’installation.
 
+## Couleurs des catégories et des visiteurs
+
+Les badges partagent un rendu pastel : fond mélangé à 90 % de blanc, texte assombri de la même teinte et pastille conservant la couleur choisie. Le calcul est réalisé dans l’application, avec contrôle de contraste d’au moins 4,5:1, sans palette de catégories imposée ni dépendance à une fonction CSS expérimentale.
+
+**Réglages → Affichage → Visiteurs anonymes** permet de choisir leur couleur de référence (gris bleuté par défaut). Ce réglage ne crée ni compte ni catégorie assignable ; il est conservé au redémarrage et inclus dans l’export/import du profil de configuration. Un ancien profil qui ne le contient pas laisse sa valeur actuelle inchangée. Les couleurs des événements du calendrier restent indépendantes.
+
 ## OpenFabLab 2.7.0 : usagers, intégrations et ressources
 
 **Réglages → Usagers** regroupe les catégories (clés stables, couleur compacte, ordre, activation et catégorie par défaut), l’auto-inscription sur borne et le sujet/message de bienvenue. Installation neuve : Usager, Bénévole, Manager. Migration : toutes les catégories historiques restent conservées, y compris celles sans fiche actuelle. La borne et les notifications de création sont désactivées initialement ; les catégories ne confèrent jamais un droit d’administration.

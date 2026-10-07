@@ -1,18 +1,27 @@
-# OpenFabLab Reservations 2.8.1 — version stable
+# OpenFabLab Reservations 2.8.2 — version stable
+
+La version 2.8.2 ajoute le choix avec/sans compte selon la règle OpenFabLab,
+le scanner QR local avec saisie manuelle et vérification de coordonnée.
+Application/plugin **2.8.2**, protocole **4 / révision 3**, schéma **17** :
+[parcours, compatibilité et mise à jour](reservations-2.8.2.md).
+Aucune URL publique du NAS, port entrant ou deuxième moteur de réservation.
+La révision 2 n’est pas compatible avec le catalogue révision 3 : mettre à jour
+l'application et le plugin ensemble. Le parcours sans compte réserve pour une
+personne autonome avec coordonnées et date de naissance, sans créer de fiche usager.
 
 ## Plugin facultatif, moteur commun
 
-Le plugin 2.8.1 utilise le **protocole 4, révision 2**, avec OpenFabLab 2.8.1 / SQLite 16. **OpenFabLab initie les échanges HTTPS vers WordPress**, pas l'inverse. Il reste l'autorité pour animations, comptes liés, participants, capacité et liste d'attente. WordPress affiche un catalogue public et conserve temporairement des demandes/actions chiffrées. Il ne décide jamais des places. La borne réserve directement sans WordPress.
+Le plugin 2.8.2 utilise le **protocole 4, révision 3**, avec OpenFabLab 2.8.2 / SQLite 17. **OpenFabLab initie les échanges HTTPS vers WordPress**, pas l'inverse. Il reste l'autorité pour animations, comptes liés, participants, capacité et liste d'attente. WordPress affiche un catalogue public et conserve temporairement des demandes/actions chiffrées. Il ne décide jamais des places. La borne réserve directement sans WordPress.
 
 Une personne sélectionnée = une place ; un responsable rattaché éligible doit participer avec un membre non autonome. Un adulte et deux enfants demandent trois places. S'il en reste deux, le groupe entier attend. E-mail valide obligatoire, téléphone selon le réglage de structure. SMTP, propositions, réponses et expirations sont gérés par OpenFabLab. Voir [familles](families-2.8.md).
 
 ## Préparer le raccordement
 
-Sauvegarder WordPress et OpenFabLab avant toute intervention ; essayer d'abord sur une installation séparée. Le ZIP `openfablab-reservations-2.8.1.zip` de la [release stable 2.8.1](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.1) est installable par les extensions WordPress. PHP 8.1+, OpenSSL AES-GCM, InnoDB, HTTPS, REST et JavaScript sont nécessaires. Aucun secret n'est fourni. Utiliser exclusivement ce plugin avec OpenFabLab 2.8.1 et lire [les instructions de mise à jour](upgrade.md).
+Sauvegarder WordPress et OpenFabLab avant toute intervention ; essayer d'abord sur une installation séparée. Le ZIP `openfablab-reservations-2.8.2.zip` de la [release stable 2.8.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.2) est installable par les extensions WordPress. PHP 8.1+, OpenSSL AES-GCM, InnoDB, HTTPS, REST et JavaScript sont nécessaires. Aucun secret n'est fourni. Utiliser exclusivement ce plugin avec OpenFabLab 2.8.2 et lire [les instructions de mise à jour](upgrade.md).
 
 Conserver le secret partagé existant dans le plugin et dans les fichiers privés OpenFabLab. Dans OpenFabLab, renseigner l'URL HTTPS du **site WordPress**, puis vérifier la liaison dans Normal et Test. Aucun champ d'adresse du moteur n'est utilisé. Une option d'une ancienne installation peut rester comme donnée inactive, mais aucune requête ne l'utilise. **Ne pas ouvrir de port NAS ni modifier le réseau pour ce flux.**
 
-Les deux versions doivent négocier `outbound_actions_v1`. La version stable annonce aussi `transport_only_v1` et `relay_revision: 2` ; sa révision de stockage est `2.8.1-relay2`. Un plugin 2.8.0/2.7 ne traite pas les nouvelles actions ; aucune reprise de son ancien moteur de capacité. Une installation neuve reste neutre, modules à activer par l'équipe.
+Les deux versions doivent négocier `outbound_actions_v1`. La version stable annonce aussi `transport_only_v1` et `relay_revision: 3` ; sa révision de stockage est `2.8.2-relay3`. Un plugin 2.8.0/2.7 ne traite pas les nouvelles actions ; aucune reprise de son ancien moteur de capacité. Une installation neuve reste neutre, modules à activer par l'équipe.
 
 ## Pages publiques
 

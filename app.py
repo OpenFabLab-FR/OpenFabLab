@@ -29,6 +29,7 @@ from PIL import Image, UnidentifiedImageError
 import resvg_py
 import segno
 from openfablab import __version__
+from badge_palette import DEFAULT_REFERENCE
 from evolution_schema import (backup_before_evolution, migrate as migrate_evolution,
                               categories, default_category, category_label as dynamic_category_label)
 
@@ -1005,6 +1006,7 @@ def default_application_settings(_legacy_installation=False):
         ('structure_latitude', ''),
         ('structure_longitude', ''),
         ('structure_color', '#307b9a'),
+        ('anonymous_visitor_color', DEFAULT_REFERENCE),
         ('structure_legal_entity', ''),
         ('structure_billing_address', ''),
         ('structure_siret', ''),
@@ -6956,7 +6958,7 @@ def register_routes(application):
                 for key in ("minimum_age", "accompaniment_under_age", "waitlist_enabled",
                             "offer_hours", "last_offer_hours", "close_minutes",
                             "reminder_one_hours", "reminder_two_hours",
-                            "sync_interval_minutes", "wordpress_url", "phone_required", "public_url",
+                            "sync_interval_minutes", "wordpress_url", "phone_required", "account_required", "public_url",
                             "action_interval_seconds", "link_mode")
             },
             reservation_secret_set=bool(load_sync_secret(application.config["DATABASE"])),
@@ -7092,6 +7094,7 @@ def register_routes(application):
             write_setting(database, "reservation_wordpress_url", url)
             write_setting(database,'reservation_public_url',public_url)
             write_setting(database,'reservation_phone_required','1' if request.form.get('phone_required')=='1' else '0')
+            write_setting(database,'reservation_account_required','1' if request.form.get('account_required')=='1' else '0')
             if secret:
                 save_sync_secret(application.config["DATABASE"], secret)
             for row in database.execute(
@@ -8325,8 +8328,11 @@ def register_routes(application):
         from family_model import responsibles, age
         for booking in bookings:
             booking['family_new']=booking['source'].startswith('family_')
+            booking['without_account']=booking['source']=='family_guest_wordpress'
             person=database.execute('SELECT * FROM users WHERE id=?',(booking['user_id'],)).fetchone() if booking['user_id'] else None
             booking['exact_age']=age(person,datetime.fromisoformat(service['service_date']).date()) if person else None
+            if booking['without_account'] and booking['guest_birth_date']:
+                booking['exact_age']=age({'birth_date':booking['guest_birth_date']},datetime.fromisoformat(service['service_date']).date())
             booking['responsibles']=responsibles(database,booking['user_id']) if person else []
             booking['group_count']=sum(b['status'] not in ('cancelled','expired','declined') for b in groups.get(booking['group_uuid'],[booking]))
             booking['owner']=database.execute('SELECT u.id,u.first_name,u.last_name FROM family_booking_requests r LEFT JOIN users u ON u.id=r.owner_id WHERE r.group_uuid=?',(booking['group_uuid'],)).fetchone()
@@ -8371,12 +8377,13 @@ def register_routes(application):
 
     @application.get("/admin/animations/<int:service_id>/inscriptions.csv")
     def admin_animation_bookings_csv(service_id):
+        from family_model import age
         database = get_database()
         service, _config = booking_service(database, service_id)
         stream = io.StringIO()
         writer = csv.writer(stream, delimiter=";")
         writer.writerow(["Animation", "Date", "Statut", "Prénom", "Nom", "Année de naissance",
-                         "Âge dans l'année", "Type", "Catégorie", "Rattachement", "Présence", "E-mail", "Téléphone"]
+                         "Âge (à la date de l’animation sans compte, dans l’année sinon)", "Type", "Catégorie", "Rattachement", "Présence", "E-mail", "Téléphone"]
                         + (["Créneau"] if _config and _config["booking_mode"] == "slots" else []))
         rows = database.execute(
             "SELECT b.*, u.category, sl.starts_at, sl.ends_at FROM animation_bookings b LEFT JOIN users u ON u.id = b.user_id "
@@ -8388,8 +8395,8 @@ def register_routes(application):
             presence = booking_presence(row)
             writer.writerow([service["title"], service["service_date"], booking_reservation_status(row),
                              row["first_name"], row["last_name"], row["birth_year"] or "",
-                             int(service["service_date"][:4]) - row["birth_year"] if row["birth_year"] else "",
-                             "Usager" if row["user_id"] else "Visiteur",
+                             age({'birth_date':row['guest_birth_date']},datetime.fromisoformat(service['service_date']).date()) if row['source']=='family_guest_wordpress' and row['guest_birth_date'] else int(service["service_date"][:4]) - row["birth_year"] if row["birth_year"] else "",
+                             "Sans compte" if row['source']=='family_guest_wordpress' else "Usager" if row["user_id"] else "Visiteur",
                              dynamic_category_label(database,row['category']) if row['category'] else '',
                              row["link_status"], "Oui" if presence is True else "Non" if presence is False else "Non renseignée",
                              row["email"], row["phone"]]

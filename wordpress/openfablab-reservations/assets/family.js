@@ -64,6 +64,7 @@
     const list = root.querySelector('.openfablab-animation-list');
     const host = root.querySelector('.openfablab-form-host');
     const status = root.querySelector('.openfablab-status');
+    let scanner;
     async function refresh() {
       try {
         const result = await call('animations?environment=' + encodeURIComponent(environment));
@@ -71,25 +72,97 @@
         status.textContent = result.animations.length ? '' : 'Aucune animation ouverte à la réservation.';
         result.animations.forEach(animation => {
           const card = node('article', 'openfablab-card');
+          card.dataset.serviceId = String(animation.service_id);
           card.appendChild(node('h3', '', animation.title));
           card.appendChild(node('p', 'openfablab-date', animation.date + ' · ' + animation.hours));
           card.appendChild(node('p', '', animation.description || ''));
-          card.appendChild(node('p', '', animation.available + ' place(s) disponible(s)' + (animation.waitlist_enabled ? ' · liste d’attente possible' : '')));
-          card.appendChild(node('small', '', 'Disponibilité indicative ; le groupe est confirmé après vérification.'));
-          const button = node('button', 'openfablab-button', 'Réserver'); button.type = 'button';
-          button.addEventListener('click', () => identify(animation));
+          card.appendChild(node('p', 'openfablab-availability', animation.available + ' place(s) disponible(s)' + (animation.waitlist_enabled ? ' · liste d’attente autorisée' : '')));
+          const button = node('button', 'openfablab-button openfablab-reserve-button', 'Réserver'); button.type = 'button';
+          button.addEventListener('click', () => choose(animation));
           card.appendChild(button); list.appendChild(card);
         });
+        markSelection();
       } catch (error) {status.textContent = error.message;}
     }
     function form(title) {
+      if (scanner) {scanner.destroy();scanner = null;}
       host.replaceChildren();
       const value = node('form', 'openfablab-booking-form');
+      const animation = active.get(environment);
+      if (animation) value.appendChild(node('p', 'openfablab-selected-summary', 'Réservation pour : ' + animation.title + ' · ' + animation.date + ' · ' + animation.hours));
       const heading = node('h3', '', title); heading.tabIndex = -1;
       value.appendChild(heading);
       const feedback = node('p', 'openfablab-verification'); feedback.setAttribute('role', 'status');
       value.appendChild(feedback);host.appendChild(value);heading.focus();
       return [value, feedback];
+    }
+    function choose(animation) {
+      active.set(environment, animation);
+      markSelection();
+      if (animation.account_required !== false) {identify(animation);return;}
+      const [value] = form('Comment souhaitez-vous réserver ?');
+      const choices = node('div', 'openfablab-entry-choices');
+      for (const [title, help, action] of [
+        ['J’ai un compte OpenFabLab', 'Retrouvez votre fiche et vos éventuels liens familiaux.', () => identify(animation)],
+        ['Réserver sans compte', 'Réservez simplement pour vous avec vos coordonnées.', () => guest(animation)]
+      ]) {
+        const card = node('div', 'openfablab-entry-card');
+        const button = node('button', 'openfablab-button', title);button.type = 'button';button.addEventListener('click', action);
+        card.appendChild(button);card.appendChild(node('p', '', help));choices.appendChild(card);
+      }
+      value.appendChild(choices);
+    }
+    function markSelection() {
+      const selected = active.get(environment);
+      list.querySelectorAll('.openfablab-card').forEach(card => {
+        const chosen = !!selected && card.dataset.serviceId === String(selected.service_id);
+        card.classList.toggle('is-selected', chosen);
+        card.querySelector('button').setAttribute('aria-pressed', String(chosen));
+      });
+    }
+    function guest(animation, previous = {}) {
+      const [value, feedback] = form('Réserver sans compte');
+      value.appendChild(node('p', '', 'Une place pour vous, sans création de compte. Une personne non autonome réserve avec son responsable depuis le parcours avec compte.'));
+      const fields = node('div', 'openfablab-guest-fields');
+      for (const [name, label, type] of [['first_name','Prénom','text'],['last_name','Nom','text'],['birth_date','Date de naissance','date'],['email','E-mail','email'],['phone',animation.phone_required ? 'Téléphone (obligatoire)' : 'Téléphone (facultatif)','tel']]) {
+        const wrapper = field(name,label,type), input = wrapper.querySelector('input');input.value = previous[name] || '';
+        input.maxLength = ['first_name','last_name'].includes(name) ? 120 : name === 'phone' ? 40 : 254;
+        if (name === 'phone') input.required = animation.phone_required === true;
+        input.autocomplete = {first_name:'given-name',last_name:'family-name',birth_date:'bday',email:'email',phone:'tel'}[name];
+        fields.appendChild(wrapper);
+      }
+      value.appendChild(fields);
+      value.appendChild(node('small', '', 'La date de naissance sert uniquement à vérifier l’âge minimum et l’autonomie à la date de l’animation. Aucune fiche usager n’est créée.'));
+      let slots;
+      if (animation.booking_mode === 'slots') {
+        const label = node('label','openfablab-field');label.appendChild(node('span','','Créneau'));
+        slots = node('select');slots.required = true;slots.name = 'slot_uuid';
+        const empty = node('option','','Choisir un créneau');empty.value = '';slots.appendChild(empty);
+        animation.slots.forEach(slot => {const option = node('option','',slot.label);option.value = slot.slot_uuid;slots.appendChild(option);});
+        slots.value = previous.slot_uuid || '';label.appendChild(slots);value.appendChild(label);
+      }
+      const back = node('button','openfablab-secondary','Changer de parcours');back.type = 'button';back.addEventListener('click',() => choose(animation));value.appendChild(back);
+      value.appendChild(node('button','openfablab-button','Voir le récapitulatif'));
+      value.addEventListener('submit', event => {
+        event.preventDefault();if (!value.reportValidity()) return;
+        const data = Object.fromEntries(new FormData(value));data.slot_uuid = slots ? slots.value : null;
+        guestRecap(animation, data);
+      });
+    }
+    function guestRecap(animation, data) {
+      const [value, feedback] = form('Récapitulatif');
+      value.appendChild(node('p','',data.first_name + ' ' + data.last_name + ' · 1 place demandée'));
+      value.appendChild(node('p','','Vous recevrez la décision d’OpenFabLab par e-mail. Aucune place n’est confirmée avant cette décision.'));
+      const consent = node('label','openfablab-family-person');const box = node('input');box.type = 'checkbox';box.required = true;
+      consent.appendChild(box);consent.appendChild(node('span','','J’accepte l’utilisation de ces informations pour gérer la réservation.'));value.appendChild(consent);
+      const back = node('button','openfablab-secondary','Modifier');back.type = 'button';back.addEventListener('click',() => guest(animation,data));value.appendChild(back);
+      const submit = node('button','openfablab-button','Valider la réservation');value.appendChild(submit);
+      const key = randomKey();
+      value.addEventListener('submit',async event => {
+        event.preventDefault();if (!value.reportValidity()) return;submit.disabled = true;back.disabled = true;feedback.textContent = 'Votre demande est transmise. Vérification en cours…';
+        try {receipt(await call('guest',{...data,environment,service_id:animation.service_id,request_key:key,consent:true}));await refresh();}
+        catch (error) {feedback.textContent = error.message;submit.disabled = false;back.disabled = false;}
+      });
     }
     function identify(animation) {
       active.set(environment, animation);
@@ -97,9 +170,20 @@
       value.appendChild(node('p', '', 'Saisissez votre identifiant et une coordonnée déjà renseignée dans votre fiche. Les membres rattachés ne sont affichés qu’après cette vérification.'));
       value.appendChild(field('public_id', 'Identifiant OpenFabLab'));
       value.appendChild(field('contact', 'E-mail ou téléphone de votre fiche'));
+      const id = value.querySelector('[name=public_id]'), contactInput = value.querySelector('[name=contact]');
+      const methods = node('div','openfablab-identification-methods');
+      const scan = node('button','openfablab-button','Scanner mon QR Code');scan.type = 'button';
+      const manual = node('button','openfablab-secondary','Saisir mon identifiant');manual.type = 'button';
+      const camera = node('div','openfablab-scanner');camera.hidden = true;
+      if (window.OpenFabLabQR) scanner = window.OpenFabLabQR(camera,id,() => {feedback.textContent = 'QR Code reconnu. Vérifiez votre compte avec votre e-mail ou téléphone.';contactInput.focus();});
+      scan.addEventListener('click',() => {if (scanner) scanner.start();else feedback.textContent = 'Scanner indisponible. Saisissez votre identifiant.';});
+      manual.addEventListener('click',() => {if (scanner) scanner.stop();id.focus();});
+      id.addEventListener('focus',() => {if (scanner) scanner.stop();});
+      methods.appendChild(scan);methods.appendChild(manual);value.insertBefore(methods,value.querySelector('label'));value.insertBefore(camera,value.querySelector('label'));
       const button = node('button', 'openfablab-button', 'Continuer');value.appendChild(button);
       value.addEventListener('submit', async event => {
         event.preventDefault();button.disabled = true;
+        if (scanner) scanner.stop();
         feedback.textContent = 'Vérification en cours…';
         try {
           const data = new FormData(value);
@@ -180,8 +264,9 @@
       });
     }
     function receipt(result) {
-      const [value] = form(result.status === 'confirmed' ? 'Réservation confirmée' : 'Groupe en liste d’attente');
-      value.appendChild(node('p', '', result.count + ' participant(s). ' + (result.status === 'confirmed' ? 'Tous sont inscrits ensemble.' : 'Aucune place n’est encore confirmée. Une proposition sera envoyée par e-mail si tout le groupe peut être accueilli.')));
+      const single = result.count === 1;
+      const [value] = form(result.status === 'confirmed' ? 'Réservation confirmée' : single ? 'Inscription en liste d’attente' : 'Groupe en liste d’attente');
+      value.appendChild(node('p', '', result.count + (single ? ' place demandée. ' : ' participants. ') + (result.status === 'confirmed' ? single ? 'Votre inscription est confirmée.' : 'Tous sont inscrits ensemble.' : single ? 'Vous recevrez une proposition par e-mail lorsqu’une place sera disponible.' : 'Aucune place n’est encore confirmée. Une proposition sera envoyée par e-mail si tout le groupe peut être accueilli.')));
     }
     async function resume() {
       await refresh();
@@ -189,11 +274,12 @@
       try {pending = JSON.parse(sessionStorage.getItem(storageKey(environment)) || 'null');} catch (_) {}
       if (!pending || pending.until < Date.now() || pending.environment !== environment) {forget(environment);return;}
       active.set(environment, pending.animation);
+      markSelection();
       const [, feedback] = form('Vérification en cours…');
       feedback.textContent = 'Votre demande est reçue. Cette page se mettra à jour automatiquement.';
       try {
         const result = await awaitResult(pending);
-        if (pending.route === 'reserve') {receipt(result);await refresh();}
+        if (pending.route === 'reserve' || pending.route === 'guest') {receipt(result);await refresh();}
         else if (pending.animation) {
           if (result.contact_required) contact(pending.animation, result);
           else select(pending.animation, result);

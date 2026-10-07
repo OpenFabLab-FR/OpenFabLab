@@ -27,6 +27,33 @@ node tests/test_participants_ui.js
 
 Pour un lancement direct de Python, utiliser les variables d'isolation décrites dans `tools/run_checks.py` : ne pas importer `app.py` dans un environnement contenant un chemin réel de base. Préférer le runner complet.
 
+## Validation de publication 2.8.2
+
+Sur la copie publique issue de la candidate finale : **561 tests Python**
+(dont 22 de palette pastel/visiteurs), **771 contrôles PHP**, **956 JavaScript**
+et **1 818 contrôles d'interface Chromium/WebKit** réussis. Ne pas additionner les
+campagnes successives. Les 956 contrôles incluent le parcours public sans compte,
+le décodage jsQR réel sur images générées et les caméras simulées.
+
+Le banc privé utilise WordPress et MariaDB/InnoDB réels, PHP8.3 WebAssembly et
+HTTPS local, sans socket HTTP OpenFabLab : **357 contrôles** familles/sans compte,
+offres, annulation, interruption/reprise, anti-rejeu et Normal/Test. Le parcours
+du relais couvre **330 contrôles Chromium/WebKit**, dont une relève de15s et une
+attente de deux cycles par moteur de navigateur. Les interfaces sont testées
+sur neuf largeurs : 320,360,390,430,768,1024,1280,1440 et1920px.
+
+Migration/restauration sur copie privée : **38 tables métier préservées**,
+schéma16 →17 idempotent, intégritéOK, zéro erreur de clés étrangères, sauvegarde
+originale inchangée. Les seuls ajouts sont la colonne privée
+`animation_bookings.guest_birth_date` et les réglages manquants. Le runtime
+extrait du ZIP démarre sainement en schéma17. L'audit compare tous les fichiers
+exécutables publics à la candidate et aux ZIP approuvés, sans reconstruction.
+
+Le SMTP est simulé ; aucun test de webcam physique ni nouveau build Docker réel
+n'est revendiqué sur le poste de publication. La validation sur une installation
+NAS réelle a été confirmée séparément par l'exploitant. Les données, clés,
+captures et outils du banc ainsi que les procédures privées restent hors dépôt.
+
 ## Packaging
 
 La version **2.8.1** ajoute les contrôles du relais sortant, des reçus atomiques et du retrait réel des anciennes routes/classes/cron. Après le correctif de suppression d'animation, la suite complète compte **505 tests Python réussis**, dont **13 scénarios de suppression transactionnelle**, ainsi que **770 contrôles PHP et 622 contrôles JavaScript** relancés. Les contrôles PHP comprennent 710 historiques sur fixtures et 60 du runtime actuel. Le parcours de suppression compte **108 contrôles Chromium/WebKit**, sur neuf largeurs de 320 à 1920 px, sans erreur JavaScript ni débordement. Les protections anti-métadonnées macOS restent incluses et bloquantes.
@@ -47,7 +74,7 @@ NAS et migration réelle 2.8.0 ont été validés par l'exploitant du FougèresL
 
 Les constructeurs utilisent des listes autorisées et des dates/permissions ZIP fixes. Les deux ZIP doivent être identiques lors de deux constructions dans le même environnement. Pour une reconstruction strictement octet-identique, utiliser la même version de Python/zlib ; la compression peut différer entre versions. Le contrôleur compare également les octets des membres aux sources publiques et génère `dist/SHA256SUMS`. `dist/` n'est pas un contenu à committer.
 
-Pour la release stable **2.8.1**, les ZIP applicatif et plugin validés ne sont pas reconstruits pour actualiser la documentation. Les guides embarqués peuvent encore porter la mention de candidate ; les documents du tag sont la référence stable. **Tous les fichiers runtime et le plugin sont identiques aux archives approuvées**. Seuls les documents publics et leur test de statut sont actualisés dans Git. La référence de téléchargement est l'asset de release et son `SHA256SUMS` ; reconstruire depuis Git avec les guides actualisés produirait une autre empreinte.
+Pour la release stable **2.8.2**, les ZIP applicatif et plugin validés ne sont pas reconstruits pour actualiser la documentation. Les guides embarqués peuvent encore porter la mention de candidate ; les documents du tag sont la référence stable. **Tous les fichiers runtime et le plugin exécutable sont identiques aux archives approuvées**. Seuls les documents publics et leur test de statut sont actualisés dans Git. La référence de téléchargement est l'asset de release et son `SHA256SUMS` ; reconstruire depuis Git avec les guides actualisés produirait une autre empreinte.
 
 ## Docker
 
