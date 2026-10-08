@@ -1,6 +1,6 @@
 {% extends 'base.html' %}{% block title %}Calendrier · OpenFabLab{% endblock %}{% block body_class %}admin-page{% endblock %}
 {% macro detail_attributes(event) -%}
-data-calendar-detail data-title="{{ event.title }}" data-details="{{ event.details }}" data-people='{{ event.people|tojson }}' data-action-label="{{ event.action_label|default('Ouvrir la page') }}" data-kind="{{ event.kind }}" data-key="{{ event.key }}" data-day="{{ event.day }}" data-hidden="{{ 1 if event.hidden else 0 }}" aria-haspopup="dialog"
+data-calendar-detail data-title="{{ event.detail_title|default(event.title) }}" data-details="{{ event.details }}" data-description="{{ event.description|default('') }}" data-people='{{ event.people|tojson }}' data-action-label="{{ event.action_label|default('Ouvrir la page') }}" data-kind="{{ event.kind }}" data-key="{{ event.key }}" data-day="{{ event.day }}" data-hidden="{{ 1 if event.hidden else 0 }}" aria-haspopup="dialog"
 {%- endmacro %}
 
 {% block content %}<section class="content-heading"><p class="eyebrow">Agenda du FabLab</p><h1>Calendrier</h1><p>OpenLab, animations, réservations, locations et formations. Les créneaux internes restent rattachés à leur animation globale.</p></section>{% include '_admin_nav.html' %}

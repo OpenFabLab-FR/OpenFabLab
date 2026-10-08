@@ -114,7 +114,7 @@ class NamingConsistencyTestCase(unittest.TestCase):
             backup = run_automatic_backup(database, self.fixture.app,
                                           now=datetime(2026, 9, 30, 8, 30, tzinfo=timezone.utc), force=True)
             self.assertEqual(backup.parent.name, "OpenFabLab")
-            self.assertRegex(backup.name, r"^openfablab-sauvegarde-2026-09-30_10-30-V2\.8\.2\.db$")
+            self.assertRegex(backup.name, r"^openfablab-sauvegarde-2026-09-30_10-30-V2\.8\.3\.db$")
             self.assertFalse(OLD_NAMES.search(backup.name))
         with sqlite3.connect(backup) as database:
             self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
@@ -141,7 +141,7 @@ class NamingConsistencyTestCase(unittest.TestCase):
         self.assertIn("La sauvegarde a été restaurée", response.get_data(as_text=True))
         self.assertEqual(source.read_bytes(), original)
         with self.fixture.database() as database:
-            self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],17)
+            self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],18)
             self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
             self.assertEqual(database.execute("PRAGMA foreign_key_check").fetchall(), [])
             self.assertEqual(database.execute("SELECT COUNT(*) FROM users").fetchone()[0], before_users)
@@ -183,7 +183,7 @@ class NamingConsistencyTestCase(unittest.TestCase):
     def test_compose_is_portable_and_docker_copies_existing_pdf_module(self):
         compose = (ROOT / "compose.yaml").read_text()
         self.assertTrue(compose.startswith("name: openfablab\n"))
-        for value in ("image: openfablab:v2.8.2", "container_name: openfablab", '"5080:8000"',
+        for value in ("image: openfablab:v2.8.3", "container_name: openfablab", '"5080:8000"',
                       "OPENFABLAB_URL_PREFIX: /stat", "OPENFABLAB_DATABASE: /data/openfablab.db",
                       "./data:/data", "${OPENFABLAB_BACKUP_HOST_ROOT:-./backups}:/nas-backups"):
             self.assertIn(value, compose)

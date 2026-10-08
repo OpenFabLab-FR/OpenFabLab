@@ -1,4 +1,46 @@
 'use strict';
+// One reusable badge behavior: real text stays in the DOM for assistive
+// technology; truncated labels can be read in a touch/keyboard dialog.
+function refreshCategoryBadge(badge) {
+  const label = badge.textContent.trim();
+  badge.title = label;
+  const truncated = badge.scrollWidth > badge.clientWidth + 1;
+  badge.toggleAttribute('data-category-truncated', truncated);
+  if (truncated && !badge.closest('button, a')) {
+    badge.tabIndex = 0; badge.setAttribute('role', 'button');
+    badge.setAttribute('aria-label', 'Catégorie : ' + label + '. Afficher le nom complet.');
+    badge.setAttribute('aria-haspopup', 'dialog');
+  } else { badge.removeAttribute('tabindex'); badge.removeAttribute('role'); badge.removeAttribute('aria-haspopup'); badge.removeAttribute('aria-label'); }
+}
+const badgeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => entries.forEach(({target}) => refreshCategoryBadge(target))) : null;
+function prepareCategoryBadge(badge) { refreshCategoryBadge(badge); badgeObserver?.observe(badge); }
+document.querySelectorAll('.category-badge').forEach(prepareCategoryBadge);
+document.fonts?.ready.then(() => document.querySelectorAll('.category-badge').forEach(refreshCategoryBadge));
+function revealCategory(badge) {
+  if (document.querySelector('.category-label-dialog[open]')) return;
+  document.querySelectorAll('.category-label-dialog:not([open])').forEach(dialog => dialog.remove());
+  const dialog = document.createElement('dialog'); dialog.className = 'category-label-dialog';
+  const title = document.createElement('h2'); title.id = 'category-label-title'; title.textContent = 'Catégorie';
+  const text = document.createElement('p'); text.textContent = badge.textContent.trim();
+  const close = document.createElement('button'); close.type = 'button'; close.className = 'admin-button secondary compact'; close.textContent = 'Fermer';
+  close.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => { dialog.remove(); if (!document.querySelector('.category-label-dialog[open]')) (badge.closest('button,a') || badge).focus(); });
+  dialog.setAttribute('aria-labelledby', title.id); dialog.append(title, text, close); document.body.append(dialog); dialog.showModal(); close.focus();
+}
+document.addEventListener('click', event => {
+  const badge = event.target.closest('.category-badge[data-category-truncated]');
+  if (badge) { event.preventDefault(); event.stopPropagation(); revealCategory(badge); }
+}, true);
+document.addEventListener('keydown', event => {
+  if (['Enter',' '].includes(event.key) && event.target.matches('.category-badge[data-category-truncated]')) {
+    event.preventDefault(); event.stopPropagation(); revealCategory(event.target);
+  }
+});
+document.querySelectorAll('[data-affiliation-choice]').forEach(select => {
+  const name = select.form.querySelector('[data-affiliation-name]');
+  const update = () => { name.readOnly = select.value !== ''; if (select.value) name.value = select.selectedOptions[0].textContent; };
+  select.addEventListener('change', update); update();
+});
 document.querySelectorAll('[data-minor-toggle]').forEach(box => {
   const form = box.form, exact = form.querySelector('[name="birth_date"]'), year = form.querySelector('[name="birth_year"]');
   if (!exact || !year) return;
@@ -167,8 +209,23 @@ document.querySelectorAll('[data-calendar-detail]').forEach(link => {
     const close = document.createElement('button'); close.type = 'button'; close.className = 'admin-button secondary compact'; close.textContent = 'Fermer';
     close.addEventListener('click', () => dialog.close());
     dialog.addEventListener('close', () => { dialog.remove(); link.focus(); });
-    dialog.append(title, details); if (people.childElementCount) dialog.append(people);
+    dialog.append(title, details);
+    if (link.dataset.description) {
+      const text = link.dataset.description;
+      const description = document.createElement(text.length > 260 ? 'details' : 'p'); description.className = 'calendar-description';
+      if (text.length > 260) {
+        const summary = document.createElement('summary'); summary.textContent = 'Lire la description complète';
+        const preview = document.createElement('p'); preview.className = 'calendar-description-preview'; preview.textContent = text.slice(0, 160) + '…';
+        const full = document.createElement('p'); full.textContent = text; description.append(summary, full);
+        const update = () => { preview.hidden = description.open; full.hidden = !description.open; };
+        description.addEventListener('toggle', update); update();
+        dialog.append(preview);
+      } else description.textContent = text;
+      dialog.append(description);
+    }
+    if (people.childElementCount) dialog.append(people);
     dialog.append(open, close); document.body.append(dialog); dialog.showModal(); close.focus();
+    dialog.querySelectorAll('.category-badge').forEach(prepareCategoryBadge);
     const visibility = document.getElementById('calendar-visibility');
     if (visibility) {
       const button = document.createElement('button');button.type = 'button';button.className = 'admin-button secondary compact';

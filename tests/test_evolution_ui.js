@@ -53,7 +53,8 @@ async function check(name,fn){await fn();checks++;console.log('OK '+name);}
   });
   await check('kiosk shared form locks privileged session and returns QR receipt',async()=>{
    await page.goto(base+'/inscription');assert.equal(await page.locator('h1').innerText(),'Créer mon compte');
-   assert.equal(await page.locator('[name="category"]').count(),0);assert.equal(await page.locator('[name="public_id"]').count(),0);
+   assert.equal(await page.locator('[name="category"]').count(),0);assert.equal(await page.locator('[name="public_id"]').count(),1);
+   assert(await page.locator('[name="public_id"]').evaluate(el=>el.readOnly));
    await page.locator('[name="first_name"]').fill('Éloïse-Exemple');await page.locator('[name="last_name"]').fill('FICTIF');
    await page.locator('[name="birth_year"]').fill('1990');
    await page.locator('[name="email"]').fill('fictional@example.invalid');await page.locator('[name="phone"]').fill('0600000000');

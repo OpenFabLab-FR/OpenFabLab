@@ -54,9 +54,17 @@ def main():
         assert digest(repeat_application)==digest(application.OUTPUT), 'Application reproducibility'
         assert digest(repeat_plugin)==digest(plugin.OUTPUT), 'Plugin reproducibility'
         if options.reuse_plugin:
+            # Public 2.8.2 plugin was frozen before its source README changed
+            # only the heading from candidate to stable. Audit that exact
+            # published artifact; no executable or other documentation delta.
+            assert digest(plugin.OUTPUT)=='acd0c1d0517d810fba4b603da5e6668b2ba49984d346c0e4c6d0125d132257da', 'Approved unchanged plugin hash'
             with ZipFile(plugin.OUTPUT) as archive:
                 for name in plugin.INCLUDED:
-                    assert archive.read('openfablab-reservations/'+name)==(plugin.ROOT/'wordpress/openfablab-reservations'/name).read_bytes(),name
+                    frozen=archive.read('openfablab-reservations/'+name)
+                    current=(plugin.ROOT/'wordpress/openfablab-reservations'/name).read_bytes()
+                    if name=='README.md':
+                        assert frozen.replace(b'2.8.2 \xe2\x80\x94 candidate\n',b'2.8.2 \xe2\x80\x94 version stable\n',1)==current,name
+                    else: assert frozen==current,name
         for distribution in (application.OUTPUT,plugin.OUTPUT):
             with ZipFile(distribution) as archive:
                 assert any(name.endswith('/LICENSE') or name=='LICENSE' for name in archive.namelist())

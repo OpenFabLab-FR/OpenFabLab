@@ -1,5 +1,9 @@
 # OpenFabLab — Roadmap et conception
 
+## Disponible en 2.8.3 stable — personnalisation et lisibilité
+
+Badges pastel insécables et libellés longs accessibles, tableaux adaptés aux petits écrans, trois modes d'identifiant public, rattachement informatif à une structure, seuil de fréquentation configurable, dates Discord dans le fuseau local et détails de dossier autorisés dans le calendrier. Migration additive SQLite 17 → 18 ; plugin 2.8.2 et moteur de réservation inchangés. Voir le [guide 2.8.3](docs/usability-2.8.3.md).
+
 ## Disponible en 2.8.2 stable — compte facultatif, QR et badges pastel
 
 Le parcours public sans compte devient une option de structure,
@@ -48,7 +52,7 @@ Voir [la conception](docs/families-2.8.md) et [le guide d'essai](docs/candidate-
 4. Évaluer un moyen d'identification renforcée (code à usage unique, QR privé, etc.) : la concordance ID/contact ne prouve pas une autorité parentale. Aucune gestion publique arbitraire des rattachements.
 5. Décider plus tard d'une extension aux autres personnes liées, sans fusionner leurs comptes.
 
-### Évolutions ultérieures, non disponibles en 2.8.2
+### Évolutions ultérieures, non disponibles en 2.8.3
 
 Réutiliser les seuils/responsabilités pour les machines et autres ressources, avec habilitations et contraintes propres à chaque ressource. Ne pas déduire une autorisation machine du seul lien familial. Une notion générale de compte Famille reste éventuelle, jamais une fusion d'historiques.
 

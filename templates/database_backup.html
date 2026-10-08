@@ -22,7 +22,7 @@
             <label class="form-field"><span>{{ label }}</span><input name="{{ key }}" type="{% if key == 'email' %}email{% elif key in ('website', 'privacy_policy_url') %}url{% elif key == 'color' %}color{% else %}text{% endif %}" value="{{ structure_settings[key] }}" maxlength="{{ 254 if key == 'email' else 240 }}" {% if key in ('name', 'short_name', 'timezone') %}required{% endif %}></label>
             {% endfor %}
         </div>
-        <p class="form-help">La météo utilise les coordonnées publiques du FabLab. Sans latitude et longitude, aucun appel météo n’est effectué. Le lien de gestion des données peut être affiché dans le formulaire de réservation.</p>
+        <p class="form-help">Le fuseau horaire utilise un nom IANA, par exemple Europe/Paris ; les heures d’été et d’hiver sont appliquées automatiquement. Les coordonnées ne permettent pas toujours de le déduire : vérifiez ce réglage explicitement. La météo utilise les coordonnées publiques du FabLab. Sans latitude et longitude, aucun appel météo n’est effectué.</p>
         {% include '_branding_settings.html' %}
     </section>
     <section class="form-section">
@@ -87,6 +87,15 @@
         <p>Ces heures concernent uniquement l’affichage. Les horaires OpenLab et les réservations restent inchangés. La semaine est étendue si un événement déborde exceptionnellement.</p>
         <div class="form-grid two-columns"><label class="form-field"><span>Heure de début affichée</span><input form="display-options" type="time" name="calendar_display_start" value="{{ calendar_display_start }}" required></label><label class="form-field"><span>Heure de fin affichée</span><input form="display-options" type="time" name="calendar_display_end" value="{{ calendar_display_end }}" required></label></div>
         <label class="checkbox-field"><input form="display-options" name="openlab_attendance_show_decimals" type="checkbox" value="1" {% if show_attendance_decimals %}checked{% endif %}><span><strong>Afficher les décimales dans les graphiques d’affluence</strong><small>Rétablit les valeurs détaillées, par exemple 2,8 usagers au lieu de 3 usagers.</small></span></label>
+    </section>
+    <section class="form-section" id="attendance-reference">
+        <h2>Indicateur de fréquentation</h2>
+        <form method="post" action="{{ url_for('evolution.attendance_settings') }}" class="compact-form">
+            <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+            <label class="form-field"><span>Seuil de fréquentation de référence (personnes)</span><input type="number" name="attendance_reference" min="1" max="10000" value="{{ attendance_reference }}" required></label>
+            <button class="admin-button primary compact">Enregistrer le seuil</button>
+        </form>
+        <p class="form-help">Un repère visuel sur l’accueil, sans blocage des arrivées ni effet sur les places des animations.</p>
     </section>
     <div class="form-actions"><button form="display-options" class="admin-button primary" type="submit">Enregistrer les options</button></div>
 {% elif settings_view == 'borne' %}

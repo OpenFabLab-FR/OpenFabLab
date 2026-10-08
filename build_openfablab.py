@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "dist" / f"OpenFabLab-{__version__}.zip"
 FILES = (
     "app.py", "billing.py", "annual_report.py", "animation_report.py", "calendar_export.py",
-    "badge_palette.py",
+    "badge_palette.py", "usability.py", "docs/usability-2.8.3.md",
     "pin_security.py", "profile_archive.py", "reservations_sync.py", "animation_slots.py", "branding.py",
     "private_backup.py", "runtime_policy.py", "docs/private-backup.md",
     "outbound_actions.py", "outbound_sync.py", "docs/outbound-2.8.1.md", "docs/reservations-2.8.2.md",

@@ -1,5 +1,19 @@
 # Mettre à jour OpenFabLab
 
+## 2.8.2 → 2.8.3 stable, schéma 17 → 18
+
+La mise à jour ajoute deux champs d'affiliation des usagers et deux réglages ; les tables de réservations restent inchangées. Les données et paramètres existants sont conservés, notamment l'attribution discrète de l'identifiant public. Le plugin WordPress 2.8.2, protocole 4 / révision 3, reste inchangé : aucune réinstallation ni rotation de secret.
+
+1. Conserver le runtime exact 2.8.2 et réaliser une sauvegarde complète **PRE17**, incluant base, fichiers privés, branding, PIN et configurations. Une copie froide après arrêt doit inclure les dernières écritures.
+2. Vérifier le ZIP 2.8.3 avec `SHA256SUMS`, construire et contrôler le nouveau runtime isolément avant l'interruption. Migrer une copie de données et comparer les anciennes colonnes et valeurs, intégrité et clés étrangères.
+3. Arrêter proprement, sauvegarder à froid, remplacer uniquement le runtime et laisser l'initialisation effectuer la migration additive et transactionnelle. Ne pas forcer le numéro du schéma.
+4. Avant remise en service, vérifier 2.8.3 / schéma 18, les données, fichiers et réglages préexistants, volumes, santé et interface. Les échanges WordPress restent exclusivement sortants, 15 s et 90 s par défaut.
+5. Après reprise, vérifier Normal/Test, premier catalogue et relève, puis sauvegarder **POST18**. Une restauration PRE17 avec son runtime 2.8.2 n'est automatique que tant qu'aucun démarrage public n'a été tenté. Après toute écriture potentielle, arrêter et sauvegarder l'état, puis décider humainement ; ne jamais ouvrir une base 18 avec 2.8.2.
+
+Voir [les fonctionnalités et le détail du schéma 18](usability-2.8.3.md). Les ZIP approuvés conservent leurs documents embarqués antérieurs à la publication pour maintenir leur empreinte exacte ; les documents de ce tag stable font référence. Les lanceurs propres à une infrastructure restent privés.
+
+## Références des mises à jour antérieures
+
 ## 2.8.1 → 2.8.2 stable, schéma 16 → 17
 
 Voir la [procédure 2.8.2](reservations-2.8.2.md) et vérifier les ZIP officiels avec leur `SHA256SUMS`.

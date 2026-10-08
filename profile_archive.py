@@ -39,6 +39,7 @@ BILLING_KEYS = {
     "billing_rental_contract_fee_cents", "billing_rental_delivery_fee_cents",
 }
 EXACT_KEYS = {
+    'public_id_assignment_mode', 'attendance_reference',
     'anonymous_visitor_color',
     'home_title','family_autonomy_age','family_responsible_age','family_contact_dependent','family_contact_autonomous','family_contact_responsible',
     'calendar_color_openlab','calendar_color_animation','calendar_color_reservation','calendar_color_rental','calendar_color_training',
@@ -187,6 +188,13 @@ def parse_profile(raw):
                     raise ValueError("Le profil contient un réglage non autorisé.")
                 if key=='home_title' and (not value.strip() or len(value)>40 or any(ord(c)<32 for c in value)):
                     raise ValueError('Titre d’accueil invalide.')
+                if key=='public_id_assignment_mode':
+                    from usability import ID_MODES
+                    if value not in ID_MODES:
+                        raise ValueError('Mode d’attribution de l’identifiant invalide.')
+                if key=='attendance_reference':
+                    from usability import validate_reference
+                    validate_reference(value)
                 if key.startswith('calendar_color_') and not re.fullmatch(r'#[a-fA-F0-9]{6}',value):
                     raise ValueError('Couleur du calendrier invalide.')
                 if key == 'anonymous_visitor_color' and not re.fullmatch(r'#[a-fA-F0-9]{6}', value):

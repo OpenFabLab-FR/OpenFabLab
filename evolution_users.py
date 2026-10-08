@@ -42,6 +42,7 @@ def creation_message(database, user):
     if enabled('source'):
         pieces.append('Origine : ' + SOURCES.get(user['created_source'],SOURCES['historical']))
     if enabled('time'):
-        pieces.append('Création : ' + user['created_at'])
+        from usability import french_datetime
+        pieces.append('Créé le : ' + french_datetime(database, user['created_at']))
     # No contact, address, ID or QR field is admitted, including in templates.
     return '\n'.join(pieces)

@@ -1,5 +1,17 @@
 # Historique public
 
+## 2.8.3 — version stable — 8 octobre 2026
+
+- Badges pastel sur une ligne, troncature des intitulés longs et ouverture du libellé complet au clavier ou au toucher ; liste des usagers adaptée en cartes sur les petites largeurs.
+- Trois modes d'attribution du code public à quatre chiffres : automatique discret, visible ou personnalisable. Les installations existantes restent discrètes ; une nouvelle installation propose le mode visible. Unicité transactionnelle, zéros initiaux et identifiant technique permanent conservés.
+- Rattachement informatif facultatif à une structure existante ou à un nom libre, sans création de client, de droit ou d'abonnement.
+- Seuil de référence de fréquentation configurable, dix par défaut, sans bloquer les arrivées ni modifier la capacité des animations.
+- Dates de création Discord en français dans le fuseau IANA de la structure, avec gestion des changements d'heure.
+- Détails des dossiers dans les fenêtres des créneaux réservables, uniquement pour les administrateurs autorisés à les consulter.
+- Migration additive SQLite 17 → 18 : deux champs d'affiliation dans les comptes et deux réglages exportables. Historique conservé ; sauvegarde PRE avant migration.
+
+Application **2.8.3 stable**, SQLite **18**, plugin **2.8.2 inchangé**, protocole **4 / révision 3**. Aucun changement du moteur de réservation ni du relais exclusivement sortant ; cadences par défaut 15 et 90 secondes conservées.
+
 ## 2.8.2 — version stable — 7 octobre 2026
 
 - Compte facultatif par défaut pour une nouvelle réservation publique : parcours avec compte et parcours simple sans compte, coordonnées obligatoires vérifiées par OpenFabLab, aucune création de fiche usager.

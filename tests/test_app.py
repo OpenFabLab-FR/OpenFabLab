@@ -4645,7 +4645,7 @@ class OpenFabLabTestCase(unittest.TestCase):
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_latitude'").fetchone()[0], "")
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_longitude'").fetchone()[0], "")
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_privacy_policy_url'").fetchone()[0], "")
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],17)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],18)
             create_app({"TESTING": True, "DATABASE": path, "ADMIN_PIN": None,
                         "MODERATOR_PIN": None, "SEED_DEMO_USERS": False})
             with sqlite3.connect(path) as database:
@@ -5535,7 +5535,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
             create_app(config)
             with sqlite3.connect(database_path) as database:
                 after = {table: database.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in before}
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],17)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],18)
                 self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
                 self.assertEqual(database.execute("PRAGMA foreign_key_check").fetchall(), [])
                 self.assertTrue(database.execute("SELECT 1 FROM sqlite_master WHERE name='security_events'").fetchone())
@@ -5597,7 +5597,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                 ("1001", "Victor", "EXEMPLE", "user", None, None,
                  None, "+33", None),
             )
-            self.assertEqual(schema_version,17)
+            self.assertEqual(schema_version,18)
 
 
     def test_v23_schema_migrates_to_v240_without_losing_rows(self):
@@ -5629,7 +5629,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                 integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
                 foreign_keys = database.execute("PRAGMA foreign_key_check").fetchall()
             self.assertEqual(after, before)
-            self.assertEqual(schema_version,17)
+            self.assertEqual(schema_version,18)
             self.assertIsNotNone(audit_table)
             self.assertEqual(integrity, "ok")
             self.assertEqual(foreign_keys, [])
@@ -5637,7 +5637,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
             # La migration doit être rejouable sur une base déjà au schéma 8.
             create_app({"TESTING": True, "DATABASE": database_path})
             with sqlite3.connect(database_path) as database:
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],17)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],18)
                 self.assertEqual(
                     database.execute("SELECT COUNT(*) FROM attendance_corrections").fetchone()[0],
                     0,
@@ -5697,7 +5697,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                     "precipitation_mm", "created_at",
                 },
             )
-            self.assertEqual(schema_version,17)
+            self.assertEqual(schema_version,18)
             self.assertEqual(integrity, "ok")
             self.assertEqual(foreign_keys, [])
 
@@ -5837,7 +5837,7 @@ class NasDeploymentTestCase(unittest.TestCase):
                 ("TEST", "volunteer", "+33", "06 10 10 10 10"),
             )
             self.assertEqual(session_count, 1)
-            self.assertEqual(schema_version,17)
+            self.assertEqual(schema_version,18)
 
 
 if __name__ == "__main__":

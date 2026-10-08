@@ -40,6 +40,7 @@ docs/outbound-2.8.1.md
 docs/private-backup.md
 docs/reservations-2.8.2.md
 docs/upgrade.md
+docs/usability-2.8.3.md
 docs/wordpress.md
 evolution_routes.py
 evolution_schema.py
@@ -197,6 +198,8 @@ tests/test_publication.py
 tests/test_slots_ui.js
 tests/test_sync_reconciliation.py
 tests/test_tablet_reservations.py
+tests/test_usability_283.py
+tests/test_usability_ui.js
 tests/test_walkin_prefill.js
 tests/test_wordpress_bookings.php
 tests/test_wordpress_emails.php
@@ -212,6 +215,7 @@ tests/test_wordpress_test_maintenance.php
 tests/test_wordpress_transport.php
 tools/check_public_tree.py
 tools/run_checks.py
+usability.py
 welcome_mail.py
 wordpress/openfablab-reservations/LICENSE
 wordpress/openfablab-reservations/README.md

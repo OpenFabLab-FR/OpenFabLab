@@ -49,6 +49,28 @@ def position_overlaps(events):
     return ordered
 
 
+def enrich_billing_event(db, event, modules, a):
+    """Billing details are administrator-only, matching the dossier routes.
+
+    Never serialize restricted content and then hide it in the browser.
+    """
+    role = session.get('access_role') or ('admin' if session.get('admin_authenticated') else None)
+    if event['kind'] != 'reservation' or role != 'admin' or not modules['billing']:
+        return []
+    if event['key'].isdigit():
+        row = db.execute('SELECT * FROM billing_records WHERE service_id=? ORDER BY id DESC LIMIT 1', (event['key'],)).fetchone()
+    else:
+        row = db.execute('SELECT r.* FROM resource_bookings b JOIN billing_records r ON r.id=b.billing_record_id WHERE b.booking_uuid=?', (event['key'],)).fetchone()
+    if not row:
+        return []
+    event['url'] = url_for('admin_billing_detail', record_id=row['id'])
+    event['action_label'] = 'Ouvrir le dossier'
+    event['detail_title'] = row['title'] or event['title']
+    event['description'] = row['description'] or ''
+    return ['Client : ' + (row['client_structure'] or row['client_contact']),
+            'Dossier : ' + row['quote_number'], 'Statut : ' + a.billing_status_label(dict(row))]
+
+
 def calendar_view(db,args,a):
     view=args.get('view','week')
     if view not in {'week','month'}:abort(400)
@@ -177,6 +199,11 @@ def calendar_view(db,args,a):
             elif event['automatic_hidden']:
                 detail.append('Non tenu automatiquement — aucune présence enregistrée')
             detail.extend(event.get('extra_details', []))
+            detail.extend(enrich_billing_event(db, event, modules, a))
+            if event['kind']=='reservation' and not event.get('description') and (session.get('access_role') or ('admin' if session.get('admin_authenticated') else None))=='admin':
+                row=db.execute("SELECT description FROM fablab_services WHERE id=? AND service_type='reservation'",(event['key'],)).fetchone()
+                if row and row['description']:
+                    event['description']=row['description']
             if event['kind'] == 'reservation':
                 row = db.execute('SELECT b.*,u.first_name,u.last_name,r.required_authorization,a.name AS authorization_name FROM resource_bookings b LEFT JOIN users u ON u.id=b.user_id JOIN resources r USING(resource_uuid) LEFT JOIN authorizations a ON a.authorization_uuid=r.required_authorization WHERE booking_uuid=?',(event['key'],)).fetchone()
                 if row:

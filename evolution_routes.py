@@ -15,6 +15,7 @@ from evolution_users import create_user, creation_message, SOURCES
 import resource_booking as resources
 import welcome_mail
 from badge_palette import DEFAULT_REFERENCE, normalize_color, pastel_palette, validate_color
+from usability import ID_MODES, enrollment_mode, attendance_reference, validate_reference, affiliation_choices
 
 
 def category_palette(color):
@@ -98,6 +99,9 @@ def register(application, api):
                 ';--category-background:' + palette['background'] + ';--category-ink:' + palette['ink'] +
                 ';--category-border:' + palette['border'] + ';}')
         return {'evolution_csrf':csrf_token(), 'category_colors':colors, 'category_styles': ''.join(styles),
+                'enrollment_mode':enrollment_mode(db), 'public_id_modes':ID_MODES,
+                'attendance_reference':attendance_reference(db),
+                'affiliation_choices':affiliation_choices(db) if request.endpoint in ('admin_edit_user','admin_add_user') else [],
                 'anonymous_visitor_color': visitor_color,
                 'user_grants': resources.grants_for_user(db, request.view_args['user_id']) if request.endpoint == 'admin_edit_user' else [],
                 'creation_sources':SOURCES, 'self_enrollment_enabled':a.read_setting(db,'self_enrollment_enabled','0')=='1',
@@ -119,6 +123,20 @@ def register(application, api):
         flash('Couleur des visiteurs enregistrée.', 'success')
         return redirect(url_for('admin_settings_display', _anchor='anonymous-visitor-color'))
 
+    @bp.post('/admin/reglages/affichage/frequentation')
+    def attendance_settings():
+        require_team(True)
+        require_csrf()
+        try:
+            value = validate_reference(request.form.get('attendance_reference'))
+        except ValueError as error:
+            abort(400, str(error))
+        db = a.get_database()
+        with db:
+            a.write_setting(db, 'attendance_reference', value)
+        flash('Seuil de fréquentation enregistré.', 'success')
+        return redirect(url_for('admin_settings_display', _anchor='attendance-reference'))
+
     @bp.route('/admin/reglages/usagers', methods=['GET','POST'])
     def users_settings():
         role = require_team(True)
@@ -139,6 +157,10 @@ def register(application, api):
                         action=remove_category(db,key,request.form.get('replacement') or None)
                         audit(db,'category',key,action,role)
                     elif request.form.get('action')=='preferences':
+                        mode=request.form.get('public_id_assignment_mode',enrollment_mode(db))
+                        if mode not in ID_MODES:
+                            raise ValueError('Mode d’attribution de l’identifiant invalide.')
+                        a.write_setting(db,'public_id_assignment_mode',mode)
                         for key in ('self_enrollment_enabled','tablet_reservations_enabled','welcome_default'):
                             a.write_setting(db,key,'1' if request.form.get(key)=='1' else '0')
                         subject,body=request.form.get('welcome_subject',''),request.form.get('welcome_body','')
@@ -239,9 +261,16 @@ def register(application, api):
         session.pop('access_role',None);session.pop('admin_authenticated',None)
         blank={'public_id':a.next_available_public_id(db),'first_name':'','last_name':'','active':1,
                'category':default_category(db),'phone_country_code':'+33'}
+        mode=enrollment_mode(db)
+        def proposal(user, errors, status=400):
+            user['public_id']=a.next_available_public_id(db)
+            session['enrollment_proposal']=user['public_id']
+            session['enrollment_mode']=mode
+            return render_template('user_form.html',user=user,form_mode='create',kiosk=True,errors=errors,
+                duplicate_users=[],country_names=a.COUNTRY_NAMES),status
         if request.method=='GET':
             session['enrollment_started']=time.time()
-            return render_template('user_form.html',user=blank,form_mode='create',kiosk=True,errors=[],duplicate_users=[],country_names=a.COUNTRY_NAMES)
+            return proposal(blank, [], 200)
         require_csrf()
         if time.time()-session.get('enrollment_started',0)>900:
             abort(400,'Formulaire expiré. Revenez à l’accueil.')
@@ -257,23 +286,42 @@ def register(application, api):
         values=request.form.copy()
         # MultiDict.update appends values; get() could otherwise retain a forged
         # category or inactive flag. Assignment replaces all submitted values.
-        for key,value in {'public_id':a.next_available_public_id(db),'category':default_category(db),'active':'1'}.items():
+        if session.get('enrollment_mode')!=mode:
+            return proposal(blank, ['Le mode d’inscription a changé. Vérifiez la nouvelle proposition.'], 409)
+        code=(request.form.get('public_id','') if mode=='customizable' else
+              session.get('enrollment_proposal','') if mode=='automatic_visible' else a.next_available_public_id(db))
+        for key,value in {'public_id':code,'category':default_category(db),'active':'1'}.items():
             values[key]=value
         user,errors=a.validate_user_form(values,db,public_enrollment=True)
         if errors:
+            # A proposed ID is not a reservation and reveals no other person's
+            # identity/contact. No anonymous availability/directory endpoint.
+            if any('identifiant' in error.lower() and 'utilisé' in error for error in errors):
+                return proposal(user, errors + ['Un autre identifiant vous est proposé. Vérifiez-le avant de valider.'], 409)
             return render_template('user_form.html',user=user,form_mode='create',kiosk=True,errors=errors,duplicate_users=[],country_names=a.COUNTRY_NAMES),400
         try:
             db.execute('BEGIN IMMEDIATE')
-            # Allocate ID again under lock, not from an old tablet form.
-            user['public_id']=a.next_available_public_id(db)
+            if mode=='automatic_discreet':
+                user['public_id']=a.next_available_public_id(db)
+            elif db.execute('SELECT 1 FROM users WHERE public_id=?',(user['public_id'],)).fetchone():
+                db.rollback()
+                return proposal(user, ['Cet identifiant vient d’être attribué. Vérifiez la nouvelle proposition avant de valider.'], 409)
             user_id=create_user(db,user,'kiosk')
             db.commit()
         except sqlite3.IntegrityError:
-            db.rollback();abort(409,'L’identifiant vient d’être utilisé. Réessayez.')
+            db.rollback()
+            return proposal(user, ['L’identifiant vient d’être attribué. Vérifiez la nouvelle proposition.'], 409)
         after_creation(a,db,user_id,request.form.get('send_welcome')=='1')
         session['enrollment_receipt']={'id':user_id,'until':time.time()+120}
         session.pop('enrollment_started',None)
         return redirect(url_for('evolution.enrollment_done'))
+
+    @application.after_request
+    def protect_enrollment_response(response):
+        if request.path.startswith('/inscription'):
+            response.headers['Cache-Control']='private, no-store'
+            response.headers['Referrer-Policy']='no-referrer'
+        return response
 
     def receipt_user():
         receipt=session.get('enrollment_receipt',{})

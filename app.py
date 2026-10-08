@@ -848,7 +848,7 @@ def initialize_database():
 
     # Existing installation settings win; only missing keys receive neutral defaults.
     migrate_branding_settings(database, Path(current_database_path()).parent)
-    default_settings = default_application_settings()
+    default_settings = default_application_settings(legacy_installation)
     database.executemany(
         "INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)",
         default_settings,
@@ -935,6 +935,8 @@ def initialize_database():
 def default_application_settings(_legacy_installation=False):
     """Retourne les réglages initiaux sans réactiver les comptes de démo."""
     settings = [
+        ('public_id_assignment_mode', 'automatic_discreet' if _legacy_installation else 'automatic_visible'),
+        ('attendance_reference', '10'),
         ("automatic_closure_enabled", "0"),
         ("keep_screen_awake", "0"),
         ("lock_home_scroll", "1"),
@@ -2003,9 +2005,11 @@ def next_available_public_id(database):
             "SELECT public_id FROM users WHERE public_id IS NOT NULL"
         ).fetchall()
     }
-    for candidate in range(1001, 10000):
-        if str(candidate) not in used_codes:
-            return str(candidate)
+    from itertools import chain
+    for candidate in chain(range(1001, 10000), range(0, 1001)):
+        code = f'{candidate:04d}'
+        if code not in used_codes:
+            return code
     raise RuntimeError("Aucun identifiant public à quatre chiffres disponible")
 
 
@@ -2028,10 +2032,8 @@ def validate_user_form(form, database, current_user_id=None, public_enrollment=F
     }
     errors = []
 
-    if len(data["public_id"]) != 4 or not data["public_id"].isdigit():
+    if not re.fullmatch(r'[0-9]{4}', data['public_id']):
         errors.append("L'identifiant doit contenir exactement 4 chiffres.")
-    elif int(data["public_id"]) < 1001:
-        errors.append("L'identifiant doit être compris entre 1001 et 9999.")
     else:
         duplicate = database.execute(
             """
@@ -2115,6 +2117,12 @@ def validate_user_form(form, database, current_user_id=None, public_enrollment=F
 
     from family_model import validate_form as validate_family_form
     validate_family_form(database, form, data, errors, current_user_id, public_enrollment)
+    if not public_enrollment and ('affiliation_name' in form or 'affiliation_client_id' in form):
+        from usability import validate_affiliation
+        try:
+            data.update(validate_affiliation(database, form))
+        except ValueError as error:
+            errors.append(str(error))
     return data, errors
 
 
@@ -6108,12 +6116,14 @@ def register_routes(application):
             """
         ).fetchall()
         present_count, visitor_count, _sessions_today = get_dashboard_counts(database)
-        gauge_value = min(present_count, DISPLAY_CAPACITY)
-        if present_count >= DISPLAY_CAPACITY:
+        from usability import attendance_reference
+        display_capacity = attendance_reference(database)
+        gauge_value = min(present_count, display_capacity)
+        if present_count >= display_capacity:
             gauge_level = "full"
-        elif present_count >= 8:
+        elif present_count / display_capacity >= .8:
             gauge_level = "high"
-        elif present_count >= 5:
+        elif present_count / display_capacity >= .5:
             gauge_level = "medium"
         else:
             gauge_level = "low"
@@ -6125,9 +6135,9 @@ def register_routes(application):
             present_users=present_users,
             present_count=present_count,
             visitor_count=visitor_count,
-            display_capacity=DISPLAY_CAPACITY,
+            display_capacity=display_capacity,
             gauge_value=gauge_value,
-            gauge_percent=round(gauge_value / DISPLAY_CAPACITY * 100),
+            gauge_percent=round(gauge_value / display_capacity * 100),
             gauge_level=gauge_level,
             current_time=datetime.now(PARIS_TIMEZONE),
             weather=get_current_weather(application),
@@ -10212,6 +10222,8 @@ def register_routes(application):
             database.execute('UPDATE users SET created_source=?,created_by_role=? WHERE id=?', (source,source,cursor.lastrowid))
             from family_model import apply_details
             apply_details(database,cursor.lastrowid,user_data)
+            from usability import save_affiliation
+            save_affiliation(database, cursor.lastrowid, user_data)
             database.commit()
             from evolution_routes import after_creation
             after_creation(__import__('types').SimpleNamespace(**globals()),database,cursor.lastrowid,request.form.get('send_welcome')=='1')
@@ -10301,7 +10313,11 @@ def register_routes(application):
             )
             from family_model import apply_details
             apply_details(database,user_id,user_data)
+            from usability import save_affiliation
+            save_affiliation(database, user_id, user_data)
             database.commit()
+            if user['public_id'] != user_data['public_id']:
+                flash('Identifiant modifié : rééditez le badge et le QR Code. Les liens familiaux et l’historique sont conservés.', 'success')
             flash(
                 f"La fiche de {user_data['first_name']} {user_data['last_name']} a été mise à jour.",
                 "success",

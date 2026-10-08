@@ -49,6 +49,16 @@
         </div>
 
         <div class="form-grid">
+            {% if kiosk and enrollment_mode != 'automatic_discreet' %}
+            <div class="form-field public-identifier-proposal">
+                <label for="public-id">{{ 'Votre identifiant proposé' if enrollment_mode == 'automatic_visible' else 'Votre identifiant à quatre chiffres' }}</label>
+                <input id="public-id" name="public_id" type="text" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" value="{{ user.public_id }}" required {% if enrollment_mode == 'automatic_visible' %}readonly aria-describedby="identifier-help"{% endif %}>
+                {% if enrollment_mode == 'automatic_visible' %}
+                <small id="identifier-help">Vous souhaitez personnaliser votre identifiant ? Demandez à un membre de l’équipe.</small>
+                {% else %}<small>Choisissez quatre chiffres, y compris les zéros au début. Sa disponibilité sera vérifiée avant création.</small>{% endif %}
+                <small>Ce numéro n’est définitivement attribué qu’à la création du compte. Ce n’est pas un mot de passe.</small>
+            </div>
+            {% endif %}
             {% if not kiosk %}<div class="form-field">
                 <label for="public-id">Identifiant à 4 chiffres <span aria-hidden="true">*</span></label>
                 <input
@@ -62,7 +72,7 @@
                     value="{{ user.public_id }}"
                     required
                 >
-                <small>Proposé automatiquement, mais modifiable.</small>
+                <small>Proposé automatiquement, mais modifiable. Les zéros initiaux sont conservés. Ce numéro n’est pas un mot de passe.{% if form_mode == 'edit' %} Un changement nécessite de rééditer le badge et le QR Code.{% endif %}</small>
             </div>
 
             <div class="form-field">
@@ -101,6 +111,22 @@
         </div>
 
         <p class="data-guidance">{% if kiosk %}Les coordonnées nécessaires dépendent des règles d’âge de la structure. L’e-mail permet aussi de recevoir votre identifiant et votre QR si vous le souhaitez.{% elif form_mode == 'create' %}Ces informations servent aussi à vérifier les réservations en ligne. Le genre et le code postal restent facultatifs.{% else %}Les anciennes fiches incomplètes restent actives. Complétez les informations disponibles avec l’accord de l’usager.{% endif %}</p>
+
+        {% if not kiosk %}
+        <fieldset class="affiliation-fields">
+            <legend>Structure de rattachement (facultatif)</legend>
+            <div class="form-grid">
+                <label class="form-field"><span>Structure déjà enregistrée</span>
+                    <select name="affiliation_client_id" data-affiliation-choice>
+                        <option value="">Aucune / nom libre</option>
+                        {% for entry in affiliation_choices %}<option value="{{ entry.id }}" {% if user.affiliation_client_id == entry.id %}selected{% endif %}>{{ entry.structure_name }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="form-field"><span>Nom de structure sans fiche client</span><input name="affiliation_name" maxlength="160" value="{{ user.affiliation_name|default('') or '' }}" data-affiliation-name></label>
+            </div>
+            <p class="form-help">Information uniquement : aucun droit, abonnement, réservation ou dossier de facturation n’est créé. Choisissez « Aucune / nom libre » et effacez le nom pour retirer le rattachement.</p>
+        </fieldset>
+        {% endif %}
 
         <label class="checkbox-field compact-check"><input name="is_minor" type="checkbox" value="1" data-minor-toggle {% if request.form.get('is_minor')=='1' or (user.birth_date and (user|family_age) is not none and (user|family_age)<18) %}checked{% endif %}><span>Je suis mineur<small>Une date exacte permet d’appliquer les seuils le bon jour.</small></span></label>
         <div class="form-grid">

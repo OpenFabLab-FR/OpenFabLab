@@ -67,7 +67,7 @@ class VisitorDisplayTests(unittest.TestCase):
 
     def test_default_is_soft_blue_grey_schema_stays_17(self):
         self.assertEqual(self.value(), DEFAULT_REFERENCE)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0], 17)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0], 18)
         self.assertEqual(pastel_palette(self.value())['background'], '#f1f3f3')
 
     def test_setting_creates_no_category_or_user(self):
@@ -87,7 +87,7 @@ class VisitorDisplayTests(unittest.TestCase):
             from app import get_database
             db = get_database()
             self.assertEqual(dict(db.execute('SELECT key,value FROM app_settings')), before)
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 17)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 18)
 
     def test_existing_schema17_gets_default_without_changing_business_rows(self):
         self.db.execute("DELETE FROM app_settings WHERE key='anonymous_visitor_color'"); self.db.commit()

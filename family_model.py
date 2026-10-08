@@ -12,7 +12,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-SCHEMA = 17
+SCHEMA = 18
 POLICIES = {'none':'Aucun', 'email':'E-mail', 'phone':'Téléphone',
             'either':'E-mail ou téléphone', 'both':'E-mail et téléphone'}
 DEFAULTS = {'family_autonomy_age':'15', 'family_responsible_age':'18',
@@ -40,9 +40,9 @@ def backup_before(db, path):
     """Coherent offline PRE before *any* initialization writes, not a DB copy."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
     if version > SCHEMA:
-        raise RuntimeError('Base plus récente que la candidate 2.8.2 ; démarrage refusé.')
+        raise RuntimeError('Base plus récente que la candidate 2.8.3 ; démarrage refusé.')
     extra_needed = (version == 15 and not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_booking_groups'").fetchone())
-    if version not in (14, 15, 16) and not extra_needed:
+    if version not in (14, 15, 16, 17) and not extra_needed:
         return None
     root = Path(path).parent / 'migration-backups'
     root.mkdir(mode=0o700, exist_ok=True)
@@ -56,9 +56,9 @@ def backup_before(db, path):
 
 
 def migrate(db, fail_after=None):
-    """Additive schema 14/15/16→17; guest birthday is a booking snapshot."""
+    """Additive migration through schema18; existing business IDs stay intact."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
-    if version not in (14, 15, 16, SCHEMA):
+    if version not in (14, 15, 16, 17, SCHEMA):
         # Earlier schemas must first complete the existing evolution migration.
         # In particular, never stamp an incomplete old database as schema 15.
         if version > SCHEMA:
@@ -72,6 +72,14 @@ def migrate(db, fail_after=None):
             db.execute('ALTER TABLE users ADD COLUMN birth_date TEXT')
         if 'birth_precision' not in columns:
             db.execute("ALTER TABLE users ADD COLUMN birth_precision TEXT NOT NULL DEFAULT 'year' CHECK(birth_precision IN('year','exact'))")
+        if 'affiliation_client_id' not in columns:
+            db.execute('ALTER TABLE users ADD COLUMN affiliation_client_id INTEGER REFERENCES billing_clients(id) ON DELETE SET NULL')
+        if 'affiliation_name' not in columns:
+            db.execute("ALTER TABLE users ADD COLUMN affiliation_name TEXT NOT NULL DEFAULT ''")
+        # Existing installs retain discreet assignment. A genuinely new
+        # installation is initialized by app.default_application_settings.
+        db.execute("INSERT OR IGNORE INTO app_settings VALUES('public_id_assignment_mode','automatic_discreet')")
+        db.execute("INSERT OR IGNORE INTO app_settings VALUES('attendance_reference','10')")
         db.execute('''CREATE TABLE IF NOT EXISTS user_family_links (
             link_uuid TEXT PRIMARY KEY,
             member_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -116,7 +124,7 @@ def migrate(db, fail_after=None):
             fail_after(db)
         if db.execute('PRAGMA foreign_key_check').fetchall() or db.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
             raise RuntimeError('Migration famille refusée : intégrité invalide.')
-        db.execute('PRAGMA user_version=17')
+        db.execute('PRAGMA user_version=18')
         db.commit()
     except Exception:
         db.rollback()

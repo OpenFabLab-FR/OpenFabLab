@@ -6,6 +6,8 @@
 <form class="admin-form" method="post">{{ csrf(evolution_csrf,'preferences') }}
 <section class="form-section"><h2>Inscription et bienvenue</h2>
 {{ check('self_enrollment_enabled','Autoriser « Créer un compte » dans l’accès rapide public',enrollment) }}
+<label class="form-field"><span>Identifiant à quatre chiffres à l’inscription publique</span><select name="public_id_assignment_mode">{% for key,label in public_id_modes.items() %}<option value="{{ key }}" {% if enrollment_mode==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+<p class="form-help">Discret : communiqué après création. Visible : proposé avant validation, personnalisable avec l’équipe. Personnalisable : choisi par l’usager et vérifié à la création. L’équipe peut toujours choisir un code disponible.</p>
 {{ check('tablet_reservations_enabled','Autoriser la réservation d’animations depuis la borne',tablet_reservations_enabled) }}
 <p class="form-help">Animations uniquement. Le moteur OpenFabLab confirme tout le groupe ou l’inscrit ensemble en liste d’attente. Une place par personne, avec ou sans WordPress. La borne doit pouvoir joindre le serveur local, mais Internet n’est pas nécessaire.</p>
 <p>Ce parcours verrouille la session de l’équipe ; aucune fonction administrative n’y est accessible.</p>

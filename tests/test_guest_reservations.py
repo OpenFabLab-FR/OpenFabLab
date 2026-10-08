@@ -193,7 +193,7 @@ class GuestTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):family.migrate(self.db,lambda db:(_ for _ in ()).throw(RuntimeError('crash')))
         self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],16)
         family.migrate(self.db);family.migrate(self.db)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],17)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],18)
         self.assertEqual([tuple(r) for r in self.db.execute('SELECT * FROM users')],before)
         self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])
     def test_revision2_refused_before_business_poll(self):
