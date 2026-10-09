@@ -1,10 +1,12 @@
 # Installer une nouvelle instance
 
-## OpenFabLab 2.8.3 stable
+OpenFabLab **2.8.4** est la dernière version stable, avec SQLite 18 et le plugin facultatif 2.8.2 inchangé. Voir [les corrections](corrections-2.8.4.md). Ne pas remplacer une installation existante sans sa sauvegarde complète et sans lire la procédure de mise à jour.
+
+## OpenFabLab 2.8.4 stable
 
 L'application utilise SQLite **18** et le plugin facultatif **2.8.2 inchangé**, protocole **4 / révision 3**. Les nouvelles installations proposent l'identifiant public visible ; les installations mises à jour conservent le mode discret. Voir [les nouveautés](usability-2.8.3.md). Pour une mise à jour, lire [upgrade.md](upgrade.md) et sauvegarder les données et le runtime avant toute migration.
 
-Télécharger l'application et `SHA256SUMS` depuis la [release 2.8.3](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.3), vérifier l'empreinte puis utiliser un dossier neuf. Le [ZIP officiel du plugin 2.8.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.8.2/openfablab-reservations-2.8.2.zip) reste compatible : ne pas le réinstaller s'il est déjà à jour. Pour une installation existante, suivre [la procédure de mise à jour](upgrade.md), sans remplacer ses données par une base de test.
+Télécharger l'application et `SHA256SUMS` depuis la [release 2.8.4](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.4), vérifier l'empreinte puis utiliser un dossier neuf. Le [ZIP officiel du plugin 2.8.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.8.2/openfablab-reservations-2.8.2.zip) reste compatible : ne pas le réinstaller s'il est déjà à jour. Pour une installation existante, suivre [la procédure de mise à jour](upgrade.md), sans remplacer ses données par une base de test. Le ZIP approuvé conserve ses guides de préparation ; la documentation du tag `v2.8.4` est la référence publiée à jour.
 
 Prérequis : Python 3.10+ (3.12 dans Docker), navigateur moderne, disque persistant. Le plugin demande WordPress avec PHP 8.1+, OpenSSL AES-GCM, InnoDB, JavaScript et HTTPS ; seul OpenFabLab doit pouvoir joindre WordPress en HTTPS sortant. La borne et l'application fonctionnent sans plugin. Voir [le guide WordPress](wordpress.md) et [les vérifications isolées](candidate-2.8-guide.md).
 

@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "dist" / f"OpenFabLab-{__version__}.zip"
 FILES = (
     "app.py", "billing.py", "annual_report.py", "animation_report.py", "calendar_export.py",
-    "badge_palette.py", "usability.py", "docs/usability-2.8.3.md",
+    "badge_palette.py", "usability.py", "docs/usability-2.8.3.md", "enrollment_privacy.py", "docs/corrections-2.8.4.md",
     "pin_security.py", "profile_archive.py", "reservations_sync.py", "animation_slots.py", "branding.py",
     "private_backup.py", "runtime_policy.py", "docs/private-backup.md",
     "outbound_actions.py", "outbound_sync.py", "docs/outbound-2.8.1.md", "docs/reservations-2.8.2.md",
@@ -28,7 +28,7 @@ FILES = (
     'docs/families-2.8.md',
     'docs/candidate-2.8-guide.md',
     "static/app.js", "static/qr-scanner.js", "static/style.css", "static/animation-slots.js",
-    'static/evolution.js',
+    'static/evolution.js', 'static/public-enrollment.js',
     "static/vendor/jsQR-1.4.0.js", "static/vendor/jsQR-LICENSE.txt",
     "static/fonts/LibreFranklin-Regular.ttf", "static/fonts/LibreFranklin-Bold.ttf",
     "static/fonts/OFL.txt", "static/fonts/AUTHORS.txt", "static/fonts/SOURCE.md",

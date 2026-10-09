@@ -1,5 +1,13 @@
 # Mettre à jour OpenFabLab
 
+## 2.8.3 → 2.8.4 stable, schéma 18 inchangé
+
+Voir [le guide 2.8.4](corrections-2.8.4.md). Vérifier le ZIP officiel avec son `SHA256SUMS`. Conserver le runtime 2.8.3 et une PRE18 complète vérifiée, puis une copie froide après arrêt. Construire le nouveau runtime avant l'interruption. Cette mise à jour n'effectue aucune migration de schéma ni remplacement de configuration ou de secrets ; seules des empreintes temporaires d'inscription utiliseront le registre existant après utilisation.
+
+Vérifier intégrité, clés étrangères, version, schéma 18, données, volumes et paramètres avant/après. Le plugin 2.8.2 et les cadences 15/90 secondes restent inchangés. Après démarrage public, sauvegarder POST18. N'envisager un retour contrôlé PRE18 + runtime 2.8.3 qu'avant toute tentative de démarrage public ; ensuite conserver l'état en échec, arrêter et demander une décision humaine pour ne pas perdre de nouvelles écritures.
+
+L'archive approuvée reste inchangée, y compris ses guides de préparation. La documentation publique du tag `v2.8.4` fait référence. Les outils spécifiques à une infrastructure ne font pas partie de la distribution.
+
 ## 2.8.2 → 2.8.3 stable, schéma 17 → 18
 
 La mise à jour ajoute deux champs d'affiliation des usagers et deux réglages ; les tables de réservations restent inchangées. Les données et paramètres existants sont conservés, notamment l'attribution discrète de l'identifiant public. Le plugin WordPress 2.8.2, protocole 4 / révision 3, reste inchangé : aucune réinstallation ni rotation de secret.

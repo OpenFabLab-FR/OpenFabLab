@@ -30,6 +30,7 @@ docs/branding.md
 docs/candidate-2.8-guide.md
 docs/configuration.md
 docs/corrections-2.7.1.md
+docs/corrections-2.8.4.md
 docs/development.md
 docs/email-templates.md
 docs/evolution-2.7.md
@@ -42,6 +43,7 @@ docs/reservations-2.8.2.md
 docs/upgrade.md
 docs/usability-2.8.3.md
 docs/wordpress.md
+enrollment_privacy.py
 evolution_routes.py
 evolution_schema.py
 evolution_users.py
@@ -81,12 +83,14 @@ static/icons/OpenFabLab-favicon.ico
 static/icons/OpenFabLab-icon-192.png
 static/icons/OpenFabLab-icon-512.png
 static/icons/OpenFabLab-icon.svg
+static/public-enrollment.js
 static/qr-scanner.js
 static/style.css
 static/vendor/jsQR-1.4.0.js
 static/vendor/jsQR-LICENSE.txt
 tablet_reservations.py
 templates/_admin_nav.html
+templates/_affiliation_fields.html
 templates/_branding_settings.html
 templates/_calendar_colors.html
 templates/_closure_options.html
@@ -179,6 +183,7 @@ tests/test_branding.py
 tests/test_candidate_revision.py
 tests/test_corrective_271.py
 tests/test_corrective_ui.js
+tests/test_enrollment_privacy.py
 tests/test_evolution.py
 tests/test_evolution_ui.js
 tests/test_families.py

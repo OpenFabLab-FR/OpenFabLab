@@ -170,7 +170,7 @@ class FamilyTests(unittest.TestCase):
         page=self.client.post(path,data=dict(evolution_csrf=self.csrf(page),step='identify',public_id='2001',contact='person0@example.invalid'))
         self.assertIn('Fictif2',page.get_data(as_text=True));self.assertNotIn('Ajouter un accompagnateur majeur',page.get_data(as_text=True))
         page=self.client.post(path,data=dict(evolution_csrf=self.csrf(page),step='select',person_ids=[str(self.a),str(self.c),str(self.d)]))
-        self.assertIn('3 place(s)',page.get_data(as_text=True))
+        self.assertIn('3 places demandées',page.get_data(as_text=True))
         nonce=re.search(r'name="nonce" value="([^"]+)"',page.get_data(as_text=True))[1]
         with mock.patch('urllib.request.urlopen',side_effect=AssertionError('No network')):
             result=self.client.post(path,data=dict(evolution_csrf=self.csrf(page),step='confirm',consent='1',nonce=nonce),follow_redirects=True)

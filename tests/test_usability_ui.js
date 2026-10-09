@@ -29,9 +29,33 @@ function check(value,label){assert(value,label);checks++;}
     await page.locator('[name=email]').fill('elodie@example.invalid');await page.locator('[name=phone]').fill('0600000000');
     if(mode==='customizable')await page.locator('[name=public_id]').fill('0007');
     await Promise.all([page.waitForNavigation(),page.locator('.form-actions button[type=submit]').click()]);
-    check(page.url().includes('/inscription/terminee'),engine+' '+mode+' creates account with real server validation');
+    const completed=page.url().includes('/inscription/terminee');
+    const failure=completed?'':await page.locator('.form-errors').innerText().catch(()=>page.url());
+    check(completed,engine+' '+mode+' creates account with real server validation: '+failure);
     if(mode==='customizable')check((await page.locator('body').innerText()).includes('0007'),'leading zero receipt');
    }
+   // Hold animation frames to reproduce a slow/hidden browser, then type real
+   // input before history-restoration cleanup runs. Never wipe the new input.
+   const race=await browser.newPage();
+   await race.route('**/*',r=>r.request().url().startsWith(base+'/')?r.continue():r.abort());
+   await race.addInitScript(()=>{
+    const frames=[];
+    window.requestAnimationFrame=callback=>{frames.push(callback);return frames.length;};
+    window.finishEnrollmentFrames=()=>{while(frames.length)frames.shift()(performance.now());};
+   });
+   await race.goto(base+'/inscription');
+   await race.locator('[name=first_name]').fill('Saisie nouvelle');
+   await race.locator('[name=email]').fill('nouvelle@example.invalid');
+   await race.locator('[name=public_id]').fill('0042');
+   await race.evaluate(()=>{
+    document.querySelector('[name=postal_code]').value='Ancienne valeur restaurée';
+    window.finishEnrollmentFrames();
+   });
+   check(await race.locator('[name=first_name]').inputValue()==='Saisie nouvelle','late cleanup preserves genuine new input');
+   check(await race.locator('[name=email]').inputValue()==='nouvelle@example.invalid','late cleanup preserves new contact');
+   check(await race.locator('[name=public_id]').inputValue()==='0042','late cleanup preserves custom identifier');
+   check(await race.locator('[name=postal_code]').inputValue()==='','late cleanup clears untouched restored personal data');
+   await race.close();
    await login();await page.goto(base+'/admin/usagers/nouveau');
    check(await page.locator('[name=affiliation_name]').count()===1,'team affiliation form');
    for(const width of [320,390,768,1280,1920]){

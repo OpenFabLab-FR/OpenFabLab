@@ -90,14 +90,13 @@
     </section>
     <section class="form-section" id="attendance-reference">
         <h2>Indicateur de fréquentation</h2>
-        <form method="post" action="{{ url_for('evolution.attendance_settings') }}" class="compact-form">
+        <form method="post" action="{{ url_for('evolution.attendance_settings') }}" class="compact-form attendance-reference-form">
             <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
-            <label class="form-field"><span>Seuil de fréquentation de référence (personnes)</span><input type="number" name="attendance_reference" min="1" max="10000" value="{{ attendance_reference }}" required></label>
+            <label class="form-field"><span>Seuil de fréquentation de référence (personnes)</span><input type="number" name="attendance_reference" min="1" max="10000" value="{{ attendance_reference }}" aria-describedby="attendance-reference-help" required><small id="attendance-reference-help">Un indicateur visuel de fréquentation, sans limitation des entrées.</small></label>
             <button class="admin-button primary compact">Enregistrer le seuil</button>
         </form>
-        <p class="form-help">Un repère visuel sur l’accueil, sans blocage des arrivées ni effet sur les places des animations.</p>
     </section>
-    <div class="form-actions"><button form="display-options" class="admin-button primary" type="submit">Enregistrer les options</button></div>
+    <div class="form-actions display-options-actions"><button form="display-options" class="admin-button primary" type="submit">Enregistrer les options</button></div>
 {% elif settings_view == 'borne' %}
 {% include '_home_title.html' %}
 <form method="post" action="{{ url_for('admin_update_options', settings_view='borne') }}" class="admin-form options-main-form settings-save-form">

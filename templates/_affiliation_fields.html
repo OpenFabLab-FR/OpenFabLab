@@ -1,0 +1,13 @@
+<fieldset class="affiliation-fields user-affiliation-panel">
+    <legend>Structure de rattachement (facultatif)</legend>
+    <div class="form-grid two-columns">
+        <label class="form-field"><span>Structure déjà enregistrée</span>
+            <select name="affiliation_client_id" data-affiliation-choice>
+                <option value="">Aucune / nom libre</option>
+                {% for entry in affiliation_choices %}<option value="{{ entry.id }}" {% if user.affiliation_client_id == entry.id %}selected{% endif %}>{{ entry.structure_name }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="form-field"><span>Nom de structure sans fiche client</span><input name="affiliation_name" maxlength="160" value="{{ user.affiliation_name|default('') or '' }}" data-affiliation-name></label>
+    </div>
+    <p class="form-help">Ce rattachement est facultatif. Pour le retirer, choisissez « Aucune / nom libre » et laissez le nom vide.</p>
+</fieldset>

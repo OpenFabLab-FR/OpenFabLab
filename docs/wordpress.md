@@ -1,6 +1,8 @@
 # OpenFabLab Reservations 2.8.2 — version stable
 
-L'application stable **2.8.3 / schéma 18** utilise ce même plugin **2.8.2 inchangé**, au protocole **4 / révision 3**. Aucun changement du parcours public ni réinstallation du plugin n'est nécessaire ; les nouvelles options d'identifiant concernent l'inscription locale des comptes, pas la vérification de coordonnée WordPress. Voir [le guide 2.8.3](usability-2.8.3.md).
+L'application stable **2.8.4 / schéma 18** conserve exactement le plugin **2.8.2** et le protocole **4 / révision 3**. Aucune mise à jour du plugin ni rotation du secret n'est nécessaire ; catalogue et relève sortante restent indépendants (90 s et 15 s par défaut). Pour une nouvelle installation, utiliser le [ZIP officiel 2.8.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.8.2/openfablab-reservations-2.8.2.zip), sans attendre de plugin nommé 2.8.4.
+
+Les applications **2.8.3 et 2.8.4 / schéma 18** utilisent ce même plugin **2.8.2 inchangé**, au protocole **4 / révision 3**. Aucun changement du parcours public ni réinstallation du plugin n'est nécessaire ; les options d'identifiant concernent l'inscription locale des comptes, pas la vérification de coordonnée WordPress. Voir [le guide 2.8.3](usability-2.8.3.md) et [les corrections 2.8.4](corrections-2.8.4.md).
 
 La version 2.8.2 ajoute le choix avec/sans compte selon la règle OpenFabLab,
 le scanner QR local avec saisie manuelle et vérification de coordonnée.
@@ -13,13 +15,13 @@ personne autonome avec coordonnées et date de naissance, sans créer de fiche u
 
 ## Plugin facultatif, moteur commun
 
-Le plugin 2.8.2 utilise le **protocole 4, révision 3**, avec OpenFabLab 2.8.2 / SQLite 17 ou OpenFabLab 2.8.3 / SQLite 18. **OpenFabLab initie les échanges HTTPS vers WordPress**, pas l'inverse. Il reste l'autorité pour animations, comptes liés, participants, capacité et liste d'attente. WordPress affiche un catalogue public et conserve temporairement des demandes/actions chiffrées. Il ne décide jamais des places. La borne réserve directement sans WordPress.
+Le plugin 2.8.2 utilise le **protocole 4, révision 3**, avec OpenFabLab 2.8.2 / SQLite 17 ou OpenFabLab 2.8.3 et 2.8.4 / SQLite 18. **OpenFabLab initie les échanges HTTPS vers WordPress**, pas l'inverse. Il reste l'autorité pour animations, comptes liés, participants, capacité et liste d'attente. WordPress affiche un catalogue public et conserve temporairement des demandes/actions chiffrées. Il ne décide jamais des places. La borne réserve directement sans WordPress.
 
 Une personne sélectionnée = une place ; un responsable rattaché éligible doit participer avec un membre non autonome. Un adulte et deux enfants demandent trois places. S'il en reste deux, le groupe entier attend. E-mail valide obligatoire, téléphone selon le réglage de structure. SMTP, propositions, réponses et expirations sont gérés par OpenFabLab. Voir [familles](families-2.8.md).
 
 ## Préparer le raccordement
 
-Sauvegarder WordPress et OpenFabLab avant toute intervention ; essayer d'abord sur une installation séparée. Le ZIP `openfablab-reservations-2.8.2.zip` de la [release stable 2.8.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.2) est installable par les extensions WordPress. PHP 8.1+, OpenSSL AES-GCM, InnoDB, HTTPS, REST et JavaScript sont nécessaires. Aucun secret n'est fourni. Utiliser ce plugin avec OpenFabLab 2.8.2 ou 2.8.3 et lire [les instructions de mise à jour](upgrade.md).
+Sauvegarder WordPress et OpenFabLab avant toute intervention ; essayer d'abord sur une installation séparée. Le ZIP `openfablab-reservations-2.8.2.zip` de la [release stable 2.8.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.2) est installable par les extensions WordPress. PHP 8.1+, OpenSSL AES-GCM, InnoDB, HTTPS, REST et JavaScript sont nécessaires. Aucun secret n'est fourni. Utiliser ce plugin avec OpenFabLab 2.8.2, 2.8.3 ou 2.8.4 et lire [les instructions de mise à jour](upgrade.md).
 
 Conserver le secret partagé existant dans le plugin et dans les fichiers privés OpenFabLab. Dans OpenFabLab, renseigner l'URL HTTPS du **site WordPress**, puis vérifier la liaison dans Normal et Test. Aucun champ d'adresse du moteur n'est utilisé. Une option d'une ancienne installation peut rester comme donnée inactive, mais aucune requête ne l'utilise. **Ne pas ouvrir de port NAS ni modifier le réseau pour ce flux.**
 

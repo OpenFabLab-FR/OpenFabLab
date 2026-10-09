@@ -8,6 +8,7 @@
 
 {% block title %}{{ page_title }} · OpenFabLab{% endblock %}
 {% block body_class %}admin-page{% endblock %}
+{% block page_scripts %}{% if kiosk %}<script src="{{ url_for('static',filename='public-enrollment.js') }}" defer></script>{% endif %}{% endblock %}
 
 {% block header_action %}
 <a class="header-link" href="{{ url_for('index') if kiosk else url_for('admin') }}">{{ '← Accueil' if kiosk else '← Administration' }}</a>
@@ -15,9 +16,9 @@
 
 {% block content %}
 <section class="content-heading">
-    <p class="eyebrow">{{ 'Inscription sur borne' if kiosk else 'Administration des usagers' }}</p>
+    {% if not kiosk %}<p class="eyebrow">Administration des usagers</p>{% endif %}
     <h1>{{ 'Créer mon compte' if kiosk else page_title }}</h1>
-    <p>{% if form_mode == 'create' %}Un compte par personne. Les coordonnées requises s’adaptent aux règles d’âge de la structure ; celles du responsable peuvent suffire pour un enfant.{% else %}Une ancienne fiche peut rester incomplète et être complétée progressivement.{% endif %}</p>
+    <p>{% if form_mode == 'create' %}Un compte par personne. Les coordonnées requises peuvent être différentes pour un enfant.{% else %}Une ancienne fiche peut rester incomplète et être complétée progressivement.{% endif %}</p>
 </section>
 
 {% if errors %}
@@ -40,7 +41,7 @@
     </div>
 {% endif %}
 
-<form method="post" class="admin-form" novalidate>
+<form method="post" class="admin-form user-account-form" novalidate {% if kiosk %}autocomplete="off" data-public-enrollment data-enrollment-fresh="{{ '1' if request.method=='GET' else '0' }}" data-enrollment-state="{{ url_for('evolution.enrollment_state') }}" data-enrollment-cancel="{{ url_for('evolution.enrollment_cancel') }}" data-enrollment-start="{{ url_for('evolution.enroll') }}"{% endif %}>
     <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
     <section class="form-section" aria-labelledby="identity-title">
         <div class="form-section-heading">
@@ -48,18 +49,17 @@
             <h2 id="identity-title">Identité et accès</h2>
         </div>
 
-        <div class="form-grid">
+        <div class="form-grid user-identity-grid">
             {% if kiosk and enrollment_mode != 'automatic_discreet' %}
-            <div class="form-field public-identifier-proposal">
+            <div class="form-field form-field-wide public-identifier-proposal">
                 <label for="public-id">{{ 'Votre identifiant proposé' if enrollment_mode == 'automatic_visible' else 'Votre identifiant à quatre chiffres' }}</label>
                 <input id="public-id" name="public_id" type="text" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" value="{{ user.public_id }}" required {% if enrollment_mode == 'automatic_visible' %}readonly aria-describedby="identifier-help"{% endif %}>
                 {% if enrollment_mode == 'automatic_visible' %}
                 <small id="identifier-help">Vous souhaitez personnaliser votre identifiant ? Demandez à un membre de l’équipe.</small>
-                {% else %}<small>Choisissez quatre chiffres, y compris les zéros au début. Sa disponibilité sera vérifiée avant création.</small>{% endif %}
-                <small>Ce numéro n’est définitivement attribué qu’à la création du compte. Ce n’est pas un mot de passe.</small>
+                {% else %}<small>Vous pouvez changer ces chiffres. Sa disponibilité sera vérifiée avant création du compte.</small>{% endif %}
             </div>
             {% endif %}
-            {% if not kiosk %}<div class="form-field">
+            {% if not kiosk %}<div class="form-field form-field-wide">
                 <label for="public-id">Identifiant à 4 chiffres <span aria-hidden="true">*</span></label>
                 <input
                     id="public-id"
@@ -74,25 +74,22 @@
                 >
                 <small>Proposé automatiquement, mais modifiable. Les zéros initiaux sont conservés. Ce numéro n’est pas un mot de passe.{% if form_mode == 'edit' %} Un changement nécessite de rééditer le badge et le QR Code.{% endif %}</small>
             </div>
-
-            <div class="form-field">
+            {% endif %}
+            <div class="form-field identity-last-name">
+                <label for="last-name">Nom <span aria-hidden="true">*</span></label>
+                <input id="last-name" name="last_name" type="text" maxlength="80" value="{{ (user.last_name or '')|upper }}" autocomplete="family-name" autocapitalize="characters" required>
+            </div>
+            <div class="form-field identity-first-name">
+                <label for="first-name">Prénom <span aria-hidden="true">*</span></label>
+                <input id="first-name" name="first_name" type="text" maxlength="80" value="{{ user.first_name }}" autocomplete="given-name" required>
+            </div>
+            {% if not kiosk %}<div class="form-field form-field-wide identity-category">
                 <label for="category">Catégorie <span aria-hidden="true">*</span></label>
                 <select id="category" name="category" required>
                     {% for item in user_categories if item.active or item.category_key==user.category %}<option value="{{ item.category_key }}" {% if user.category==item.category_key %}selected{% endif %}>{{ item.name }}{% if not item.active %} (masquée){% endif %}</option>{% endfor %}
                 </select>
                 {% if admin_access_role=='admin' %}<small><a href="{{ url_for('evolution.users_settings') }}">＋ Créer une catégorie</a></small>{% endif %}
-            </div>
-            {% endif %}
-
-            <div class="form-field">
-                <label for="first-name">Prénom <span aria-hidden="true">*</span></label>
-                <input id="first-name" name="first_name" type="text" maxlength="80" value="{{ user.first_name }}" autocomplete="given-name" required>
-            </div>
-
-            <div class="form-field">
-                <label for="last-name">Nom <span aria-hidden="true">*</span></label>
-                <input id="last-name" name="last_name" type="text" maxlength="80" value="{{ (user.last_name or '')|upper }}" autocomplete="family-name" autocapitalize="characters" required>
-            </div>
+            </div>{% endif %}
         </div>
 
         {% if not kiosk %}<label class="checkbox-field">
@@ -110,23 +107,7 @@
             <h2 id="optional-title">Informations complémentaires</h2>
         </div>
 
-        <p class="data-guidance">{% if kiosk %}Les coordonnées nécessaires dépendent des règles d’âge de la structure. L’e-mail permet aussi de recevoir votre identifiant et votre QR si vous le souhaitez.{% elif form_mode == 'create' %}Ces informations servent aussi à vérifier les réservations en ligne. Le genre et le code postal restent facultatifs.{% else %}Les anciennes fiches incomplètes restent actives. Complétez les informations disponibles avec l’accord de l’usager.{% endif %}</p>
-
-        {% if not kiosk %}
-        <fieldset class="affiliation-fields">
-            <legend>Structure de rattachement (facultatif)</legend>
-            <div class="form-grid">
-                <label class="form-field"><span>Structure déjà enregistrée</span>
-                    <select name="affiliation_client_id" data-affiliation-choice>
-                        <option value="">Aucune / nom libre</option>
-                        {% for entry in affiliation_choices %}<option value="{{ entry.id }}" {% if user.affiliation_client_id == entry.id %}selected{% endif %}>{{ entry.structure_name }}</option>{% endfor %}
-                    </select>
-                </label>
-                <label class="form-field"><span>Nom de structure sans fiche client</span><input name="affiliation_name" maxlength="160" value="{{ user.affiliation_name|default('') or '' }}" data-affiliation-name></label>
-            </div>
-            <p class="form-help">Information uniquement : aucun droit, abonnement, réservation ou dossier de facturation n’est créé. Choisissez « Aucune / nom libre » et effacez le nom pour retirer le rattachement.</p>
-        </fieldset>
-        {% endif %}
+        {% if not kiosk %}<p class="data-guidance">{% if form_mode == 'create' %}Ces informations servent aussi à vérifier les réservations en ligne. Le genre et le code postal restent facultatifs.{% else %}Les anciennes fiches incomplètes restent actives. Complétez les informations disponibles avec l’accord de l’usager.{% endif %}</p>{% endif %}
 
         <label class="checkbox-field compact-check"><input name="is_minor" type="checkbox" value="1" data-minor-toggle {% if request.form.get('is_minor')=='1' or (user.birth_date and (user|family_age) is not none and (user|family_age)<18) %}checked{% endif %}><span>Je suis mineur<small>Une date exacte permet d’appliquer les seuils le bon jour.</small></span></label>
         <div class="form-grid">
@@ -200,7 +181,8 @@
     </section>
 
     {% include '_family_fields.html' %}
-    {% if form_mode=='create' %}<label class="checkbox-field"><input type="checkbox" name="send_welcome" value="1" data-welcome-email data-smtp-ready="{{ '1' if smtp_ready else '0' }}" data-welcome-default="{{ '1' if welcome_default else '0' }}" disabled><span>Envoyer l’e-mail de bienvenue et le QR Code<small>Envoi facultatif si SMTP est configuré et l’adresse est valide.</small></span></label>{% endif %}
+    {% if not kiosk %}{% include '_affiliation_fields.html' %}{% endif %}
+    {% if form_mode=='create' %}<label class="checkbox-field"><input type="checkbox" name="send_welcome" value="1" data-welcome-email data-smtp-ready="{{ '1' if smtp_ready else '0' }}" data-welcome-default="{{ '1' if welcome_default else '0' }}" disabled><span>Envoyer l’e-mail de bienvenue et le QR Code<small>Cet envoi vous permet de recevoir votre identifiant.</small></span></label>{% endif %}
     <div class="form-actions">
         <button class="admin-button primary" type="submit">
             {% if form_mode == 'create' and duplicate_users %}Créer quand même{% elif form_mode == 'create' %}Créer l'usager{% else %}Enregistrer les modifications{% endif %}

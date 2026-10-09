@@ -22,19 +22,19 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.8.3')
-        self.assertIn('openfablab:v2.8.3',(ROOT/'compose.yaml').read_text())
+        self.assertEqual(__version__,'2.8.4')
+        self.assertIn('openfablab:v2.8.4',(ROOT/'compose.yaml').read_text())
 
     def test_stable_release_documentation_is_consistent(self):
         readme=(ROOT/'README.md').read_text()
-        self.assertIn('# OpenFabLab 2.8.3',readme)
-        self.assertIn('**Version stable · SQLite schéma 18',readme)
+        self.assertIn('# OpenFabLab 2.8.4 — version stable',readme)
+        self.assertIn('**Dernière version stable · SQLite schéma 18',readme)
         self.assertIn('OpenFabLab Reservations 2.8.2',readme)
-        self.assertIn('2.8.3 est la dernière version stable',readme)
-        self.assertIn('releases/tag/v2.8.3',readme)
+        self.assertIn('OpenFabLab **2.8.4** est une version corrective',readme)
+        self.assertIn('releases/tag/v2.8.4',readme)
         self.assertIn('releases/download/v2.8.2/openfablab-reservations-2.8.2.zip',readme)
         self.assertNotIn('releases/tag/v2.8.0',readme)
-        self.assertIn('## 2.8.3 — version stable',(ROOT/'CHANGELOG.md').read_text())
+        self.assertIn('## 2.8.4 — version stable',(ROOT/'CHANGELOG.md').read_text())
         self.assertEqual(__import__('json').loads((ROOT/'package.json').read_text())['version'],__version__)
         self.assertEqual(__import__('json').loads((ROOT/'package-lock.json').read_text())['version'],__version__)
         self.assertIn('Seul le stockage historique du plugin WordPress',(ROOT/'docs/families-2.8.md').read_text())
@@ -178,13 +178,13 @@ import pathlib,sqlite3,app
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.flask_app.config['APP_VERSION']=='V2.8.3'
+assert app.flask_app.config['APP_VERSION']=='V2.8.4'
 client=Client(app.app,Response)
 for route in ('/stat/sante','/stat/','/stat/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     if route=='/stat/':
-        assert b'V2.8.3' in response.data
+        assert b'V2.8.4' in response.data
     response.close()
 with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
     assert db.execute('PRAGMA user_version').fetchone()[0]==18
@@ -234,7 +234,7 @@ with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.8.3'
+assert app.app.config['APP_VERSION']=='V2.8.4'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)

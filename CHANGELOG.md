@@ -1,5 +1,17 @@
 # Historique public
 
+## 2.8.4 — version stable — 9 octobre 2026
+
+- Inscription publique simplifiée ; identifiant proposé sur sa propre ligne, nom et prénom alignés, modes et personnalisation préservés.
+- Responsable temporaire isolé par formulaire et révocable côté serveur ; abandon, nouvelle inscription, expiration et rejeu d'anciens cookies protégés sans supprimer les liens familiaux permanents.
+- Structure de rattachement après les informations familiales dans les fiches de l'équipe ; annuaire des clients non exposé au public.
+- Réservations locales plus lisibles, descriptions compactes, aide à l'identification, récapitulatif et actions mieux espacés.
+- Réglage de fréquentation compact et dates hebdomadaires légèrement réduites ; badges pastel et vue mensuelle inchangés.
+- Répertoire et fiche usager : libellé « Auto-inscription » plus universel et espacement entre la date et l'origine de création, sans changement des valeurs enregistrées ni des exports.
+- SQLite **18 conservé**, aucun changement du moteur de réservation, du plugin **2.8.2** ou du protocole **4 / révision 3**. Voir [le guide](docs/corrections-2.8.4.md).
+
+Archive approuvée conservée sans reconstruction. Les vérifications de publication portent sur la correspondance des sources, les versions, la confidentialité, les archives et les empreintes ; elles ne constituent pas une nouvelle campagne de tests fonctionnels.
+
 ## 2.8.3 — version stable — 8 octobre 2026
 
 - Badges pastel sur une ligne, troncature des intitulés longs et ouverture du libellé complet au clavier ou au toucher ; liste des usagers adaptée en cartes sur les petites largeurs.

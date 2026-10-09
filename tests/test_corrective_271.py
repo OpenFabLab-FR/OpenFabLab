@@ -307,7 +307,7 @@ class CorrectiveTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             archive=Path(folder)/'private.zip'
             manifest=private_backup.create_backup(self.f.database_path,archive,kind='test')
-            self.assertEqual(manifest['openfablab_version'],'2.8.3')
+            self.assertEqual(manifest['openfablab_version'],'2.8.4')
             target=Path(folder)/'restored/openfablab.db'
             private_backup.restore_backup(archive,target)
             from pin_security import check_pin

@@ -52,8 +52,9 @@ def register(application, api):
                     result['family_warnings'].append('Coordonnées à compléter')
             selected = request.form.getlist('responsible_ids')
             if request.endpoint=='evolution.enroll':
-                grant = session.get('family_enrollment_guardian',{})
-                selected = [str(grant['id'])] if grant.get('until',0)>time.time() else []
+                from enrollment_privacy import guardian_id
+                guardian = guardian_id(db)
+                selected = [str(guardian)] if guardian is not None else []
             result['selected_responsibles'] = [dict(u) for u in db.execute('SELECT * FROM users WHERE id IN ('+(','.join('?' for _ in selected) or 'NULL')+')',selected)]
         return result
 
@@ -72,8 +73,9 @@ def register(application, api):
             if action!='verify':
                 abort(403)
             # No name search at all on the kiosk; bounded ID/contact challenge.
-            if time.time()-session.get('enrollment_started',0)>900:
-                abort(400)
+            from enrollment_privacy import require_active, remember_guardian
+            require_active(db)
+            session.pop('family_enrollment_guardian',None)
             from family_reservations import limit_identification, matching_account
             try:
                 bucket=hmac.new(str(application.secret_key).encode(),(request.remote_addr or '').encode(),hashlib.sha256).hexdigest()
@@ -86,7 +88,7 @@ def register(application, api):
             if not user or not families.eligible(db,user):
                 errors.append('Identifiant ou coordonnée non concordants, ou responsable non éligible. Adressez-vous à l’équipe.')
             else:
-                session['family_enrollment_guardian']={'id':user['id'],'until':time.time()+900}
+                remember_guardian(db,user['id'])
         else:
             require_team()
             term=request.form.get('responsible_search','').strip()
@@ -99,7 +101,10 @@ def register(application, api):
         values['birth_year']=values.get('birth_year') or None
         values['active']=int(values.get('active','1'))
         if public:
-            values.update(public_id=a.next_available_public_id(db),category=a.default_category(db))
+            from usability import enrollment_mode
+            mode=enrollment_mode(db)
+            code=(request.form.get('public_id','') if mode=='customizable' else session.get('enrollment_proposal',''))
+            values.update(public_id=code,category=a.default_category(db))
         current=(request.view_args or {}).get('user_id')
         if current:
             values['id']=current

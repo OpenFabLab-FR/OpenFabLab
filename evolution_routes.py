@@ -68,6 +68,8 @@ def after_creation(a, database, user_id, send_email):
 def register(application, api):
     a = SimpleNamespace(**api)
     bp = Blueprint('evolution', __name__)
+    import enrollment_privacy as enrollment
+    enrollment.register(application, a)
 
     @application.template_filter('money')
     def money(value):
@@ -98,13 +100,18 @@ def register(application, api):
             styles.append(selector + '{--category-color:' + palette['reference'] +
                 ';--category-background:' + palette['background'] + ';--category-ink:' + palette['ink'] +
                 ';--category-border:' + palette['border'] + ';}')
+        if request.endpoint=='evolution.enroll' and request.method=='POST':
+            # Every rendered public form gets a fresh document token. The
+            # same flow/grant survives ordinary correction, not POST reload.
+            session['_enrollment_previous_document']=hashlib.sha256(session.get('evolution_csrf','').encode()).hexdigest()
+            session['evolution_csrf']=secrets.token_urlsafe(32)
         return {'evolution_csrf':csrf_token(), 'category_colors':colors, 'category_styles': ''.join(styles),
                 'enrollment_mode':enrollment_mode(db), 'public_id_modes':ID_MODES,
                 'attendance_reference':attendance_reference(db),
                 'affiliation_choices':affiliation_choices(db) if request.endpoint in ('admin_edit_user','admin_add_user') else [],
                 'anonymous_visitor_color': visitor_color,
                 'user_grants': resources.grants_for_user(db, request.view_args['user_id']) if request.endpoint == 'admin_edit_user' else [],
-                'creation_sources':SOURCES, 'self_enrollment_enabled':a.read_setting(db,'self_enrollment_enabled','0')=='1',
+                'creation_sources':dict(SOURCES, kiosk='Auto-inscription'), 'self_enrollment_enabled':a.read_setting(db,'self_enrollment_enabled','0')=='1',
                 'tablet_reservations_enabled':a.read_setting(db,'tablet_reservations_enabled','0')=='1',
                 'welcome_default':a.read_setting(db,'welcome_default','0')=='1',
                 'smtp_ready':bool(welcome_mail.load_config(application.config['DATABASE']))}
@@ -269,7 +276,7 @@ def register(application, api):
             return render_template('user_form.html',user=user,form_mode='create',kiosk=True,errors=errors,
                 duplicate_users=[],country_names=a.COUNTRY_NAMES),status
         if request.method=='GET':
-            session['enrollment_started']=time.time()
+            enrollment.begin(db)
             return proposal(blank, [], 200)
         require_csrf()
         if time.time()-session.get('enrollment_started',0)>900:
@@ -306,15 +313,34 @@ def register(application, api):
             elif db.execute('SELECT 1 FROM users WHERE public_id=?',(user['public_id'],)).fetchone():
                 db.rollback()
                 return proposal(user, ['Cet identifiant vient d’être attribué. Vérifiez la nouvelle proposition avant de valider.'], 409)
+            enrollment.consume(db)
             user_id=create_user(db,user,'kiosk')
             db.commit()
         except sqlite3.IntegrityError:
             db.rollback()
             return proposal(user, ['L’identifiant vient d’être attribué. Vérifiez la nouvelle proposition.'], 409)
+        except ValueError as error:
+            db.rollback()
+            enrollment.abandon(db)
+            abort(409, str(error))
         after_creation(a,db,user_id,request.form.get('send_welcome')=='1')
         session['enrollment_receipt']={'id':user_id,'until':time.time()+120}
-        session.pop('enrollment_started',None)
+        enrollment.forget()
         return redirect(url_for('evolution.enrollment_done'))
+
+    @bp.get('/inscription/etat')
+    def enrollment_state():
+        document=request.headers.get('X-OpenFabLab-Enrollment','')
+        matches=bool(document and hmac.compare_digest(document,session.get('evolution_csrf','')))
+        response=application.make_response({'active':matches and enrollment.active(a.get_database())})
+        response.headers['Cache-Control']='private, no-store'
+        return response
+
+    @bp.post('/inscription/annuler')
+    def enrollment_cancel():
+        require_csrf()
+        enrollment.abandon(a.get_database())
+        return ('',204)
 
     @application.after_request
     def protect_enrollment_response(response):

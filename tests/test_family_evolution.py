@@ -124,7 +124,7 @@ class FamilyEvolutionTests(unittest.TestCase):
                 self.assertEqual(response.status_code,200)
                 footer=re.search(r'<footer class="site-footer">(.*?)</footer>',response.get_data(as_text=True),re.S).group(1)
                 self.assertEqual(re.findall(r'<a href="([^"]+)">([^<]+)</a>',footer),[('/admin','Gestion')])
-                self.assertIn('2.8.3',footer)
+                self.assertIn('2.8.4',footer)
                 self.assertNotIn('Gestion des données',footer)
                 with self.client.session_transaction() as session:
                     self.assertEqual(session.get('access_role'),role)

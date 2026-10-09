@@ -253,10 +253,8 @@ def validate_form(db, form, data, errors, current_id=None, public=False):
             if not responsible or not eligible(db,responsible) or key==current_id:
                 raise ValueError
             if public:
-                from flask import session
-                grant = session.get('family_enrollment_guardian',{})
-                import time
-                if key != grant.get('id') or grant.get('until',0)<time.time():
+                from enrollment_privacy import guardian_id
+                if key != guardian_id(db):
                     raise ValueError
             data['responsible_ids'].append(key)
         except (ValueError,TypeError):
