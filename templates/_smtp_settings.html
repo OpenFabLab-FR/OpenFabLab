@@ -1,5 +1,6 @@
 {% from '_evolution_fields.html' import csrf,field %}
-<section class="admin-section" id="smtp"><h2>SMTP natif</h2><p>Service facultatif pour l’e-mail de bienvenue. Les identifiants restent dans le stockage privé persistant, hors des exports SQLite et du profil de structure.</p>
+<section class="admin-section" id="smtp"><h2>SMTP natif</h2><p>Service facultatif pour les e-mails de bienvenue et de réservation. Les identifiants restent dans le stockage privé persistant, hors des exports SQLite et du profil de structure.</p>
+<p><a class="admin-button secondary compact" href="{{ url_for('reservation_emails.settings') }}">Modèles d’e-mails de réservation</a></p>
 <form method="post" action="{{ url_for('evolution.integrations') }}" class="admin-form">{{ csrf(evolution_csrf,'smtp') }}<div class="form-grid">
 {{ field('host','Serveur SMTP',smtp.host|default(''),required=true) }}{{ field('port','Port',smtp.port|default(587),'number',true) }}
 <label class="form-field">Sécurité<select name="security"><option value="starttls" {% if smtp.security|default('starttls')=='starttls' %}selected{% endif %}>STARTTLS</option><option value="tls" {% if smtp.security|default('')=='tls' %}selected{% endif %}>TLS</option></select></label>

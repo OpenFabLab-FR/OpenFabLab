@@ -4473,9 +4473,16 @@ tbody tr:last-child td {
 .directory-table td {
     vertical-align: middle;
 }
-.user-creation-meta { display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:.2em .6em;max-width:100%;min-width:0; }
+.user-creation-meta { display:inline-flex;flex-direction:column;align-items:flex-start;gap:.25em;max-width:100%;min-width:0; }
 .user-creation-meta > span { min-width:0; }
 .user-creation-origin { white-space:nowrap; }
+.reservation-secondary { margin-top:12px; }
+.reservation-secondary form { margin:12px 0; }
+.reservation-primary-actions { display:flex;flex-wrap:wrap;gap:8px; }
+.reservation-confirmation { margin-top:16px;padding:16px;border:1px solid var(--border);border-radius:14px; }
+.participant-picker { min-width:0; }
+.participant-picker .family-choices { margin:8px 0; }
+.reservation-mail-preview { border:1px solid var(--border);border-radius:14px;padding:18px;overflow-wrap:anywhere; }
 
 .directory-page .page-shell {
     width: min(1520px, calc(100% - 28px));

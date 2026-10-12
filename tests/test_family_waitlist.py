@@ -136,7 +136,7 @@ class WaitlistTests(unittest.TestCase):
         sent=[];self.deliver(sent.append)
         proposal=next(m for m in sent if 'place est disponible' in str(m['Subject']))
         body=proposal.get_body(preferencelist=('plain',)).get_content()
-        for part in ('Fictif0','Fictif2','2 place(s)','Acceptez ou refusez','expire','https://atelier.example.invalid/stat/animations/demande/'):
+        for part in ('Fictif0','Fictif2','Nombre de participants : 2','Acceptez ou refusez','expire','https://atelier.example.invalid/stat/animations/demande/'):
             self.assertIn(part,body)
         self.assertNotIn('fictional-password',body)
 
@@ -188,7 +188,7 @@ class WaitlistTests(unittest.TestCase):
         self.assertEqual(self.status(a),'offer_pending');self.assertEqual(page.headers['Cache-Control'],'private, no-store')
         self.assertEqual(page.headers['Referrer-Policy'],'no-referrer')
         self.assertEqual(self.client.post(path,data={'action':'accept'}).status_code,400)
-        response=self.client.post(path,data=dict(action='accept',evolution_csrf=self.f.csrf(page)),follow_redirects=True)
+        response=self.client.post(path,data=dict(action='accept',consent='1',evolution_csrf=self.f.csrf(page)),follow_redirects=True)
         self.assertEqual(response.status_code,200);self.assertEqual(self.status(a),'confirmed')
         self.assertEqual(self.client.get('/animations/demande/'+secrets.token_urlsafe(32)).status_code,404)
 

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Modèles d’e-mails de réservation · OpenFabLab{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('admin_settings_structure',_anchor='smtp') }}">← Structure</a>{% endblock %}
+{% block content %}
+<section class="content-heading"><h1>Modèles d’e-mails de réservation</h1><p>Adaptez les messages envoyés par OpenFabLab. L’aperçu utilise uniquement des personnes et liens fictifs.</p></section>
+{% for error in errors %}<p class="flash flash-error" role="alert">{{ error }}</p>{% endfor %}
+<section class="form-section"><form method="get" class="form-grid"><label class="form-field"><span>Message à personnaliser</span><select name="kind">{% for name,description in models.items() %}<option value="{{ name }}" {% if kind==name %}selected{% endif %}>{{ description[0] }}</option>{% endfor %}</select></label><div class="form-actions"><button class="admin-button secondary">Afficher le modèle</button></div></form></section>
+<section class="form-section"><form method="post" class="admin-form"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
+<label class="form-field"><span>Sujet</span><input name="subject" maxlength="200" value="{{ template.subject }}" required></label>
+<label class="form-field"><span>Contenu du message</span><textarea name="body" rows="12" maxlength="8000" required>{{ template.body }}</textarea></label>
+<details><summary>Variables disponibles</summary><p>{% for variable in variables %}<code>{{ '{' ~ variable ~ '}' }}</code> {% endfor %}</p><p>Utilisez chaque lien une seule fois. Le lien de gestion devient un bouton dans l’e-mail HTML ; le lien d’information n’apparaît que si l’animation en possède un. Le sujet accepte structure, animation, date, horaire et places. La date limite concerne les propositions.</p></details>
+<div class="form-actions"><button class="admin-button primary" name="action" value="save">Enregistrer le modèle</button><button class="admin-button secondary" name="action" value="preview">Voir l’aperçu</button><button class="admin-button secondary" name="action" value="reset" formnovalidate onclick="return confirm('Restaurer le modèle par défaut ?')">Restaurer le modèle par défaut</button></div></form></section>
+<section class="form-section"><h2>Aperçu fictif</h2><p><strong>{{ preview_subject }}</strong></p><div class="reservation-mail-preview">{{ preview_html }}</div><p class="form-help">Cet aperçu n’envoie aucun e-mail.</p></section>
+{% endblock %}

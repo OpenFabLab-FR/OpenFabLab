@@ -49,7 +49,8 @@ class OutboundClient(WordPressClient):
 def negotiate(client, environment):
     value=client.post('/sync/capabilities',{'environment':environment})
     if value.get('protocol_version')!=4 or value.get('relay_revision')!=3 or value.get('outbound_actions_v1') is not True:
-        raise ValueError('OpenFabLab et son plugin doivent utiliser la version 2.8.2 (protocole 4, révision 3). Aucune demande n’a été confirmée.')
+        raise ValueError('OpenFabLab et son plugin doivent être compatibles avec le protocole 4, révision 3. Aucune demande n’a été confirmée.')
+    return value
 
 
 def catalogue(db, database_path, site_url, client=None, environments=actions.ENVIRONMENTS, force=True):
@@ -66,24 +67,28 @@ def catalogue(db, database_path, site_url, client=None, environments=actions.ENV
         if not force:
             from reservations_sync import sync_interval_seconds
             prior=db.execute('SELECT catalogue_at FROM wordpress_relay_state WHERE environment=?',(env,)).fetchone()
-            if prior and prior[0] and (datetime.now(timezone.utc)-datetime.fromisoformat(prior[0])).total_seconds()<sync_interval_seconds(family.setting(db,'reservation_sync_interval_minutes','1.5')):
+            if prior and prior[0] and (datetime.now(timezone.utc)-datetime.fromisoformat(prior[0])).total_seconds()<sync_interval_seconds(family.setting(db,'reservation_sync_interval_minutes','1')):
                 continue
         try:
-            negotiate(client,env)
+            capabilities=negotiate(client,env)
             from runtime_policy import storage_guard
             with storage_guard(database_path):
-                public=actions.public_catalogue(db,env)
+                public=actions.public_catalogue(db,env,include_information=capabilities.get('animation_information_v1') is True)
             result=client.post('/outbound/catalogue',{'environment':env,'animations':public,'protocol_version':4,'relay_revision':3})
             if result.get('ok') is not True: raise ValueError('Catalogue refusé.')
             with actions.transaction(db):
                 db.execute('INSERT INTO wordpress_relay_state(environment,catalogue_at,catalogue_count,last_error) VALUES(?,?,?,NULL) ON CONFLICT(environment) DO UPDATE SET catalogue_at=excluded.catalogue_at,catalogue_count=excluded.catalogue_count,last_error=NULL',(env,stamp,len(public)))
                 for key,value in [('reservation_protocol_'+env,'4'),('reservation_plugin_'+env,result.get('plugin_version','2.8.2')),('reservation_outbound_ready_'+env,'1')]:
                     db.execute('INSERT INTO app_settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(key,value))
+                from reservation_notifications import sync_episode
+                sync_episode(db,env,'catalogue',False)
                 db.execute("INSERT INTO reservation_sync_state(environment,cursor,last_attempt_at,last_success_at,last_error) VALUES(?,'',?,?,NULL) ON CONFLICT(environment) DO UPDATE SET last_attempt_at=excluded.last_attempt_at,last_success_at=excluded.last_success_at,last_error=NULL",(env,stamp,stamp))
         except (OSError,ValueError,sqlite3.Error):
             db.rollback()
             message='Connexion sortante non vérifiée. Vérifiez les versions, HTTPS et le secret partagé.'
             with actions.transaction(db):
+                from reservation_notifications import sync_episode
+                sync_episode(db,env,'catalogue',True)
                 db.execute('INSERT INTO wordpress_relay_state(environment,last_error) VALUES(?,?) ON CONFLICT(environment) DO UPDATE SET last_error=excluded.last_error',(env,message))
                 db.execute("INSERT INTO app_settings(key,value) VALUES(?,'0') ON CONFLICT(key) DO UPDATE SET value='0'",('reservation_outbound_ready_'+env,))
                 db.execute("INSERT INTO reservation_sync_state(environment,cursor,last_attempt_at,last_error_at,last_error) VALUES(?,'',?,?,?) ON CONFLICT(environment) DO UPDATE SET last_attempt_at=excluded.last_attempt_at,last_error_at=excluded.last_error_at,last_error=excluded.last_error",(env,stamp,stamp,message))
@@ -102,10 +107,15 @@ def poll(db, database_path, site_url, client=None, environments=actions.ENVIRONM
         if env not in actions.ENVIRONMENTS: raise ValueError('Environnement invalide.')
         try:
             processed+=_poll_environment(db,database_path,client,env,secret)
+            with actions.transaction(db):
+                from reservation_notifications import sync_episode
+                sync_episode(db,env,'poll',False)
         except (OSError,ValueError,sqlite3.Error):
             db.rollback()
             message='Demandes non relevées ou résultats non acquittés. La connexion sera réessayée, sans nouvelle attribution de places.'
             with actions.transaction(db):
+                from reservation_notifications import sync_episode
+                sync_episode(db,env,'poll',True)
                 db.execute('INSERT INTO wordpress_relay_state(environment,last_error) VALUES(?,?) ON CONFLICT(environment) DO UPDATE SET last_error=excluded.last_error',(env,message))
             errors.append({'environment':env,'error':message})
     return {'configured':True,'processed':processed,'errors':errors}
@@ -146,17 +156,17 @@ def start_worker(application, get_database, load_modules):
     def work():
         next_catalogue=0;next_prune=0
         while True:
-            interval=15
+            interval=10
             try:
                 with application.app_context():
                     db=get_database()
-                    interval=actions.action_interval(family.setting(db,'reservation_action_interval_seconds','15'))
+                    interval=actions.action_interval(family.setting(db,'reservation_action_interval_seconds','10'))
                     site=family.setting(db,'reservation_wordpress_url','')
                     if external_allowed(application.config['DATABASE']) and load_modules(db)['public_reservations'] and site:
                         if time.monotonic()>=next_catalogue:
                             catalogue(db,application.config['DATABASE'],site,force=False)
                             from reservations_sync import sync_interval_seconds
-                            next_catalogue=time.monotonic()+sync_interval_seconds(family.setting(db,'reservation_sync_interval_minutes','1.5'))
+                            next_catalogue=time.monotonic()+sync_interval_seconds(family.setting(db,'reservation_sync_interval_minutes','1'))
                         poll(db,application.config['DATABASE'],site)
                     if time.monotonic()>=next_prune:
                         with storage_guard(application.config['DATABASE']):

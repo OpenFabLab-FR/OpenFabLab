@@ -1,8 +1,8 @@
 # Configuration de la structure
 
-## Réservations publiques — candidate 2.8.1
+## Réservations publiques — relais sortant depuis 2.8.1
 
-Dans Structure, conserver l’URL HTTPS du **site WordPress** et le secret déjà partagé ; aucune URL publique du NAS n’est nécessaire. Le catalogue est publié toutes les 1,5 minute par défaut. Les nouvelles demandes sont relevées séparément toutes les 15 secondes, réglables de 10 à 60 secondes entières. Le bouton de vérification force une publication du catalogue et une relève, sans créer de réservation fictive.
+Dans Structure, conserver l’URL HTTPS du **site WordPress** et le secret déjà partagé ; aucune URL publique du NAS n’est nécessaire. En 2.8.5, une installation neuve publie le catalogue toutes les 60 secondes et relève séparément les demandes toutes les 10 secondes, réglables de 10 à 60 secondes entières. Les valeurs déjà enregistrées sont conservées, notamment 90/15 secondes. Le bouton de vérification force une publication du catalogue et une relève, sans créer de réservation fictive.
 
 Le choix « Liens personnels dans les e-mails » permet de revenir vers WordPress (automatique si configuré), ou de conserver des liens OpenFabLab lorsque cette adresse est réellement accessible aux participants. Les anciennes URL restent enregistrées. Les diagnostics distinguent Normal et Test, le catalogue, la relève, les retours et les demandes en cours ; un contact signé seul ne prouve jamais qu’une réservation a réussi. Voir [le guide sortant 2.8.1](outbound-2.8.1.md).
 
@@ -42,3 +42,13 @@ Les badges partagent un rendu pastel : fond mélangé à 90 % de blanc, texte as
 **Activités → Aperçu / Ressources / Réservations de ressources / Formations et habilitations** permet de choisir les catégories de ressources, forfaits, validations et autorisations nécessaires. Les deux nouveaux modules sont activés initialement ; leur désactivation masque sans supprimer. Une habilitation exigée par une ressource active interdit de masquer silencieusement le module habilitations.
 
 Réglages : **Affichage, Usagers, Borne, Notifications, Tarifs, Données, Structure**. Protection des données/DPO dans Données ; SMTP et WordPress dans Structure ; tous les événements Discord dans Notifications. Le **Calendrier** affiche 09:00–19:00 par défaut (réglable dans Affichage), s’étend aux événements exceptionnels hors plage, et réutilise les compteurs de fréquentation pour les OpenLab passés/en cours. Consulter [le guide 2.7](evolution-2.7.md) pour les limites, la migration et un essai isolé avant toute utilisation réelle.
+# Présentation Discord et recherches — version 2.8.6
+
+Dans **Notifications → Réservations des animations**, conserver les événements
+activés/désactivés puis choisir les informations affichées. Titre/date et
+compteurs sont activés par défaut ; prénom, nom complet et initiale sont
+désactivés. Ces options sont indépendantes des notifications de création de
+compte et se transportent dans le profil de structure. **Nom et messages →
+Textes principaux des réservations** permet de personnaliser les libellés sans
+variables : les informations cochées sont ajoutées automatiquement. Les erreurs
+techniques restent courtes et sans identité. [Détails et limites](corrections-2.8.6.md).

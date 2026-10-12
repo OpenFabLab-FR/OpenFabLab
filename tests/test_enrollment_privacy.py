@@ -137,7 +137,7 @@ class EnrollmentPrivacyTests(unittest.TestCase):
         self.assertEqual(len(rows),1)
         for value in (flow,token,'person0@example.invalid','Fictif0','2001'):
             self.assertNotIn(value,repr([tuple(row) for row in rows]))
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],18)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],19)
 
     def test_static_fetch_does_not_abandon(self):
         token=self.start();self.client.get('/static/public-enrollment.js')

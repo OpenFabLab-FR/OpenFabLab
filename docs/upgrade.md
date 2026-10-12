@@ -1,5 +1,50 @@
 # Mettre à jour OpenFabLab
 
+## Vers la stable 2.8.6
+
+Télécharger l'archive complète depuis la [release 2.8.6](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.6)
+et vérifier `SHA256SUMS`. Aucune installation intermédiaire 2.8.5 n'est nécessaire.
+
+- **Depuis la stable publique 2.8.4 / schéma 18** : sauvegarde complète PRE18 et
+  runtime 2.8.4 ; migration additive et transactionnelle vers **19**, décrite
+  ci-dessous. Destination réelle : **2.8.6**, incluant tous les apports 2.8.5.
+- **Depuis une installation locale 2.8.5 / schéma 19** : sauvegarde PRE19 et runtime
+  2.8.5 ; aucun changement de schéma. Seuls les nouveaux réglages Discord manquants
+  sont initialisés, sans écraser les préférences. Voir la section 2.8.5 → 2.8.6.
+
+Préserver données, familles, réservations, factures, historiques, secrets/PIN,
+fichiers privés, branding, Compose et volumes. Préparer/tester le runtime avant
+arrêt, sauvegarder à froid les dernières écritures, vérifier l'intégrité et les
+clés étrangères, puis contrôler **2.8.6 / schéma 19**, les données et le relais
+Normal/Test. Les cadences enregistrées restent inchangées.
+
+Le plugin **Reservations 2.8.5** est distribué avec cette release, sans changement
+pour la 2.8.6. Il reste facultatif et ne nécessite pas de réinstallation s'il est
+déjà en 2.8.5. Depuis 2.8.2 : sauvegarder WordPress puis remplacer le ZIP **sans
+désinstallation**, conserver ses tables/options/secret et vérifier les échanges.
+
+Conserver une POST19 cohérente. Un retour à PRE18 exige son runtime 2.8.4 et n'est
+envisageable qu'avant toute première tentative publique ; ne jamais lancer
+2.8.4 sur une base 19. Depuis 2.8.5, le secours est PRE19/runtime 2.8.5. Après une
+tentative publique ou une nouvelle écriture potentielle, préserver l'état actuel
+et obtenir une décision humaine : jamais de restauration destructive automatique.
+Les ZIP validés ne sont pas reconstruits ; la documentation de ce tag fait référence.
+
+## Étape historique 2.8.4 → 2.8.5 : schéma 18 → 19
+
+La même migration est incluse dans la mise à jour directe 2.8.4 → 2.8.6.
+
+
+Sauvegarder complètement **PRE18**, y compris SQLite cohérente, fichiers privés, branding, PIN, secrets et configuration ; conserver le runtime/image exacts 2.8.4. Construire la nouvelle image avant interruption, puis arrêter proprement et compléter par une copie froide incluant les dernières écritures. Ne pas copier une SQLite ouverte sans son protocole de sauvegarde.
+
+La migration transactionnelle ajoute seulement `information_url` aux animations et le journal technique Discord. Les anciennes colonnes et lignes métier, réglages et intervalles enregistrés sont conservés. Les modèles d’e-mails sont des réglages optionnels : les modèles par défaut s’appliquent lorsqu’aucune personnalisation n’existe. Vérifier version 2.8.5, schéma 19, intégrité/FK, données, paramètres et volumes avant réouverture ; POST19 après reprise.
+
+Le plugin **2.8.5**, désormais distribué avec la release 2.8.6, améliore la gestion personnelle et reçoit le lien informatif après négociation. Sauvegarder WordPress, puis remplacer le plugin via le ZIP installable sans désinstallation/destruction de ses données. Il peut être mis à jour avant ou après OpenFabLab : il accepte l'ancien catalogue ; l'application ne transmet pas de champ inconnu au plugin 2.8.2. Protocole 4/révision 3, secret et stockage WordPress inchangés.
+
+Avant toute tentative publique, un retour contrôlé exige **PRE18 froide + runtime 2.8.4**. Ne jamais lancer 2.8.4 sur une base 19. Après une tentative publique ou une nouvelle écriture potentielle, aucun rollback automatique destructif : arrêter, sauvegarder l’état 19, diagnostiquer et décider humainement. Un runtime corrigé peut reprendre la base actuelle ; une ancienne PRE ne doit pas l’écraser sans analyse.
+
+Guides : [corrections 2.8.5](corrections-2.8.5.md), [plateformes](platform-compatibility.md), [exploitation commune](installation-common.md). Les lanceurs d’un NAS particulier restent privés et ne sont jamais inclus dans la distribution publique.
+
 ## 2.8.3 → 2.8.4 stable, schéma 18 inchangé
 
 Voir [le guide 2.8.4](corrections-2.8.4.md). Vérifier le ZIP officiel avec son `SHA256SUMS`. Conserver le runtime 2.8.3 et une PRE18 complète vérifiée, puis une copie froide après arrêt. Construire le nouveau runtime avant l'interruption. Cette mise à jour n'effectue aucune migration de schéma ni remplacement de configuration ou de secrets ; seules des empreintes temporaires d'inscription utiliseront le registre existant après utilisation.
@@ -159,3 +204,27 @@ Conserver l'état problématique pour analyse. Si des écritures métier ont eu 
 # Mise à jour 2.6.1 → 2.6.2
 
 Le schéma reste 13. Ne rejouer aucune migration historique ni migration PIN. Sauvegarder la base à froid, tout `data`, `.env`, compose et l’image précédente ; préparer l’image avant interruption. Les nouvelles clés de logos/RGPD sont ajoutées sans écraser les réglages existants. Les ressources privées ne sont pas incluses dans le ZIP public et doivent rester persistantes. Après mise à jour, comparer les données métier, vérifier santé, identité, badges et documents. Ne revenir à l’ancienne sauvegarde qu’avant de nouvelles écritures métier ; sinon conserver l’état et décider explicitement. Voir [Branding](branding.md).
+# Mise à jour 2.8.5 → 2.8.6 : schéma 19 inchangé
+
+Cette correction conserve le **schéma 19** et le **plugin Reservations 2.8.5**,
+protocole 4 / révision 3. Aucune migration de tables, réinstallation du plugin ou
+nouvelle exposition réseau. Les nouveaux paramètres de présentation Discord
+utilisent la configuration existante : insertion des seuls défauts manquants,
+préférences enregistrées conservées, identité désactivée par défaut.
+
+Avant tout changement, sauvegarder intégralement le persistant, les fichiers
+privés, le runtime et la configuration du conteneur. Construire et essayer le
+runtime isolément ; arrêter proprement avant la sauvegarde froide finale et la
+copie des nouveaux fichiers. Ne jamais remplacer Compose, les secrets ou les
+volumes avec les exemples de distribution. Vérifier HTTP, version 2.8.6,
+schéma 19, intégrité/FK, paramètres, données et relais Normal/Test.
+
+La sauvegarde POST doit être cohérente : la procédure préparée prévoit un arrêt
+propre pour la copie complète, puis redémarre le même conteneur et revérifie les
+échanges. C’est un instantané avant ce redémarrage, pas une couverture des
+écritures ultérieures. Ne pas restaurer automatiquement une ancienne base après
+une première tentative de démarrage public. Conserver l’état en échec et obtenir
+une décision humaine. Les procédures NAS propres à une structure sont privées
+et ne sont pas incluses dans l’archive générique.
+
+Voir [le guide de cette micro-correction](corrections-2.8.6.md).

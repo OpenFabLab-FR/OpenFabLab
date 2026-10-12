@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlsplit, urlunsplit, quote
 from zoneinfo import ZoneInfo
 
 
@@ -77,24 +77,43 @@ def build_ics_event(service: dict, *, base_url: str = "", structure=None) -> byt
         details.append(service["description"])
     if service.get("minimum_age") is not None and service.get("service_type") == "animation":
         details.append(f"Âge minimum : {service['minimum_age']} ans")
-    if service.get("expected_participants") is not None:
+    if service.get('service_type')=='animation' and 'confirmed_count' in service:
+        details.extend([f"Capacité : {service['capacity']} places",
+            f"Inscriptions confirmées : {service['confirmed_count']}",
+            f"Places restantes : {service['remaining_count']}",
+            f"Participants présents : {service['present_count']}"])
+        if service.get('waitlist_enabled'):
+            details.append(f"Liste d’attente : {service['waitlisted_count']}")
+    elif service.get("expected_participants") is not None:
         details.append(f"Places maximum : {service['expected_participants']}")
-    if service.get("actual_participants") is not None:
+    if service.get("actual_participants") is not None and 'confirmed_count' not in service:
         details.append(f"Usagers présents : {service['actual_participants']}")
     if service.get("participants") is not None and service.get("service_type") == "reservation":
         details.append(f"Participants : {service['participants']}")
-    if service.get("client_name"):
+    if service.get("client_name") and service.get('service_type') != 'animation':
         details.append(f"Client : {service['client_name']}")
-    if service.get("client_contact"):
+    if service.get("client_contact") and service.get('service_type') != 'animation':
         details.append(f"Contact : {service['client_contact']}")
-    if service.get("client_email"):
+    if service.get("client_email") and service.get('service_type') != 'animation':
         details.append(f"E-mail : {service['client_email']}")
-    if service.get("client_phone"):
+    if service.get("client_phone") and service.get('service_type') != 'animation':
         details.append(f"Téléphone : {service['client_phone']}")
     if service.get("invoice_reference"):
         details.append(f"Dossier : {service['invoice_reference']}")
     if base_url:
         details.append(f"Fiche : {base_url}")
+    from animation_information import optional_url
+    information=optional_url(service.get('information_url',''))
+    if information:
+        uri=urlsplit(information)
+        host=uri.hostname.encode('idna').decode('ascii')
+        if ':' in host:
+            host='['+host+']'
+        information=urlunsplit((uri.scheme,host+(':'+str(uri.port) if uri.port else ''),
+            quote(uri.path,safe='/%:@!$&\'()*+,;=-._~'),
+            quote(uri.query,safe='/%?:@!$&\'()*+,;=-._~'),quote(uri.fragment,safe='/%?:@!$&\'()*+,;=-._~')))
+    if information:
+        details.append('En savoir plus sur cette animation : '+information)
 
     uid_source = f"{service.get('id')}|{service.get('service_date')}|{service.get('title')}"
     uid = sha256(uid_source.encode("utf-8")).hexdigest()[:32]
@@ -135,6 +154,7 @@ def build_ics_event(service: dict, *, base_url: str = "", structure=None) -> byt
         f"SUMMARY:{_escape(summary)}",
         f"LOCATION:{_escape(location)}",
         f"DESCRIPTION:{_escape(chr(10).join(details))}",
+        *([f"URL:{information}"] if information else []),
         "STATUS:CONFIRMED",
         "TRANSP:OPAQUE",
         "END:VEVENT",

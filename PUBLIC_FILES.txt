@@ -11,6 +11,7 @@ README.md
 ROADMAP.md
 SECURITY.md
 THIRD_PARTY_NOTICES.md
+animation_information.py
 animation_report.py
 animation_slots.py
 annual_report.py
@@ -18,6 +19,7 @@ app.py
 badge_palette.py
 badge_templates/OpenFabLab-template.svg
 billing.py
+booking_account_links.py
 branding.py
 build_openfablab.py
 build_wordpress_plugin.py
@@ -31,13 +33,21 @@ docs/candidate-2.8-guide.md
 docs/configuration.md
 docs/corrections-2.7.1.md
 docs/corrections-2.8.4.md
+docs/corrections-2.8.5.md
+docs/corrections-2.8.6.md
 docs/development.md
 docs/email-templates.md
 docs/evolution-2.7.md
 docs/families-2.8.md
+docs/installation-common.md
+docs/installation-linux.md
+docs/installation-raspberry-pi.md
+docs/installation-synology.md
+docs/installation-windows.md
 docs/installation.md
 docs/legacy-migration.md
 docs/outbound-2.8.1.md
+docs/platform-compatibility.md
 docs/private-backup.md
 docs/reservations-2.8.2.md
 docs/upgrade.md
@@ -59,6 +69,7 @@ outbound_actions.py
 outbound_sync.py
 package-lock.json
 package.json
+participant_search.py
 pin_security.py
 private_backup.py
 profile_archive.py
@@ -66,6 +77,8 @@ requirements-dev.lock
 requirements-dev.txt
 requirements-nas.txt
 requirements.txt
+reservation_email_templates.py
+reservation_notifications.py
 reservations_sync.py
 resource_booking.py
 runtime_policy.py
@@ -83,6 +96,7 @@ static/icons/OpenFabLab-favicon.ico
 static/icons/OpenFabLab-icon-192.png
 static/icons/OpenFabLab-icon-512.png
 static/icons/OpenFabLab-icon.svg
+static/participant-picker.js
 static/public-enrollment.js
 static/qr-scanner.js
 static/style.css
@@ -101,6 +115,7 @@ templates/_family_fields.html
 templates/_family_settings.html
 templates/_frequency_nav.html
 templates/_home_title.html
+templates/_participant_picker.html
 templates/_reservation_settings.html
 templates/_resource_fields.html
 templates/_settings_nav.html
@@ -120,6 +135,7 @@ templates/billing_client_form.html
 templates/billing_detail.html
 templates/billing_form.html
 templates/billing_list.html
+templates/booking_account_link.html
 templates/calendar.html
 templates/closure_settings.html
 templates/data_management.html
@@ -138,6 +154,7 @@ templates/index.html
 templates/index_disabled.html
 templates/moderator_themes.html
 templates/notifications.html
+templates/reservation_email_settings.html
 templates/resource_bookings.html
 templates/resources.html
 templates/service_form.html
@@ -179,9 +196,11 @@ tests/test_animation_deletion.py
 tests/test_animation_slots.py
 tests/test_app.py
 tests/test_badge_palette.py
+tests/test_booking_account_links.py
 tests/test_branding.py
 tests/test_candidate_revision.py
 tests/test_corrective_271.py
+tests/test_corrective_285.py
 tests/test_corrective_ui.js
 tests/test_enrollment_privacy.py
 tests/test_evolution.py
@@ -192,6 +211,7 @@ tests/test_family_waitlist.py
 tests/test_final_pass_ui.js
 tests/test_guest_reservations.py
 tests/test_logo_shadow_ui.js
+tests/test_micro_286.py
 tests/test_naming.py
 tests/test_outbound_actions.py
 tests/test_participants_ui.js
@@ -200,6 +220,8 @@ tests/test_privacy_resources_ui.js
 tests/test_private_backup.py
 tests/test_public_guest_qr.js
 tests/test_publication.py
+tests/test_reservation_email_templates.py
+tests/test_reservation_notifications.py
 tests/test_slots_ui.js
 tests/test_sync_reconciliation.py
 tests/test_tablet_reservations.py

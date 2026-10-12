@@ -14,6 +14,8 @@ COPY evolution_schema.py evolution_users.py evolution_routes.py enrollment_priva
 COPY private_backup.py runtime_policy.py ./
 COPY badge_palette.py ./
 COPY outbound_actions.py outbound_sync.py ./
+COPY reservation_notifications.py reservation_email_templates.py animation_information.py participant_search.py ./
+COPY booking_account_links.py ./
 COPY tablet_reservations.py ./
 COPY family_model.py family_routes.py family_reservations.py family_reservation_routes.py family_waitlist.py ./
 COPY openfablab ./openfablab

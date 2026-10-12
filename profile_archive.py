@@ -72,6 +72,9 @@ DISCORD_RESERVATION_KEYS = {
     "discord_reservation_animation_full", "discord_reservation_email_error",
     "discord_reservation_sync_error",
 }
+from reservation_notifications import DETAILS as RESERVATION_DETAILS,MESSAGE_KINDS as RESERVATION_MESSAGE_KINDS
+DISCORD_RESERVATION_DETAIL_KEYS={'discord_reservation_detail_'+key for key in RESERVATION_DETAILS}
+DISCORD_RESERVATION_MESSAGE_KEYS={'discord_reservation_message_'+key for key in RESERVATION_MESSAGE_KINDS}
 RESERVATION_RANGES = {
     "reservation_minimum_age": (0, 120),
     "reservation_accompaniment_under_age": (0, 120),
@@ -87,6 +90,9 @@ RESERVATION_RANGES = {
 
 def allowed_setting(key):
     """Use a narrow allowlist; never export a newly added secret by accident."""
+    from reservation_email_templates import allowed_key
+    if allowed_key(key):
+        return True
     if key in EXACT_KEYS:
         return True
     if key.startswith("structure_"):
@@ -104,7 +110,7 @@ def allowed_setting(key):
             "reservation_sync_interval_minutes",
             "reservation_action_interval_seconds", "reservation_link_mode",
         }
-    if key in DISCORD_MESSAGE_KEYS | DISCORD_NOTIFY_KEYS | DISCORD_RESERVATION_KEYS:
+    if key in DISCORD_MESSAGE_KEYS | DISCORD_NOTIFY_KEYS | DISCORD_RESERVATION_KEYS | DISCORD_RESERVATION_DETAIL_KEYS | DISCORD_RESERVATION_MESSAGE_KEYS:
         return True
     if key.startswith("openlab_attendance_"):
         return re.fullmatch(r"openlab_attendance_(monday|tuesday|wednesday|thursday|friday|saturday|sunday)_(start|end)", key) is not None
@@ -210,6 +216,14 @@ def parse_profile(raw):
             if int(settings.get('family_autonomy_age','15'))>int(settings.get('family_responsible_age','18')):
                 raise ValueError('Seuils d’autonomie et de responsable incohérents.')
             for key, value in settings.items():
+                if key in DISCORD_RESERVATION_DETAIL_KEYS and value not in {'0','1'}:
+                    raise ValueError('Option de présentation Discord invalide.')
+                if key in DISCORD_RESERVATION_MESSAGE_KEYS:
+                    from reservation_notifications import validate_label
+                    validate_label(value,key.removeprefix('discord_reservation_message_'))
+                from reservation_email_templates import allowed_key,validate as validate_reservation_template
+                if allowed_key(key):
+                    validate_reservation_template(value,'subject' if key.endswith('_subject') else 'body')
                 if (key.startswith("module_") or key.startswith(('structure_show_', 'structure_use_'))) and value not in {"0", "1"}:
                     raise ValueError("État de module invalide.")
                 if key == 'structure_badge_template' and value not in {'', 'badge-template.svg'}:

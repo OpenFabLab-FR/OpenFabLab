@@ -53,7 +53,7 @@
             <label class="checkbox-field"><input name="invalid_ids" type="checkbox" value="1"{% if discord.invalid_ids %} checked{% endif %}><span><strong>Alerte Discord en cas de tentatives répétées d’identifiant incorrect</strong><small>Le seuil et la fenêtre se règlent dans Borne et horaires. Aucun code saisi ni donnée personnelle n’est envoyé.</small></span></label>
         </div>
         <h3>Réservations des animations</h3>
-        <p>Notifications indépendantes, limitées au titre de l’animation et à son taux de remplissage ; aucune coordonnée n’est envoyée.</p>
+        <p>Choisissez les événements et les informations envoyés dans votre salon Discord. Aucune coordonnée ni aucun lien personnel n’est transmis.</p>
         <div class="notification-options">
             {% for key, label in [
                 ('new_booking', 'Nouvelle réservation'),
@@ -69,6 +69,15 @@
             <label class="checkbox-field"><input name="reservation_{{ key }}" type="checkbox" value="1"{% if discord.reservations[key] %} checked{% endif %}><span><strong>{{ label }}</strong></span></label>
             {% endfor %}
         </div>
+        <input type="hidden" name="reservation_presentation_present" value="1">
+        <h3>Informations affichées dans les notifications</h3>
+        <p class="form-help">Les informations nominatives sont facultatives et indépendantes des notifications de création de compte. Activez-les uniquement si votre structure autorise leur transmission à Discord. Les erreurs techniques et l’état global d’une animation n’identifient jamais une personne.</p>
+        <div class="notification-options">
+        {% for key,label in [('title','Titre de l’animation'),('date','Date et horaires'),('first_name','Prénom du réservant'),('last_name','Nom complet du réservant'),('last_initial','Initiale du nom (si nom complet désactivé)'),('participants','Nombre de participants'),('remaining','Places restantes')] %}
+        <label class="checkbox-field"><input name="reservation_detail_{{ key }}" type="checkbox" value="1" {% if discord.reservation_presentation.details[key] %}checked{% endif %}><span><strong>{{ label }}</strong></span></label>
+        {% endfor %}
+        </div>
+        <small>Le réservant est la personne à l’origine de la demande, pas nécessairement son seul participant. Les places restantes reflètent la situation au moment de l’envoi.</small>
     </section>
 
     <section class="form-section">
@@ -112,6 +121,13 @@
                 <small>Variable disponible : <code>{month}</code> (le mois précédent).</small>
             </div>
         </div>
+        <details class="reservation-secondary"><summary>Textes principaux des réservations</summary>
+        <p class="form-help">Personnalisez simplement le libellé de chaque événement. Les informations cochées ci-dessus sont ajoutées automatiquement, sans variable à saisir.</p>
+        <div class="form-grid notification-message-grid">
+        {% for key,label in [('new_booking','Nouvelle réservation'),('waitlist_entry','Entrée en liste d’attente'),('cancellation','Annulation'),('offer_proposed','Place proposée'),('offer_accepted','Place acceptée'),('link_review','Rattachement à vérifier'),('animation_full','Animation complète')] %}
+        <label class="form-field"><span>{{ label }}</span><input type="text" name="reservation_message_{{ key }}" maxlength="150" value="{{ discord.reservation_presentation.messages[key] }}"></label>
+        {% endfor %}
+        </div></details>
     </section>
 
     <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les options</button></div>

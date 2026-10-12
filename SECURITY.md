@@ -8,6 +8,12 @@ Décrire les versions concernées, les étapes reproductibles avec des données 
 
 ## Protection d'une installation
 
+Version de référence : **OpenFabLab 2.8.6 / SQLite 19**, plugin facultatif
+**Reservations 2.8.5 / protocole 4, révision 3**. Les informations nominatives des
+notifications Discord de réservation sont désactivées par défaut et doivent
+résulter d'un choix explicite, indépendant des notifications de création d'usager.
+Ne pas inclure de coordonnées, jeton ou lien privé dans un libellé destiné à Discord.
+
 - Utiliser HTTPS ; restreindre l'administration par une protection réseau adaptée, VPN ou dispositif d'accès contrôlé. **Les PIN à quatre chiffres ne constituent pas seuls une protection Internet suffisante.**
 - Les liens de récupération du PIN et d'annulation sont privés. Ne pas les conserver dans des logs, captures ou documents publics.
 - Protéger `data/`, les fichiers de dérivation PIN, la clé Flask, le secret WordPress, les webhooks, profils et sauvegardes. Ne pas les placer dans un répertoire servi publiquement.

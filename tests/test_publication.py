@@ -22,19 +22,22 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.8.4')
-        self.assertIn('openfablab:v2.8.4',(ROOT/'compose.yaml').read_text())
+        self.assertEqual(__version__,'2.8.6')
+        # The approved ZIP retains its build image label, not its runtime version.
+        # No archive or Compose configuration is changed for publishing.
+        self.assertIn('openfablab:v2.8.5',(ROOT/'compose.yaml').read_text())
 
     def test_stable_release_documentation_is_consistent(self):
         readme=(ROOT/'README.md').read_text()
-        self.assertIn('# OpenFabLab 2.8.4 — version stable',readme)
-        self.assertIn('**Dernière version stable · SQLite schéma 18',readme)
-        self.assertIn('OpenFabLab Reservations 2.8.2',readme)
-        self.assertIn('OpenFabLab **2.8.4** est une version corrective',readme)
-        self.assertIn('releases/tag/v2.8.4',readme)
-        self.assertIn('releases/download/v2.8.2/openfablab-reservations-2.8.2.zip',readme)
+        self.assertIn('# OpenFabLab 2.8.6 — version stable',readme)
+        self.assertIn('**Version stable · SQLite schéma 19',readme)
+        self.assertIn('OpenFabLab Reservations 2.8.5',readme)
+        self.assertIn('OpenFabLab **2.8.6**',readme)
+        self.assertIn('releases/tag/v2.8.6',readme)
+        self.assertIn('releases/download/v2.8.6/openfablab-reservations-2.8.5.zip',readme)
         self.assertNotIn('releases/tag/v2.8.0',readme)
-        self.assertIn('## 2.8.4 — version stable',(ROOT/'CHANGELOG.md').read_text())
+        self.assertIn('## 2.8.6 — version stable',(ROOT/'CHANGELOG.md').read_text())
+        self.assertIn('## 2.8.5 — étape locale non publiée séparément',(ROOT/'CHANGELOG.md').read_text())
         self.assertEqual(__import__('json').loads((ROOT/'package.json').read_text())['version'],__version__)
         self.assertEqual(__import__('json').loads((ROOT/'package-lock.json').read_text())['version'],__version__)
         self.assertIn('Seul le stockage historique du plugin WordPress',(ROOT/'docs/families-2.8.md').read_text())
@@ -51,7 +54,7 @@ class PublicReleaseTests(unittest.TestCase):
             self.assertEqual(settings['structure_signer_name'],'')
             self.assertEqual(settings['structure_wordmark_logo'],'')
             self.assertEqual(settings['module_public_reservations'],'0')
-            self.assertEqual(settings['reservation_sync_interval_minutes'],'1.5')
+            self.assertEqual(settings['reservation_sync_interval_minutes'],'1')
             self.assertTrue(all(value=='0' for key,value in settings.items() if key.startswith('billing_') and key.endswith('_cents')))
 
     def test_new_instance_empty_schema14_no_pin_or_secret(self):
@@ -63,7 +66,7 @@ class PublicReleaseTests(unittest.TestCase):
                                         AUTO_CLOSURE_WORKER=False,WEATHER_ENABLED=False))
             with application.app_context():
                 db=get_database()
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],18)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],19)
                 self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
                 self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
                 for table in ('users','sessions','visitors','rental_catalog','billing_tariff_catalog','billing_clients','billing_records','animation_bookings'):
@@ -178,16 +181,16 @@ import pathlib,sqlite3,app
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.flask_app.config['APP_VERSION']=='V2.8.4'
+assert app.flask_app.config['APP_VERSION']=='V2.8.5'
 client=Client(app.app,Response)
 for route in ('/stat/sante','/stat/','/stat/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     if route=='/stat/':
-        assert b'V2.8.4' in response.data
+        assert b'V2.8.5' in response.data
     response.close()
 with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==18
+    assert db.execute('PRAGMA user_version').fetchone()[0]==19
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     for table in ('users','sessions','visitors','animation_bookings','billing_clients'):
@@ -234,14 +237,14 @@ with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.8.4'
+assert app.app.config['APP_VERSION']=='V2.8.5'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     response.close()
 with sqlite3.connect(app.app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==18
+    assert db.execute('PRAGMA user_version').fetchone()[0]==19
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     assert db.execute('SELECT COUNT(*) FROM users').fetchone()[0]==0

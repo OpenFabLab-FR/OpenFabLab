@@ -48,7 +48,7 @@ def ensure_schema(db):
     columns={row[1] for row in db.execute('PRAGMA table_info(wordpress_relay_state)')}
     for name in ('pending','processing','failed','retrying'):
         if name not in columns:db.execute('ALTER TABLE wordpress_relay_state ADD COLUMN '+name+' INTEGER NOT NULL DEFAULT 0')
-    for key, value in {'reservation_action_interval_seconds':'15',
+    for key, value in {'reservation_action_interval_seconds':'10',
                        'reservation_link_mode':'auto'}.items():
         db.execute('INSERT OR IGNORE INTO app_settings(key,value) VALUES(?,?)',(key,value))
 
@@ -59,10 +59,10 @@ def action_interval(value):
             raise ValueError
         return int(value)
     except (TypeError, ValueError):
-        return 15
+        return 10
 
 
-def public_catalogue(db, environment):
+def public_catalogue(db, environment, include_information=False):
     import family_model as family
     from tablet_reservations import local_catalogue
     if environment not in ENVIRONMENTS: raise ValueError('Environnement invalide.')
@@ -75,6 +75,9 @@ def public_catalogue(db, environment):
         public['account_required']=family.setting(db,'reservation_account_required','0')=='1'
         public['phone_required']=family.setting(db,'reservation_phone_required','0')=='1'
         public['autonomy_age']=int(family.setting(db,'family_autonomy_age','15'))
+        if include_information:
+            from animation_information import optional_url
+            public['information_url']=optional_url(item.get('information_url',''))
         public['slots']=[{k:s[k] for k in ('slot_uuid','label','available')} for s in item['slots']]
         result.append(public)
     return result
@@ -147,7 +150,22 @@ def dispatch(db, data, action, environment, secret, request_key):
         group=waiting.lookup(db,link['t'])
         if group['environment']!=environment: raise ValueError('Ce lien est invalide ou indisponible.')
         if action=='view':
+            service=db.execute('SELECT title,service_date,start_time,end_time,information_url FROM fablab_services WHERE id=?',(group['service_id'],)).fetchone()
+            people=db.execute("SELECT first_name,last_name FROM animation_bookings WHERE group_uuid=? AND (status NOT IN('cancelled','expired','declined') OR status=?) ORDER BY rowid",(group['group_uuid'],group['status'])).fetchall()
+            date=service['service_date'];hours=(service['start_time'] or '')+'–'+(service['end_time'] or '')
+            if group['slot_uuid']:
+                from datetime import datetime
+                from zoneinfo import ZoneInfo
+                slot=db.execute('SELECT starts_at,ends_at FROM animation_slots WHERE slot_uuid=?',(group['slot_uuid'],)).fetchone()
+                if slot:
+                    zone=ZoneInfo(family.setting(db,'structure_timezone','Europe/Paris'))
+                    start=datetime.fromisoformat(slot['starts_at']).astimezone(zone)
+                    end=datetime.fromisoformat(slot['ends_at']).astimezone(zone)
+                    date=start.date().isoformat();hours=start.strftime('%H:%M')+'–'+end.strftime('%H:%M')
             return {'status':group['status'],'label':waiting.LABELS.get(group['status'],'Indisponible'),
+                    'title':service['title'],'date':date,'hours':hours,'count':len(people),
+                    'participants':[person['first_name']+' '+person['last_name'] for person in people],
+                    'information_url':__import__('animation_information').optional_url(service['information_url']),
                     'can_answer':group['status']=='offer_pending' and link['k']=='offer'}
         if data.get('consent') is not True: raise ValueError('Confirmez votre choix.')
         return waiting.respond(db,link['t'],action)

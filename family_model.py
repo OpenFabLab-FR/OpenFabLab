@@ -12,7 +12,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-SCHEMA = 18
+SCHEMA = 19
 POLICIES = {'none':'Aucun', 'email':'E-mail', 'phone':'Téléphone',
             'either':'E-mail ou téléphone', 'both':'E-mail et téléphone'}
 DEFAULTS = {'family_autonomy_age':'15', 'family_responsible_age':'18',
@@ -40,9 +40,9 @@ def backup_before(db, path):
     """Coherent offline PRE before *any* initialization writes, not a DB copy."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
     if version > SCHEMA:
-        raise RuntimeError('Base plus récente que la candidate 2.8.3 ; démarrage refusé.')
+        raise RuntimeError('Base plus récente que la candidate 2.8.5 ; démarrage refusé.')
     extra_needed = (version == 15 and not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_booking_groups'").fetchone())
-    if version not in (14, 15, 16, 17) and not extra_needed:
+    if version not in (14, 15, 16, 17, 18) and not extra_needed:
         return None
     root = Path(path).parent / 'migration-backups'
     root.mkdir(mode=0o700, exist_ok=True)
@@ -56,9 +56,9 @@ def backup_before(db, path):
 
 
 def migrate(db, fail_after=None):
-    """Additive migration through schema18; existing business IDs stay intact."""
+    """Additive migration through schema19; existing business IDs stay intact."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
-    if version not in (14, 15, 16, 17, SCHEMA):
+    if version not in (14, 15, 16, 17, 18, SCHEMA):
         # Earlier schemas must first complete the existing evolution migration.
         # In particular, never stamp an incomplete old database as schema 15.
         if version > SCHEMA:
@@ -108,6 +108,11 @@ def migrate(db, fail_after=None):
             PRIMARY KEY(event_kind,event_key,occurrence_date))''')
         from family_waitlist import ensure_schema
         ensure_schema(db)
+        from reservation_notifications import ensure_schema as ensure_discord_schema
+        ensure_discord_schema(db)
+        service_columns={row['name'] for row in db.execute('PRAGMA table_info(fablab_services)')}
+        if 'information_url' not in service_columns:
+            db.execute("ALTER TABLE fablab_services ADD COLUMN information_url TEXT NOT NULL DEFAULT ''")
         from outbound_actions import ensure_schema as ensure_outbound_schema
         ensure_outbound_schema(db)
         booking_columns={row['name'] for row in db.execute('PRAGMA table_info(animation_bookings)')}
@@ -124,7 +129,7 @@ def migrate(db, fail_after=None):
             fail_after(db)
         if db.execute('PRAGMA foreign_key_check').fetchall() or db.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
             raise RuntimeError('Migration famille refusée : intégrité invalide.')
-        db.execute('PRAGMA user_version=18')
+        db.execute('PRAGMA user_version=19')
         db.commit()
     except Exception:
         db.rollback()

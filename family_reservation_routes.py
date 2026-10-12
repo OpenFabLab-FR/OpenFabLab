@@ -106,7 +106,7 @@ def register(application,a):
     def response_link(token):
         db=a.get_database()
         waiting.process_due(db)
-        errors=[]
+        errors=[];stage='details'
         try:
             group=waiting.lookup(db,token)
         except ValueError:
@@ -114,8 +114,16 @@ def register(application,a):
         if request.method=='POST':
             require_csrf()
             try:
-                waiting.respond(db,token,request.form.get('action'))
-                return redirect(url_for('family_gateway.response_link',token=token))
+                action=request.form.get('action')
+                if action=='prepare_cancel' and group['status'] in ('confirmed','waitlisted','offer_pending'):
+                    stage='cancel'
+                elif action=='back':
+                    stage='details'
+                else:
+                    if request.form.get('consent')!='1':
+                        raise ValueError('Confirmez explicitement votre choix.')
+                    waiting.respond(db,token,action)
+                    return redirect(url_for('family_gateway.response_link',token=token))
             except ValueError as error:
                 errors.append(str(error));group=waiting.lookup(db,token)
         group['label']=waiting.LABELS.get(group['status'],'Indisponible')
@@ -131,7 +139,7 @@ def register(application,a):
                 service.update(service_date=start.date().isoformat(),start_time=start.strftime('%H:%M'),end_time=end.strftime('%H:%M'))
         people=db.execute("SELECT first_name,last_name FROM animation_bookings WHERE group_uuid=? AND (status NOT IN('cancelled','expired','declined') OR status=?) ORDER BY rowid",(group['group_uuid'],group['status'])).fetchall()
         response=application.make_response(render_template('family_response.html',group=group,service=service,
-            people=people,errors=errors,can_answer=group['status']=='offer_pending' and group['offer_token_hash']==waiting.digest(token)))
+            people=people,errors=errors,stage=stage,can_answer=group['status']=='offer_pending' and group['offer_token_hash']==waiting.digest(token)))
         response.headers['Cache-Control']='private, no-store'
         response.headers['Referrer-Policy']='no-referrer'
         response.headers['X-Robots-Tag']='noindex, nofollow, noarchive'

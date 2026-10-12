@@ -76,6 +76,11 @@
           card.appendChild(node('h3', '', animation.title));
           card.appendChild(node('p', 'openfablab-date', animation.date + ' · ' + animation.hours));
           card.appendChild(node('p', '', animation.description || ''));
+          if(animation.information_url){
+            try{const url=new URL(animation.information_url);if(['http:','https:'].includes(url.protocol)){
+              const link=node('a','openfablab-information','En savoir plus sur cette animation');link.href=url.href;link.rel='noopener noreferrer';card.append(link);
+            }}catch(_error){}
+          }
           card.appendChild(node('p', 'openfablab-availability', animation.available + ' place(s) disponible(s)' + (animation.waitlist_enabled ? ' · liste d’attente autorisée' : '')));
           const button = node('button', 'openfablab-button openfablab-reserve-button', 'Réserver'); button.type = 'button';
           button.addEventListener('click', () => choose(animation));

@@ -1,5 +1,42 @@
 # Historique public
 
+## 2.8.6 — version stable — 12 octobre 2026
+
+Distribution complète consolidant la version publique 2.8.4, les apports de la
+2.8.5 utilisée localement (non publiée séparément) et les corrections ci-dessous.
+Application **2.8.6**, plugin facultatif **2.8.5**, protocole **4 / révision 3**.
+Depuis 2.8.4 : migration additive SQLite **18 → 19** ; depuis 2.8.5 : schéma 19
+inchangé. Archives validées conservées sans reconstruction. Voir [mise à jour](docs/upgrade.md).
+
+- Les recherches de participants ne chargent plus les 25 premiers comptes à vide.
+  Effacement immédiat, anciennes réponses ignorées et sélections successives
+  conservées ; recherche partielle, accents, casse, identifiant et droits inchangés.
+- Discord : titre réel, date/horaires lisibles, participants et places disponibles ;
+  prénom, nom ou initiale uniquement sur activation explicite, indépendamment des
+  notifications de création de compte. Libellés principaux personnalisables.
+- Annulations complètes/partielles et places réellement libérées, réservant distinct
+  des participants. Journal transactionnel, anti-doublon et prudence en cas
+  d’accusé perdu conservés. Erreurs techniques sans données nominatives.
+- Réutilisation des instantanés d’e-mails existants, sans nouvelle table ni colonne.
+  Schéma SQLite 19 et plugin Reservations 2.8.5 / protocole 4, révision 3 inchangés.
+
+## 2.8.5 — étape locale non publiée séparément, intégrée à la 2.8.6
+
+- Rattachement explicite d’une inscription sans compte à une fiche existante par
+  Administrateur ou Modérateur : recherche, confirmation et trace, sans nouvelle
+  place ni changement de réservation. Chaque participant vérifié, enfant compris,
+  conserve sa propre fiche.
+
+- Notifications Discord des réservations reliées au moteur commun, journal transactionnel anti-doublon, respect des réglages et messages sans coordonnées ni identité de participant.
+- Suggestions de communes identiques dans les formulaires public et équipe, avec limitation des requêtes publiques et saisie manuelle de secours.
+- Huit modèles natifs d’e-mails personnalisables : sujet, texte, variables, aperçu fictif et restauration ; un seul lien personnel, présenté en bouton HTML, dates françaises et lien d’information facultatif.
+- Gestion personnelle des réservations enrichie, annulation en deux étapes et confirmation explicite ; état d’attente jusqu’à la décision réelle du moteur.
+- Actions des inscriptions mieux espacées, Historique et Modifier les participants repliables et indépendants ; recherche autorisée, partielle et sans accents, résultats bornés et sélection conservée.
+- Nouvelles installations : relève interactive 10 s et catalogue 60 s ; valeurs enregistrées des installations existantes préservées.
+- ICS : capacité, confirmations, places restantes et présence distinguées ; bénévoles CSV : durée des présences terminées, sans extrapolation des visites en cours.
+- Origine de compte sous la date, lien d’information HTTP/HTTPS facultatif des animations et guides multiplateformes 64 bits.
+- Migration additive SQLite 18 → 19 : une colonne et un journal technique. Protocole 4 / révision 3 conservé, champ WordPress facultatif négocié ; plugin candidat 2.8.5, publié 2.8.2 inchangé. Aucune fonctionnalité de coworking ajoutée.
+
 ## 2.8.4 — version stable — 9 octobre 2026
 
 - Inscription publique simplifiée ; identifiant proposé sur sa propre ligne, nom et prénom alignés, modes et personnalisation préservés.

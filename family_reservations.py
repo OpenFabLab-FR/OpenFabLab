@@ -127,7 +127,7 @@ def guest_person(db, data, service):
 
 def validate_group(db, group, rows, service):
     """Recheck the same age/family policy for offers and team confirmations."""
-    if group['owner_id'] is None and rows and all(r['source']==GUEST_SOURCE for r in rows):
+    if group['owner_id'] is None and rows and all(r['source']==GUEST_SOURCE and r['user_id'] is None for r in rows):
         if len(rows)!=1 or rows[0]['user_id'] is not None or rows[0]['public_id']:
             raise ValueError('Cette demande sans compte est incohérente. Contactez l’équipe.')
         row=rows[0]
@@ -406,9 +406,11 @@ def team_action(db, service_id, booking_uuid, action, role, person_id=None):
                 db.execute('UPDATE family_booking_groups SET revision=revision+1,updated_at=? WHERE group_uuid=?',(now,booking['group_uuid']))
                 db.execute('INSERT INTO family_booking_history(group_uuid,status,actor,created_at) VALUES(?,?,?,?)',(booking['group_uuid'],'modified',role,now))
                 if waiting._active(db,booking['group_uuid']):
-                    waiting._queue(db,booking['group_uuid'],'modified')
+                    notice={'participants':1,'cancelled_participants':1,'partial':True,'released':int(booking['status'] in ('confirmed','offer_pending','present','absent'))} if action=='remove' else None
+                    waiting._queue(db,booking['group_uuid'],'modified',discord_notice=notice)
                 else:
-                    waiting.transition(db,booking['group_uuid'],'cancelled',role)
+                    notice={'participants':1,'cancelled_participants':1,'partial':False,'released':int(booking['status'] in ('confirmed','offer_pending','present','absent'))} if action=='remove' else None
+                    waiting.transition(db,booking['group_uuid'],'cancelled',role,discord_notice=notice)
         waiting.settle(db)
         db.execute("UPDATE fablab_services SET actual_participants=COALESCE((SELECT walkin_count FROM animation_reservation_config WHERE service_id=?),0)+(SELECT COUNT(*) FROM animation_bookings WHERE service_id=? AND status IN('confirmed','present') AND is_present=1) WHERE id=?",(service_id,service_id,service_id))
         db.commit()

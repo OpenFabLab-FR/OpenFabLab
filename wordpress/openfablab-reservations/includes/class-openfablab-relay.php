@@ -210,9 +210,19 @@ final class OpenFabLab_Relay {
         try {
             $data=self::body($request,1000000);$env=self::env($data);$items=$data['animations'] ?? null;
             if (($data['protocol_version'] ?? 0)!==4 || ($data['relay_revision'] ?? 0)!==3 || !is_array($items) || count($items)>100) { return self::error('Catalogue invalide.',400); }
-            $allowed=['service_id','title','description','date','hours','minimum_age','booking_mode','slots','available','waitlist_enabled','account_required','phone_required','autonomy_age'];
+            $required=['service_id','title','description','date','hours','minimum_age','booking_mode','slots','available','waitlist_enabled','account_required','phone_required','autonomy_age'];
+            $allowed=array_merge($required,['information_url']);
             foreach ($items as $item) {
-                if (!is_array($item) || array_diff(array_keys($item),$allowed) || array_diff($allowed,array_keys($item))) { return self::error('Catalogue invalide.',400); }
+                if (!is_array($item) || array_diff(array_keys($item),$allowed) || array_diff($required,array_keys($item))) { return self::error('Catalogue invalide.',400); }
+                if (isset($item['information_url']) && $item['information_url']!=='') {
+                    $url=$item['information_url'];$parts=is_string($url)?parse_url($url):false;
+                    if (!$parts || strlen($url)>2048 || !filter_var($url,FILTER_VALIDATE_URL)
+                        || !in_array(strtolower($parts['scheme']??''),['http','https'],true)
+                        || isset($parts['user']) || isset($parts['pass'])) { return self::error('Lien public invalide.',400); }
+                    $host=strtolower(rtrim($parts['host']??'','.'));
+                    if ($host==='localhost' || preg_match('/\.(local|localhost|lan|internal)$/D',$host)
+                        || (filter_var($host,FILTER_VALIDATE_IP) && !filter_var($host,FILTER_VALIDATE_IP,FILTER_FLAG_NO_PRIV_RANGE|FILTER_FLAG_NO_RES_RANGE))) { return self::error('Lien public invalide.',400); }
+                }
                 if (!is_int($item['service_id']) || $item['service_id']<=0 || !is_array($item['slots']) || count($item['slots'])>100
                     || !is_int($item['available']) || $item['available']<0 || !is_bool($item['waitlist_enabled'])
                     || !is_bool($item['account_required']) || !is_bool($item['phone_required'])

@@ -18,7 +18,8 @@ def now():
 def backup_before_evolution(database, path):
     """Called before any initialization writes; SQLite backup includes its WAL."""
     version = database.execute('PRAGMA user_version').fetchone()[0]
-    if version>18:
+    from family_model import SCHEMA
+    if version>SCHEMA:
         raise RuntimeError('Schéma plus récent que cette version ; démarrage refusé.')
     exists = database.execute("SELECT 1 FROM sqlite_master WHERE name='user_categories'").fetchone()
     if not version or exists:

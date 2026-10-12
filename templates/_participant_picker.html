@@ -1,0 +1,6 @@
+<div class="participant-picker" data-participant-picker data-api="{{ url_for('participant_search.search') }}" data-name="{{ picker_name }}" data-multiple="{{ '1' if picker_multiple else '0' }}">
+<label class="form-field"><span>Rechercher un usager</span><input type="search" placeholder="Prénom, nom ou identifiant" autocomplete="off" data-participant-query></label>
+<p class="form-help" role="status" aria-live="polite" data-participant-status>Saisissez un prénom, un nom ou un identifiant pour rechercher un usager.</p>
+<p class="form-help" data-participant-selection-summary hidden></p>
+<div class="family-choices" aria-label="Usagers sélectionnés" data-participant-selected></div><div class="family-choices" data-participant-results></div>
+</div>

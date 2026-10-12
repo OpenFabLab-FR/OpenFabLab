@@ -116,6 +116,12 @@
 .openfablab-action-summary p { margin: .55rem 0; }
 .openfablab-action-intro { margin: 1.3rem 0 .8rem; }
 .openfablab-action-form { display: flex; flex-wrap: wrap; gap: .75rem; }
+.openfablab-state-badge { display:inline-block;background:#e8f5ed;color:#17503b;border-radius:999px;padding:.3rem .65rem;font-size:.88rem;margin:.75rem 0; }
+.openfablab-link-details h2 { font-size:1.25rem;line-height:1.4;overflow-wrap:anywhere; }
+.openfablab-link-buttons { display:flex;flex-wrap:wrap;gap:.8rem;margin:1rem 0; }
+.openfablab-link-buttons form { display:flex;flex-wrap:wrap;gap:.8rem; }
+.openfablab-link-buttons label { flex-basis:100%; }
+.openfablab-information { display:block;margin:.65rem 0;color:#20556a;text-decoration:underline; }
 .openfablab-action-button {
   min-height: 46px;
   padding: .7rem 1rem;

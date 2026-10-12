@@ -17,6 +17,7 @@
         <div class="form-field"><label for="expected-participants">Places maximum</label><input id="expected-participants" name="expected_participants" type="number" min="0" max="100000" value="{{ values.get('expected_participants', '') if values.get('expected_participants') is not none else '' }}"></div>
         <div class="form-field"><label for="actual-participants">Participants sur place</label><input id="actual-participants" name="actual_participants" type="number" min="0" max="100000" value="{{ values.get('actual_participants', '') if values.get('actual_participants') is not none else '' }}"><small>Les réservations marquées présentes sont ajoutées automatiquement.</small></div>
         <div class="form-field form-field-wide"><label for="service-description">Description de l’animation</label><textarea id="service-description" name="description" rows="5" maxlength="3000">{{ values.get('description', '') or '' }}</textarea></div>
+        <div class="form-field form-field-wide"><label for="information-url">Lien d’information</label><input id="information-url" name="information_url" type="url" maxlength="2048" value="{{ values.get('information_url','') or '' }}" placeholder="https://example.org/programme"><small>Facultatif : une page publique pour en savoir plus. Ce lien est distinct du lien personnel de réservation.</small></div>
     </div></section>
     {% if modules.public_reservations and admin_access_role == 'admin' %}
     <section class="form-section"><p class="eyebrow">Réservation publique</p>

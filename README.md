@@ -1,16 +1,22 @@
 <p align="center"><img src="static/brand/OpenFabLab-logo-horizontal.svg" width="420" alt="OpenFabLab"></p>
 
-# OpenFabLab 2.8.4 — version stable
+# OpenFabLab 2.8.6 — version stable
 
-**Dernière version stable · SQLite schéma 18 · OpenFabLab Reservations 2.8.2 facultatif et inchangé · Protocole 4, révision 3**
+**Version stable · SQLite schéma 19 · OpenFabLab Reservations 2.8.5 facultatif · Protocole 4, révision 3**
 
-OpenFabLab **2.8.4** est une version corrective et ergonomique : formulaires simplifiés, meilleure confidentialité du responsable familial après abandon d'une inscription, réservations locales plus lisibles et ajustements du calendrier, des réglages et du répertoire des usagers. Depuis la 2.8.3, elle ne nécessite aucune migration de schéma. Voir le [guide des corrections](docs/corrections-2.8.4.md).
+OpenFabLab **2.8.6** consolide les améliorations développées depuis la dernière version publique 2.8.4. Elle réunit [les apports de la 2.8.5](docs/corrections-2.8.5.md), utilisée localement mais non publiée séparément, et [les corrections propres à la 2.8.6](docs/corrections-2.8.6.md) : recherches de participants initialement vides, sélections conservées et notifications Discord enrichies avec champs choisis explicitement. Les renseignements nominatifs sont désactivés par défaut ; aucun contact ni lien personnel n'est envoyé. Il s'agit d'une distribution complète, pas d'un correctif à appliquer sur la 2.8.4.
 
-Les fonctions de personnalisation introduites en 2.8.3 sont conservées : badges pastel, modes d'attribution des identifiants, rattachement informatif à une structure, jauge de fréquentation, dates Discord et détails du calendrier. Voir le [guide 2.8.3](docs/usability-2.8.3.md). Le moteur de réservation et le plugin WordPress 2.8.2 sont inchangés.
+Toutes les fonctions de la 2.8.5 sont conservées : réservations transactionnelles, familles, QR, comptes facultatifs, liste d’attente, reprise et relais exclusivement sortant. Le plugin **2.8.5** est inchangé et ne doit pas être réinstallé pour cette micro-version. Les installations existantes conservent leurs cadences, configurations et préférences ; aucun changement de schéma 19.
 
-Télécharger l'[application 2.8.4](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.8.4/OpenFabLab-2.8.4.zip) et ses [empreintes SHA-256](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.8.4/SHA256SUMS) depuis la [release stable](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.4). Le [plugin officiel 2.8.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.8.2/openfablab-reservations-2.8.2.zip) reste compatible avec OpenFabLab **2.8.4**, sans réinstallation nécessaire s'il est déjà à jour ; JavaScript est nécessaire au parcours public WordPress et HTTPS au scanner caméra. Aucun accès entrant, port public OpenFabLab ni reverse proxy vers le NAS n'est nécessaire pour le plugin. Lire les [règles familiales](docs/families-2.8.md) et les [instructions de mise à jour](docs/upgrade.md) avant de changer une installation existante.
+Le plugin **2.8.5**, distribué avec cette release sans reconstruction, améliore la page personnelle et affiche le lien d'information après négociation de capacité. Il est facultatif : OpenFabLab fonctionne sans WordPress. Le plugin antérieur 2.8.2 reste utilisable avec ses fonctions antérieures. Pour l'installation : [Linux](docs/installation-linux.md), [Raspberry Pi](docs/installation-raspberry-pi.md), [Windows](docs/installation-windows.md), [Synology générique](docs/installation-synology.md), [opérations communes](docs/installation-common.md) et [compatibilité et limites](docs/platform-compatibility.md).
 
-L'archive applicative approuvée est distribuée sans reconstruction. Ses documents embarqués conservent les mentions de préparation antérieures à la publication ; **la documentation du tag `v2.8.4` constitue la référence stable à jour**.
+Les corrections de la **2.8.4** restent conservées : formulaires simplifiés, confidentialité du responsable familial après abandon d'une inscription, réservations locales plus lisibles et ajustements du calendrier, des réglages et du répertoire des usagers. Voir le [guide historique](docs/corrections-2.8.4.md).
+
+Les fonctions de personnalisation introduites en 2.8.3 sont conservées : badges pastel, modes d'attribution des identifiants, rattachement informatif à une structure, jauge de fréquentation, dates Discord et détails du calendrier. Voir le [guide 2.8.3](docs/usability-2.8.3.md). Le moteur de réservation reste celui de la 2.8.5 ; le plugin WordPress 2.8.5 est inchangé par la 2.8.6.
+
+Télécharger l'[application OpenFabLab 2.8.6](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.8.6/OpenFabLab-2.8.6.zip), le [plugin facultatif Reservations 2.8.5](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.8.6/openfablab-reservations-2.8.5.zip) et les [empreintes SHA-256](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.8.6/SHA256SUMS) depuis la [release stable 2.8.6](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.6). JavaScript est nécessaire au parcours public WordPress et HTTPS au scanner caméra. Aucun accès entrant, port public OpenFabLab ni reverse proxy vers le serveur OpenFabLab n'est nécessaire pour le plugin. Lire les [règles familiales](docs/families-2.8.md) et les [instructions de mise à jour](docs/upgrade.md) avant de changer une installation existante.
+
+Les ZIP approuvés sont publiés sans reconstruction : leurs guides embarqués peuvent conserver des mentions de préparation. **La documentation du tag `v2.8.6` est la référence stable à jour.** Les anciennes releases et leurs archives sont conservées.
 
 OpenFabLab est un logiciel libre de gestion de FabLab créé par **William Aumand**, distribué sous licence MIT. Il réunit la fréquentation du lieu, les usagers et les activités dans une application web installée sur le serveur de votre structure.
 
@@ -37,13 +43,13 @@ La navigation Réglages comporte sept onglets courts et des formulaires compacts
 - Calendrier Semaine/Mois : OpenLab et fréquentation, activités, réservations, locations et formations.
 - Machines et autres ressources réservables, catégories de ressources, gratuité ou tarif, confirmation automatique ou validation par l’équipe et lien avec la facturation existante.
 - Formations et habilitations permanentes ou expirables, révocation et historique ; une ressource peut exiger une habilitation valide, avec dérogation Administrateur motivée et auditée.
-- Plugin WordPress 2.8.2 optionnel : catalogue public, parcours familial et file durable Normal/Test séparés, avec échanges HTTPS initiés uniquement par OpenFabLab ; aucun moteur de réservation ni ancien expéditeur d'e-mails WordPress. L'historique métier reste conservé dans OpenFabLab.
+- Plugin WordPress 2.8.5 optionnel et inchangé : catalogue public, parcours familial et file durable Normal/Test séparés, avec échanges HTTPS initiés uniquement par OpenFabLab ; aucun moteur de réservation ni ancien expéditeur d'e-mails WordPress. L'historique métier reste conservé dans OpenFabLab.
 
 Les captures ne sont pas distribuées : aucun écran comportant des données personnelles n'est nécessaire à l'installation.
 
 ## Architecture
 
-Une application **Python/Flask + SQLite** sert l'interface locale. Docker utilise Gunicorn. Le plugin PHP s'installe séparément sur WordPress. **OpenFabLab est l'unique autorité de capacité** : il initie les échanges HTTPS signés vers WordPress. WordPress affiche le catalogue et conserve temporairement des demandes, jamais des places attribuées. Le catalogue est actualisé toutes les 90 secondes par défaut ; les actions sont relevées toutes les 15 secondes (réglage de 10 à 60 secondes). WordPress n'appelle pas le NAS. Il reste facultatif pour les réservations locales.
+Une application **Python/Flask + SQLite** sert l'interface locale. Docker utilise Gunicorn. Le plugin PHP s'installe séparément sur WordPress. **OpenFabLab est l'unique autorité de capacité** : il initie les échanges HTTPS signés vers WordPress. WordPress affiche le catalogue et conserve temporairement des demandes, jamais des places attribuées. Les nouvelles installations proposent 60 secondes pour le catalogue et 10 secondes pour les actions (réglage de 10 à 60 secondes) ; les cadences déjà enregistrées, notamment 90/15 secondes, sont conservées. WordPress n'appelle pas le serveur OpenFabLab. Il reste facultatif pour les réservations locales.
 
 Voir [l'architecture](docs/architecture.md) et les [recommandations de sécurité](SECURITY.md). Les PIN à quatre chiffres ne suffisent pas à protéger une administration exposée sur Internet.
 
@@ -69,7 +75,7 @@ docker compose build application
 docker compose up -d application
 ```
 
-Ouvrir `http://localhost:5080/stat/` ; santé : `/stat/sante`. Le projet/conteneur s'appelle `openfablab`, l'image `openfablab:v2.8.4`. Données : `./data:/data`, base `/data/openfablab.db`. Sauvegardes : `./backups:/nas-backups`, sous-dossier `OpenFabLab`. `.env.example` documente uniquement la racine de sauvegarde facultative. Employer des volumes et ports d'essai distincts ; ne pas exécuter ces commandes dans une installation de production. Protéger l'accès réseau ; aucun reverse proxy propre à une structure n'est livré.
+Ouvrir `http://localhost:5080/stat/` ; santé : `/stat/sante`. Le projet/conteneur s'appelle `openfablab`, l'image `openfablab:v2.8.5`. Données : `./data:/data`, base `/data/openfablab.db`. Sauvegardes : `./backups:/nas-backups`, sous-dossier `OpenFabLab`. `.env.example` documente uniquement la racine de sauvegarde facultative. Employer des volumes et ports d'essai distincts ; ne pas exécuter ces commandes dans une installation de production. Protéger l'accès réseau ; aucun reverse proxy propre à une structure n'est livré.
 
 ## Première initialisation
 

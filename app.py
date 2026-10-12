@@ -849,15 +849,14 @@ def initialize_database():
     # Existing installation settings win; only missing keys receive neutral defaults.
     migrate_branding_settings(database, Path(current_database_path()).parent)
     default_settings = default_application_settings(legacy_installation)
+    from reservation_notifications import DETAILS as notice_details,MESSAGE_KINDS as notice_kinds,LABELS as notice_labels
+    default_settings=list(default_settings)+[('discord_reservation_detail_'+key,default) for key,(_,default) in notice_details.items()]+[('discord_reservation_message_'+key,notice_labels[key]) for key in notice_kinds]
     database.executemany(
         "INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)",
         default_settings,
     )
-    # One-time, requested 2.7.1 adjustment of the former two-minute default.
-    # Other intervals and subsequent explicit selections are preserved.
+    # Retain the historical marker without reinterpreting an explicit interval.
     if read_setting(database, 'reservation_sync_90s_initialized', '') != '1':
-        if read_setting(database, 'reservation_sync_interval_minutes', '') == '2':
-            write_setting(database, 'reservation_sync_interval_minutes', '1.5')
         write_setting(database, 'reservation_sync_90s_initialized', '1')
     # Convert only the exact historical default; never rename directories or
     # touch a custom destination (including nested historical directories).
@@ -1063,7 +1062,7 @@ def default_application_settings(_legacy_installation=False):
         ("reservation_close_minutes", "60"),
         ("reservation_reminder_one_hours", "24"),
         ("reservation_reminder_two_hours", "0"),
-        ("reservation_sync_interval_minutes", "1.5"),
+        ("reservation_sync_interval_minutes", "1"),
         ('tablet_reservations_enabled', '0'),
         ("reservation_wordpress_url", ""),
     ]
@@ -4182,6 +4181,8 @@ def load_discord_settings(database):
         name: read_setting(database, f"discord_reservation_{name}", "1") == "1"
         for name in RESERVATION_DISCORD_FLAGS
     }
+    from reservation_notifications import presentation
+    settings['reservation_presentation']=presentation(database)
     return settings
 
 
@@ -5412,7 +5413,7 @@ def start_automatic_closure_worker(application):
                         secret_set = bool(load_sync_secret(application.config["DATABASE"]))
                         if site_url and secret_set and database.execute('PRAGMA user_version').fetchone()[0]<16:
                             try:
-                                interval = sync_interval_seconds(read_setting(database, "reservation_sync_interval_minutes", "1.5"))
+                                interval = sync_interval_seconds(read_setting(database, "reservation_sync_interval_minutes", "1"))
                                 last_attempt = read_setting(database, "reservation_sync_last_attempt")
                                 due = (not last_attempt or datetime.now(timezone.utc) - parse_timestamp(last_attempt)
                                        >= timedelta(seconds=interval))
@@ -5489,7 +5490,7 @@ def start_local_reservation_sync_worker(application):
                     if load_modules(database)["public_reservations"]:
                         site_url = read_setting(database, "reservation_wordpress_url")
                         if site_url and load_sync_secret(application.config["DATABASE"]) and database.execute('PRAGMA user_version').fetchone()[0]<16:
-                            interval = sync_interval_seconds(read_setting(database, "reservation_sync_interval_minutes", "1.5"))
+                            interval = sync_interval_seconds(read_setting(database, "reservation_sync_interval_minutes", "1"))
                             last = read_setting(database, "reservation_sync_last_attempt")
                             due = not last or datetime.now(timezone.utc) - parse_timestamp(last) >= timedelta(seconds=interval)
                             if due:
@@ -5904,6 +5905,8 @@ def register_admin_protection(application):
         "admin_moderator_themes",
         "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
         "admin_animation_booking_action", "admin_animation_booking_walkin",
+        'participant_search.search',
+        'booking_account_links.link',
         'evolution.calendar', 'evolution.resource_directory', 'evolution.resource_bookings',
         'tablet_reservations.cancel_request',
         'evolution.authorizations', 'evolution.resend_welcome',
@@ -5935,6 +5938,8 @@ def register_admin_protection(application):
         "public_reservations": {
             "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
             "admin_animation_booking_action", "admin_animation_booking_walkin",
+            'participant_search.search',
+            'booking_account_links.link',
             'tablet_reservations.cancel_request',
         },
         "billing": {
@@ -7052,7 +7057,7 @@ def register_routes(application):
         }
         values = {}
         errors = []
-        action_interval=request.form.get('action_interval_seconds',read_setting(database,'reservation_action_interval_seconds','15'))
+        action_interval=request.form.get('action_interval_seconds',read_setting(database,'reservation_action_interval_seconds','10'))
         if not action_interval.isdigit() or not 10<=int(action_interval)<=60:
             errors.append('La relève des demandes doit être comprise entre 10 et 60 secondes.')
         else:
@@ -8084,6 +8089,12 @@ def register_routes(application):
             ), 400
         submitted_values["service_type"] = "animation"
         values, errors = parse_service_form(submitted_values)
+        from animation_information import validate_url
+        try:
+            information_url=validate_url(submitted_values.get('information_url',service['information_url'] if service else ''))
+        except ValueError as error:
+            information_url=''
+            errors.append(str(error))
         online_enabled = (load_modules(database)["public_reservations"]
                           and request.form.get("online_enabled") == "1")
         database.execute("BEGIN IMMEDIATE")
@@ -8211,6 +8222,7 @@ def register_routes(application):
                 (*values.values(), timestamp, service_id),
             )
             message = "L'enregistrement a été mis à jour."
+        database.execute('UPDATE fablab_services SET information_url=? WHERE id=?',(information_url,service_id))
         if load_modules(database)["public_reservations"]:
             if previous_config and previous_config["environment"] != online_config["environment"]:
                 enqueue_animation(database, service_id, command="delete")
@@ -8338,12 +8350,13 @@ def register_routes(application):
         from family_model import responsibles, age
         for booking in bookings:
             booking['family_new']=booking['source'].startswith('family_')
-            booking['without_account']=booking['source']=='family_guest_wordpress'
+            booking['without_account']=booking['user_id'] is None and booking['source']=='family_guest_wordpress'
             person=database.execute('SELECT * FROM users WHERE id=?',(booking['user_id'],)).fetchone() if booking['user_id'] else None
             booking['exact_age']=age(person,datetime.fromisoformat(service['service_date']).date()) if person else None
             if booking['without_account'] and booking['guest_birth_date']:
                 booking['exact_age']=age({'birth_date':booking['guest_birth_date']},datetime.fromisoformat(service['service_date']).date())
             booking['responsibles']=responsibles(database,booking['user_id']) if person else []
+            booking['account_history']=database.execute("SELECT actor_role,created_at FROM reservation_actions WHERE booking_uuid=? AND action LIKE 'link_account:%' ORDER BY id",(booking['external_uuid'],)).fetchall()
             booking['group_count']=sum(b['status'] not in ('cancelled','expired','declined') for b in groups.get(booking['group_uuid'],[booking]))
             booking['owner']=database.execute('SELECT u.id,u.first_name,u.last_name FROM family_booking_requests r LEFT JOIN users u ON u.id=r.owner_id WHERE r.group_uuid=?',(booking['group_uuid'],)).fetchone()
             booking['family_contact']=contact(database,booking['user_id']) if person and booking['family_new'] else None
@@ -8357,10 +8370,8 @@ def register_routes(application):
                        and all(member["status"] in {"waitlisted", "offer_pending"}
                                and member["external_uuid"] not in pending
                                for member in groups.get(booking["group_uuid"], [booking]))}
-        users = sorted(database.execute(
-            "SELECT id, public_id, first_name, last_name FROM users WHERE active = 1 "
-        ).fetchall(), key=lambda user: (normalize_text_key(user["first_name"]) or "",
-                                       normalize_text_key(user["last_name"]) or "", user["public_id"]))
+        from participant_search import search_users
+        users = search_users(database,request.args.get('usager',''))['users']
         confirmation_errors = {}
         for row in database.execute(
             "SELECT o.entity_key, o.payload_json, o.last_error FROM reservation_outbox o "
@@ -8406,7 +8417,7 @@ def register_routes(application):
             writer.writerow([service["title"], service["service_date"], booking_reservation_status(row),
                              row["first_name"], row["last_name"], row["birth_year"] or "",
                              age({'birth_date':row['guest_birth_date']},datetime.fromisoformat(service['service_date']).date()) if row['source']=='family_guest_wordpress' and row['guest_birth_date'] else int(service["service_date"][:4]) - row["birth_year"] if row["birth_year"] else "",
-                             "Sans compte" if row['source']=='family_guest_wordpress' else "Usager" if row["user_id"] else "Visiteur",
+                             "Sans compte" if row['source']=='family_guest_wordpress' and not row['user_id'] else "Usager" if row["user_id"] else "Visiteur",
                              dynamic_category_label(database,row['category']) if row['category'] else '',
                              row["link_status"], "Oui" if presence is True else "Non" if presence is False else "Non renseignée",
                              row["email"], row["phone"]]
@@ -8613,6 +8624,9 @@ def register_routes(application):
         if row is None:
             abort(404)
         service = dict(row)
+        if service['service_type']=='animation':
+            from animation_information import metrics
+            service.update(metrics(database,service_id))
         detail_url = (
             url_for("admin_billing_detail", record_id=service["billing_record_id"], _external=True)
             if service.get("billing_record_id") else
@@ -9724,6 +9738,9 @@ def register_routes(application):
                         DISCORD_DEFAULTS["monthly_animations_message"],
                     ),
                 }
+                if request.form.get('reservation_presentation_present')=='1':
+                    from reservation_notifications import MESSAGE_KINDS,validate_label
+                    message_settings.update({'discord_reservation_message_'+kind:validate_label(request.form.get('reservation_message_'+kind),kind) for kind in MESSAGE_KINDS})
                 if request.form.get("clear_webhook") == "1":
                     clear_discord_webhook()
                 elif webhook_url:
@@ -9756,6 +9773,10 @@ def register_routes(application):
             for name in RESERVATION_DISCORD_FLAGS:
                 write_setting(database, f"discord_reservation_{name}",
                               "1" if request.form.get(f"reservation_{name}") == "1" else "0")
+            if request.form.get('reservation_presentation_present')=='1':
+                from reservation_notifications import DETAILS
+                for key in DETAILS:
+                    write_setting(database,'discord_reservation_detail_'+key,'1' if request.form.get('reservation_detail_'+key)=='1' else '0')
             write_setting(database, "discord_bot_name", bot_name)
             for setting_key, setting_value in message_settings.items():
                 write_setting(database, setting_key, setting_value)
@@ -9839,7 +9860,10 @@ def register_routes(application):
                    users.city, users.postal_code, users.nationality,
                    users.email, users.phone_country_code, users.phone,
                    users.created_at,
-                   COUNT(sessions.id) AS visit_count
+                   COUNT(sessions.id) AS visit_count,
+                   COALESCE(SUM(CASE WHEN sessions.check_out IS NOT NULL
+                       THEN MAX(0,ROUND((JULIANDAY(sessions.check_out)-JULIANDAY(sessions.check_in))*86400))
+                       ELSE 0 END),0) AS total_duration_seconds
             FROM users
             LEFT JOIN sessions ON sessions.user_id = users.id
             {category_clause}
@@ -9866,6 +9890,7 @@ def register_routes(application):
                     f"{user['phone_country_code'] or '+33'} {user['phone']}"
                     if user["phone"] else ""
                 ),
+                *((application.jinja_env.filters['duration_seconds'](user['total_duration_seconds']),) if category=='volunteer' else ()),
                 user["visit_count"],
                 parse_timestamp(user["created_at"])
                 .astimezone(PARIS_TIMEZONE)
@@ -9889,6 +9914,7 @@ def register_routes(application):
                 "Nationalité",
                 "E-mail",
                 "Téléphone",
+                *(("Durée cumulée au FabLab",) if category=='volunteer' else ()),
                 "Nombre de visites",
                 "Date d'inscription",
             ),

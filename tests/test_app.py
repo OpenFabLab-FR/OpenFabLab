@@ -4226,7 +4226,7 @@ class OpenFabLabTestCase(unittest.TestCase):
                 thread.call_args.kwargs["target"]()
             sync.assert_not_called()
 
-    def test_v271_reservation_sync_default_ninety_seconds_new_and_v244(self):
+    def test_current_reservation_sync_default_sixty_seconds_new_and_v244(self):
         with tempfile.TemporaryDirectory(prefix="openfablab_sync_default_") as directory:
             path = str(Path(directory) / "openfablab.db")
             config = {"TESTING": True, "DATABASE": path, "SEED_DEMO_USERS": False,
@@ -4235,7 +4235,7 @@ class OpenFabLabTestCase(unittest.TestCase):
             with sqlite3.connect(path) as database:
                 self.assertEqual(database.execute(
                     "SELECT value FROM app_settings WHERE key='reservation_sync_interval_minutes'"
-                ).fetchone()[0], "1.5")
+                ).fetchone()[0], "1")
                 # Une V2.4.4 ne possède pas encore ce réglage de réservation.
                 database.execute("DELETE FROM app_settings WHERE key='reservation_sync_interval_minutes'")
                 database.execute("PRAGMA user_version = 10")
@@ -4244,7 +4244,7 @@ class OpenFabLabTestCase(unittest.TestCase):
             with sqlite3.connect(path) as database:
                 self.assertEqual(database.execute(
                     "SELECT value FROM app_settings WHERE key='reservation_sync_interval_minutes'"
-                ).fetchone()[0], "1.5")
+                ).fetchone()[0], "1")
                 self.assertEqual(database.execute("SELECT COUNT(*) FROM visitors").fetchone()[0], before)
                 self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
                 self.assertEqual(database.execute("PRAGMA foreign_key_check").fetchall(), [])
@@ -4280,6 +4280,7 @@ class OpenFabLabTestCase(unittest.TestCase):
             write_setting(database, "module_public_reservations", "1")
             write_setting(database, "reservation_wordpress_url", "https://example.invalid")
             write_setting(database, "reservation_sync_last_attempt", (now - timedelta(seconds=89)).isoformat())
+            write_setting(database, "reservation_sync_interval_minutes", "1.5")
             database.execute("PRAGMA user_version=15")
             database.commit()
         save_sync_secret(self.database_path, "fictional-secret-" + "x" * 48)
@@ -4645,7 +4646,7 @@ class OpenFabLabTestCase(unittest.TestCase):
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_latitude'").fetchone()[0], "")
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_longitude'").fetchone()[0], "")
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_privacy_policy_url'").fetchone()[0], "")
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],18)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],19)
             create_app({"TESTING": True, "DATABASE": path, "ADMIN_PIN": None,
                         "MODERATOR_PIN": None, "SEED_DEMO_USERS": False})
             with sqlite3.connect(path) as database:
@@ -5172,7 +5173,7 @@ class OpenFabLabTestCase(unittest.TestCase):
             self.assertIn("openfablab-reservations/includes/class-openfablab-admin.php", names)
             self.assertFalse(any('bookings' in name or 'test-maintenance' in name or 'slots.php' in name for name in names))
             self.assertIn('request_key', current_script)
-            self.assertIn(b"Version: 2.8.2", archive_header)
+            self.assertIn(b"Version: 2.8.5", archive_header)
             self.assertTrue(all(name.startswith("openfablab-reservations/") for name in names))
             self.assertFalse(any(name.endswith((".db", ".sqlite", ".png")) for name in names))
             self.assertEqual(logo, Path("static/brand/OpenFabLab-logo-horizontal.svg").read_bytes())
@@ -5535,7 +5536,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
             create_app(config)
             with sqlite3.connect(database_path) as database:
                 after = {table: database.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in before}
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],18)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],19)
                 self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
                 self.assertEqual(database.execute("PRAGMA foreign_key_check").fetchall(), [])
                 self.assertTrue(database.execute("SELECT 1 FROM sqlite_master WHERE name='security_events'").fetchone())
@@ -5597,7 +5598,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                 ("1001", "Victor", "EXEMPLE", "user", None, None,
                  None, "+33", None),
             )
-            self.assertEqual(schema_version,18)
+            self.assertEqual(schema_version,19)
 
 
     def test_v23_schema_migrates_to_v240_without_losing_rows(self):
@@ -5629,7 +5630,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                 integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
                 foreign_keys = database.execute("PRAGMA foreign_key_check").fetchall()
             self.assertEqual(after, before)
-            self.assertEqual(schema_version,18)
+            self.assertEqual(schema_version,19)
             self.assertIsNotNone(audit_table)
             self.assertEqual(integrity, "ok")
             self.assertEqual(foreign_keys, [])
@@ -5637,7 +5638,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
             # La migration doit être rejouable sur une base déjà au schéma 8.
             create_app({"TESTING": True, "DATABASE": database_path})
             with sqlite3.connect(database_path) as database:
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],18)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],19)
                 self.assertEqual(
                     database.execute("SELECT COUNT(*) FROM attendance_corrections").fetchone()[0],
                     0,
@@ -5697,7 +5698,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                     "precipitation_mm", "created_at",
                 },
             )
-            self.assertEqual(schema_version,18)
+            self.assertEqual(schema_version,19)
             self.assertEqual(integrity, "ok")
             self.assertEqual(foreign_keys, [])
 
@@ -5837,7 +5838,7 @@ class NasDeploymentTestCase(unittest.TestCase):
                 ("TEST", "volunteer", "+33", "06 10 10 10 10"),
             )
             self.assertEqual(session_count, 1)
-            self.assertEqual(schema_version,18)
+            self.assertEqual(schema_version,19)
 
 
 if __name__ == "__main__":

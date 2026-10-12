@@ -133,9 +133,9 @@ def _active(db, group):
     return db.execute("SELECT * FROM animation_bookings WHERE group_uuid=? AND status NOT IN('cancelled','expired','declined') ORDER BY rowid",(group,)).fetchall()
 
 
-def _queue(db, group, kind, offer_token=None, now=None, people=None):
+def _queue(db, group, kind, offer_token=None, now=None, people=None, discord_notice=None):
     now=now or utcnow()
-    row=db.execute('SELECT g.*,s.title,s.service_date,s.start_time,s.end_time FROM family_booking_groups g JOIN fablab_services s ON s.id=g.service_id WHERE group_uuid=?',(group,)).fetchone()
+    row=db.execute('SELECT g.*,s.title,s.service_date,s.start_time,s.end_time,s.information_url FROM family_booking_groups g JOIN fablab_services s ON s.id=g.service_id WHERE group_uuid=?',(group,)).fetchone()
     people=_active(db,group) if people is None else people
     if not people:
         people=db.execute('SELECT first_name,last_name FROM animation_bookings WHERE group_uuid=? ORDER BY rowid',(group,)).fetchall()
@@ -143,6 +143,21 @@ def _queue(db, group, kind, offer_token=None, now=None, people=None):
              'participants':[p['first_name']+' '+p['last_name'] for p in people],
              'count':len(people),'token':offer_token or row['manage_token'], 'expires':row['offer_expires_at'],
              'status':row['status'], 'timezone':family.setting(db,'structure_timezone','Europe/Paris')}
+    payload['event']='accepted' if kind=='confirmed' and row['offer_expires_at'] else kind
+    # Presentation-only snapshot in the existing durable email payload. No
+    # copied name/contact/token or extra technical record; schema stays 19.
+    payload['_discord']={'participants':len(people)}
+    if kind=='cancelled':
+        payload['_discord']['released']=sum(dict(person).get('status') in ('confirmed','offer_pending','present','absent') for person in people)
+    if discord_notice:payload['_discord'].update(discord_notice)
+    try:
+        from family_reservations import effective_service
+        from reservations_sync import booking_capacity_used
+        effective=effective_service(db,row['service_id'],row['slot_uuid'],row['environment'],False)
+        payload['_discord'].update(capacity=effective['capacity'],occupied=booking_capacity_used(db,row['service_id'],row['slot_uuid']))
+    except ValueError:
+        pass
+    payload.update(structure=family.setting(db,'structure_name','Mon FabLab'),information_url=row['information_url'])
     slot=db.execute('SELECT starts_at,ends_at FROM animation_slots WHERE slot_uuid=?',(row['slot_uuid'],)).fetchone() if row['slot_uuid'] else None
     if slot:
         zone=ZoneInfo(payload['timezone'])
@@ -151,6 +166,8 @@ def _queue(db, group, kind, offer_token=None, now=None, people=None):
         payload.update(date=start.date().isoformat(),hours=start.strftime('%H:%M')+'–'+end.strftime('%H:%M'))
     db.execute('''INSERT OR IGNORE INTO family_booking_emails(message_uuid,group_uuid,event_key,kind,recipient,payload_json,created_at)
         VALUES(?,?,?,?,?,?,?)''',(str(uuid4()),group,group+'/'+kind+'/'+str(row['revision']),kind,row['contact_email'],json.dumps(payload,ensure_ascii=False),now.isoformat()))
+    from reservation_notifications import booking_event
+    booking_event(db,group,payload['event'],row['revision'],payload['_discord'])
 
 
 def create_group(db, group, owner_id, service_id, slot, environment, status, details, now=None):
@@ -175,7 +192,7 @@ def adopt_candidates(db):
             db.execute('UPDATE family_booking_groups SET created_at=? WHERE group_uuid=?',(row['created_at'],row['group_uuid']))
 
 
-def transition(db, group, status, actor, now=None, notify=True):
+def transition(db, group, status, actor, now=None, notify=True, discord_notice=None):
     now=now or utcnow()
     current=db.execute('SELECT status FROM family_booking_groups WHERE group_uuid=?',(group,)).fetchone()
     if not current or current['status']==status:
@@ -189,7 +206,7 @@ def transition(db, group, status, actor, now=None, notify=True):
     if status!='offer_pending':
         db.execute("UPDATE family_booking_emails SET state='superseded' WHERE group_uuid=? AND kind='offer_pending' AND state='pending'",(group,))
     if notify:
-        _queue(db,group,status,now=now,people=before)
+        _queue(db,group,status,now=now,people=before,discord_notice=discord_notice)
 
 
 def _cutoff(db, service, slot=None):
@@ -221,7 +238,13 @@ def settle(db, now=None):
             if now>=cutoff:
                 transition(db,group['group_uuid'],'expired','cloture',now);continue
             from family_reservations import validate_group
-            validate_group(db,group,rows,service)
+            try:
+                validate_group(db,group,rows,service)
+            except (ValueError,TypeError):
+                from reservation_notifications import queue
+                queue(db,'review/'+group['group_uuid']+'/'+str(group['revision']),
+                      'link_review',group['service_id'],group['environment'])
+                continue
         except (ValueError,TypeError):
             # Invalidated relationship/account is not silently confirmed.
             continue
@@ -295,31 +318,9 @@ def respond(db, token, action, now=None):
         raise
 
 
-def build_message(config, row, base_url, link_url=None):
-    from welcome_mail import validate_config
-    config=validate_config(config);parsed=urlsplit(base_url)
-    if not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.scheme not in ('http','https'):
-        raise ValueError('Adresse publique OpenFabLab invalide.')
-    payload=json.loads(row['payload_json']);kind=row['kind']
-    subjects={'confirmed':'Réservation confirmée', 'waitlisted':'Inscription en liste d’attente',
-              'offer_pending':'Une place est disponible pour votre groupe', 'expired':'Proposition expirée',
-              'declined':'Proposition refusée', 'cancelled':'Réservation annulée', 'modified':'Réservation modifiée'}
-    title=subjects[kind];url=link_url or base_url.rstrip('/')+'/animations/demande/'+payload['token']
-    body=title+'\n\n'+payload['title']+'\n'+payload['date']+' · '+payload['hours']+'\n\nParticipants :\n'
-    body+='\n'.join('- '+name for name in payload['participants'])+'\n\n'+str(payload['count'])+' place(s) pour le groupe entier.\n'
-    if kind=='offer_pending':
-        expires=datetime.fromisoformat(payload['expires']).astimezone(ZoneInfo(payload.get('timezone','Europe/Paris')))
-        body+='\nCes places sont bloquées temporairement. Acceptez ou refusez avant le '+expires.strftime('%d/%m/%Y à %H:%M')+'.\nSans acceptation dans ce délai, la proposition expire et les places sont libérées.\n'
-    elif kind=='waitlisted':
-        body+='\nAucune place n’est confirmée. Vous recevrez automatiquement une proposition si tout votre groupe peut être accueilli.\n'
-    body+='\nVoir la demande'+(' et accepter ou refuser' if kind=='offer_pending' else '')+' :\n'+url+'\n'
-    message=EmailMessage();message['Subject']=title+' — OpenFabLab'
-    message['From']=(config['sender_name']+' <'+config['sender_email']+'>') if config['sender_name'] else config['sender_email']
-    message['To']=row['recipient'];message['Message-ID']='<'+row['message_uuid']+'@openfablab.local>'
-    if config['reply_to']:message['Reply-To']=config['reply_to']
-    message.set_content(body)
-    message.add_alternative('<!doctype html><html lang="fr"><body><p>'+html.escape(body).replace('\n','<br>')+'</p><p><a href="'+html.escape(url,quote=True)+'">Voir ma réservation</a></p></body></html>',subtype='html')
-    return message
+def build_message(config, row, base_url, link_url=None, db=None):
+    from reservation_email_templates import build_message as render_message
+    return render_message(config,row,base_url,link_url,db)
 
 
 def deliver(db, database_path, sender=None, now=None, base_url=None):
@@ -358,12 +359,16 @@ def deliver(db, database_path, sender=None, now=None, base_url=None):
                     continue
             from outbound_actions import email_link
             link=None if explicit_base else email_link(db,database_path,json.loads(row['payload_json']),row['kind'],row['environment'])
-            message=build_message(config,row,base_url,link)
+            message=build_message(config,row,base_url,link,db)
             (sender or (lambda message:send(config,message)))(message)
         except Exception as error:
             # Store only an exception class, never SMTP payloads or credentials.
             delay=min(60,2**min(row['attempts'],6))
             with db:db.execute("UPDATE family_booking_emails SET state='pending',next_attempt_at=?,last_error=? WHERE message_uuid=?",((now+timedelta(minutes=delay)).isoformat(),type(error).__name__,item[0]))
+            from reservation_notifications import queue
+            with db:
+                service=db.execute('SELECT service_id FROM family_booking_groups WHERE group_uuid=?',(row['group_uuid'],)).fetchone()
+                queue(db,'email-error/'+item[0],'email_error',service[0] if service else None,row['environment'])
         else:
             with db:db.execute("UPDATE family_booking_emails SET state='sent',sent_at=?,last_error=NULL WHERE message_uuid=?",(now.isoformat(),item[0]))
             sent+=1
@@ -372,7 +377,10 @@ def deliver(db, database_path, sender=None, now=None, base_url=None):
 
 def run(db, database_path, sender=None, now=None, base_url=None):
     process_due(db,now)
-    return deliver(db,database_path,sender,now,base_url)
+    result=deliver(db,database_path,sender,now,base_url)
+    from reservation_notifications import deliver as deliver_discord
+    deliver_discord(db,database_path)
+    return result
 
 
 def start_worker(application,get_database,load_modules):

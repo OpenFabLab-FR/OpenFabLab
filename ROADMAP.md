@@ -1,8 +1,19 @@
 # OpenFabLab — Roadmap et conception
 
+## Disponible en 2.8.6 stable — consolidation depuis 2.8.4
+
+La référence stable actuelle réunit les apports développés en 2.8.5 et les
+corrections de 2.8.6 : gestion personnelle des réservations, modèles d'e-mails,
+rattachement explicite aux comptes, recherche des communes/participants, exports
+et guides multiplateformes ; recherches initialement vides et notifications
+Discord enrichies sur choix explicite. SQLite 19, plugin facultatif 2.8.5,
+protocole 4 / révision 3. Le moteur reste unique et le relais exclusivement
+sortant. Voir [apports 2.8.5](docs/corrections-2.8.5.md), [corrections 2.8.6](docs/corrections-2.8.6.md)
+et [mise à jour](docs/upgrade.md). Les évolutions futures ne sont pas incluses.
+
 ## Disponible en 2.8.4 stable — corrections et ergonomie
 
-Formulaires simplifiés, autorisation temporaire du responsable familial révoquée après abandon d'une inscription, rattachement informatif mieux placé, réservations locales plus lisibles, réglages compacts, calendrier et répertoire des usagers ajustés. SQLite 18, badges pastel, plugin 2.8.2 et moteur de réservation conservés. Voir le [guide 2.8.4](docs/corrections-2.8.4.md). Cette version est la référence stable actuelle ; les évolutions futures ne sont pas incluses dans cette livraison.
+Formulaires simplifiés, autorisation temporaire du responsable familial révoquée après abandon d'une inscription, rattachement informatif mieux placé, réservations locales plus lisibles, réglages compacts, calendrier et répertoire des usagers ajustés. SQLite 18, badges pastel, plugin 2.8.2 et moteur de réservation conservés. Voir le [guide historique 2.8.4](docs/corrections-2.8.4.md). Ces corrections sont conservées dans la stable actuelle.
 
 ## Disponible en 2.8.3 stable — personnalisation et lisibilité
 

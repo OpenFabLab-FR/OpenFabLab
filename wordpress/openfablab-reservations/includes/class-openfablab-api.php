@@ -24,7 +24,8 @@ final class OpenFabLab_API {
         $value = ['ok'=>true, 'animation_slots_v1'=>true, 'custom_categories_v1'=>true,
             'catalog_snapshot_v1'=>false, 'family_gateway_v1'=>false,
             'protocol_version'=>4, 'outbound_actions_v1'=>true, 'transport_only_v1'=>true,
-            'relay_revision'=>3, 'plugin_version'=>OPENFABLAB_RES_VERSION];
+            'relay_revision'=>3, 'plugin_version'=>OPENFABLAB_RES_VERSION,
+            'animation_information_v1'=>true];
         $body=json_decode($request->get_body(),true);
         if (is_array($body) && in_array($body['environment'] ?? '',['production','test'],true)) {
             $value['relay_state']=OpenFabLab_Relay::state($body['environment']);

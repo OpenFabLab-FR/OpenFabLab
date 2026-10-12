@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from uuid import uuid4
 from zoneinfo import ZoneInfo
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, send_file, session, url_for
+from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from evolution_schema import categories, default_category, save_category, remove_category, sync_legacy_machines, audit, now, reorder
 from evolution_users import create_user, creation_message, SOURCES
 import resource_booking as resources
@@ -70,6 +70,44 @@ def register(application, api):
     bp = Blueprint('evolution', __name__)
     import enrollment_privacy as enrollment
     enrollment.register(application, a)
+    from reservation_email_templates import register as register_mail_templates
+    register_mail_templates(application,a)
+    from participant_search import register as register_participant_search
+    register_participant_search(application,a)
+    from booking_account_links import register as register_booking_account_links
+    register_booking_account_links(application,a)
+    # Same official lookup as the staff form; no user-directory data involved.
+    from collections import deque
+    from threading import Lock
+    commune_buckets={}
+    commune_lock=Lock()
+
+    @bp.get('/api/communes')
+    def public_communes():
+        if a.read_setting(a.get_database(),'self_enrollment_enabled','0')!='1':
+            abort(404)
+        postal=request.args.get('code_postal','').strip()
+        import re
+        if not re.fullmatch(r'\d{5}',postal):
+            return jsonify(communes=[],available=True)
+        bucket=hmac.new(str(application.secret_key).encode(),(request.remote_addr or '').encode(),hashlib.sha256).hexdigest()
+        now_time=time.monotonic()
+        with commune_lock:
+            for key in list(commune_buckets):
+                if not commune_buckets[key] or commune_buckets[key][-1]<now_time-60:
+                    del commune_buckets[key]
+            if bucket not in commune_buckets and len(commune_buckets)>=1000:
+                abort(429)
+            values=commune_buckets.setdefault(bucket,deque())
+            while values and values[0]<now_time-60:
+                values.popleft()
+            if len(values)>=30:
+                abort(429)
+            values.append(now_time)
+        communes,available=a.load_communes_by_postal_code(postal)
+        response=jsonify(communes=communes,available=available)
+        response.headers['Cache-Control']='private, max-age=300'
+        return response
 
     @application.template_filter('money')
     def money(value):

@@ -1,6 +1,6 @@
-# OpenFabLab Reservations 2.8.2 — version stable
+# OpenFabLab Reservations 2.8.5 — candidate locale
 
-Plugin facultatif pour OpenFabLab **2.8.2**, protocole **4 / révision 3**.
+Plugin facultatif pour OpenFabLab **2.8.5**, protocole **4 / révision 3**.
 OpenFabLab contacte ce site en HTTPS signé pour publier le catalogue, relever
 les demandes et retourner les décisions. WordPress ne décide jamais des places.
 Aucune adresse entrante du NAS ni reverse proxy n’est nécessaire.
@@ -17,9 +17,17 @@ toujours avec vérification d’e-mail/téléphone. Caméra frontale préférée
 traitées localement, aucune capture ni transmission. Saisie manuelle disponible.
 
 Avant remplacement, fermer temporairement la page publique, laisser finir les
-demandes, sauvegarder WordPress (base/options/secret) et OpenFabLab (PRE 16/image).
+demandes, sauvegarder WordPress (base/options/secret) et OpenFabLab (PRE 18/image).
 Extensions → Ajouter → Téléverser le ZIP → remplacer la version existante,
 **sans désinstaller** et sans changer le secret. Mettre à jour OpenFabLab et
 attendre le premier catalogue Normal/Test avant réouverture. Le plugin révision
 3 ne fonctionne pas avec le moteur 2.8.1 révision 2 ; l’attente est normale
 pendant la bascule. Lire `docs/reservations-2.8.2.md` dans l’application.
+
+Cette candidate enrichit la page personnelle « Gérer ma réservation » et ajoute
+le lien facultatif « En savoir plus » reçu du moteur. La révision reste 3 : la
+capacité `animation_information_v1` est annoncée explicitement. OpenFabLab 2.8.5
+reste compatible avec le plugin officiel 2.8.2 (sans ce lien de catalogue) ; le
+plugin 2.8.5 accepte aussi le catalogue 2.8.4. Le stockage WordPress est inchangé.
+Annuler passe par une deuxième étape et une confirmation explicite. Aucun GET ne
+déclenche d’annulation et WordPress attend la décision du moteur.

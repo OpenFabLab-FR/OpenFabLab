@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Rattacher une réservation · OpenFabLab{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block content %}
+<section class="content-heading"><h1>Rattacher à un compte usager</h1></section>
+{% include '_admin_nav.html' %}
+<section class="admin-section"><h2>Participant inscrit</h2><p>{{ booking.first_name }} {{ booking.last_name }}</p>
+<p class="form-help">Ce rapprochement conserve la réservation, son état, ses places et son historique. Il ne crée ni compte ni passage au FabLab.</p>
+{% for error in errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+<form method="post" class="admin-form"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+{% if selected %}<h2>Compte choisi</h2><p>{{ selected.first_name }} {{ selected.last_name }} · #{{ selected.public_id }}</p>
+<input type="hidden" name="person_id" value="{{ selected.id }}">
+<label class="checkbox-field"><input type="checkbox" name="consent" value="1" required><span>Je confirme qu’il s’agit de la même personne et que ce rattachement est correct.</span></label>
+<div class="form-actions"><button class="admin-button primary" name="action" value="attach">Confirmer le rattachement</button><a class="admin-button secondary" href="{{ request.path }}">Choisir un autre compte</a></div>
+{% else %}{% set picker_name='person_id' %}{% set picker_multiple=false %}{% include '_participant_picker.html' %}
+<button class="admin-button primary" name="action" value="preview">Vérifier le rattachement</button>{% endif %}
+</form><p><a href="{{ url_for('admin_animation_bookings',service_id=booking.service_id) }}">Retour aux participants</a></p></section>
+<script src="{{ url_for('static',filename='participant-picker.js') }}" defer></script>
+{% endblock %}

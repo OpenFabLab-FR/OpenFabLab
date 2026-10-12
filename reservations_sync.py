@@ -28,7 +28,7 @@ def sync_interval_seconds(value):
             raise ValueError
         return int(minutes * 60)
     except (InvalidOperation, ValueError):
-        return 90
+        return 60
 
 
 def booking_reservation_status(booking):
@@ -361,7 +361,7 @@ def run_sync_cycle(database, database_path, site_url, now=None, client=None,
         raise ValueError("Environnement de synchronisation invalide")
     if not site_url or not load_sync_secret(database_path):
         return {"configured": False, "imported": 0}
-    if database.execute('PRAGMA user_version').fetchone()[0] not in (17, 18):
-        raise ValueError("La synchronisation nécessite un schéma compatible 17 ou 18.")
+    if database.execute('PRAGMA user_version').fetchone()[0] not in (17, 18, 19):
+        raise ValueError("La synchronisation nécessite un schéma compatible de 17 à 19.")
     from outbound_sync import catalogue
     return catalogue(database, database_path, site_url, client, environments, force=False)

@@ -1,6 +1,17 @@
 # Architecture
 
-## Version stable 2.8.2
+## Version stable 2.8.6
+
+Application 2.8.6, SQLite **19**, plugin facultatif Reservations **2.8.5**,
+protocole **4 / révision 3**. Cette distribution complète conserve le moteur
+transactionnel unique et le relais HTTPS exclusivement sortant. Le passage
+2.8.4 → 2.8.6 inclut les ajouts 18 → 19 de la 2.8.5 ; le passage local
+2.8.5 → 2.8.6 ne change pas le schéma. Les champs de présentation Discord sont
+des paramètres existants, sans nouvelle table/colonne. Les noms sont facultatifs
+et désactivés par défaut ; le journal ne copie aucune identité.
+Voir [la migration](upgrade.md) et [les détails 2.8.6](corrections-2.8.6.md).
+
+## Référence historique 2.8.2
 
 Protocole 4 / révision 3, SQLite 17 : [architecture et migration 2.8.2](reservations-2.8.2.md).
 L’action `guest` utilise le même moteur, verrou de capacité, journal de reçus et
@@ -57,3 +68,10 @@ Les paragraphes suivants décrivent le protocole sortant antérieur, pas l'autor
 OpenFabLab 2.7.0 négocie le protocole 2 et les capabilities `catalog_snapshot_v1` et `custom_categories_v1` : catalogue autoritaire, jamais les réservations WordPress. Les snapshots sont transactionnels et les absents sont masqués sans effacement de l’historique. SQLite utilise le schéma 14, avec migration additive depuis le schéma 13. Voir [les nouveautés 2.7](evolution-2.7.md).
 
 Une animation classique réserve toute sa plage. Une animation en mode créneaux conserve sa fiche globale ; ses créneaux sont des objets internes avec une capacité et une file d'attente indépendantes. Présence, réservation et rattachement à une fiche usager restent trois dimensions distinctes.
+# Apports 2.8.5, distribués dans la stable 2.8.6
+
+Le moteur de réservation est inchangé. Une outbox Discord reçoit, dans la même transaction que l’événement métier, une clé hachée unique et des métadonnées sans coordonnées ni noms. Le worker natif ne contacte Discord qu’après commit ; une livraison ambiguë est conservée comme incertaine, sans renvoi automatique. Les épisodes de panne de synchronisation sont dédupliqués par environnement et canal. Aucun historique ancien n’est réémis.
+
+Les modèles d’e-mails sont des réglages validés ; leur rendu texte/HTML ne modifie ni les destinataires ni les tokens. Le journal SMTP natif reste la source durable. L’annuaire de recherche est limité à l’équipe autorisée et 25 résultats ; les parcours publics n’y accèdent pas.
+
+Le lien d'information est une colonne additive d'animation. Le plugin 2.8.5 annonce une capacité facultative signée ; le champ supplémentaire n'est jamais adressé silencieusement au plugin 2.8.2 strict. Protocole 4/révision 3 et communications exclusivement sortantes conservés. Voir [apports et migration](corrections-2.8.5.md).

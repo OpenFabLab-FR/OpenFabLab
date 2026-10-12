@@ -36,6 +36,8 @@ def local_catalogue(database, settings, current=None, environment='production'):
     result = []
     for row in database.execute('SELECT s.*,c.* FROM fablab_services s JOIN animation_reservation_config c ON c.service_id=s.id WHERE s.service_type=\'animation\' AND c.enabled=1 AND c.environment=? AND s.service_date>=? ORDER BY s.service_date,s.start_time LIMIT 100', (environment,current.astimezone(zone).date().isoformat())):
         item = dict(row)
+        from animation_information import optional_url
+        item['information_url']=optional_url(item.get('information_url',''))
         if not row['start_time'] or not row['end_time']:
             continue
         begin = datetime.fromisoformat(row['service_date']+'T'+row['start_time']).replace(tzinfo=zone)

@@ -86,7 +86,7 @@ class OutboundTests(unittest.TestCase):
         for word in ('Fictif','@','public_id','user_id','responsible','"phone":','"email":'):self.assertNotIn(word,raw)
         self.assertIs(type(data[0]['phone_required']),bool)
     def test_intervals(self):
-        for value in (0,1,9,61,'15.1','nan',None):self.assertEqual(relay.action_interval(value),15)
+        for value in (0,1,9,61,'15.1','nan',None):self.assertEqual(relay.action_interval(value),10)
         for value in (10,15,60):self.assertEqual(relay.action_interval(str(value)),value)
     def test_link_signature_and_scope(self):
         value=relay.issue_link(self.secret,'a'*43,'production','offer',int(time.time())+60)
@@ -129,7 +129,7 @@ class OutboundTests(unittest.TestCase):
         client=mock.Mock();client.post.return_value={'protocol_version':3,'family_gateway_v1':True}
         with self.assertRaises(ValueError):sync.negotiate(client,'production')
     def test_sqlite_schema_and_integrity(self):
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],18)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],19)
         self.assertEqual(self.db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
         self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
@@ -148,7 +148,7 @@ class OutboundTests(unittest.TestCase):
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM sqlite_master WHERE name LIKE 'wordpress_%'").fetchone()[0],0)
         family.migrate(self.db);after=list(self.db.iterdump());family.migrate(self.db)
         self.assertEqual(list(self.db.iterdump()),after)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],18)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],19)
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM animation_bookings WHERE status='confirmed'").fetchone()[0],3)
         self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
@@ -166,6 +166,8 @@ class OutboundTests(unittest.TestCase):
 
     def test_worker_separates_fifteen_second_actions_and_ninety_second_catalogue(self):
         from app import write_setting
+        write_setting(self.db,'reservation_action_interval_seconds','15')
+        write_setting(self.db,'reservation_sync_interval_minutes','1.5')
         write_setting(self.db,'reservation_wordpress_url','https://example.invalid');self.db.commit()
         class StopWorker(BaseException):pass
         clock=[0];catalogue_times=[];poll_times=[]
