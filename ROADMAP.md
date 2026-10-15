@@ -1,8 +1,18 @@
 # OpenFabLab — Roadmap et conception
 
+## Disponible en 2.9.0 stable
+
+Plafonds de liste d’attente configurables, affichages WordPress négociés par
+`waitlist_limits_v1`, notification Discord de saturation, analyses privées de
+fréquentation, catégories de clients et préavis facultatif avant effacement des
+coordonnées. La stable inclut les cinq finitions ergonomiques et de persistance.
+SQLite 20, plugin facultatif 2.9.0, protocole 4 / révision 3 ; les données et
+réglages existants sont conservés. Voir [le guide 2.9.0](docs/evolution-2.9.0.md).
+Le module « Abonnements et crédits » décrit plus bas reste un projet futur.
+
 ## Disponible en 2.8.6 stable — consolidation depuis 2.8.4
 
-La référence stable actuelle réunit les apports développés en 2.8.5 et les
+Cette version historique réunit les apports développés en 2.8.5 et les
 corrections de 2.8.6 : gestion personnelle des réservations, modèles d'e-mails,
 rattachement explicite aux comptes, recherche des communes/participants, exports
 et guides multiplateformes ; recherches initialement vides et notifications
@@ -33,6 +43,28 @@ harmonisé. Voir le [guide 2.8.2](docs/reservations-2.8.2.md).
 La version stable 2.8.1 remplace les appels WordPress → OpenFabLab du protocole 3 par un relais sortant protocole 4 : catalogue public reçu toutes les 90 secondes par défaut, demandes et résultats relevés toutes les 15 secondes (10 à 60 configurables). WordPress ne décide jamais des places. Les liens d’e-mail peuvent revenir vers une page WordPress protégée ; aucun accès entrant au NAS n’est nécessaire. Voir [le fonctionnement et les limites](docs/outbound-2.8.1.md).
 
 Le modèle familial, les groupes indivisibles et la liste d’attente de 2.8.0 restent inchangés. Deux tables techniques sont ajoutées au schéma 16, sans conversion ni suppression de l’historique OpenFabLab. Le moteur historique WordPress et ses outils sont retirés ; ses cinq tables métier sont supprimées sous verrou uniquement si toutes sont vides, sinon elles restent intactes et inutilisées. L’application et le plugin 2.8.1 doivent être installés ensemble après sauvegarde et vérification de chaque installation ; un composant 2.8.0 ne négocie pas ce relais.
+
+## À étudier après 2.9.0 — module facultatif « Abonnements et crédits »
+
+Proposition, sans développement anticipé ni engagement de date. Recueillir
+d’abord les besoins réels de FabLabs associatifs (notamment Made In Roch) et
+d’espaces de coworking (notamment le FIL), puis définir un périmètre générique.
+
+- Cotisations annuelles individuelles ou familiales, abonnements individuels
+  ou collectifs à durée limitée, renouvellements administratifs.
+- Carnets de crédits (par exemple des demi-journées), rechargements et
+  corrections auditables ; distinguer adhésion associative et consommation.
+- Adhésion familiale commune sans fusionner les comptes individuels.
+- Contrôle facultatif de validité/solde à l’identification : désactivé,
+  avertissement ou refus de la **validation d’entrée**, jamais de l’identification
+  elle-même. Les installations n’utilisant pas ce module restent inchangées.
+- Réutiliser usagers, familles, annuaire clients, facturation, fréquentation et
+  permissions ; débits/remboursements transactionnels, audit et anti-double compte.
+
+La 2.9.0 ne crée aucune table, interface, abonnement ni contrôle anticipé.
+Ses catégories de clients sont informatives, ses identifiants techniques et
+relations existantes sont conservés, et l’analyse de fréquentation reste en
+lecture seule : aucun droit ni crédit n’est déduit implicitement de ces données.
 
 ## Familles, mineurs et comptes rattachés
 

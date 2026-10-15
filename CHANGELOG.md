@@ -1,5 +1,31 @@
 # Historique public
 
+## 2.9.0 — version stable — 15 octobre 2026
+
+Finitions intégrées après essais réels : option Discord « Liste d’attente
+complète » enregistrée et relue par le registre commun ; présentation de
+Fréquentation → Usagers harmonisée sans changement des calculs ; préavis déplacé
+après Conservation automatique et formulaire aéré ; filtres clients alignés ;
+plafond personnalisé masqué hors mode personnalisé sans perte de sa valeur.
+Application 2.9.0, SQLite 20, plugin facultatif 2.9.0 et protocole 4/révision 3.
+Les archives approuvées sont distribuées sans reconstruction.
+
+- Plafond d’attente automatique, personnalisé ou illimité ; dérogation par
+  animation, groupes indivisibles, admissions concurrentes transactionnelles.
+  Une baisse ne retire aucune inscription existante ni proposition.
+- Plugin facultatif 2.9.0 : disponibilités négociées, cartes pastel réorganisées,
+  boutons au pied et états de fermeture précis. Protocole 4/révision3 conservé.
+- Discord : « Liste d’attente complète » indépendant, dédupliqué, sans identité.
+- Fréquentation → Usagers : indicateurs réels, historique paginé, graphiques,
+  comparaison égale et cohortes complètes 30/90 jours, recherche privée bornée.
+- Catégories de clients facultatives personnalisables ; aucun droit, contrat,
+  changement de tarif ou document historique implicite.
+- Préavis SMTP facultatif avant effacement des coordonnées : échéance réelle,
+  modèle simple, journal minimal, aucun blocage de purge ni renvoi ambigu.
+- Migration additive SQLite19 →20. « Abonnements et crédits » reste à étudier.
+
+Voir [le périmètre et les limites](docs/evolution-2.9.0.md).
+
 ## 2.8.6 — version stable — 12 octobre 2026
 
 Distribution complète consolidant la version publique 2.8.4, les apports de la

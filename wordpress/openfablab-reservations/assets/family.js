@@ -59,6 +59,31 @@
     if (name === 'public_id') {input.pattern = '[0-9]{4}'; input.inputMode = 'numeric';}
     wrapper.appendChild(input); return wrapper;
   }
+  function availability(animation) {
+    // New state is an authoritative snapshot from OpenFabLab. Legacy fallback
+    // displays the old catalogue only; it does not allocate or promise seats.
+    const state = animation.availability_state || (animation.available > 0 ? 'available' : animation.waitlist_enabled ? 'waiting' : 'full');
+    const result = {state, button:'Réserver',disabled:false,tone:'available'};
+    if(state==='available') result.title=animation.available+' '+(animation.available===1?'place disponible':'places disponibles');
+    else if(state==='waiting') {
+      result.title='Animation complète';result.button='Rejoindre la liste d’attente';result.tone='waiting';
+      result.detail=Number.isInteger(animation.waiting_limit)?'Liste d’attente : '+animation.waiting+'/'+animation.waiting_limit+' places':'Liste d’attente ouverte';
+    } else {
+      result.disabled=true;result.tone='closed';
+      result.title=state==='waiting_full'?'Inscriptions closes':state==='full'?'Animation complète':state==='not_open'?'Réservations pas encore ouvertes':'Réservations terminées';
+      result.button=state==='not_open'?'Ouverture à venir':'Inscriptions closes';
+      if(state==='waiting_full' && Number.isInteger(animation.waiting_limit)) result.detail='Liste d’attente complète : '+animation.waiting+'/'+animation.waiting_limit;
+    }
+    return result;
+  }
+  function slotOption(slot) {
+    const option=node('option','',slot.label);option.value=slot.slot_uuid;
+    if(slot.availability_state) {
+      const state=availability({...slot,waitlist_enabled:true});option.disabled=state.disabled;
+      if(state.disabled) option.textContent+=' · '+state.title;
+    }
+    return option;
+  }
   function init(root) {
     const environment = root.dataset.environment;
     const list = root.querySelector('.openfablab-animation-list');
@@ -75,16 +100,21 @@
           card.dataset.serviceId = String(animation.service_id);
           card.appendChild(node('h3', '', animation.title));
           card.appendChild(node('p', 'openfablab-date', animation.date + ' · ' + animation.hours));
-          card.appendChild(node('p', '', animation.description || ''));
+          const state=availability(animation);
+          const availabilityBox=node('div','openfablab-card-availability');
+          availabilityBox.appendChild(node('span','openfablab-availability-badge is-'+state.tone,state.title));
+          if(state.detail)availabilityBox.appendChild(node('p','openfablab-waiting-detail',state.detail));
+          card.appendChild(availabilityBox);
+          if(animation.description)card.appendChild(node('p','openfablab-description',animation.description));
           if(animation.information_url){
             try{const url=new URL(animation.information_url);if(['http:','https:'].includes(url.protocol)){
               const link=node('a','openfablab-information','En savoir plus sur cette animation');link.href=url.href;link.rel='noopener noreferrer';card.append(link);
             }}catch(_error){}
           }
-          card.appendChild(node('p', 'openfablab-availability', animation.available + ' place(s) disponible(s)' + (animation.waitlist_enabled ? ' · liste d’attente autorisée' : '')));
-          const button = node('button', 'openfablab-button openfablab-reserve-button', 'Réserver'); button.type = 'button';
+          const footer=node('div','openfablab-card-footer');
+          const button = node('button', 'openfablab-button openfablab-reserve-button', state.button); button.type = 'button';button.disabled=state.disabled;
           button.addEventListener('click', () => choose(animation));
-          card.appendChild(button); list.appendChild(card);
+          footer.appendChild(button);card.appendChild(footer);list.appendChild(card);
         });
         markSelection();
       } catch (error) {status.textContent = error.message;}
@@ -143,7 +173,7 @@
         const label = node('label','openfablab-field');label.appendChild(node('span','','Créneau'));
         slots = node('select');slots.required = true;slots.name = 'slot_uuid';
         const empty = node('option','','Choisir un créneau');empty.value = '';slots.appendChild(empty);
-        animation.slots.forEach(slot => {const option = node('option','',slot.label);option.value = slot.slot_uuid;slots.appendChild(option);});
+        animation.slots.forEach(slot => slots.appendChild(slotOption(slot)));
         slots.value = previous.slot_uuid || '';label.appendChild(slots);value.appendChild(label);
       }
       const back = node('button','openfablab-secondary','Changer de parcours');back.type = 'button';back.addEventListener('click',() => choose(animation));value.appendChild(back);
@@ -232,7 +262,7 @@
         const label = node('label', 'openfablab-field');label.appendChild(node('span', '', 'Créneau'));
         slots = node('select');slots.required = true;
         const empty = node('option', '', 'Choisir un créneau');empty.value = '';slots.appendChild(empty);
-        animation.slots.forEach(slot => {const option = node('option', '', slot.label);option.value = slot.slot_uuid;slots.appendChild(option);});
+        animation.slots.forEach(slot => slots.appendChild(slotOption(slot)));
         if (previousSlot) slots.value = previousSlot;
         label.appendChild(slots);value.appendChild(label);
       }

@@ -1,22 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}Modifier {{ client.contact_name }} · OpenFabLab{% endblock %}
+{% block title %}{{ 'Modifier '+client.contact_name if client else 'Créer une fiche client' }} · OpenFabLab{% endblock %}
 {% block body_class %}admin-page billing-page{% endblock %}
 {% block header_action %}<a class="header-link" href="{{ url_for('admin_billing') }}#annuaire-clients">← Annuaire des clients</a>{% endblock %}
 
 {% block content %}
 <section class="content-heading">
     <p class="eyebrow">Facturation · annuaire des clients</p>
-    <h1>Modifier la fiche client</h1>
+    <h1>{{ 'Modifier la fiche client' if client else 'Créer une fiche client' }}</h1>
     <p>Les nouvelles coordonnées prérempliront les prochains devis. Les documents déjà créés conservent leur contenu historique.</p>
 </section>
 
 {% include "_admin_nav.html" %}
 
 <form method="post" class="admin-form billing-form">
+    <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
     <section class="form-section">
         <div class="form-section-heading"><p class="eyebrow">Coordonnées de référence</p><h2>Client et facturation</h2></div>
         <div class="form-grid two-columns">
+            <label class="full-width"><span>Catégorie de client (facultative)</span><select name="client_category"><option value="">Sans catégorie</option>{% for row in client_categories %}{% if row.active or row.category_key==values.client_category %}<option value="{{ row.category_key }}"{% if row.category_key==values.client_category %} selected{% endif %}>{{ row.name }}{% if not row.active %} (archivée){% endif %}</option>{% endif %}{% endfor %}</select><small>Classification informative, sans droits, tarif ou abonnement automatique.</small></label>
             <label><span>Nom du contact *</span><input name="client_contact" type="text" maxlength="160" value="{{ values.client_contact|default('') }}" autocomplete="name" required></label>
             <label><span>Structure *</span><input name="client_structure" type="text" maxlength="180" value="{{ values.client_structure|default('') }}" required></label>
             <label class="full-width"><span>Adresse postale *</span><input name="address_line" type="text" maxlength="220" value="{{ values.address_line|default('') }}" autocomplete="street-address" required></label>

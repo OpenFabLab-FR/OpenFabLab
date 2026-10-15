@@ -12,7 +12,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-SCHEMA = 19
+SCHEMA = 20
 POLICIES = {'none':'Aucun', 'email':'E-mail', 'phone':'Téléphone',
             'either':'E-mail ou téléphone', 'both':'E-mail et téléphone'}
 DEFAULTS = {'family_autonomy_age':'15', 'family_responsible_age':'18',
@@ -40,9 +40,9 @@ def backup_before(db, path):
     """Coherent offline PRE before *any* initialization writes, not a DB copy."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
     if version > SCHEMA:
-        raise RuntimeError('Base plus récente que la candidate 2.8.5 ; démarrage refusé.')
+        raise RuntimeError('Base plus récente que la candidate 2.9.0 ; démarrage refusé.')
     extra_needed = (version == 15 and not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_booking_groups'").fetchone())
-    if version not in (14, 15, 16, 17, 18) and not extra_needed:
+    if version not in (14, 15, 16, 17, 18, 19) and not extra_needed:
         return None
     root = Path(path).parent / 'migration-backups'
     root.mkdir(mode=0o700, exist_ok=True)
@@ -56,9 +56,9 @@ def backup_before(db, path):
 
 
 def migrate(db, fail_after=None):
-    """Additive migration through schema19; existing business IDs stay intact."""
+    """Additive migration through schema20; existing business IDs stay intact."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
-    if version not in (14, 15, 16, 17, 18, SCHEMA):
+    if version not in (14, 15, 16, 17, 18, 19, SCHEMA):
         # Earlier schemas must first complete the existing evolution migration.
         # In particular, never stamp an incomplete old database as schema 15.
         if version > SCHEMA:
@@ -125,11 +125,13 @@ def migrate(db, fail_after=None):
         for user in db.execute('SELECT * FROM users').fetchall():
             db.execute('INSERT OR IGNORE INTO family_age_observations(user_id,was_responsible) VALUES(?,?)',
                        (user['id'], int(state(db,user,today)=='responsible')))
+        from v290_schema import ensure as ensure_290
+        ensure_290(db)
         if fail_after:
             fail_after(db)
         if db.execute('PRAGMA foreign_key_check').fetchall() or db.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
             raise RuntimeError('Migration famille refusée : intégrité invalide.')
-        db.execute('PRAGMA user_version=19')
+        db.execute('PRAGMA user_version=20')
         db.commit()
     except Exception:
         db.rollback()

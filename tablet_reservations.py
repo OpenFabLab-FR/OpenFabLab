@@ -29,7 +29,7 @@ def timestamp():
     return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
 
-def local_catalogue(database, settings, current=None, environment='production'):
+def local_catalogue(database, settings, current=None, environment='production',include_closed=False):
     """Read-only local projection; availability is indicative, never a promise."""
     current = current or datetime.now(timezone.utc)
     zone = ZoneInfo(settings(database, 'structure_timezone', 'Europe/Paris'))
@@ -45,24 +45,43 @@ def local_catalogue(database, settings, current=None, environment='production'):
         opening = datetime.fromisoformat(row['signup_open_at'].replace('Z','+00:00')) if row['signup_open_at'] else None
         if opening and not opening.tzinfo:
             opening = opening.replace(tzinfo=zone)
-        if opening and opening > current:
+        if finish<=current:
+            continue
+        if opening and opening > current and not include_closed:
             continue
         item['slots'] = []
         if row['booking_mode'] == 'slots':
             for slot in database.execute('SELECT * FROM animation_slots WHERE service_id=? AND active=1 ORDER BY starts_at', (row['service_id'],)):
                 start = datetime.fromisoformat(slot['starts_at']).astimezone(zone)
-                if current >= start - timedelta(minutes=row['close_minutes']):
+                if current >= datetime.fromisoformat(slot['ends_at']):continue
+                if current >= start - timedelta(minutes=row['close_minutes']) and not include_closed:
                     continue
                 entry = dict(slot, label=start.strftime('%d/%m/%Y · %H:%M')+'–'+datetime.fromisoformat(slot['ends_at']).astimezone(zone).strftime('%H:%M'))
                 entry['available'] = max(0,slot['capacity']-booking_capacity_used(database,row['service_id'],slot['slot_uuid']))
+                if include_closed:
+                    from waitlist_limits import availability
+                    snapshot=availability(database,dict(item,capacity=slot['capacity']),slot['slot_uuid'],environment,current)
+                    entry.update(availability_state=snapshot['state'],waiting=snapshot['waiting'],waiting_limit=snapshot['waiting_limit'])
+                    if snapshot['state'] not in ('available','waiting'):entry['available']=0
                 item['slots'].append(entry)
             if not item['slots']:
                 continue
             item['available'] = sum(s['available'] for s in item['slots'])
         else:
-            if current >= begin - timedelta(minutes=row['close_minutes']):
+            if current >= begin - timedelta(minutes=row['close_minutes']) and not include_closed:
                 continue
             item['available'] = max(0,row['capacity']-booking_capacity_used(database,row['service_id']))
+        if include_closed:
+            from waitlist_limits import availability
+            if item['slots']:
+                states={slot['availability_state'] for slot in item['slots']}
+                state=next((state for state in ('available','waiting','waiting_full','full','not_open','closed') if state in states),'closed')
+                item.update(availability_state=state,waiting=sum(slot['waiting'] for slot in item['slots']),
+                    waiting_limit=None if any(slot['waiting_limit'] is None for slot in item['slots']) else sum(slot['waiting_limit'] for slot in item['slots']))
+            else:
+                snapshot=availability(database,item,None,environment,current)
+                item.update(availability_state=snapshot['state'],waiting=snapshot['waiting'],waiting_limit=snapshot['waiting_limit'])
+                if snapshot['state'] not in ('available','waiting'):item['available']=0
         item.update(date=begin.strftime('%d/%m/%Y'), hours=begin.strftime('%H:%M')+'–'+finish.strftime('%H:%M'))
         result.append(item)
     return result

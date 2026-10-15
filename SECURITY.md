@@ -8,8 +8,8 @@ Décrire les versions concernées, les étapes reproductibles avec des données 
 
 ## Protection d'une installation
 
-Version de référence : **OpenFabLab 2.8.6 / SQLite 19**, plugin facultatif
-**Reservations 2.8.5 / protocole 4, révision 3**. Les informations nominatives des
+Version de référence : **OpenFabLab 2.9.0 / SQLite 20**, plugin facultatif
+**Reservations 2.9.0 / protocole 4, révision 3**. Les informations nominatives des
 notifications Discord de réservation sont désactivées par défaut et doivent
 résulter d'un choix explicite, indépendant des notifications de création d'usager.
 Ne pas inclure de coordonnées, jeton ou lien privé dans un libellé destiné à Discord.

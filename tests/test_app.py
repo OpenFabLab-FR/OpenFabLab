@@ -25,7 +25,7 @@ class BrowserClient(FlaskClient):
     Security-negative tests explicitly use an unwrapped FlaskClient instead.
     """
     def post(self, path, *args, **kwargs):
-        if path=='/admin/usagers/nouveau' or (path.startswith('/admin/usagers/') and path.endswith('/modifier')):
+        if path=='/admin/usagers/nouveau' or (path.startswith('/admin/usagers/') and path.endswith('/modifier')) or (path.startswith('/admin/facturation/clients/') and path.endswith('/modifier')):
             page=self.get(path).get_data(as_text=True)
             token=re.search(r'name="evolution_csrf" value="([^"]+)"',page)
             if token and isinstance(kwargs.get('data'),dict):
@@ -4646,7 +4646,7 @@ class OpenFabLabTestCase(unittest.TestCase):
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_latitude'").fetchone()[0], "")
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_longitude'").fetchone()[0], "")
                 self.assertEqual(database.execute("SELECT value FROM app_settings WHERE key='structure_privacy_policy_url'").fetchone()[0], "")
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],19)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],20)
             create_app({"TESTING": True, "DATABASE": path, "ADMIN_PIN": None,
                         "MODERATOR_PIN": None, "SEED_DEMO_USERS": False})
             with sqlite3.connect(path) as database:
@@ -5133,8 +5133,11 @@ class OpenFabLabTestCase(unittest.TestCase):
         walkin = page[page.index("Ajouter des participants"):]
         self.assertIn('name="person_ids"', walkin)
         self.assertNotIn('name="first_name"', walkin)
-        self.assertLess(walkin.index("Anne AUBE"), walkin.index("Anne ZED"))
-        self.assertLess(walkin.index("Anne ZED"), walkin.index("Éloi TEST"))
+        self.assertNotIn("Anne AUBE",walkin)  # No initial directory in 2.8.6+.
+        result=self.client.get('/admin/api/participants?q=e').json['users']
+        names=[row['first_name']+' '+row['last_name'] for row in result]
+        self.assertLess(names.index("Anne AUBE"),names.index("Anne ZED"))
+        self.assertLess(names.index("Anne ZED"),names.index("Éloi TEST"))
 
     def test_v250_animation_walkin_edits_do_not_change_user_or_forward_moderator_override(self):
         service_id, token = self._animation_booking_fixture(3)
@@ -5173,7 +5176,7 @@ class OpenFabLabTestCase(unittest.TestCase):
             self.assertIn("openfablab-reservations/includes/class-openfablab-admin.php", names)
             self.assertFalse(any('bookings' in name or 'test-maintenance' in name or 'slots.php' in name for name in names))
             self.assertIn('request_key', current_script)
-            self.assertIn(b"Version: 2.8.5", archive_header)
+            self.assertIn(b"Version: 2.9.0", archive_header)
             self.assertTrue(all(name.startswith("openfablab-reservations/") for name in names))
             self.assertFalse(any(name.endswith((".db", ".sqlite", ".png")) for name in names))
             self.assertEqual(logo, Path("static/brand/OpenFabLab-logo-horizontal.svg").read_bytes())
@@ -5215,7 +5218,8 @@ class OpenFabLabTestCase(unittest.TestCase):
             write_setting(database, "module_public_reservations", "1")
             database.commit()
         privacy = self.client.get("/gestion-des-donnees").get_data(as_text=True)
-        self.assertIn("Pour réserver en ligne, un plugin sur le site WordPress", privacy)
+        self.assertIn("Pour réserver en ligne, le plugin facultatif WordPress", privacy)
+        self.assertIn("Aucun annuaire général n’est transmis",privacy)
         self.assertNotIn("Pour une réservation en ligne, un composant", privacy)
         self.login_admin()
         animation = self.client.get("/admin/animations/nouveau").get_data(as_text=True)
@@ -5536,7 +5540,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
             create_app(config)
             with sqlite3.connect(database_path) as database:
                 after = {table: database.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in before}
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],19)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],20)
                 self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
                 self.assertEqual(database.execute("PRAGMA foreign_key_check").fetchall(), [])
                 self.assertTrue(database.execute("SELECT 1 FROM sqlite_master WHERE name='security_events'").fetchone())
@@ -5598,7 +5602,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                 ("1001", "Victor", "EXEMPLE", "user", None, None,
                  None, "+33", None),
             )
-            self.assertEqual(schema_version,19)
+            self.assertEqual(schema_version,20)
 
 
     def test_v23_schema_migrates_to_v240_without_losing_rows(self):
@@ -5630,7 +5634,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                 integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
                 foreign_keys = database.execute("PRAGMA foreign_key_check").fetchall()
             self.assertEqual(after, before)
-            self.assertEqual(schema_version,19)
+            self.assertEqual(schema_version,20)
             self.assertIsNotNone(audit_table)
             self.assertEqual(integrity, "ok")
             self.assertEqual(foreign_keys, [])
@@ -5638,7 +5642,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
             # La migration doit être rejouable sur une base déjà au schéma 8.
             create_app({"TESTING": True, "DATABASE": database_path})
             with sqlite3.connect(database_path) as database:
-                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],19)
+                self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],20)
                 self.assertEqual(
                     database.execute("SELECT COUNT(*) FROM attendance_corrections").fetchone()[0],
                     0,
@@ -5698,7 +5702,7 @@ class DatabaseMigrationTestCase(unittest.TestCase):
                     "precipitation_mm", "created_at",
                 },
             )
-            self.assertEqual(schema_version,19)
+            self.assertEqual(schema_version,20)
             self.assertEqual(integrity, "ok")
             self.assertEqual(foreign_keys, [])
 
@@ -5838,7 +5842,7 @@ class NasDeploymentTestCase(unittest.TestCase):
                 ("TEST", "volunteer", "+33", "06 10 10 10 10"),
             )
             self.assertEqual(session_count, 1)
-            self.assertEqual(schema_version,19)
+            self.assertEqual(schema_version,20)
 
 
 if __name__ == "__main__":

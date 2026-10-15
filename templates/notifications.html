@@ -63,6 +63,7 @@
                 ('offer_accepted', 'Place acceptée'),
                 ('link_review', 'Rattachement à vérifier'),
                 ('animation_full', 'Animation complète'),
+                ('waitlist_full', 'Liste d’attente complète'),
                 ('email_error', 'Erreur d’envoi d’un e-mail'),
                 ('sync_error', 'Erreur de synchronisation')
             ] %}
@@ -124,7 +125,7 @@
         <details class="reservation-secondary"><summary>Textes principaux des réservations</summary>
         <p class="form-help">Personnalisez simplement le libellé de chaque événement. Les informations cochées ci-dessus sont ajoutées automatiquement, sans variable à saisir.</p>
         <div class="form-grid notification-message-grid">
-        {% for key,label in [('new_booking','Nouvelle réservation'),('waitlist_entry','Entrée en liste d’attente'),('cancellation','Annulation'),('offer_proposed','Place proposée'),('offer_accepted','Place acceptée'),('link_review','Rattachement à vérifier'),('animation_full','Animation complète')] %}
+        {% for key,label in [('new_booking','Nouvelle réservation'),('waitlist_entry','Entrée en liste d’attente'),('cancellation','Annulation'),('offer_proposed','Place proposée'),('offer_accepted','Place acceptée'),('link_review','Rattachement à vérifier'),('animation_full','Animation complète'),('waitlist_full','Liste d’attente complète')] %}
         <label class="form-field"><span>{{ label }}</span><input type="text" name="reservation_message_{{ key }}" maxlength="150" value="{{ discord.reservation_presentation.messages[key] }}"></label>
         {% endfor %}
         </div></details>

@@ -112,10 +112,21 @@
             <p>Ces fiches préremplissent les prochains devis. Les coordonnées déjà inscrites dans les anciens documents restent inchangées.</p>
         </div>
         <div class="document-actions billing-client-export-actions" aria-label="Exporter l’annuaire des clients">
+            <a class="admin-button primary compact" href="{{ url_for('client_categories.new') }}">Créer une fiche client</a>
             <a class="admin-button secondary compact" href="{{ url_for('admin_billing_clients_export', output_format='xlsx') }}">XLSX</a>
             <a class="admin-button secondary compact" href="{{ url_for('admin_billing_clients_export', output_format='pdf') }}">PDF</a>
         </div>
     </div>
+    <form method="get" action="{{ url_for('admin_billing') }}#annuaire-clients" class="client-directory-filters">
+        <label><span>Rechercher un client</span><input name="client_q" type="search" value="{{ client_search }}" maxlength="80" placeholder="Contact ou structure"></label>
+        <label><span>Catégorie de client</span><select name="client_category"><option value="">Toutes les catégories</option>{% for row in client_categories %}<option value="{{ row.category_key }}"{% if row.category_key==client_category_filter %} selected{% endif %}>{{ row.name }}{% if not row.active %} (archivée){% endif %}</option>{% endfor %}</select></label>
+        <button class="admin-button secondary compact" type="submit">Filtrer l’annuaire</button>
+    </form>
+    <details class="form-section"><summary>Personnaliser les catégories de clients</summary>
+        <p>Ces catégories sont distinctes des catégories d’usagers. Archiver conserve les fiches déjà classées.</p>
+        {% for row in client_categories %}<form method="post" action="{{ url_for('client_categories.save') }}" class="form-grid two-columns"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="category_key" value="{{ row.category_key }}"><label><span>Libellé</span><input name="name" value="{{ row.name }}" maxlength="80" required></label><label class="checkbox-label"><input type="checkbox" name="active" value="1"{% if row.active %} checked{% endif %}> Proposer cette catégorie</label><button class="admin-button secondary compact">Enregistrer</button></form>{% endfor %}
+        <form method="post" action="{{ url_for('client_categories.save') }}" class="form-grid two-columns"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="active" value="1"><label><span>Nouvelle catégorie</span><input name="name" maxlength="80" required></label><button class="admin-button primary compact">Ajouter</button></form>
+    </details>
     <div class="table-scroll">
         <table class="billing-table">
             <thead><tr><th>Contact</th><th>Structure</th><th>Adresse</th><th>Coordonnées</th><th>Dossiers</th><th>Action</th></tr></thead>
@@ -123,14 +134,14 @@
                 {% for client in clients %}
                     <tr>
                         <td data-label="Contact"><strong>{{ client.contact_name }}</strong></td>
-                        <td data-label="Structure">{{ client.structure_name }}</td>
+                        <td data-label="Structure">{{ client.structure_name }}<br><small>{{ client_category_labels.get(client.category_key,'Sans catégorie') }}</small></td>
                         <td data-label="Adresse">{{ client.address_line }}<br><small>{{ client.postal_code }} {{ client.city }}</small></td>
                         <td data-label="Coordonnées">{{ client.email or 'Aucun e-mail' }}<br><small>{{ client.phone or 'Aucun téléphone' }}</small></td>
                         <td data-label="Dossiers">{{ client.record_count }}</td>
                         <td data-label="Action"><a class="table-action" href="{{ url_for('admin_billing_client_form', client_id=client.id) }}">Modifier</a></td>
                     </tr>
                 {% else %}
-                    <tr><td class="table-empty" colspan="6">L'annuaire sera alimenté lors de la création du premier devis.</td></tr>
+                    <tr><td class="table-empty" colspan="6">Aucune fiche client pour ces filtres. Vous pouvez créer une fiche ou un devis.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

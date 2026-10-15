@@ -361,7 +361,7 @@ def run_sync_cycle(database, database_path, site_url, now=None, client=None,
         raise ValueError("Environnement de synchronisation invalide")
     if not site_url or not load_sync_secret(database_path):
         return {"configured": False, "imported": 0}
-    if database.execute('PRAGMA user_version').fetchone()[0] not in (17, 18, 19):
-        raise ValueError("La synchronisation nécessite un schéma compatible de 17 à 19.")
+    if database.execute('PRAGMA user_version').fetchone()[0] not in (17, 18, 19, 20):
+        raise ValueError("La synchronisation nécessite un schéma compatible de 17 à 20.")
     from outbound_sync import catalogue
     return catalogue(database, database_path, site_url, client, environments, force=False)

@@ -35,6 +35,10 @@
             <div class="form-field"><label for="close-minutes">Fermeture avant l'animation (minutes)</label><input id="close-minutes" name="close_minutes" type="number" min="0" max="1440" value="{{ online_config.close_minutes }}"></div>
             <input type="hidden" name="accompaniment_under_age" value="{{ online_config.accompaniment_under_age }}"><p class="form-help">L’autonomie et les responsables se règlent dans Usagers → Âges, autonomie et familles.</p>
             <label class="checkbox-field reservation-checkbox"><input type="checkbox" name="waitlist_enabled" value="1" {% if online_config.waitlist_enabled %}checked{% endif %}><span><strong>Activer la liste d'attente</strong></span></label>
+            <div class="form-grid two-columns">
+                <label class="form-field"><span>Limite de la liste d’attente</span><select name="waitlist_limit_mode">{% for key,label in [('general','Utiliser le réglage général'),('custom','Limite personnalisée'),('unlimited','Sans limite')] %}<option value="{{ key }}" {% if (online_config.waitlist_limit_mode or 'general')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><small>Par créneau si l’animation utilise des créneaux. Aucun groupe n’est scindé.</small></label>
+                <label class="form-field"><span>Personnes en attente — limite personnalisée</span><input name="waitlist_limit_value" type="number" min="0" max="100000" step="1" value="{{ online_config.waitlist_limit_value or 0 }}"><small>Réduire cette valeur conserve l’attente et les propositions existantes ; seules les nouvelles entrées sont limitées.</small></label>
+            </div>
             <input type="hidden" name="reminder_one_hours" value="{{ online_config.reminder_one_hours or 0 }}">
             <input type="hidden" name="reminder_two_hours" value="{{ online_config.reminder_two_hours or 0 }}">
         </div>

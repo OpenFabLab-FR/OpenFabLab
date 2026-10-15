@@ -7,7 +7,7 @@ L’image Python de base est décrite dans la [liste officielle docker-library](
 | Environnement | Portée réelle |
 |---|---|
 | macOS ARM64, Python et navigateurs locaux | Environnement des tests applicatifs et simulations. Pas une image Linux. |
-| Synology 64 bits | Version 2.8.6 et notifications Discord réelles validées par l'exploitant sur son installation ; pas une certification de tous les modèles ou architectures. |
+| Synology 64 bits | Version 2.9.0 et candidate corrective 2 validées par l'exploitant sur son installation ; pas une certification de tous les modèles ou architectures. |
 | Linux AMD64 / ARM64 | Guides et métadonnées de dépendances vérifiés ; pas de nouveau build Docker ni essai Linux réel ici. |
 | Raspberry Pi 3/4/5 64 bits | Étude conditionnelle, sans essai physique ni certification. |
 | Windows 11 + WSL2/Docker Desktop | Guide préparé, non exécuté matériellement. |

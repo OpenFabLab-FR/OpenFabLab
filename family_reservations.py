@@ -154,6 +154,9 @@ def _store(db, owner_id, people, details, service, slot_uuid, environment, reque
     state='confirmed' if available>=len(people) else 'waitlisted'
     if state=='waitlisted' and not service['waitlist_enabled']:
         raise ValueError('Il ne reste pas assez de places pour tout le groupe. La liste d’attente est fermée.')
+    if state=='waitlisted':
+        from waitlist_limits import require_room
+        require_room(db,service,len(people),slot_uuid,environment)
     group=str(uuid4());now=family.timestamp()
     for person in people:
         guest=source=='guest_wordpress'
@@ -369,6 +372,9 @@ def team_action(db, service_id, booking_uuid, action, role, person_id=None):
             from reservations_sync import booking_capacity_used
             if group[0]['status']=='confirmed' and booking_capacity_used(db,service_id,booking['slot_uuid'])>=service['capacity']:
                 raise ValueError('Aucune place disponible. Le groupe confirmé reste inchangé.')
+            if group[0]['status']=='waitlisted':
+                from waitlist_limits import require_room
+                require_room(db,service,1,booking['slot_uuid'],booking['environment'])
             db.execute('''INSERT INTO animation_bookings(external_uuid,service_id,environment,first_name,last_name,birth_year,email,phone,status,link_status,public_id,user_id,group_uuid,source,is_present,created_at,updated_at,slot_uuid)
                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
                 (str(uuid4()),service_id,booking['environment'],person['first_name'],person['last_name'],person['birth_year'],None,None,group[0]['status'],'registered',person['public_id'],person['id'],booking['group_uuid'],'family_administration',None,now,now,booking['slot_uuid']))

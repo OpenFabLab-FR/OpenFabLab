@@ -27,7 +27,7 @@ class NotificationPresentationTests(unittest.TestCase):
         self.assertIn('Animation : Atelier de broderie fictif',text);self.assertIn('Date :',text)
         self.assertIn('de 10h à 12h',text);self.assertIn('Participants : 1',text);self.assertIn('Places restantes : 3',text)
         for secret in ('Camille','EXEMPLE','person0@','060000','2001','http','token'):self.assertNotIn(secret,text)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],19)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],20)
     def test_first_name_only_initial_and_full_name_are_independent(self):
         self.f.book([self.f.f.a]);row=self.db.execute("SELECT * FROM reservation_discord_events WHERE event_type='new_booking'").fetchone()
         for options,expected,absent in [({'first_name':1},'Réservant : Camille','EXEMPLE'),({'first_name':1,'last_initial':1},'Réservant : Camille E.','EXEMPLE'),({'first_name':1,'last_initial':1,'last_name':1},'Réservant : Camille EXEMPLE','Camille E.')]:

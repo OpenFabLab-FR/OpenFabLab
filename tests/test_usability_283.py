@@ -52,7 +52,7 @@ class UsabilityTests(unittest.TestCase):
         self.db.execute('PRAGMA user_version=17'); self.db.commit()
         application.create_app(dict(self.f.app.config))
         self.assertEqual(ui.enrollment_mode(self.db),'automatic_discreet')
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],19)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],20)
 
     def test_existing_choice_retained_on_restart(self):
         self.set(public_id_assignment_mode='customizable',attendance_reference='30')
@@ -226,7 +226,7 @@ class UsabilityTests(unittest.TestCase):
 
     def test_no_change_to_reservation_or_plugin_runtime(self):
         root=Path(__file__).resolve().parents[1]
-        self.assertIn('Version: 2.8.5',(root/'wordpress/openfablab-reservations/openfablab-reservations.php').read_text())
+        self.assertIn('Version: 2.9.0',(root/'wordpress/openfablab-reservations/openfablab-reservations.php').read_text())
         self.assertEqual(dict(application.default_application_settings())['reservation_sync_interval_minutes'],'1')
         from outbound_actions import action_interval
         self.assertEqual(action_interval('15'),15)
@@ -254,7 +254,7 @@ class UsabilityTests(unittest.TestCase):
         self.assertEqual(users,[tuple(r) for r in self.db.execute('SELECT * FROM users')])
         self.assertEqual(settings,[tuple(r) for r in self.db.execute('SELECT * FROM app_settings ORDER BY key')])
         family_model.migrate(self.db)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],19)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],20)
 
     def dossier(self):
         self.f.login_admin()

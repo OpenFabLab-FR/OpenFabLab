@@ -51,7 +51,7 @@ async function image(page,text){await page.evaluate(async text=>{const img=new I
    const context=await browser.newContext({viewport:{width,height:900}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
    await setup(page,base,false,width===430);
    ok(!(await page.textContent('body')).includes('Disponibilité indicative'),'removed availability warning');
-   ok((await page.textContent('body')).includes('liste d’attente autorisée'),'waitlist natural wording');
+   ok(!(await page.locator('.openfablab-card').first().textContent()).includes('Liste d’attente'),'available card does not mention waiting before full');
    ok(!(await page.locator('.openfablab-card').nth(1).textContent()).includes('liste d’attente'),'no false waitlist label');
    await page.getByRole('button',{name:'Réserver',exact:true}).first().focus();
    ok(await page.getByRole('button',{name:'Réserver',exact:true}).first().evaluate(el=>getComputedStyle(el).outlineStyle!=='none'),'visible keyboard focus');

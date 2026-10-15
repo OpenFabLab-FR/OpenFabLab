@@ -1,6 +1,6 @@
 <nav class="admin-tabs" aria-label="Navigation principale de l’administration">
     {% if modules.activities %}<a class="admin-tab{% if request.endpoint=='evolution.calendar' %} active{% endif %}" href="{{ url_for('evolution.calendar') }}">Calendrier</a>{% endif %}
-    {% if modules.frequency %}<a class="admin-tab{% if request.endpoint in ('admin', 'admin_frequency_day', 'admin_statistics', 'admin_frequency_exports') %} active{% endif %}" href="{{ url_for('admin') }}">Fréquentation</a>{% endif %}
+    {% if modules.frequency %}<a class="admin-tab{% if request.endpoint in ('admin', 'admin_frequency_day', 'admin_statistics', 'admin_frequency_exports', 'attendance_analysis.page') %} active{% endif %}" href="{{ url_for('admin') }}">Fréquentation</a>{% endif %}
     {% if modules.users %}<a class="admin-tab{% if request.endpoint in ('admin_users_directory', 'admin_add_user', 'admin_edit_user', 'admin_user_qr', 'admin_user_badge') %} active{% endif %}" href="{{ url_for('admin_users_directory') }}">Usagers</a>{% endif %}
     {% if modules.activities %}<a class="admin-tab{% if request.endpoint in ('admin_services', 'admin_service_form', 'admin_delete_service', 'admin_service_calendar', 'evolution.resource_directory', 'evolution.resource_bookings', 'evolution.authorizations') %} active{% endif %}" href="{{ url_for('admin_services') }}">Activités</a>{% endif %}
     {% if admin_access_role == 'moderator' %}

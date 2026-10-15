@@ -18,6 +18,7 @@
 </aside>
 
 <div class="data-information-grid">
+    {% if contact_notice is defined %}{% include '_contact_notice.html' %}{% endif %}
     <section class="admin-section">
         <h2>Responsable du traitement</h2>
         {% if structure.data_controller %}
@@ -37,12 +38,13 @@
         <h2>Données et finalités</h2>
         <p>Certaines informations sont nécessaires à la création d’un compte {{ structure.name }} afin d’assurer la gestion du service, les inscriptions aux activités, la possibilité de vous contacter en cas de besoin et la production de statistiques anonymisées permettant d’évaluer la fréquentation et les publics du FabLab. Les données collectées sont limitées aux besoins de son fonctionnement et soumises à des durées de conservation définies.</p>
         <p>Le suivi de fréquentation conserve les heures d’arrivée et de départ. Les visiteurs anonymes sont comptabilisés sans donnée personnelle.</p>
-            {% if modules.public_reservations %}<p>Pour réserver en ligne, un plugin sur le site WordPress reçoit les coordonnées des participants. Un annuaire privé des usagers actifs contient les informations nécessaires pour vérifier leur compte et préremplir une réservation : identifiant, prénom, nom, année de naissance, e-mail, téléphone et catégorie. Ces informations ne sont accessibles au formulaire qu’après vérification de l’identifiant et d’au moins une coordonnée concordante. Elles restent modifiables pour la réservation, sans modifier la fiche usager. Les réservations et changements sont ensuite synchronisés avec OpenFabLab par des connexions HTTPS initiées par le serveur du FabLab. Aucun accès entrant au NAS n’est nécessaire.</p>{% endif %}
+            {% if modules.public_reservations %}<p>Pour réserver en ligne, le plugin facultatif WordPress reçoit une demande et les coordonnées nécessaires au parcours. OpenFabLab vérifie lui-même le compte avec l’identifiant et une coordonnée concordante, puis fournit uniquement les choix familiaux autorisés. Aucun annuaire général n’est transmis au navigateur ou maintenu par WordPress. Le parcours sans compte, s’il est autorisé, ne crée aucune fiche usager. Les demandes et décisions circulent par HTTPS signé, initié exclusivement par OpenFabLab ; WordPress n’attribue jamais les places. Aucun accès entrant au NAS n’est nécessaire.</p>{% endif %}
     </section>
     <section class="admin-section">
         <h2>Stockage et accès</h2>
         <p>Les données principales sont stockées dans une base SQLite sur le serveur de {{ structure.name }}. Elles ne sont pas confiées à un service publicitaire ni à un service de QR code externe.</p>
         <p>Si l’envoi de bienvenue est configuré et demandé, l’adresse e-mail, le message, l’identifiant et le QR Code sont transmis au fournisseur SMTP choisi par la structure. Ce service reste facultatif et indépendant de WordPress.</p>
+        <p>Si l’équipe active le préavis d’effacement des coordonnées, l’adresse du compte concerné et la date prévue d’effacement sont transmises au fournisseur SMTP configuré par la structure. Aucun responsable familial n’est contacté par défaut ; le journal technique de ce préavis ne conserve aucune copie d’adresse ni contenu d’e-mail.</p>
         {% if modules.discord %}<p>Lorsque les notifications Discord sont activées, les seuls renseignements sélectionnés par l’équipe peuvent être transmis aux destinataires de son espace Discord. La notification facultative de création de compte n’envoie jamais les coordonnées, l’identifiant ou le QR Code.</p>{% endif %}
         <p>L’accès aux informations nominatives, aux exports et aux opérations de sauvegarde ou de restauration est protégé par l’administration. Il est réservé au Fabmanager et, le cas échéant, aux agents expressément habilités, uniquement pour la gestion du lieu, le suivi de la fréquentation et la réalisation des bilans.</p>
         <p>La météo affichée à l'accueil est obtenue sans transmettre de donnée personnelle. Source : <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>.</p>

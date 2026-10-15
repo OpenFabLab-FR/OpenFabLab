@@ -39,6 +39,8 @@ BILLING_KEYS = {
     "billing_rental_contract_fee_cents", "billing_rental_delivery_fee_cents",
 }
 EXACT_KEYS = {
+    'retention_contact_notice_enabled','retention_contact_notice_days',
+    'retention_contact_notice_subject','retention_contact_notice_body',
     'public_id_assignment_mode', 'attendance_reference',
     'anonymous_visitor_color',
     'home_title','family_autonomy_age','family_responsible_age','family_contact_dependent','family_contact_autonomous','family_contact_responsible',
@@ -70,6 +72,7 @@ DISCORD_RESERVATION_KEYS = {
     "discord_reservation_cancellation", "discord_reservation_offer_proposed",
     "discord_reservation_offer_accepted", "discord_reservation_link_review",
     "discord_reservation_animation_full", "discord_reservation_email_error",
+    "discord_reservation_waitlist_full",
     "discord_reservation_sync_error",
 }
 from reservation_notifications import DETAILS as RESERVATION_DETAILS,MESSAGE_KINDS as RESERVATION_MESSAGE_KINDS
@@ -109,6 +112,7 @@ def allowed_setting(key):
             "reservation_reminder_one_hours", "reservation_reminder_two_hours",
             "reservation_sync_interval_minutes",
             "reservation_action_interval_seconds", "reservation_link_mode",
+            "reservation_waitlist_limit_mode", "reservation_waitlist_limit_value",
         }
     if key in DISCORD_MESSAGE_KEYS | DISCORD_NOTIFY_KEYS | DISCORD_RESERVATION_KEYS | DISCORD_RESERVATION_DETAIL_KEYS | DISCORD_RESERVATION_MESSAGE_KEYS:
         return True
@@ -121,7 +125,7 @@ def allowed_setting(key):
     return False
 
 
-def build_profile(settings, machines, assets, tariffs=None, categories=None, resource_types=None):
+def build_profile(settings, machines, assets, tariffs=None, categories=None, resource_types=None, client_categories=None):
     safe_settings = {key: value for key, value in settings.items() if allowed_setting(key)}
     if not all(isinstance(value, str) for value in safe_settings.values()):
         raise ValueError("Réglage du profil invalide.")
@@ -133,6 +137,7 @@ def build_profile(settings, machines, assets, tariffs=None, categories=None, res
         "machines": machines,
         "tariffs": tariffs or [],
         'categories': categories or [], 'resource_types': resource_types or [],
+        'client_categories': client_categories or [],
         "assets": {name: hashlib.sha256(raw).hexdigest() for name, raw in assets.items()},
     }
     memory = io.BytesIO()
@@ -165,6 +170,17 @@ def parse_profile(raw):
             digests = manifest.get("assets")
             category_registry = manifest.get('categories', [])
             type_registry = manifest.get('resource_types', [])
+            client_registry = manifest.get('client_categories', [])
+            if not isinstance(client_registry,list) or len(client_registry)>500:
+                raise ValueError('Catégories de clients invalides.')
+            from client_categories import validate_entry
+            from participant_search import normalized
+            client_keys=set();client_names=set()
+            for entry in client_registry:
+                validate_entry(entry)
+                if entry['category_key'] in client_keys or normalized(entry['name']) in client_names:
+                    raise ValueError('Catégorie de client en double.')
+                client_keys.add(entry['category_key']);client_names.add(normalized(entry['name']))
             for registry, key_field, has_default in ((category_registry,'category_key',True),(type_registry,'type_key',False)):
                 if not isinstance(registry,list) or len(registry)>500:
                     raise ValueError('Annuaire de profil invalide.')
@@ -194,10 +210,22 @@ def parse_profile(raw):
                     raise ValueError("Le profil contient un réglage non autorisé.")
                 if key=='home_title' and (not value.strip() or len(value)>40 or any(ord(c)<32 for c in value)):
                     raise ValueError('Titre d’accueil invalide.')
+                if key=='retention_contact_notice_enabled' and value not in ('0','1'):
+                    raise ValueError('État de préavis invalide.')
+                if key=='discord_reservation_waitlist_full' and value not in ('0','1'):
+                    raise ValueError('État de notification de liste d’attente invalide.')
+                if key=='retention_contact_notice_days' and (not value.isdecimal() or not 1<=int(value)<=90):
+                    raise ValueError('Préavis invalide (1 à 90 jours).')
                 if key=='public_id_assignment_mode':
                     from usability import ID_MODES
                     if value not in ID_MODES:
                         raise ValueError('Mode d’attribution de l’identifiant invalide.')
+                if key=='reservation_waitlist_limit_mode':
+                    from waitlist_limits import GENERAL_MODES
+                    if value not in GENERAL_MODES:raise ValueError('Mode de limite d’attente invalide.')
+                if key=='reservation_waitlist_limit_value':
+                    from waitlist_limits import integer
+                    integer(value)
                 if key=='attendance_reference':
                     from usability import validate_reference
                     validate_reference(value)
@@ -215,6 +243,9 @@ def parse_profile(raw):
                     raise ValueError('Seuil d’âge invalide.')
             if int(settings.get('family_autonomy_age','15'))>int(settings.get('family_responsible_age','18')):
                 raise ValueError('Seuils d’autonomie et de responsable incohérents.')
+            if any(key in settings for key in ('retention_contact_notice_subject','retention_contact_notice_body')):
+                from retention_notices import validate,SUBJECT,BODY
+                validate(settings.get('retention_contact_notice_subject',SUBJECT),settings.get('retention_contact_notice_body',BODY))
             for key, value in settings.items():
                 if key in DISCORD_RESERVATION_DETAIL_KEYS and value not in {'0','1'}:
                     raise ValueError('Option de présentation Discord invalide.')
@@ -327,6 +358,6 @@ def parse_profile(raw):
                     raise ValueError("Une ressource du profil est corrompue.")
                 assets[name] = content
             return {"settings": settings, "machines": machines, "tariffs": tariffs, "assets": assets,
-                    'categories':category_registry, 'resource_types':type_registry}
+                    'categories':category_registry, 'resource_types':type_registry,'client_categories':client_registry}
     except (zipfile.BadZipFile, KeyError, TypeError, UnicodeError, json.JSONDecodeError) as error:
         raise ValueError("Le profil ZIP est invalide ou endommagé.") from error

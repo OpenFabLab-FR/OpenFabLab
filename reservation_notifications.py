@@ -16,6 +16,7 @@ LABELS = {
     'offer_accepted':'Place acceptée',
     'link_review':'Rattachement à vérifier',
     'animation_full':'Animation complète',
+    'waitlist_full':'Liste d’attente complète',
     'email_error':'Erreur d’envoi d’un e-mail de réservation',
     'sync_error':'Synchronisation WordPress momentanément indisponible',
 }
@@ -63,7 +64,7 @@ def setting(db,key,default=''):
     return row[0] if row else default
 
 
-def queue(db,key,kind,service_id=None,environment='production',now=None):
+def queue(db,key,kind,service_id=None,environment='production',now=None,presentation=None):
     """No commits, no personal payload: share the caller's business transaction."""
     if kind not in LABELS or environment not in ('production','test'):
         raise ValueError('Événement de réservation invalide.')
@@ -74,6 +75,12 @@ def queue(db,key,kind,service_id=None,environment='production',now=None):
         (event_key,event_type,service_id,environment,created_at,state) VALUES(?,?,?,?,?,?)''',
         (hashlib.sha256(str(key).encode()).hexdigest(),kind,service_id,environment,
          (now or datetime.now(timezone.utc)).isoformat(),'pending' if enabled else 'skipped'))
+    if presentation is not None:
+        allowed={'capacity','occupied','confirmed','waiting','waiting_limit'}
+        if set(presentation)!=allowed or any(type(value) is not int or not 0<=value<=100000 for value in presentation.values()):
+            raise ValueError('Instantané technique de disponibilité invalide.')
+        db.execute("UPDATE reservation_discord_events SET presentation_json=? WHERE event_key=? AND presentation_json='{}'",
+            (json.dumps(presentation,separators=(',',':')),hashlib.sha256(str(key).encode()).hexdigest()))
 
 
 def booking_event(db,group,kind,revision,notice=None):
@@ -116,7 +123,7 @@ def email_snapshot(db,row):
     No new table/column, personal log or copied identity. Never return the mail
     token/recipient/management URL to the renderer; expose a narrow allowlist.
     """
-    if row['service_id'] is None or row['event_type'] in ('email_error','sync_error','link_review'):
+    if row['service_id'] is None or row['event_type'] in ('email_error','sync_error','link_review','waitlist_full'):
         return {}
     prefix='full/' if row['event_type']=='animation_full' else 'booking/'
     rows=db.execute('''SELECT e.event_key,e.payload_json,g.group_uuid,g.owner_id,g.slot_uuid,g.environment
@@ -165,6 +172,16 @@ def message(db,row):
     date=info.get('date') or (service['service_date'] if service else '')
     hours=info.get('hours') or ((service['start_time'] or '')+'–'+(service['end_time'] or '') if service else '')
     if details['date'] and readable_date(date,hours):lines.append('Date : '+readable_date(date,hours))
+    if kind=='waitlist_full':
+        snapshot=json.loads(dict(row).get('presentation_json','{}'))
+        if details['participants'] and type(snapshot.get('confirmed')) is int and type(snapshot.get('capacity')) is int:
+            lines.append('Participants confirmés : '+str(snapshot['confirmed'])+'/'+str(snapshot['capacity']))
+            if snapshot.get('occupied',0)>snapshot['confirmed']:
+                lines.append('Places proposées : '+str(snapshot['occupied']-snapshot['confirmed']))
+        if details['remaining'] and type(snapshot.get('waiting')) is int and type(snapshot.get('waiting_limit')) is int:
+            lines.append('Liste d’attente : '+str(snapshot['waiting'])+'/'+str(snapshot['waiting_limit']))
+        lines.append('Les nouvelles inscriptions en attente sont closes.')
+        return '\n'.join(lines)
     if info and kind!='animation_full' and any(details[key] for key in ('first_name','last_name','last_initial')):
         owner=db.execute('SELECT first_name,last_name FROM users WHERE id=?',(info['owner'],)).fetchone() if info['owner'] is not None else None
         if owner is None and info['owner'] is None:

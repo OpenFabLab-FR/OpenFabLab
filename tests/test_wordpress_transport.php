@@ -48,6 +48,21 @@ foreach(['animations','reservations','directory','events','tokens']as$name){try{
 foreach(['nonces','relay_catalogues','relay_actions']as$name)check(OpenFabLab_Database::table($name)==='wp_openfablab_'.$name,'only transport table');
 $request=new WP_REST_Request;$request->body='{"environment":"production"}';
 $caps=OpenFabLab_API::capabilities($request);check($caps['transport_only_v1']===true&&$caps['relay_revision']===3,'transport revision');check($caps['relay_state']['environment']==='production','scoped metadata');
+check($caps['waitlist_limits_v1']===true,'explicit waiting-limit capability');
+$availability=new ReflectionMethod(OpenFabLab_Relay::class,'valid_availability');
+check($availability->invoke(null,['available'=>4]),'legacy catalogue explicitly accepted');
+foreach(['available','waiting','waiting_full','full','not_open','closed','unpublished']as$state){
+    check($availability->invoke(null,['availability_state'=>$state,'waiting'=>0,'waiting_limit'=>6]),'received state shape '.$state);
+}
+check($availability->invoke(null,['availability_state'=>'waiting','waiting'=>100,'waiting_limit'=>null]),'unlimited waiting explicit null');
+foreach([
+ ['availability_state'=>'waiting'],
+ ['availability_state'=>'unknown','waiting'=>0,'waiting_limit'=>6],
+ ['availability_state'=>'waiting','waiting'=>'2','waiting_limit'=>6],
+ ['availability_state'=>'waiting','waiting'=>-1,'waiting_limit'=>6],
+ ['availability_state'=>'waiting','waiting'=>0,'waiting_limit'=>false],
+ ['availability_state'=>'waiting','waiting'=>0,'waiting_limit'=>10000001]
+]as$shape){check(!$availability->invoke(null,$shape),'incompatible waiting payload rejected');}
 $request->headers=['x-openfablab-timestamp'=>(string)time(),'x-openfablab-nonce'=>str_repeat('a',24)];
 $canonical=$request->headers['x-openfablab-timestamp']."\n".$request->headers['x-openfablab-nonce']."\nPOST\n".$request->get_route()."\n".hash('sha256',$request->body);
 $request->headers['x-openfablab-signature']=hash_hmac('sha256',$canonical,$options['openfablab_res_sync_secret']);

@@ -1,0 +1,72 @@
+.analysis-filters{padding:1.2rem;background:#fff;border:1px solid #dbe4e7;border-radius:18px;margin:1rem 0}
+.analysis-filters label{display:flex;flex-direction:column;gap:.4rem;min-width:0}
+.analysis-filters input[type=search],.analysis-filters input[type=date],.analysis-filters select,
+[data-evolution] select{width:100%;min-width:0;max-width:100%;padding:.65rem .8rem;border:1px solid #cad8de;border-radius:10px;background:#fff;color:#263b45;font:inherit}
+.analysis-filters input:focus-visible,.analysis-filters select:focus-visible,[data-evolution] select:focus-visible{outline:2px solid #307b9a;outline-offset:2px}
+[data-evolution]>label{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-bottom:.6rem}
+[data-evolution] select{width:auto;max-width:100%}
+.analysis-filters [hidden], [data-attendance-analysis] [hidden]{display:none!important}
+.analysis-search-results{display:flex;flex-wrap:wrap;gap:.5rem;margin:.7rem 0}
+.analysis-search-results button{max-width:100%;white-space:normal;text-align:left}
+.analysis-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.analysis-metrics[data-count="4"]{grid-template-columns:repeat(4,minmax(0,1fr))}
+.analysis-metrics[data-count="5"]{grid-template-columns:repeat(6,minmax(0,1fr))}
+.analysis-metrics[data-count="5"]>.analysis-metric{grid-column:span 2}
+.analysis-metrics[data-count="5"]>.analysis-metric:nth-child(n+4){grid-column:span 3}
+.analysis-metric{background:#f5f9fa;border:1px solid #e1e8ea;border-radius:14px;padding:1.1rem 1.2rem;min-width:0}
+.analysis-metric>span{display:block;font-weight:650;color:#53646b;font-size:.88rem}
+.analysis-metric strong{display:block;font-size:clamp(1.2rem,2vw,1.75rem);line-height:1.25;color:var(--primary,#307b9a);margin:.55rem 0 .15rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.analysis-metric small{display:block;color:#53646b}
+.analysis-metric.is-date strong{font-size:1.1rem;white-space:nowrap}
+.analysis-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.4rem}
+.analysis-chart-grid article,[data-attendance-analysis], [data-attendance-analysis] .admin-section{min-width:0}
+.analysis-local-scroll{max-width:100%;overflow:auto;border-radius:10px}
+.analysis-bars{display:flex;gap:.3rem;align-items:flex-end;height:190px;padding:1rem .2rem 0;min-width:340px}
+.analysis-bars.hour-bars{min-width:650px}
+.analysis-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0;font-size:.7rem}
+.analysis-bar span{display:block;width:80%;background:#bddce8;border:1px solid #7cacbf;border-radius:5px 5px 0 0;min-height:2px}
+.analysis-bar small{height:24px;white-space:nowrap}
+.analysis-bar button{background:none;border:0;padding:0;color:#31515f;font:inherit;cursor:pointer;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.analysis-heat{display:grid;grid-template-columns:70px repeat(24,24px);gap:3px;min-width:715px;padding:.4rem}
+.analysis-heat button{width:24px;height:24px;border:1px solid #bcd0d8;border-radius:4px;color:#183c4c;padding:0}
+.analysis-heat small{font-size:.65rem;text-align:center}
+.analysis-evolution{display:grid;gap:.35rem;max-height:420px;overflow:auto}
+.analysis-evolution article{display:grid;grid-template-columns:100px 1fr;gap:.8rem;border-bottom:1px solid #e5ebee;padding:.6rem}
+.analysis-evolution-track{display:block;height:8px;background:#eef3f5;border-radius:5px;margin-top:.4rem;overflow:hidden}
+.analysis-evolution-track span{display:block;height:100%;background:#86b8cb;border-radius:5px}
+.analysis-history-table{width:100%;border-collapse:separate;border-spacing:0;margin:.8rem 0 1rem;font-variant-numeric:tabular-nums;text-align:left}
+.analysis-history-table th{padding:.7rem .9rem;color:#62737a;font-size:.78rem;font-weight:750;border-bottom:1px solid #dbe4e7}
+.analysis-history-table td{padding:.85rem .9rem;border-bottom:1px solid #edf1f3}
+.analysis-history-table tr:nth-child(even){background:#f8fafb}
+.analysis-history-duration{font-weight:750;white-space:nowrap;color:#315566}
+.analysis-history-table tr:last-child td{border-bottom:0}
+.analysis-passage{display:flex;flex-wrap:wrap;gap:.5rem 1.4rem;padding:.8rem;background:#f5f8f9;border:1px solid #e0e7ea;border-radius:12px}
+.analysis-passage strong{min-width:110px}
+[data-attendance-analysis] h3{margin-top:1rem}
+[data-selected-user]{display:block;font-weight:700;color:#307b9a;margin-top:.4rem;overflow-wrap:anywhere}
+.analysis-filter-grid{display:grid;grid-template-columns:minmax(150px,.9fr) minmax(180px,1.4fr) minmax(160px,1fr) auto;gap:1rem;align-items:start}
+.analysis-filter-grid label>span:first-child{font-size:.85rem;font-weight:650;color:#53646b}
+.analysis-filter-submit{align-self:start;margin-top:1.6rem;min-height:43px;white-space:nowrap}
+.analysis-custom-period{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;max-width:600px}
+.analysis-search-results:empty{display:none}
+.analysis-help{margin:.85rem 0 0;font-size:.85rem;color:#53646b}
+.analysis-help>summary{cursor:pointer;font-weight:650;width:fit-content;max-width:100%;padding:.2rem 0}
+.analysis-help p{max-width:78ch;line-height:1.65;margin:.5rem 0 .1rem}
+.analysis-help summary:focus-visible{outline:2px solid var(--primary,#307b9a);outline-offset:4px;border-radius:3px}
+[data-attendance-analysis] .admin-section{margin-top:1.25rem;padding:1.5rem}
+[data-attendance-analysis] .section-heading{gap:.75rem;align-items:center;margin-bottom:1rem}
+[data-attendance-analysis] .section-heading h2{margin:0}
+[data-analysis-period]{color:#62737a;font-size:.85rem;margin:.35rem 0 0}
+[data-analysis-status]{font-size:.85rem;color:#62737a;margin:.65rem 0}
+.analysis-open-note,.analysis-animation-count{display:inline-block;width:fit-content;border-radius:30px;padding:.3rem .65rem;background:#eaf3f7;color:#315566;font-size:.78rem;font-weight:650;white-space:nowrap}
+.analysis-cohorts,.analysis-animations:has(.analysis-animation-group){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2rem;margin-top:1rem}
+.analysis-cohort{padding:1rem 1.1rem;border:1px solid #e3eaed;border-radius:12px;background:#f8fafb}
+.analysis-cohort h3{margin:0!important;color:#315566}
+.analysis-cohort p{font-size:.88rem;margin:.6rem 0 0;line-height:1.6}
+.analysis-animation-group{min-width:0}
+.analysis-empty{color:#62737a;font-size:.9rem;padding:.9rem 0!important;margin:0;background:transparent!important}
+.analysis-animation-group h3{font-size:.95rem}
+@media(max-width:1100px){.analysis-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.analysis-filter-submit{justify-self:start}.analysis-metrics[data-count="4"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.analysis-chart-grid{grid-template-columns:minmax(0,1fr)}.analysis-bars{min-width:260px}.analysis-evolution article{grid-template-columns:minmax(0,1fr)}.analysis-metrics,.analysis-metrics[data-count="5"]{grid-template-columns:repeat(2,minmax(0,1fr))}.analysis-metrics[data-count="5"]>.analysis-metric{grid-column:auto}.analysis-metrics[data-count="5"]>.analysis-metric:last-child{grid-column:1/-1}.analysis-cohorts,.analysis-animations:has(.analysis-animation-group){grid-template-columns:minmax(0,1fr)}[data-attendance-analysis] .admin-section{padding:1.1rem}.analysis-metric{padding:1rem}.analysis-history-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.analysis-history-table tbody{display:grid;gap:.65rem}.analysis-history-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid #e1e8ea;border-radius:12px;padding:.7rem;background:#fff!important}.analysis-history-table td{border:0;padding:.35rem;min-width:0;font-size:.9rem}.analysis-history-table td:before{content:attr(data-label);display:block;color:#6a7980;font-size:.75rem;font-weight:500;margin-bottom:.15rem}.analysis-history-table td:first-child,.analysis-history-table td:last-child{grid-column:1/-1}.analysis-history-table td:first-child{font-weight:750}.analysis-history-table td:first-child:before{display:none}.analysis-history-table .analysis-empty{grid-column:1/-1}.analysis-history-table .analysis-empty:before{display:none}}
+@media(max-width:560px){.analysis-filter-grid{grid-template-columns:minmax(0,1fr)}.analysis-filter-submit{margin-top:0;justify-self:stretch}.analysis-filters{padding:1rem}.analysis-custom-period{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:360px){.analysis-metrics,.analysis-metrics[data-count="4"],.analysis-metrics[data-count="5"]{grid-template-columns:minmax(0,1fr)}}

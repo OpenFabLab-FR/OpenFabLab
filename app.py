@@ -250,7 +250,7 @@ RESERVATION_DISCORD_OPTIONS = {
 }
 RESERVATION_DISCORD_FLAGS = (
     "new_booking", "waitlist_entry", "cancellation", "offer_proposed",
-    "offer_accepted", "link_review", "animation_full", "email_error", "sync_error",
+    "offer_accepted", "link_review", "animation_full", "waitlist_full", "email_error", "sync_error",
 )
 FRENCH_MONTH_NAMES = (
     "janvier", "février", "mars", "avril", "mai", "juin",
@@ -1864,7 +1864,12 @@ def upsert_billing_client(database, values, existing_client_id=None, timestamp=N
             """,
             (*parameters[:-1], timestamp, timestamp),
         )
-        return cursor.lastrowid
+        client_id = cursor.lastrowid
+        if 'client_category' in values:
+            from client_categories import selected
+            database.execute('UPDATE billing_clients SET category_key=? WHERE id=?',
+                (selected(database,values['client_category']),client_id))
+        return client_id
 
     database.execute(
         """
@@ -1875,6 +1880,11 @@ def upsert_billing_client(database, values, existing_client_id=None, timestamp=N
         """,
         (*parameters, client_id),
     )
+    if 'client_category' in values:
+        from client_categories import selected
+        current = database.execute('SELECT category_key FROM billing_clients WHERE id=?',(client_id,)).fetchone()[0]
+        database.execute('UPDATE billing_clients SET category_key=? WHERE id=?',
+            (selected(database,values['client_category'],current),client_id))
     return client_id
 
 
@@ -5082,9 +5092,18 @@ def run_data_retention(database, now=None, force=False):
     with DATABASE_MAINTENANCE_LOCK:
         current_local = (now or datetime.now(PARIS_TIMEZONE)).astimezone(PARIS_TIMEZONE)
         day_key = current_local.strftime("%Y-%m-%d")
+        from retention_notices import process as process_contact_notices
         if not force and read_setting(database, "retention_last_run_date") == day_key:
+            try:
+                process_contact_notices(database,current_app.config['DATABASE'],current_local,prepare=False)
+            except (OSError,ValueError):
+                database.rollback()
             return None
 
+        try:
+            process_contact_notices(database,current_app.config['DATABASE'],current_local)
+        except (OSError,ValueError):
+            database.rollback()  # SMTP/config failure never postpones erasure.
         settings = load_retention_settings(database)
         users = database.execute(
             """
@@ -5906,6 +5925,7 @@ def register_admin_protection(application):
         "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
         "admin_animation_booking_action", "admin_animation_booking_walkin",
         'participant_search.search',
+        'attendance_analysis.page', 'attendance_analysis.search', 'attendance_analysis.data',
         'booking_account_links.link',
         'evolution.calendar', 'evolution.resource_directory', 'evolution.resource_bookings',
         'tablet_reservations.cancel_request',
@@ -5915,6 +5935,7 @@ def register_admin_protection(application):
         'resources': {'evolution.resource_directory', 'evolution.resource_bookings'},
         'authorizations': {'evolution.authorizations'},
         "frequency": {
+            'attendance_analysis.page', 'attendance_analysis.search', 'attendance_analysis.data',
             "admin", "admin_frequency_day", "admin_statistics", "admin_statistics_legacy",
             "admin_frequency_exports", "admin_add_historical_session",
             "admin_add_historical_visitor", "admin_edit_historical_session",
@@ -6974,7 +6995,7 @@ def register_routes(application):
                             "offer_hours", "last_offer_hours", "close_minutes",
                             "reminder_one_hours", "reminder_two_hours",
                             "sync_interval_minutes", "wordpress_url", "phone_required", "account_required", "public_url",
-                            "action_interval_seconds", "link_mode")
+                            "action_interval_seconds", "link_mode", "waitlist_limit_mode", "waitlist_limit_value")
             },
             reservation_secret_set=bool(load_sync_secret(application.config["DATABASE"])),
             reservation_relay_states=database.execute('SELECT * FROM wordpress_relay_state ORDER BY environment').fetchall(),
@@ -7095,6 +7116,13 @@ def register_routes(application):
             errors.append('L’adresse publique OpenFabLab doit être une URL HTTPS valide, sans mot de passe ni paramètres.')
         if secret and (len(secret) < 40 or not re.fullmatch(r"[A-Za-z0-9_-]+", secret)):
             errors.append("Le secret WordPress est invalide.")
+        from waitlist_limits import GENERAL_MODES,integer as waitlist_integer
+        wait_mode=request.form.get('waitlist_limit_mode',read_setting(database,'reservation_waitlist_limit_mode','automatic'))
+        wait_value=request.form.get('waitlist_limit_value',read_setting(database,'reservation_waitlist_limit_value','0'))
+        try:
+            if wait_mode not in GENERAL_MODES:raise ValueError('Choisissez un mode de limite de liste d’attente valide.')
+            wait_value=waitlist_integer(wait_value)
+        except ValueError as error:errors.append(str(error))
         if errors:
             for error in errors:
                 flash(error, "error")
@@ -7106,6 +7134,8 @@ def register_routes(application):
                 write_setting(database, f"reservation_{key}", value)
             write_setting(database, "reservation_waitlist_enabled",
                           "1" if request.form.get("waitlist_enabled") == "1" else "0")
+            write_setting(database,'reservation_waitlist_limit_mode',wait_mode)
+            write_setting(database,'reservation_waitlist_limit_value',wait_value)
             write_setting(database, "reservation_wordpress_url", url)
             write_setting(database,'reservation_public_url',public_url)
             write_setting(database,'reservation_phone_required','1' if request.form.get('phone_required')=='1' else '0')
@@ -7116,6 +7146,8 @@ def register_routes(application):
                 "SELECT service_id FROM animation_reservation_config"
             ).fetchall():
                 enqueue_animation(database, row["service_id"])
+                from waitlist_limits import observe_service
+                observe_service(database,row['service_id'])
             database.commit()
             flash("Réglages de réservation enregistrés.", "success")
         return redirect(url_for("admin_settings_structure") + "#reservations")
@@ -7384,7 +7416,9 @@ def register_routes(application):
             assets['assets/' + BADGE_FILENAME] = raw
         registry = [{k:r[k] for k in ('category_key','name','color','active','sort_order','is_default')} for r in categories(database,True)]
         types = [{k:r[k] for k in ('type_key','name','color','active','sort_order')} for r in database.execute('SELECT * FROM resource_types')]
-        profile = build_profile(settings, machines, assets, tariffs, registry, types)
+        from client_categories import registry as client_registry
+        client_registry = [{k:r[k] for k in ('category_key','name','active','sort_order')} for r in client_registry(database)]
+        profile = build_profile(settings, machines, assets, tariffs, registry, types, client_registry)
         name = compact_filename_part(read_setting(database, "structure_short_name", "OpenFabLab"), "OpenFabLab")[:60]
         return Response(profile, mimetype="application/zip", headers={
             "Content-Disposition": f'attachment; filename="{name}.openfablab-profile.zip"',
@@ -7430,6 +7464,8 @@ def register_routes(application):
                 database = get_database()
                 timestamp = utc_now_iso()
                 with database:
+                    from client_categories import import_registry as import_client_categories
+                    import_client_categories(database,profile['client_categories'])
                     if profile['categories']:
                         database.execute('UPDATE user_categories SET is_default=0')
                         for entry in profile['categories']:
@@ -8057,6 +8093,7 @@ def register_routes(application):
             "close_minutes": int(read_setting(database, "reservation_close_minutes", "60")),
             "accompaniment_under_age": int(read_setting(database, "reservation_accompaniment_under_age", "15")),
             "waitlist_enabled": int(read_setting(database, "reservation_waitlist_enabled", "1")),
+            "waitlist_limit_mode": "general", "waitlist_limit_value": 0,
             "reminder_one_hours": int(read_setting(database, "reservation_reminder_one_hours", "24")),
             "reminder_two_hours": int(read_setting(database, "reservation_reminder_two_hours", "0")),
             "walkin_count": 0,
@@ -8110,7 +8147,14 @@ def register_routes(application):
                 "signup_open_at": request.form.get("signup_open_at", "").strip(),
                 "waitlist_enabled": int(request.form.get("waitlist_enabled") == "1"),
                 "booking_mode": request.form.get("booking_mode", previous_config["booking_mode"] if previous_config else "whole"),
+                "waitlist_limit_mode": request.form.get('waitlist_limit_mode',previous_config['waitlist_limit_mode'] if previous_config else 'general'),
+                "waitlist_limit_value": request.form.get('waitlist_limit_value',previous_config['waitlist_limit_value'] if previous_config else 0),
             }
+            from waitlist_limits import SERVICE_MODES,integer as waitlist_integer
+            try:
+                if online_config['waitlist_limit_mode'] not in SERVICE_MODES:raise ValueError('Choisissez un mode de liste d’attente valide.')
+                online_config['waitlist_limit_value']=waitlist_integer(online_config['waitlist_limit_value'] or 0)
+            except ValueError as error:errors.append(str(error))
             for key, minimum, maximum in (
                 ("capacity", 0, 100000), ("close_minutes", 0, 1440),
                 ("accompaniment_under_age", 0, 120),
@@ -8251,7 +8295,11 @@ def register_routes(application):
                  online_config["slot_duration_minutes"], online_config["slot_gap_minutes"], online_config["slot_capacity"]),
             )
             saved_service = database.execute("SELECT * FROM fablab_services WHERE id=?", (service_id,)).fetchone()
+            database.execute('UPDATE animation_reservation_config SET waitlist_limit_mode=?,waitlist_limit_value=? WHERE service_id=?',
+                (online_config['waitlist_limit_mode'],online_config['waitlist_limit_value'],service_id))
             save_slots(database, saved_service, online_config, read_setting(database, "structure_timezone", "Europe/Paris"))
+            from waitlist_limits import observe_service
+            observe_service(database,service_id)
             enqueue_animation(database, service_id)
         database.commit()
         flash(message, "success")
@@ -8772,6 +8820,18 @@ def register_routes(application):
                 record["amount_cents"] for record in all_records if record["paid_at"]
             ),
         }
+        client_category = request.args.get('client_category','').strip()
+        client_search = request.args.get('client_q','').strip()[:80]
+        client_conditions=[];client_parameters=[]
+        if client_category:
+            client_conditions.append('billing_clients.category_key=?');client_parameters.append(client_category)
+        if client_search:
+            from participant_search import normalized
+            database.create_function('client_search_key',1,normalized,deterministic=True)
+            pattern='%'+normalized(client_search).replace('\\','\\\\').replace('%','\\%').replace('_','\\_')+'%'
+            client_conditions.append("client_search_key(contact_name || ' ' || structure_name) LIKE ? ESCAPE '\\'")
+            client_parameters.append(pattern)
+        client_where=' WHERE '+' AND '.join(client_conditions) if client_conditions else ''
         clients = [
             dict(row)
             for row in database.execute(
@@ -8781,10 +8841,11 @@ def register_routes(application):
                 FROM billing_clients
                 LEFT JOIN billing_records
                     ON billing_records.client_id = billing_clients.id
+                """+client_where+"""
                 GROUP BY billing_clients.id
                 ORDER BY contact_name COLLATE NOCASE, structure_name COLLATE NOCASE
                 """
-            ).fetchall()
+            ,client_parameters).fetchall()
         ]
         return render_template(
             "billing_list.html",
@@ -9231,12 +9292,20 @@ def register_routes(application):
                 "city": client["city"],
                 "phone": client["phone"] or "",
                 "email": client["email"] or "",
+                "client_category": client['category_key'] or '',
             }
             return render_template(
                 "billing_client_form.html", client=client, values=values
             )
 
+        from evolution_routes import require_csrf
+        require_csrf()
         values, errors = parse_billing_client_form(request.form)
+        from client_categories import selected as selected_client_category
+        try:
+            values['client_category']=selected_client_category(database,request.form.get('client_category',client['category_key']),client['category_key'])
+        except ValueError as error:
+            errors.append(str(error))
         normalized_contact = normalize_text_key(values["client_contact"])
         conflicting_client = database.execute(
             """

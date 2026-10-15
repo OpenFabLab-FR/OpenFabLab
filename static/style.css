@@ -3205,6 +3205,35 @@ body.dialog-open {
     font-weight: 750;
 }
 
+.client-directory-filters {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.5fr) minmax(160px, 1fr) auto;
+    align-items: end;
+    gap: 14px;
+    margin: 18px 0;
+}
+.client-directory-filters label { display:flex; flex-direction:column; gap:7px; min-width:0; }
+.client-directory-filters input,.client-directory-filters select { width:100%; min-width:0; }
+.client-directory-filters button { justify-self:start; white-space:nowrap; }
+#contact-notice .contact-notice-options { display:grid; grid-template-columns:minmax(0,1fr) minmax(180px,260px); gap:18px; align-items:center; }
+#contact-notice .contact-notice-delay { margin:0; }
+#contact-notice .contact-notice-template { margin:16px 0; }
+#contact-notice summary { cursor:pointer; font-weight:700; }
+#contact-notice .contact-notice-editor { display:grid; gap:18px; padding-top:20px; }
+#contact-notice .contact-notice-editor .form-field { width:100%; min-width:0; margin:0; }
+#contact-notice .contact-notice-editor input,#contact-notice textarea { width:100%; min-width:0; max-width:100%; }
+#contact-notice textarea { min-height:280px; resize:vertical; line-height:1.6; }
+#contact-notice .period-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+#contact-notice .period-card { padding:16px; border-top-width:3px; }
+#contact-notice .period-card > strong { font-size:2rem; }
+#contact-notice .contact-notice-help { margin-top:16px; font-size:.85rem; }
+[data-waitlist-limit] [hidden] { display:none!important; }
+@media(max-width:800px) { .client-directory-filters { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:560px) {
+    .client-directory-filters,#contact-notice .contact-notice-options,#contact-notice .period-grid { grid-template-columns:minmax(0,1fr); }
+    .client-directory-filters button { justify-self:stretch; }
+}
+
 .period-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -6704,3 +6733,12 @@ tbody tr:last-child td {
   .calendar-dialog { padding:18px; }
   .calendar-options { gap:2px; }
 }
+
+/* Existing client directory: informative category forms, shrinkable in WebKit. */
+.billing-client-directory .form-grid.two-columns{grid-template-columns:repeat(2,minmax(0,1fr));margin-block:.8rem}
+.billing-client-directory .form-grid label{min-width:0}
+.billing-client-directory .form-grid input:not([type=checkbox]),
+.billing-client-directory .form-grid select{min-width:0;max-width:100%;width:100%}
+.billing-client-directory .checkbox-label{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.billing-client-directory .checkbox-label input{width:auto}
+@media(max-width:700px){.billing-client-directory .form-grid.two-columns{grid-template-columns:minmax(0,1fr)}}

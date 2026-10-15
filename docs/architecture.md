@@ -1,6 +1,16 @@
 # Architecture
 
-## Version stable 2.8.6
+## Version stable 2.9.0
+
+Base stable 2.8.6 conservée, application 2.9.0, SQLite 20 par migration additive,
+plugin facultatif 2.9.0, protocole 4/révision 3 et capacité signée optionnelle
+`waitlist_limits_v1`. Le plafond est appliqué uniquement dans le moteur commun,
+sous transaction. WordPress reste un relais, jamais un moteur de places.
+L’analyse de fréquentation lit les sessions existantes ; la classification des
+clients est informative. Le préavis SMTP est facultatif, sans copie de contact
+dans son journal. Voir [périmètre et limites](evolution-2.9.0.md).
+
+## Référence historique : stable 2.8.6
 
 Application 2.8.6, SQLite **19**, plugin facultatif Reservations **2.8.5**,
 protocole **4 / révision 3**. Cette distribution complète conserve le moteur

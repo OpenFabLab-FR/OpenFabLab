@@ -205,15 +205,26 @@ final class OpenFabLab_Relay {
             return self::reply(['state'=>'pending','message'=>'Vérification en cours…']);
         } catch (Throwable $error) { return self::error(); }
     }
+    private static function valid_availability($item) {
+        $fields=['availability_state','waiting','waiting_limit'];
+        $present=array_intersect(array_keys($item),$fields);
+        if (!$present) { return true; } // Explicit backwards-compatible catalogue.
+        if (count($present)!==3 || !is_string($item['availability_state'])
+            || !in_array($item['availability_state'],['available','waiting','waiting_full','full','not_open','closed','unpublished'],true)
+            || !is_int($item['waiting']) || $item['waiting']<0 || $item['waiting']>10000000
+            || (!is_null($item['waiting_limit']) && (!is_int($item['waiting_limit']) || $item['waiting_limit']<0 || $item['waiting_limit']>10000000))) { return false; }
+        return true; // Shape only: WordPress never decides capacity or admission.
+    }
     public static function catalogue($request) {
         global $wpdb;
         try {
             $data=self::body($request,1000000);$env=self::env($data);$items=$data['animations'] ?? null;
             if (($data['protocol_version'] ?? 0)!==4 || ($data['relay_revision'] ?? 0)!==3 || !is_array($items) || count($items)>100) { return self::error('Catalogue invalide.',400); }
             $required=['service_id','title','description','date','hours','minimum_age','booking_mode','slots','available','waitlist_enabled','account_required','phone_required','autonomy_age'];
-            $allowed=array_merge($required,['information_url']);
+            $allowed=array_merge($required,['information_url','availability_state','waiting','waiting_limit']);
             foreach ($items as $item) {
                 if (!is_array($item) || array_diff(array_keys($item),$allowed) || array_diff($required,array_keys($item))) { return self::error('Catalogue invalide.',400); }
+                if (!self::valid_availability($item)) { return self::error('Disponibilité du catalogue invalide.',400); }
                 if (isset($item['information_url']) && $item['information_url']!=='') {
                     $url=$item['information_url'];$parts=is_string($url)?parse_url($url):false;
                     if (!$parts || strlen($url)>2048 || !filter_var($url,FILTER_VALIDATE_URL)
@@ -231,7 +242,8 @@ final class OpenFabLab_Relay {
                     if (!is_string($item[$field]) || strlen($item[$field])>12000) { return self::error('Catalogue invalide.',400); }
                 }
                 foreach ($item['slots'] as $slot) {
-                    if (!is_array($slot) || array_diff(array_keys($slot),['slot_uuid','label','available'])) { return self::error('Catalogue invalide.',400); }
+                    if (!is_array($slot) || array_diff(array_keys($slot),['slot_uuid','label','available','availability_state','waiting','waiting_limit'])
+                        || !self::valid_availability($slot)) { return self::error('Catalogue invalide.',400); }
                 }
             }
             $table=OpenFabLab_Database::table('relay_catalogues');

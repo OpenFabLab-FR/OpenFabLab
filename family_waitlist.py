@@ -168,6 +168,13 @@ def _queue(db, group, kind, offer_token=None, now=None, people=None, discord_not
         VALUES(?,?,?,?,?,?,?)''',(str(uuid4()),group,group+'/'+kind+'/'+str(row['revision']),kind,row['contact_email'],json.dumps(payload,ensure_ascii=False),now.isoformat()))
     from reservation_notifications import booking_event
     booking_event(db,group,payload['event'],row['revision'],payload['_discord'])
+    from waitlist_limits import observe
+    from family_reservations import effective_service
+    if row['status'] in ('confirmed','waitlisted','offer_pending','cancelled','expired','declined'):
+        try:
+            observe(db,effective_service(db,row['service_id'],row['slot_uuid'],row['environment'],False),row['slot_uuid'],row['environment'])
+        except ValueError:
+            pass  # An unpublished historical animation is not reactivated.
 
 
 def create_group(db, group, owner_id, service_id, slot, environment, status, details, now=None):

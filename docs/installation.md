@@ -1,14 +1,28 @@
 # Installer une nouvelle instance
 
-La version stable **OpenFabLab 2.8.6** utilise SQLite **19** et propose le plugin facultatif **Reservations 2.8.5**. Une installation existante doit lire [la mise à jour](upgrade.md) avant intervention. Une seule application : [Linux](installation-linux.md), [Raspberry Pi 64 bits](installation-raspberry-pi.md), [Windows avec Linux](installation-windows.md), [Synology générique](installation-synology.md). Lire aussi [compatibilité et limites réellement vérifiées](platform-compatibility.md) et [les opérations communes](installation-common.md). Aucun test matériel non réalisé n'est présenté comme validé.
+## OpenFabLab 2.9.0 stable
 
-La distribution contient tous les apports développés depuis la version publique 2.8.4. Ne pas remplacer une installation existante sans sa sauvegarde complète et sans lire la procédure de mise à jour.
+L’application utilise **SQLite 20**, avec le plugin facultatif **Reservations
+2.9.0 / protocole 4, révision 3**. Elle fonctionne entièrement sans WordPress.
+Télécharger l’[application et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.9.0),
+vérifier l’empreinte, puis extraire dans un dossier neuf. Le
+[ZIP du plugin 2.9.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.9.0/openfablab-reservations-2.9.0.zip)
+ne s’installe que si cette interface publique est souhaitée. Le plugin 2.8.5
+reste compatible avec ses affichages antérieurs ; 2.9.0 apporte les nouveaux
+compteurs et états d’attente. Voir [le guide 2.9.0](evolution-2.9.0.md).
 
-## OpenFabLab 2.8.6 stable
+Une installation existante doit suivre [la mise à jour](upgrade.md), avec
+sauvegarde complète et conservation du runtime avant toute intervention.
+Les nouvelles installations proposent l’identifiant public visible ; les
+installations mises à jour conservent leur mode et leurs paramètres.
 
-L'application utilise SQLite **19** et le plugin facultatif **2.8.5**, protocole **4 / révision 3**. Les nouvelles installations proposent l'identifiant public visible ; les installations mises à jour conservent leur mode. Voir [les apports 2.8.5](corrections-2.8.5.md) et [les corrections 2.8.6](corrections-2.8.6.md). Pour une mise à jour, lire [upgrade.md](upgrade.md) et sauvegarder les données et le runtime avant toute migration.
-
-Télécharger l'application et `SHA256SUMS` depuis la [release 2.8.6](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.6), vérifier l'empreinte puis utiliser un dossier neuf. Le [ZIP officiel du plugin 2.8.5](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.8.6/openfablab-reservations-2.8.5.zip) est facultatif : aucune réinstallation s'il est déjà en 2.8.5. Pour une installation existante, suivre [la procédure de mise à jour](upgrade.md), sans remplacer ses données par une base de test. Les ZIP approuvés conservent leurs guides de préparation pour préserver leurs empreintes ; la documentation du tag `v2.8.6` est la référence publiée à jour.
+Une seule application : [Linux](installation-linux.md), [Raspberry Pi 64 bits](installation-raspberry-pi.md),
+[Windows avec Linux](installation-windows.md), [Synology générique](installation-synology.md).
+Lire aussi [les limites réellement vérifiées](platform-compatibility.md) et
+[les opérations communes](installation-common.md). Aucun essai matériel non
+réalisé n’est présenté comme validé. Les ZIP approuvés restent inchangés ; leurs
+guides peuvent conserver des mentions de préparation. La documentation du tag
+`v2.9.0` est la référence stable à jour.
 
 Prérequis : Python 3.10+ (3.12 dans Docker), navigateur moderne, disque persistant. Le plugin demande WordPress avec PHP 8.1+, OpenSSL AES-GCM, InnoDB, JavaScript et HTTPS ; seul OpenFabLab doit pouvoir joindre WordPress en HTTPS sortant. La borne et l'application fonctionnent sans plugin. Voir [le guide WordPress](wordpress.md) et [les vérifications isolées](candidate-2.8-guide.md).
 
@@ -28,11 +42,11 @@ docker compose up -d application
 
 Le compose fourni publie `5080:8000`, préfixe `/stat`, `restart: unless-stopped` et healthcheck `/stat/sante`. Il monte **`./data:/data`** et **`${OPENFABLAB_BACKUP_HOST_ROOT:-./backups}:/nas-backups`**. Le sous-dossier de sauvegarde initial est `OpenFabLab`, modifiable dans les réglages. Une racine différente peut être définie dans un `.env` privé à partir de `.env.example`, sans y mettre de secret.
 
-L'exemple Compose approuvé conserve l'étiquette d'image `openfablab:v2.8.5` : elle
-nomme l'image construite depuis ce dossier et ne détermine pas la version du
-logiciel. Le runtime contenu dans l'archive est bien **2.8.6**. Vérifier cette
-version dans l'interface après construction ; ne pas remplacer les paramètres
-Compose d'une installation existante par l'exemple.
+L'exemple Compose de cette version nomme l'image `openfablab:v2.9.0`.
+L'étiquette nomme l'image construite depuis ce dossier ; elle ne suffit pas à
+prouver sa version réelle. Le runtime de l'archive est **2.9.0**.
+Une installation existante peut conserver un ancien alias : vérifier la version
+dans l'interface après construction, sans remplacer son Compose personnalisé.
 
 Vérifier que l'utilisateur du processus peut créer et conserver les fichiers dans les montages. Ne pas contourner un refus d'accès par des permissions globales ouvertes. Aucun chemin de NAS, nom de domaine ou reverse proxy particulier n'est imposé par cette distribution.
 

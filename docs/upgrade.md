@@ -1,6 +1,37 @@
 # Mettre à jour OpenFabLab
 
-## Vers la stable 2.8.6
+## Vers la stable 2.9.0 : schéma 19 → 20
+
+Télécharger l’archive complète de la [release 2.9.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.9.0)
+et vérifier `SHA256SUMS`. Depuis **2.8.6 / schéma 19** : sauvegarde complète
+PRE19 et runtime/image 2.8.6 requis,
+construction et essai isolé avant arrêt, puis copie froide des dernières écritures.
+Migration additive transactionnelle ; aucune donnée supprimée. Contrôler SQLite
+intégrité/FK, version2.9.0/schéma20, réglages, volumes et fichiers privés avant
+ouverture ; conserver une POST20. Voir [le guide](evolution-2.9.0.md).
+
+Le plugin facultatif 2.9.0 s’installe par remplacement du ZIP après sauvegarde,
+**sans désinstallation** : secret, options et file des demandes conservés. Il
+accepte le catalogue antérieur. Le moteur peut continuer avec le plugin2.8.5,
+sans les nouveaux états visuels ni compteurs `waitlist_limits_v1`. Protocole
+4/révision 3 conservé, tout comme les cadences enregistrées (notamment 90s/15s).
+Aucune réinstallation n’est nécessaire si le plugin est déjà en 2.9.0.
+
+**Déjà en 2.9.0 / schéma 20** : aucune nouvelle migration 19 → 20. Conserver une
+sauvegarde complète **PRE20**, puis une copie froide des dernières écritures et
+le runtime 2.9.0 réellement utilisé. Remplacer uniquement le runtime, sans
+écraser Compose, configuration, secrets ni volumes. Contrôler version, schéma 20,
+intégrité/clés étrangères, données, réglages et santé, puis conserver une POST20.
+Ne pas utiliser une procédure de migration depuis 2.8.6 dans ce parcours.
+Le secours éventuel doit rester compatible schéma 20 ; aucune restauration PRE19.
+
+Avant toute reprise publique seulement, un secours contrôlé peut restaurer
+PRE19/runtime2.8.6 complet après preuve d’absence d’écritures. Après une première
+tentative publique, préserver l’état20 et décider humainement d’une reprise
+compatible ; jamais de restauration destructrice automatique. Ne jamais lancer
+2.8.6 sur une base20. Le paquet NAS spécifique reste privé.
+
+## Référence historique : vers la stable 2.8.6
 
 Télécharger l'archive complète depuis la [release 2.8.6](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.6)
 et vérifier `SHA256SUMS`. Aucune installation intermédiaire 2.8.5 n'est nécessaire.

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Analyse de fréquentation · OpenFabLab{% endblock %}
+{% block body_class %}admin-page statistics-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static',filename='attendance-analysis.css') }}">
+<section class="content-heading"><h1>Analyse de fréquentation</h1><p>Les visites et les participations aux animations, pour un usager ou une catégorie.</p></section>
+{% include '_admin_nav.html' %}{% include '_frequency_nav.html' %}
+<div data-attendance-analysis data-search-url="{{ url_for('attendance_analysis.search') }}" data-url="{{ url_for('attendance_analysis.data') }}">
+<form class="admin-form analysis-filters" data-analysis-form>
+    <div class="analysis-filter-grid">
+        <label><span>Consulter</span><select name="mode"><option value="user">Un usager</option><option value="category">Une catégorie</option><option value="all">Ensemble des usagers</option></select></label>
+        <label data-analysis-user><span>Rechercher un usager</span><input type="search" data-analysis-search placeholder="Prénom, nom ou identifiant" autocomplete="off"><small data-search-note>Saisissez un prénom, un nom ou un identifiant.</small><span data-selected-user></span></label>
+        <div data-analysis-category hidden><label><span>Catégorie historique des passages</span><select name="category">{% for row in analysis_categories %}<option value="{{ row.category_key }}">{{ row.name }}{% if not row.active %} (inactive){% endif %}</option>{% endfor %}</select></label><details class="analysis-help"><summary>À propos des catégories</summary><p>Les analyses utilisent la catégorie enregistrée au moment du passage. Certaines données anciennes peuvent être incomplètes.</p></details></div>
+        <input type="hidden" name="user_id" value="">
+        <label><span>Période</span><select name="period"><option value="30d">30 derniers jours</option><option value="3m">3 derniers mois</option><option value="12m">12 derniers mois</option><option value="all">Toute la période disponible</option><option value="custom">Période personnalisée</option></select></label>
+        <button type="submit" class="admin-button primary analysis-filter-submit">Afficher l’analyse</button>
+        <div class="analysis-custom-period" data-custom-period hidden><label><span>Du</span><input name="start" type="date"></label><label><span>Au</span><input name="end" type="date"></label></div>
+    </div>
+    <div data-analysis-results class="analysis-search-results" aria-label="Comptes correspondants"></div>
+</form>
+<p data-analysis-status role="status" aria-live="polite">Sélectionnez un usager ou une catégorie pour commencer.</p>
+<div data-analysis-report hidden>
+    <section class="admin-section analysis-overview"><div class="section-heading"><div><p class="eyebrow">Votre sélection</p><h2 data-analysis-title></h2><p data-analysis-period></p></div><span class="analysis-open-note" data-open-sessions hidden></span></div><div data-analysis-metrics class="analysis-metrics"></div>
+        <details class="analysis-help"><summary>Comprendre ces indicateurs</summary><p>Une visite correspond à un passage avec arrivée enregistrée. Le temps cumulé et la moyenne utilisent les passages terminés, limités à la période choisie. Un passage en cours n’a pas encore de durée.</p></details></section>
+    <section class="admin-section" data-analysis-charts><h2>Habitudes de présence</h2><p data-analysis-small hidden>Graphiques détaillés masqués : moins de trois usagers distincts dans cette analyse collective.</p>
+        <div class="analysis-chart-grid"><article><h3>Jours de la semaine · visites</h3><div data-weekdays></div></article><article><h3>Heures · temps enregistré</h3><div class="analysis-local-scroll" tabindex="0" aria-label="Répartition horaire"><div data-hours></div></div></article></div>
+        <h3>Carte thermique · temps enregistré</h3><div class="analysis-local-scroll" tabindex="0" aria-label="Carte thermique des présences"><div data-heat></div></div><p data-heat-detail role="status"></p>
+        <h3>Évolution</h3><div data-evolution></div>
+    </section>
+    <section class="admin-section"><h2>Comparaison avec la période précédente</h2><p data-comparison-period></p><div data-comparison class="analysis-metrics"></div><details class="analysis-help"><summary>Comment lire la comparaison ?</summary><p>Les deux périodes ont la même durée. Un pourcentage n’est pas calculé si la période précédente ne contient aucune valeur de référence.</p></details></section>
+    <section class="admin-section" data-cohorts-section><h2>Retour après la première visite</h2><details class="analysis-help"><summary>Quels usagers sont comptés ?</summary><p>Les premières visites encore enregistrées pendant la période, avec 30 ou 90 jours complets de recul. Les horizons incomplets sont exclus. Il ne s’agit pas de la création du compte ni d’un classement.</p></details><div data-cohorts class="analysis-cohorts"></div></section>
+    <section class="admin-section" data-history-section><h2>Derniers passages</h2><table class="analysis-history-table" role="table"><thead><tr><th scope="col">Date</th><th scope="col">Arrivée</th><th scope="col">Départ</th><th scope="col">Durée</th></tr></thead><tbody data-history></tbody></table><button type="button" class="admin-button secondary compact" data-more hidden>Voir 10 passages supplémentaires</button></section>
+    <section class="admin-section"><div class="section-heading"><h2>Animations et réservations</h2><span class="analysis-animation-count" data-animations-count></span></div><details class="analysis-help"><summary>Réservation et présence</summary><p>Seules les présences renseignées sont comptées. Une réservation confirmée ne prouve pas une présence et n’est pas déduite des passages au FabLab.</p></details><div data-animations class="analysis-animations"></div></section>
+</div></div>
+<script defer src="{{ url_for('static',filename='attendance-analysis.js') }}"></script>
+{% endblock %}

@@ -62,14 +62,14 @@ def action_interval(value):
         return 10
 
 
-def public_catalogue(db, environment, include_information=False):
+def public_catalogue(db, environment, include_information=False,include_limits=False):
     import family_model as family
     from tablet_reservations import local_catalogue
     if environment not in ENVIRONMENTS: raise ValueError('Environnement invalide.')
     keys = ('service_id','title','description','date','hours','minimum_age',
             'booking_mode','slots','available','waitlist_enabled')
     result=[]
-    for item in local_catalogue(db, lambda _db,k,default='':family.setting(_db,k,default), environment=environment):
+    for item in local_catalogue(db, lambda _db,k,default='':family.setting(_db,k,default), environment=environment,include_closed=include_limits):
         public={k:item[k] for k in keys}
         public['waitlist_enabled']=bool(public['waitlist_enabled'])
         public['account_required']=family.setting(db,'reservation_account_required','0')=='1'
@@ -79,6 +79,10 @@ def public_catalogue(db, environment, include_information=False):
             from animation_information import optional_url
             public['information_url']=optional_url(item.get('information_url',''))
         public['slots']=[{k:s[k] for k in ('slot_uuid','label','available')} for s in item['slots']]
+        if include_limits:
+            for key in ('availability_state','waiting','waiting_limit'):public[key]=item[key]
+            for entry,slot in zip(public['slots'],item['slots']):
+                for key in ('availability_state','waiting','waiting_limit'):entry[key]=slot[key]
         result.append(public)
     return result
 

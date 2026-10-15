@@ -832,3 +832,18 @@ function configureWalkinUserPrefill() {
 }
 
 configureWalkinUserPrefill();
+
+function configureWaitlistLimitFields() {
+    document.querySelectorAll('[data-waitlist-limit]').forEach(container => {
+        const mode=container.querySelector('[name="waitlist_limit_mode"]');
+        if (!mode) return;
+        const update=()=>{
+            container.querySelector('[data-waitlist-custom]').hidden=mode.value!=='custom';
+            container.querySelector('[data-waitlist-auto]').hidden=mode.value!=='automatic';
+            container.querySelector('[data-waitlist-unlimited]').hidden=mode.value!=='unlimited';
+        };
+        mode.addEventListener('change',update);
+        update();
+    });
+}
+configureWaitlistLimitFields();

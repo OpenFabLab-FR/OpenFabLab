@@ -1,5 +1,15 @@
 # Configuration de la structure
 
+## Candidate 2.9.0
+
+Réservations : plafond général automatique/personnalisé/sans limite et dérogation
+par animation. Les cadences enregistrées restent inchangées, notamment 90/15 s.
+Fréquentation → Usagers : analyse privée en lecture seule. Annuaire des clients :
+catégories facultatives indépendantes des usagers, sans droit implicite.
+Gestion des données : préavis SMTP désactivé par défaut, modèle et délai 1–90 jours,
+sans changer les durées de conservation. Le profil exporte les nouveaux réglages
+et catégories clients, jamais les secrets. Voir [guide 2.9.0](evolution-2.9.0.md).
+
 ## Réservations publiques — relais sortant depuis 2.8.1
 
 Dans Structure, conserver l’URL HTTPS du **site WordPress** et le secret déjà partagé ; aucune URL publique du NAS n’est nécessaire. En 2.8.5, une installation neuve publie le catalogue toutes les 60 secondes et relève séparément les demandes toutes les 10 secondes, réglables de 10 à 60 secondes entières. Les valeurs déjà enregistrées sont conservées, notamment 90/15 secondes. Le bouton de vérification force une publication du catalogue et une relève, sans créer de réservation fictive.

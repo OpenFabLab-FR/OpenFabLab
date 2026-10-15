@@ -20,6 +20,9 @@ class WaitlistTests(unittest.TestCase):
         self.f=fixtures.FamilyTests();self.f.setUp();self.addCleanup(self.f.doCleanups)
         self.db,self.client,self.service=self.f.db,self.f.client,self.f.service
         self.now=queue.utcnow()
+        # Historical FIFO scenarios explicitly exercise the unlimited option.
+        # Dedicated 2.9 tests cover the new automatic/default admission cap.
+        self.db.execute("INSERT INTO app_settings VALUES('reservation_waitlist_limit_mode','unlimited') ON CONFLICT(key) DO UPDATE SET value=excluded.value")
         self.config=dict(host='smtp.example.invalid',port=587,security='starttls',username='fictional',
             password='fictional-password-not-a-real-secret',sender_name='Atelier Exemple',sender_email='atelier@example.invalid',reply_to='')
         save_config(self.f.f.database_path,self.config)

@@ -1,4 +1,22 @@
-# OpenFabLab Reservations 2.8.5 — plugin facultatif stable
+# OpenFabLab Reservations 2.9.0 — plugin facultatif
+
+Avec OpenFabLab 2.9.0 / SQLite 20, le plugin annonce `waitlist_limits_v1` pour les
+compteurs et états d’attente reçus du moteur. Les cartes gardent les informations
+de disponibilité sous les horaires et le bouton au pied. Protocole 4 / révision 3,
+stockage du relais, secret et protections inchangés. Aucun accès entrant au NAS.
+Voir [guide 2.9.0](evolution-2.9.0.md). Réinstaller par remplacement du ZIP 2.9.0,
+sans désinstallation, après sauvegarde WordPress. Le plugin 2.8.5 reste compatible
+avec ses anciens affichages ; il ne présente pas les nouveaux états.
+
+Application stable **2.9.0**, plugin **2.9.0** : télécharger le
+[ZIP officiel installable](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.9.0/openfablab-reservations-2.9.0.zip)
+et vérifier les [empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.9.0/SHA256SUMS).
+Le plugin est inchangé depuis la candidate validée ; aucune reconstruction ni
+réinstallation s’il est déjà en 2.9.0. OpenFabLab fonctionne sans WordPress.
+Les guides embarqués des ZIP sont figés avec les archives approuvées ; ce guide
+du tag `v2.9.0` constitue la référence stable.
+
+## Référence historique de la stable publique 2.8.6
 
 ## Avec OpenFabLab 2.8.6
 
@@ -37,13 +55,13 @@ personne autonome avec coordonnées et date de naissance, sans créer de fiche u
 
 ## Plugin facultatif, moteur commun
 
-Le couple actuel **OpenFabLab 2.8.6 / Reservations 2.8.5** utilise le **protocole 4, révision 3**, avec SQLite 19. **OpenFabLab initie les échanges HTTPS vers WordPress**, pas l'inverse. Il reste l'autorité pour animations, comptes liés, participants, capacité et liste d'attente. WordPress affiche un catalogue public et conserve temporairement des demandes/actions chiffrées. Il ne décide jamais des places. La borne réserve directement sans WordPress. Les compatibilités historiques du plugin 2.8.2 sont décrites plus haut.
+Le couple actuel **OpenFabLab 2.9.0 / Reservations 2.9.0** utilise le **protocole 4, révision 3**, avec SQLite 20. **OpenFabLab initie les échanges HTTPS vers WordPress**, pas l'inverse. Il reste l'autorité pour animations, comptes liés, participants, capacité et liste d'attente. WordPress affiche un catalogue public et conserve temporairement des demandes/actions chiffrées. Il ne décide jamais des places. La borne réserve directement sans WordPress. Les compatibilités historiques des plugins 2.8.5 et 2.8.2 sont décrites plus haut.
 
 Une personne sélectionnée = une place ; un responsable rattaché éligible doit participer avec un membre non autonome. Un adulte et deux enfants demandent trois places. S'il en reste deux, le groupe entier attend. E-mail valide obligatoire, téléphone selon le réglage de structure. SMTP, propositions, réponses et expirations sont gérés par OpenFabLab. Voir [familles](families-2.8.md).
 
 ## Préparer le raccordement
 
-Sauvegarder WordPress et OpenFabLab avant toute intervention ; essayer d'abord sur une installation séparée. Le ZIP `openfablab-reservations-2.8.5.zip` de la [release stable 2.8.6](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.6) est installable par les extensions WordPress. PHP 8.1+, OpenSSL AES-GCM, InnoDB, HTTPS, REST et JavaScript sont nécessaires. Aucun secret n'est fourni. Lire [les instructions de mise à jour](upgrade.md).
+Sauvegarder WordPress et OpenFabLab avant toute intervention ; essayer d'abord sur une installation séparée. Le ZIP `openfablab-reservations-2.9.0.zip` de la [release stable 2.9.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.9.0) est installable par les extensions WordPress. PHP 8.1+, OpenSSL AES-GCM, InnoDB, HTTPS, REST et JavaScript sont nécessaires. Aucun secret n'est fourni. Lire [les instructions de mise à jour](upgrade.md).
 
 Conserver le secret partagé existant dans le plugin et dans les fichiers privés OpenFabLab. Dans OpenFabLab, renseigner l'URL HTTPS du **site WordPress**, puis vérifier la liaison dans Normal et Test. Aucun champ d'adresse du moteur n'est utilisé. Une option d'une ancienne installation peut rester comme donnée inactive, mais aucune requête ne l'utilise. **Ne pas ouvrir de port NAS ni modifier le réseau pour ce flux.**
 
@@ -56,7 +74,7 @@ Les deux versions doivent négocier `outbound_actions_v1`. La version stable ann
 
 Le nom de la page n'indique pas l'environnement. Une page appelée « Test » avec un shortcode production reste Normal. Aucun contenu réel n'est corrigé automatiquement.
 
-Catalogue toutes les 90 secondes par défaut, demandes toutes les 15 secondes (réglage OpenFabLab entier 10–60). Le visiteur voit une demande reçue puis la décision réelle ; un rechargement reprend le suivi de sa session. Une panne réseau retarde la réponse. Un catalogue de plus de 15 minutes bloque les nouvelles demandes. Capacité indiquée provisoire, toujours recontrôlée transactionnellement par OpenFabLab.
+Sans configuration existante, catalogue toutes les 60 secondes et demandes toutes les 10 secondes (réglage OpenFabLab entier 10–60). Les valeurs enregistrées, notamment 90/15 secondes, sont conservées. Le visiteur voit une demande reçue puis la décision réelle ; un rechargement reprend le suivi de sa session. Une panne réseau retarde la réponse. Un catalogue de plus de 15 minutes bloque les nouvelles demandes. Capacité toujours recontrôlée transactionnellement par OpenFabLab.
 
 Le navigateur n'accède qu'au même site WordPress. Après identification validée par OpenFabLab, il reçoit des choix opaques temporaires liés au compte, jamais un annuaire public. Les familles ne sont pas énumérables par un endpoint public. Une modification publique des participants n'est pas ajoutée : l'administration conserve ses droits et contrôles.
 

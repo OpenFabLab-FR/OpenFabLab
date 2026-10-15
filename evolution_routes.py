@@ -76,6 +76,12 @@ def register(application, api):
     register_participant_search(application,a)
     from booking_account_links import register as register_booking_account_links
     register_booking_account_links(application,a)
+    from attendance_analysis import register as register_attendance_analysis
+    register_attendance_analysis(application,a)
+    from client_categories import register as register_client_categories
+    register_client_categories(application,a)
+    from retention_notices import register as register_retention_notices
+    register_retention_notices(application,a)
     # Same official lookup as the staff form; no user-directory data involved.
     from collections import deque
     from threading import Lock
