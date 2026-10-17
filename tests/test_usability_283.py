@@ -52,7 +52,7 @@ class UsabilityTests(unittest.TestCase):
         self.db.execute('PRAGMA user_version=17'); self.db.commit()
         application.create_app(dict(self.f.app.config))
         self.assertEqual(ui.enrollment_mode(self.db),'automatic_discreet')
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],20)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],21)
 
     def test_existing_choice_retained_on_restart(self):
         self.set(public_id_assignment_mode='customizable',attendance_reference='30')
@@ -254,7 +254,7 @@ class UsabilityTests(unittest.TestCase):
         self.assertEqual(users,[tuple(r) for r in self.db.execute('SELECT * FROM users')])
         self.assertEqual(settings,[tuple(r) for r in self.db.execute('SELECT * FROM app_settings ORDER BY key')])
         family_model.migrate(self.db)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],20)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],21)
 
     def dossier(self):
         self.f.login_admin()

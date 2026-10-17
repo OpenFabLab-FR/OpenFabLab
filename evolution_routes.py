@@ -67,6 +67,8 @@ def after_creation(a, database, user_id, send_email):
 
 def register(application, api):
     a = SimpleNamespace(**api)
+    from v210_routes import register as register_210
+    register_210(application,a)
     bp = Blueprint('evolution', __name__)
     import enrollment_privacy as enrollment
     enrollment.register(application, a)

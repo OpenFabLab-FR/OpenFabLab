@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% block title %}Abonnements et crédits · OpenFabLab{% endblock %}
+{% block body_class %}admin-page memberships-page{% endblock %}
+{% macro fields(action) %}<input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+<input type="hidden" name="operation_key" value="{{ operation_key }}-{{ action }}">
+<input type="hidden" name="action" value="{{ action }}">
+<input type="hidden" name="user" value="{{ selected.id if selected else '' }}">{% endmacro %}
+{% block content %}
+<section class="content-heading">
+<h1>Abonnements et crédits</h1>
+<p>Des droits facultatifs, distincts des réservations et des paiements.</p>
+</section>
+{% include '_admin_nav.html' %}
+<div class="membership-metrics">{% for key,label in [('active','Droits valides'),('soon','Échéances proches'),('expired','Droits expirés'),('empty','Carnets épuisés')] %}<article>
+<strong>{{ membership_summary[key] or 0 }}</strong>
+<span>{{ label }}</span>
+</article>{% endfor %}</div>
+<section class="admin-section">
+<h2>Rechercher un usager</h2>
+<form method="get" class="membership-search">
+<label>Prénom, nom ou identifiant<input name="q" value="{{ query }}" maxlength="80" placeholder="Rechercher sans charger l’annuaire">
+</label>
+<button class="admin-button primary">Rechercher</button>
+</form>
+{% if query %}<ul class="membership-results">{% for person in results %}<li>
+<a href="{{ url_for('v210.memberships',user=person.id) }}">{{ person.first_name }} {{ person.last_name }} · #{{ person.public_id }}</a>
+</li>{% else %}<li>Aucun usager trouvé.</li>{% endfor %}</ul>{% endif %}
+{% if selected %}<h3>{{ selected.first_name }} {{ selected.last_name }} · #{{ selected.public_id }}</h3>
+<a href="{{ url_for('admin_edit_user',user_id=selected.id) }}">Ouvrir la fiche usager</a>
+<div class="membership-grants">{% for grant in grants %}<article class="membership-card">
+<h3>{{ grant.terms.name }}</h3>
+<p>{{ grant.starts_on|date_fr }} → {{ grant.ends_on|date_fr }} · <strong>{{ 'Suspendu' if grant.status=='suspended' else 'Expiré' if grant.ends_on<today else 'À venir' if grant.starts_on>today else 'Valide' }}</strong>{% if grant.ended_at %} · Rattachement terminé{% endif %}</p>
+{% if grant.terms.kind=='credits' %}<p class="membership-balance">{{ grant.balance_label }}</p>{% endif %}
+<p class="form-help">Tarif à l’attribution : {{ '%.2f'|format(grant.terms.price_cents/100) }} € · Ce droit ne constitue pas une preuve de paiement.</p>
+<details>
+<summary>Bénéficiaires et actions</summary>
+<ul>{% for person in grant.beneficiaries %}<li>{{ person.first_name }} {{ person.last_name }}{{ ' · terminé' if person.ended_at else '' }}</li>{% endfor %}</ul>
+{% if grant.terms.kind=='credits' %}<form method="post" action="{{ url_for('v210.membership_action') }}" class="admin-form">{{ fields('recharge') }}<input type="hidden" name="grant_id" value="{{ grant.grant_id }}">
+<div class="form-grid">
+<label>Ajouter des crédits<input name="quantity" type="number" min="0.001" step="any" required>
+</label>
+<label>Motif<input name="reason" maxlength="300" required>
+</label>
+</div>
+<button class="admin-button secondary compact">Recharger</button>
+</form>
+<form method="post" action="{{ url_for('v210.membership_action') }}" class="admin-form">{{ fields('correction') }}<input type="hidden" name="grant_id" value="{{ grant.grant_id }}">
+<div class="form-grid">
+<label>Correction signée (+ ou −)<input name="quantity" type="number" step="any" required>
+</label>
+<label>Motif obligatoire<input name="reason" maxlength="300" required>
+</label>
+</div>
+<button class="admin-button secondary compact">Enregistrer une correction</button>
+</form>{% endif %}
+<form method="post" action="{{ url_for('v210.membership_action') }}" class="admin-form">{{ fields('status') }}<input type="hidden" name="grant_id" value="{{ grant.grant_id }}">
+<input type="hidden" name="status" value="{{ 'active' if grant.status=='suspended' else 'suspended' }}">
+<label>Motif<input name="reason" maxlength="300" required>
+</label>
+<button class="admin-button secondary compact">{{ 'Réactiver' if grant.status=='suspended' else 'Suspendre' }}</button>
+</form>
+{% if grant.terms.scope=='family' %}<form method="post" action="{{ url_for('v210.membership_action') }}" class="admin-form">{{ fields('beneficiaries') }}<input type="hidden" name="grant_id" value="{{ grant.grant_id }}">
+<label>Bénéficiaires explicitement couverts<select name="beneficiaries" multiple required>{% for person in family_choices %}<option value="{{ person.id }}" {% if person.id in grant.beneficiaries|selectattr('ended_at','none')|map(attribute='id')|list %}selected{% endif %}>{{ person.first_name }} {{ person.last_name }}</option>{% endfor %}</select>
+</label>
+<label>Motif<input name="reason" maxlength="300" required>
+</label>
+<button class="admin-button secondary compact">Modifier les bénéficiaires</button>
+</form>{% endif %}
+{% if modules.billing %}<form method="post" action="{{ url_for('v210.membership_action') }}" class="admin-form">{{ fields('billing') }}<input type="hidden" name="grant_id" value="{{ grant.grant_id }}">
+<label>Numéro technique d’un dossier existant (facultatif)<input name="billing_record_id" type="number" min="1" value="{{ grant.billing_record_id or '' }}">
+</label>
+<button class="admin-button secondary compact">Lier le dossier, sans modifier sa facturation</button>
+</form>
+{% if grant.billing_record_id %}<a href="{{ url_for('admin_billing_detail',record_id=grant.billing_record_id) }}">Ouvrir le dossier associé</a>{% endif %}{% endif %}
+<form method="post" action="{{ url_for('v210.membership_action') }}" class="admin-form">{{ fields('assign') }}<input type="hidden" name="renew_from" value="{{ grant.grant_id }}">
+<label>Formule du renouvellement<select name="plan_id">{% for plan in plans if plan.active %}<option value="{{ plan.plan_id }}" {% if plan.plan_id==grant.plan_id %}selected{% endif %}>{{ plan.name }}</option>{% endfor %}</select>
+</label>
+<label>Début souhaité<input type="date" name="starts_on" value="{{ today }}" required>
+</label>{% for person in grant.beneficiaries if not person.ended_at %}<input type="hidden" name="beneficiaries" value="{{ person.id }}">{% endfor %}<button class="admin-button secondary compact">Renouveler après la période courante</button>
+</form>
+</details>
+</article>{% else %}<p>Aucun droit attribué. L’usager et ses réservations restent inchangés.</p>{% endfor %}</div>
+<details>
+<summary>Attribuer une formule</summary>
+<form method="post" action="{{ url_for('v210.membership_action') }}" class="admin-form">{{ fields('assign') }}<div class="form-grid">
+<label>Formule<select name="plan_id" required>{% for plan in plans if plan.active %}<option value="{{ plan.plan_id }}">{{ plan.name }} · {{ 'Familiale' if plan.scope=='family' else 'Individuelle' }}</option>{% endfor %}</select>
+</label>
+<label>Début de validité<input type="date" name="starts_on" value="{{ today }}" required>
+</label>
+</div>
+<fieldset>
+<legend>Bénéficiaires — sélection explicite</legend>{% for person in family_choices %}<label class="checkbox-field">
+<input type="checkbox" name="beneficiaries" value="{{ person.id }}" {% if person.id==selected.id %}checked{% endif %}>
+<span>{{ person.first_name }} {{ person.last_name }}</span>
+</label>{% endfor %}</fieldset>
+<button class="admin-button primary compact">Attribuer sans créer de paiement</button>
+</form>
+</details>
+<details>
+<summary>Carnet principal et exemption individuelle</summary>
+<form method="post" action="{{ url_for('v210.membership_action') }}" class="admin-form">{{ fields('preference') }}<label>Carnet à utiliser<select name="plan_id">
+<option value="">Aucun choix — automatique si un seul type de carnet</option>{% for grant in grants if grant.terms.kind=='credits' %}<option value="{{ grant.plan_id }}" {% if member_preferences and member_preferences.primary_plan_id==grant.plan_id %}selected{% endif %}>{{ grant.terms.name }}</option>{% endfor %}</select>
+</label>
+<label class="checkbox-field">
+<input type="checkbox" name="exempt" value="1" {% if member_preferences and member_preferences.exempt %}checked{% endif %}>
+<span>Exempter cet usager du contrôle et du débit</span>
+</label>
+<label>Motif<input name="reason" maxlength="300" required value="{{ member_preferences.reason if member_preferences else '' }}">
+</label>
+<button class="admin-button secondary compact">Enregistrer le choix</button>
+</form>
+</details>
+{% endif %}</section>
+<section class="admin-section">
+<h2>Formules</h2>
+<div class="membership-grants">{% for plan in plans %}<article class="membership-card">
+<h3>{{ plan.name }}</h3>
+<p>{{ 'Droit de période' if plan.kind=='period' else 'Crédits · '+plan.unit }} · {{ 'Familiale' if plan.scope=='family' else 'Individuelle' }} · {{ '%.2f'|format(plan.price_cents/100) }} €</p>
+<p>{{ plan.description }}</p>
+<a href="{{ url_for('v210.memberships',edit=plan.plan_id,user=selected.id if selected else '') }}#plan-editor">Modifier la formule</a>
+<form method="post" action="{{ url_for('v210.membership_action') }}">{{ fields('archive') }}<input type="hidden" name="plan_id" value="{{ plan.plan_id }}">
+<input type="hidden" name="active" value="{{ 0 if plan.active else 1 }}">
+<button class="admin-button secondary compact">{{ 'Archiver' if plan.active else 'Réactiver' }}</button>
+</form>
+</article>{% else %}<p>Créez vos formules. Aucun modèle payant n’est imposé.</p>{% endfor %}</div>
+<details id="plan-editor" {% if editing %}open{% endif %}>
+<summary>{{ 'Modifier la formule' if editing else 'Créer une formule' }}</summary>{% set p=editing or {} %}{% set t=p.terms|default({}) %}<form method="post" action="{{ url_for('v210.membership_action') }}" class="admin-form">{{ fields('plan') }}<input type="hidden" name="plan_id" value="{{ p.plan_id|default('') }}">
+<div class="form-grid">
+<label>Nom<input name="name" maxlength="120" required value="{{ p.name|default('') }}">
+</label>
+<label>Prix (€)<input name="price" type="number" min="0" step="0.01" required value="{{ '%.2f'|format(p.price_cents|default(0)/100) }}">
+</label>
+<label>Type<select name="kind">
+<option value="period" {% if p.kind|default('period')=='period' %}selected{% endif %}>Cotisation / abonnement de période</option>
+<option value="credits" {% if p.kind|default('')=='credits' %}selected{% endif %}>Carnet de crédits</option>
+</select>
+</label>
+<label>Bénéficiaires<select name="scope">
+<option value="individual">Individuel</option>
+<option value="family" {% if p.scope|default('')=='family' %}selected{% endif %}>Familial / collectif lié</option>
+</select>
+</label>
+<label>Unité<select name="unit">{% for key,label in [('none','Aucune — droit de période'),('passage','Passage'),('session','Séance de fréquentation'),('hour','Crédit horaire'),('halfday','Demi-journée')] %}<option value="{{ key }}" {% if p.unit|default('none')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+</label>
+<label>Crédits initiaux<input name="quantity" type="number" min="0" step="any" value="{{ t.quantity|default(0)/(t.unit_minutes|default(60)*60) if t.unit|default('')=='hour' else t.quantity|default(0) }}">
+</label>
+<label>Durée<input name="validity_value" type="number" min="1" max="1000" value="{{ t.validity_value|default(1) }}">
+</label>
+<label>Unité de durée<select name="validity_unit">{% for key,label in [('days','Jours'),('weeks','Semaines'),('months','Mois'),('years','Années'),('fixed','Date de fin définie')] %}<option value="{{ key }}" {% if t.validity_unit|default('years')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+</label>
+<label>Fin définie (si choisie)<input name="fixed_end" type="date" value="{{ t.fixed_end|default('') }}">
+</label>
+</div>
+<label>Description<textarea name="description" rows="3" maxlength="2000">{{ p.description|default('') }}</textarea>
+</label>
+<details>
+<summary>Règles de consommation</summary>
+<div class="form-grid">
+<label>Un crédit horaire = minutes<input type="number" name="unit_minutes" min="1" max="1440" value="{{ t.unit_minutes|default(60) }}">
+</label>
+<label>Retour sans nouveau débit de passage (minutes)<input name="grace_minutes" type="number" min="0" max="240" value="{{ t.grace_minutes|default(15) }}">
+</label>
+</div>
+<label>Plages de demi-journée<textarea name="halfday_windows" rows="3">{{ t.halfday_windows|default([['08:00','13:00'],['13:00','20:00']])|tojson }}</textarea>
+</label>
+<p class="form-help">Exemple : [["08:00","13:00"],["13:00","20:00"]]. Une plage ne débite qu’une fois par personne et carnet dans la même journée. Les heures sont débitées au départ réel. Une séance correspond à une session de fréquentation, pas à une réservation.</p>
+</details>
+<p class="form-help">Modifier une formule ne change pas les droits déjà attribués. Les dates de fin sont inclusives.</p>
+<button class="admin-button primary compact">Enregistrer la formule</button>
+</form>
+</details>
+</section>
+<section class="admin-section">
+<h2>Échéances et crédits</h2>
+<div class="table-scroll">
+<table class="services-table">
+<thead>
+<tr>
+<th>Titulaire</th>
+<th>Formule</th>
+<th>Échéance</th>
+<th>État</th>
+</tr>
+</thead>
+<tbody>{% for grant in recent %}<tr>
+<td data-label="Titulaire">{% if grant.owner_id %}<a href="{{ url_for('v210.memberships',user=grant.owner_id) }}">{{ grant.first_name }} {{ grant.last_name }}</a>{% else %}Compte supprimé{% endif %}</td>
+<td data-label="Formule">{{ (grant.terms_json|from_json).name }}</td>
+<td data-label="Échéance">{{ grant.ends_on|date_fr }}</td>
+<td data-label="État">{{ 'Suspendu' if grant.status=='suspended' else 'Expiré' if grant.ends_on<today else 'À venir' if grant.starts_on>today else 'Valide' }}</td>
+</tr>{% else %}<tr>
+<td colspan="4">Aucun droit enregistré.</td>
+</tr>{% endfor %}</tbody>
+</table>
+</div>
+<p class="form-help">100 échéances au maximum. Recherchez un usager pour consulter ses droits.</p>
+</section>
+<section class="admin-section">
+<h2>Régularisations</h2>
+<p class="form-help">Le départ n’est jamais bloqué. Une clôture automatique ne constitue pas une durée réellement vérifiée. Corrigez d’abord les heures depuis Fréquentation si nécessaire, puis validez le décompte.</p>{% for item in pending %}<p>Session {{ item.session_id or 'supprimée' }} · complément à régulariser.</p>{% endfor %}{% for item in reviews %}<form method="post" action="{{ url_for('v210.membership_action') }}" class="membership-search">{{ fields('review') }}<input type="hidden" name="session_id" value="{{ item.session_id }}">
+<span>Session {{ item.session_id }}</span>
+<label>Motif de vérification<input name="reason" maxlength="300" required>
+</label>
+<button class="admin-button secondary compact">Valider le décompte réel</button>
+</form>{% else %}{% if not pending %}<p>Aucune régularisation en attente.</p>{% endif %}{% endfor %}</section>
+<section class="admin-section">
+<h2>Historique des mouvements</h2>
+<div class="table-scroll">
+<table class="services-table">
+<thead>
+<tr>
+<th>Date</th>
+<th>Opération</th>
+<th>Quantité / solde</th>
+<th>Origine et motif</th>
+<th>Correction</th>
+</tr>
+</thead>
+<tbody>{% for entry in history %}<tr>
+<td data-label="Date">{{ entry.created_at|paris_datetime }}</td>
+<td data-label="Opération">{{ entry.kind|member_kind }}{% if entry.session_id %} · session {{ entry.session_id }}{% endif %}</td>
+<td data-label="Quantité / solde">{{ entry.quantity|member_amount(entry.terms_json) }} / {{ entry.balance_after|member_amount(entry.terms_json) }}</td>
+<td data-label="Origine et motif">{{ 'Administrateur' if entry.actor=='admin' else 'Automatique' }} · {{ entry.reason }}</td>
+<td data-label="Correction">{% if entry.kind in ('consumption','reconciliation','recharge','correction') and entry.quantity %}<details>
+<summary>Compenser</summary>
+<form method="post" action="{{ url_for('v210.membership_action') }}">{{ fields('reverse') }}<input type="hidden" name="entry_key" value="{{ entry.operation_key }}">
+<label>Motif<input name="reason" maxlength="300" required>
+</label>
+<button class="admin-button secondary compact">Créer l’écriture inverse</button>
+</form>
+</details>{% endif %}</td>
+</tr>{% else %}<tr>
+<td colspan="5">Aucun mouvement.</td>
+</tr>{% endfor %}</tbody>
+</table>
+</div>{% if more_history %}<a href="{{ url_for('v210.memberships',user=selected.id if selected else '',page=history_page+1) }}">50 mouvements suivants</a>{% endif %}</section>
+<details class="admin-section">
+<summary>Contrôle, exemptions et notifications</summary>
+<form method="post" action="{{ url_for('v210.membership_action') }}" class="admin-form">{{ fields('settings') }}<div class="form-grid">
+<label>Contrôle à l’entrée<select name="membership_control">{% for key,label in [('informative','Informatif — aucune restriction'),('warning','Avertissement — entrée autorisée'),('strict','Strict — refuser seulement une nouvelle entrée non éligible')] %}<option value="{{ key }}" {% if v210.membership_control==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+</label>
+<label>Durée supérieure au solde<select name="membership_hourly_shortfall">
+<option value="available" {% if v210.membership_hourly_shortfall=='available' %}selected{% endif %}>Débiter le disponible et signaler le complément</option>
+<option value="manual" {% if v210.membership_hourly_shortfall=='manual' %}selected{% endif %}>Régulariser manuellement sans débit partiel</option>
+</select>
+</label>
+</div>{% for key,label in [('membership_require_period','Exiger un droit de période valide'),('membership_require_credit','Exiger un carnet de crédits valide'),('membership_smtp_enabled','Activer les notifications à l’adresse actuelle du titulaire via SMTP'),('membership_discord_enabled','Activer les alertes administratives Discord sans coordonnées'),('membership_confirmation_enabled','Confirmer les renouvellements et recharges (sans annoncer de paiement)')] %}<label class="checkbox-field">
+<input name="{{ key }}" type="checkbox" value="1" {% if v210[key]=='1' %}checked{% endif %}>
+<span>{{ label }}</span>
+</label>{% endfor %}<label>Catégories exemptées (aucune par défaut)<select name="membership_exempt_categories" multiple>{% for cat in membership_categories %}<option value="{{ cat.category_key }}" {% if cat.category_key in v210.membership_exempt_categories|from_json %}selected{% endif %}>{{ cat.name }}</option>{% endfor %}</select>
+</label>
+<div class="form-grid">
+<label>Préavis d’expiration (jours)<input name="membership_notice_days" type="number" min="1" max="365" value="{{ v210.membership_notice_days }}">
+</label>
+<label>Seuil de crédit faible<input name="membership_low_threshold" type="number" min="0" max="100000" value="{{ v210.membership_low_threshold }}">
+</label>
+</div>
+<details>
+<summary>Personnaliser l’e-mail</summary>
+<label>Objet<input name="membership_mail_subject" maxlength="160" value="{{ v210.membership_mail_subject }}">
+</label>
+<label>Message<textarea name="membership_mail_body" rows="10" maxlength="5000">{{ v210.membership_mail_body }}</textarea>
+</label>
+<p class="form-help">Variables : {structure_name}, {evenement}, {nom_formule}, {date_expiration}, {credits_restants}. Aucun destinataire familial n’est déduit, aucune coordonnée supprimée n’est reconstituée.</p>
+</details>
+<button class="admin-button primary">Enregistrer les règles</button>
+</form>
+</details>
+{% endblock %}

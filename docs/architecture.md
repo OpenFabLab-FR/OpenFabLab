@@ -1,5 +1,19 @@
 # Architecture
 
+## Version stable 2.10.0
+
+SQLite **21**, migration additive depuis 20. Le module facultatif Abonnements
+et crédits réutilise usagers, familles et sessions ; conditions conservées,
+soldes entiers et mouvements transactionnels/idempotents. Désactivé par défaut,
+il ne change pas le fonctionnement des structures qui ne l’utilisent pas.
+Aucun moteur bancaire ni paiement en ligne.
+
+Notes privées par occurrence avec contrôle de rôle/CSRF, incidents de
+synchronisation durables et sons Web Audio synthétiques locaux. Le plugin
+facultatif Reservations **2.9.0 est inchangé**, protocole 4/révision 3 et
+`waitlist_limits_v1`. Le moteur de places reste unique ; relais exclusivement
+HTTPS sortant, sans accès entrant au serveur. Voir [guide 2.10.0](evolution-2.10.0.md).
+
 ## Version stable 2.9.0
 
 Base stable 2.8.6 conservée, application 2.9.0, SQLite 20 par migration additive,

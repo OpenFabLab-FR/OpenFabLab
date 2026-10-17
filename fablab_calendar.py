@@ -250,6 +250,9 @@ def calendar_view(db,args,a):
                     if row['expected_participants'] is not None:
                         detail.append('Capacité : ' + str(row['expected_participants']) + ' place(s)')
             event['details'] = '\n'.join(detail)
+            note=db.execute('SELECT note FROM calendar_notes WHERE event_kind=? AND event_key=? AND occurrence_date=?',
+                (event['kind'],event['key'],event['day'].isoformat())).fetchone()
+            event['internal_note']=note['note'] if note else ''
             for person in event['people']:
                 row = db.execute('SELECT name FROM user_categories WHERE category_key=?',(person['category'],)).fetchone()
                 person['category_label'] = row['name'] if row else person['category']

@@ -1,5 +1,30 @@
 # Historique public
 
+## 2.10.0 — version stable — 18 octobre 2026
+
+Version complète incluant la corrective 1 validée en utilisation réelle.
+Module Abonnements et crédits facultatif et désactivé par défaut ; aucune
+fonction de paiement bancaire en ligne. SQLite 21, migration additive depuis
+20, plugin facultatif Reservations 2.9.0 inchangé, protocole 4/révision 3.
+
+Corrective 1 après essais réels : bloc de note du calendrier allégé et action
+secondaire rapprochée ; réglages de synchronisation Discord regroupés dans un
+seul formulaire ; sons activés à 50 % pour les seules préférences absentes,
+sans écraser les choix enregistrés. Schéma 21 inchangé, aucun changement du
+module Abonnements et crédits, du moteur sonore ou du plugin WordPress.
+L’enregistrement des notes est explicitement autorisé aux modérateurs du
+calendrier, sans nouveau droit général d’administration et avec maintien du
+contrôle serveur, du module Calendrier/Activités et de la protection CSRF.
+
+- Module facultatif Abonnements et crédits : formules et conditions conservées,
+  bénéficiaires familiaux explicites, soldes transactionnels, régularisations et
+  notifications facultatives. Désactivé par défaut, aucune attribution automatique.
+- Retour sonore synthétique local facultatif, volume et ambiances classique,
+  Halloween, Noël/automatique ; confirmations après enregistrement réel.
+- Temporisation des alertes Discord de synchronisation, états séparés Normal/Test.
+- Notes internes par occurrence du calendrier, réservées à l’équipe.
+- Migration additive SQLite20 →21 ; plugin2.9.0 et réservations inchangés.
+
 ## 2.9.0 — version stable — 15 octobre 2026
 
 Finitions intégrées après essais réels : option Discord « Liste d’attente

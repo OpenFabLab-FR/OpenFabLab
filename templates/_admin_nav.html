@@ -7,6 +7,7 @@
     <a class="admin-tab{% if request.endpoint == 'admin_moderator_themes' %} active{% endif %}" href="{{ url_for('admin_moderator_themes') }}">Thèmes</a>
     {% endif %}
     {% if admin_access_role == 'admin' %}
+    {% if modules.memberships %}<a class="admin-tab{% if request.endpoint=='v210.memberships' %} active{% endif %}" href="{{ url_for('v210.memberships') }}">Abonnements et crédits</a>{% endif %}
     {% if modules.billing %}<a class="admin-tab{% if request.endpoint in ('admin_billing', 'admin_billing_form', 'admin_billing_client_form', 'admin_billing_detail', 'admin_billing_sign', 'admin_billing_create_invoice', 'admin_billing_mark_sent', 'admin_billing_mark_paid', 'admin_billing_reminder', 'admin_billing_document', 'admin_billing_facdepot') %} active{% endif %}" href="{{ url_for('admin_billing') }}">Facturation</a>{% endif %}
     <a class="admin-tab{% if request.endpoint in ('admin_database_backup', 'admin_settings_structure', 'admin_settings_reservations', 'admin_settings_display', 'admin_settings_kiosk', 'admin_settings_tariffs', 'admin_settings_data', 'admin_notifications', 'admin_export_database', 'admin_reset_database', 'admin_closure_settings', 'admin_toggle_automatic_closure', 'admin_close_all_now', 'admin_reset_today', 'evolution.users_settings', 'evolution.integrations') %} active{% endif %}" href="{{ url_for('admin_database_backup') }}">Réglages</a>
     {% endif %}

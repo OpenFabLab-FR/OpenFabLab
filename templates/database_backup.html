@@ -99,6 +99,7 @@
     <div class="form-actions display-options-actions"><button form="display-options" class="admin-button primary" type="submit">Enregistrer les options</button></div>
 {% elif settings_view == 'borne' %}
 {% include '_home_title.html' %}
+{% include '_sound_settings.html' %}
 <form method="post" action="{{ url_for('admin_update_options', settings_view='borne') }}" class="admin-form options-main-form settings-save-form">
     <section class="form-section options-section" id="borne-et-horaires">
         <div class="form-section-heading"><p class="eyebrow">Tablette d’accueil</p><h2>Borne et horaires</h2></div>

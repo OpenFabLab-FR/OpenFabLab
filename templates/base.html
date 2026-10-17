@@ -18,6 +18,8 @@
     {% block page_scripts %}{% endblock %}
     <script src="{{ url_for('static', filename='app.js') }}" defer></script>
     <script src="{{ url_for('static', filename='evolution.js') }}" defer></script>
+    {% if kiosk_audio %}<script type="application/json" id="kiosk-audio">{{ dict(kiosk_audio,token=kiosk_action)|tojson }}</script><script src="{{ url_for('static',filename='kiosk-sound.js') }}" defer></script>{% endif %}
+    <link rel="stylesheet" href="{{ url_for('static',filename='memberships.css') }}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
     <header class="site-header">

@@ -14,6 +14,8 @@ class ReservationDiscordTests(unittest.TestCase):
         self.f=fixtures.WaitlistTests();self.f.setUp();self.addCleanup(self.f.doCleanups)
         self.db=self.f.db
         write_setting(self.db,'discord_notifications_enabled','1')
+        # Historical immediate-episode scenarios select zero explicitly.
+        write_setting(self.db,'discord_sync_delay_minutes','0')
         self.db.commit()
         self.sent=[]
 

@@ -224,6 +224,14 @@ document.querySelectorAll('[data-calendar-detail]').forEach(link => {
       dialog.append(description);
     }
     if (people.childElementCount) dialog.append(people);
+    const noteTemplate = document.getElementById('calendar-note-form');
+    if (noteTemplate) {
+      const note = noteTemplate.content.cloneNode(true);
+      const form = note.querySelector('form');
+      for (const key of ['kind', 'key', 'day']) form.elements.namedItem(key).value = link.dataset[key];
+      form.elements.namedItem('note').value = link.dataset.note || '';
+      dialog.append(note);
+    }
     dialog.append(open, close); document.body.append(dialog); dialog.showModal(); close.focus();
     dialog.querySelectorAll('.category-badge').forEach(prepareCategoryBadge);
     const visibility = document.getElementById('calendar-visibility');

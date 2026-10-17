@@ -28,6 +28,7 @@ STRUCTURE_KEYS = {
     "data_controller", "data_controller_address", "data_controller_representative", "data_controller_representative_role",
 }
 MODULE_KEYS = {
+    'memberships',
     "frequency", "users", "activities", "public_reservations", "booking_slots",
     "rentals", "billing", "weather", "discord",
     'resources', 'authorizations',
@@ -94,6 +95,8 @@ RESERVATION_RANGES = {
 def allowed_setting(key):
     """Use a narrow allowlist; never export a newly added secret by accident."""
     from reservation_email_templates import allowed_key
+    from v210_config import DEFAULTS
+    if key in DEFAULTS:return True
     if allowed_key(key):
         return True
     if key in EXACT_KEYS:
@@ -208,6 +211,8 @@ def parse_profile(raw):
             for key, value in settings.items():
                 if not isinstance(key, str) or not allowed_setting(key) or not isinstance(value, str) or len(value) > 8000:
                     raise ValueError("Le profil contient un réglage non autorisé.")
+                from v210_config import DEFAULTS,validate as validate_210
+                if key in DEFAULTS:validate_210(key,value)
                 if key=='home_title' and (not value.strip() or len(value)>40 or any(ord(c)<32 for c in value)):
                     raise ValueError('Titre d’accueil invalide.')
                 if key=='retention_contact_notice_enabled' and value not in ('0','1'):

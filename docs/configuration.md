@@ -1,6 +1,21 @@
 # Configuration de la structure
 
-## Candidate 2.9.0
+## Nouveautés de la stable 2.10.0
+
+- Réglages → Modules : Abonnements et crédits facultatif, désactivé par défaut.
+  Son activation ouvre la gestion des formules et droits ; désactiver conserve
+  les données et arrête contrôles, débits et notifications du module.
+- Réglages → Notifications : activation de l’alerte de synchronisation WordPress,
+  délai de 10 minutes par défaut et rétablissement facultatif dans le même groupe.
+- Réglages → Borne : sons activés à 50 % pour les seules clés absentes, ambiances
+  classique/Halloween/Noël ou automatique, volume et test volontaires.
+- Calendrier : notes internes par occurrence pour administrateurs et modérateurs
+  autorisés, sans diffusion ni conséquence métier automatique.
+
+Les préférences enregistrées et le profil importé sont conservés ; aucune
+activation de paiement bancaire. Voir [le guide et les exemples](evolution-2.10.0.md).
+
+## Référence 2.9.0
 
 Réservations : plafond général automatique/personnalisé/sans limite et dérogation
 par animation. Les cadences enregistrées restent inchangées, notamment 90/15 s.

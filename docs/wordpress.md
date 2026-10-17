@@ -1,5 +1,23 @@
 # OpenFabLab Reservations 2.9.0 — plugin facultatif
 
+## Avec OpenFabLab 2.10.0 stable
+
+Plugin compatible facultatif : **OpenFabLab Reservations 2.9.0**, strictement
+inchangé par rapport à la release 2.9.0. Aucun nouveau plugin 2.10.0, aucune
+réinstallation nécessaire. [Télécharger le ZIP 2.9.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.10.0/openfablab-reservations-2.9.0.zip)
+et vérifier les [empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.10.0/SHA256SUMS).
+
+Protocole **4/révision 3**, `waitlist_limits_v1` et réservations, familles,
+annulations, listes d’attente et chiffrement conservés. OpenFabLab seul attribue
+les places ; WordPress met les demandes en file, sans devenir un moteur métier.
+Communication HTTPS **sortante depuis OpenFabLab**, aucun port entrant à ouvrir
+sur son serveur. Les cadences et secrets existants ne changent pas.
+OpenFabLab reste utilisable sans WordPress. Les notes internes et les données
+d’abonnement ne sont pas publiées dans le catalogue. Voir [architecture](architecture.md).
+
+
+## Référence historique : OpenFabLab 2.9.0
+
 Avec OpenFabLab 2.9.0 / SQLite 20, le plugin annonce `waitlist_limits_v1` pour les
 compteurs et états d’attente reçus du moteur. Les cartes gardent les informations
 de disponibilité sous les horaires et le bouton au pied. Protocole 4 / révision 3,

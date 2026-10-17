@@ -39,6 +39,7 @@ docs/corrections-2.8.5.md
 docs/corrections-2.8.6.md
 docs/development.md
 docs/email-templates.md
+docs/evolution-2.10.0.md
 docs/evolution-2.7.md
 docs/evolution-2.9.0.md
 docs/families-2.8.md
@@ -66,6 +67,9 @@ family_reservation_routes.py
 family_reservations.py
 family_routes.py
 family_waitlist.py
+kiosk_feedback.py
+membership_notices.py
+memberships.py
 openfablab/__init__.py
 openfablab/__main__.py
 outbound_actions.py
@@ -102,12 +106,15 @@ static/icons/OpenFabLab-favicon.ico
 static/icons/OpenFabLab-icon-192.png
 static/icons/OpenFabLab-icon-512.png
 static/icons/OpenFabLab-icon.svg
+static/kiosk-sound.js
+static/memberships.css
 static/participant-picker.js
 static/public-enrollment.js
 static/qr-scanner.js
 static/style.css
 static/vendor/jsQR-1.4.0.js
 static/vendor/jsQR-LICENSE.txt
+sync_incidents.py
 tablet_reservations.py
 templates/_admin_nav.html
 templates/_affiliation_fields.html
@@ -127,6 +134,7 @@ templates/_reservation_settings.html
 templates/_resource_fields.html
 templates/_settings_nav.html
 templates/_smtp_settings.html
+templates/_sound_settings.html
 templates/_theme_picker.html
 templates/_theme_scene.html
 templates/admin.html
@@ -160,6 +168,7 @@ templates/frequency_exports.html
 templates/identification.html
 templates/index.html
 templates/index_disabled.html
+templates/memberships.html
 templates/moderator_themes.html
 templates/notifications.html
 templates/reservation_email_settings.html
@@ -222,6 +231,7 @@ tests/test_family_waitlist.py
 tests/test_final_pass_ui.js
 tests/test_guest_reservations.py
 tests/test_logo_shadow_ui.js
+tests/test_memberships_210.py
 tests/test_micro_286.py
 tests/test_naming.py
 tests/test_outbound_actions.py
@@ -257,6 +267,9 @@ tests/test_wordpress_transport.php
 tools/check_public_tree.py
 tools/run_checks.py
 usability.py
+v210_config.py
+v210_routes.py
+v210_schema.py
 v290_schema.py
 waitlist_limits.py
 welcome_mail.py

@@ -85,12 +85,12 @@ def catalogue(db, database_path, site_url, client=None, environments=actions.ENV
                 from reservation_notifications import sync_episode
                 sync_episode(db,env,'catalogue',False)
                 db.execute("INSERT INTO reservation_sync_state(environment,cursor,last_attempt_at,last_success_at,last_error) VALUES(?,'',?,?,NULL) ON CONFLICT(environment) DO UPDATE SET last_attempt_at=excluded.last_attempt_at,last_success_at=excluded.last_success_at,last_error=NULL",(env,stamp,stamp))
-        except (OSError,ValueError,sqlite3.Error):
+        except (OSError,ValueError,sqlite3.Error) as error:
             db.rollback()
             message='Connexion sortante non vérifiée. Vérifiez les versions, HTTPS et le secret partagé.'
             with actions.transaction(db):
                 from reservation_notifications import sync_episode
-                sync_episode(db,env,'catalogue',True)
+                sync_episode(db,env,'catalogue',True,critical=isinstance(error,ValueError))
                 db.execute('INSERT INTO wordpress_relay_state(environment,last_error) VALUES(?,?) ON CONFLICT(environment) DO UPDATE SET last_error=excluded.last_error',(env,message))
                 db.execute("INSERT INTO app_settings(key,value) VALUES(?,'0') ON CONFLICT(key) DO UPDATE SET value='0'",('reservation_outbound_ready_'+env,))
                 db.execute("INSERT INTO reservation_sync_state(environment,cursor,last_attempt_at,last_error_at,last_error) VALUES(?,'',?,?,?) ON CONFLICT(environment) DO UPDATE SET last_attempt_at=excluded.last_attempt_at,last_error_at=excluded.last_error_at,last_error=excluded.last_error",(env,stamp,stamp,message))
@@ -112,12 +112,12 @@ def poll(db, database_path, site_url, client=None, environments=actions.ENVIRONM
             with actions.transaction(db):
                 from reservation_notifications import sync_episode
                 sync_episode(db,env,'poll',False)
-        except (OSError,ValueError,sqlite3.Error):
+        except (OSError,ValueError,sqlite3.Error) as error:
             db.rollback()
             message='Demandes non relevées ou résultats non acquittés. La connexion sera réessayée, sans nouvelle attribution de places.'
             with actions.transaction(db):
                 from reservation_notifications import sync_episode
-                sync_episode(db,env,'poll',True)
+                sync_episode(db,env,'poll',True,critical=isinstance(error,ValueError))
                 db.execute('INSERT INTO wordpress_relay_state(environment,last_error) VALUES(?,?) ON CONFLICT(environment) DO UPDATE SET last_error=excluded.last_error',(env,message))
             errors.append({'environment':env,'error':message})
     return {'configured':True,'processed':processed,'errors':errors}

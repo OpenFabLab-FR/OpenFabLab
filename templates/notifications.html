@@ -37,6 +37,7 @@
 </form>
 {% include '_creation_notifications.html' %}
 <form method="post" class="admin-form">
+    <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
     <section class="form-section">
         <div class="form-section-heading"><h2>Événements notifiés</h2></div>
         <label class="checkbox-field">
@@ -64,12 +65,21 @@
                 ('link_review', 'Rattachement à vérifier'),
                 ('animation_full', 'Animation complète'),
                 ('waitlist_full', 'Liste d’attente complète'),
-                ('email_error', 'Erreur d’envoi d’un e-mail'),
-                ('sync_error', 'Erreur de synchronisation')
+                ('email_error', 'Erreur d’envoi d’un e-mail')
             ] %}
             <label class="checkbox-field"><input name="reservation_{{ key }}" type="checkbox" value="1"{% if discord.reservations[key] %} checked{% endif %}><span><strong>{{ label }}</strong></span></label>
             {% endfor %}
         </div>
+        <fieldset class="sync-notification-settings">
+            <legend>Synchronisation WordPress</legend>
+            <input type="hidden" name="sync_preferences_present" value="1">
+            <label class="checkbox-field"><input name="reservation_sync_error" type="checkbox" value="1"{% if discord.reservations.sync_error %} checked{% endif %}><span><strong>Erreur de synchronisation</strong></span></label>
+            <label class="sync-delay-field" for="discord-sync-delay">Délai avant notification
+                <span class="sync-delay-input"><input id="discord-sync-delay" type="number" name="discord_sync_delay_minutes" min="0" max="1440" value="{{ v210.discord_sync_delay_minutes }}" aria-describedby="discord-sync-help" required><span>minutes</span></span>
+            </label>
+            <label class="checkbox-field"><input type="checkbox" name="discord_sync_recovery_enabled" value="1"{% if v210.discord_sync_recovery_enabled=='1' %} checked{% endif %}><span>Signaler le rétablissement après une alerte envoyée</span></label>
+            <p class="form-help" id="discord-sync-help">Une coupure plus courte que ce délai ne déclenche pas de notification Discord.</p>
+        </fieldset>
         <input type="hidden" name="reservation_presentation_present" value="1">
         <h3>Informations affichées dans les notifications</h3>
         <p class="form-help">Les informations nominatives sont facultatives et indépendantes des notifications de création de compte. Activez-les uniquement si votre structure autorise leur transmission à Discord. Les erreurs techniques et l’état global d’une animation n’identifient jamais une personne.</p>

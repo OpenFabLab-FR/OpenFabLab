@@ -26,7 +26,8 @@ DETAILS={'title':('Titre de l’animation','1'),'date':('Date et horaires','1'),
          'first_name':('Prénom du réservant','0'),'last_name':('Nom complet du réservant','0'),
          'last_initial':('Initiale du nom (si nom complet désactivé)','0'),
          'participants':('Nombre de participants','1'),'remaining':('Places restantes','1')}
-MESSAGE_KINDS=tuple(kind for kind in LABELS if kind not in ('email_error','sync_error'))
+LABELS['sync_recovered']='Synchronisation WordPress rétablie'
+MESSAGE_KINDS=tuple(kind for kind in LABELS if kind not in ('email_error','sync_error','sync_recovered'))
 
 
 def presentation(db):
@@ -102,19 +103,9 @@ def booking_event(db,group,kind,revision,notice=None):
             queue(db,'full/'+group+'/'+kind+'/'+str(revision),'animation_full',row['service_id'],row['environment'])
 
 
-def sync_episode(db,environment,channel,failed):
-    """One error notice per uninterrupted failed episode and transport channel."""
-    key='reservation_discord_sync_'+environment+'_'+channel
-    state=json.loads(setting(db,key,'{"active":false,"sequence":0}'))
-    if failed and not state['active']:
-        state={'active':True,'sequence':state['sequence']+1}
-        queue(db,key+'/'+str(state['sequence']),'sync_error',environment=environment)
-    elif not failed and state['active']:
-        state['active']=False
-    else:
-        return
-    db.execute('INSERT INTO app_settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
-               (key,json.dumps(state,separators=(',',':'))))
+def sync_episode(db,environment,channel,failed,now=None,critical=False):
+    from sync_incidents import observe
+    observe(db,environment,channel,failed,now,critical)
 
 
 def email_snapshot(db,row):
@@ -159,7 +150,7 @@ def readable_date(value,hours):
 def message(db,row):
     kind=row['event_type'];options=presentation(db);details=options['details']
     # Technical/global notices never identify a person, regardless of settings.
-    if kind in ('email_error','sync_error'):
+    if kind in ('email_error','sync_error','sync_recovered'):
         return LABELS[kind]
     text=plain(options['messages'].get(kind,LABELS[kind]),150) or LABELS[kind]
     info=email_snapshot(db,row);notice=info.get('notice') or {}
@@ -241,7 +232,8 @@ def deliver(db,database_path,sender=None,now=None):
         if row['state']!='pending':
             db.commit();continue
         enabled=(setting(db,'module_discord','1')=='1' and setting(db,'discord_notifications_enabled','0')=='1'
-                 and setting(db,'discord_reservation_'+row['event_type'],'1')=='1')
+                 and setting(db,'discord_reservation_'+row['event_type'],'1')=='1'
+                 and (row['event_type']!='sync_recovered' or setting(db,'discord_sync_recovery_enabled','0')=='1'))
         db.execute('UPDATE reservation_discord_events SET state=?,claimed_at=? WHERE event_key=?',
                    ('sending' if enabled else 'skipped',now.isoformat(),event[0]))
         db.commit()

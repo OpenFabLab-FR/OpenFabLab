@@ -129,7 +129,7 @@ class OutboundTests(unittest.TestCase):
         client=mock.Mock();client.post.return_value={'protocol_version':3,'family_gateway_v1':True}
         with self.assertRaises(ValueError):sync.negotiate(client,'production')
     def test_sqlite_schema_and_integrity(self):
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],20)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],21)
         self.assertEqual(self.db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
         self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
@@ -145,10 +145,12 @@ class OutboundTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):family.migrate(self.db,crash)
         self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],15)
         self.assertEqual(list(self.db.iterdump()),before)
-        self.assertEqual(self.db.execute("SELECT COUNT(*) FROM sqlite_master WHERE name LIKE 'wordpress_%'").fetchone()[0],0)
+        # The independent 2.10 notification incident table predates this
+        # deliberately simulated schema15 migration failure.
+        self.assertEqual(self.db.execute("SELECT COUNT(*) FROM sqlite_master WHERE name IN ('wordpress_action_receipts','wordpress_relay_state')").fetchone()[0],0)
         family.migrate(self.db);after=list(self.db.iterdump());family.migrate(self.db)
         self.assertEqual(list(self.db.iterdump()),after)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],20)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],21)
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM animation_bookings WHERE status='confirmed'").fetchone()[0],3)
         self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])
 

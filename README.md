@@ -1,6 +1,48 @@
 <p align="center"><img src="static/brand/OpenFabLab-logo-horizontal.svg" width="420" alt="OpenFabLab"></p>
 
-# OpenFabLab 2.9.0
+# OpenFabLab 2.10.0
+
+**Version stable · SQLite schéma 21 · OpenFabLab Reservations 2.9.0 facultatif · Licence MIT**
+
+OpenFabLab aide les FabLabs à gérer l’accueil, les usagers, les activités,
+les réservations et la facturation. Cette version ajoute quatre outils :
+
+- **Abonnements et crédits**, module facultatif et désactivé par défaut :
+  cotisations individuelles ou familiales, pass, crédits de passages, heures
+  et demi-journées, recharges et historique des mouvements.
+- **Alertes Discord de synchronisation temporisées** : dix minutes par défaut
+  pour éviter les notifications de microcoupure, rétablissement facultatif.
+- **Notes internes du calendrier**, par occurrence, gérées par les administrateurs
+  et modérateurs autorisés, sans publication ni action métier automatique.
+- **Retour sonore de la borne** : classique, Halloween, Noël ou thème automatique ;
+  activé à 50 % pour les préférences absentes, désactivable à tout moment.
+
+Le module Abonnements n’impose aucun paiement ni abonnement pour utiliser le
+logiciel. Aucun paiement bancaire en ligne, prélèvement ou renouvellement payant
+automatique ; aucune intégration Stripe ou PayPal. Les choix déjà enregistrés
+restent conservés, y compris les sons désactivés et les volumes personnalisés.
+
+### Télécharger et installer
+
+[Release et empreintes SHA-256](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.10.0) ·
+[Application 2.10.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.10.0/OpenFabLab-2.10.0.zip) ·
+[Plugin WordPress 2.9.0 facultatif](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.10.0/openfablab-reservations-2.9.0.zip)
+
+[Installation](docs/installation.md) · [Mise à jour depuis 2.9.0](docs/upgrade.md) ·
+[Guide des nouveautés et exemples](docs/evolution-2.10.0.md) ·
+[Configuration](docs/configuration.md) · [WordPress](docs/wordpress.md)
+
+Depuis 2.9.0 : migration additive SQLite **20 → 21**, avec sauvegarde complète
+et conservation des données/réglages. Ne jamais ouvrir une base 21 avec 2.9.0.
+Le plugin **OpenFabLab Reservations 2.9.0** est inchangé : aucune mise à jour
+nécessaire s’il est déjà installé. OpenFabLab fonctionne sans WordPress ; lorsqu’il
+est utilisé, le relais reste HTTPS exclusivement sortant, protocole 4/révision 3.
+OpenFabLab reste seul responsable des places et des listes d’attente.
+
+L’archive validée est conservée sans reconstruction : certaines mentions de
+préparation restent dans ses guides figés. La documentation de ce tag fait référence.
+
+## Référence historique : 2.9.0
 
 **Version stable · SQLite schéma 20 · OpenFabLab Reservations 2.9.0 facultatif · Protocole 4, révision 3**
 
@@ -17,7 +59,8 @@ persistance de l’option Discord « Liste d’attente complète », présentati
 Fréquentation → Usagers, formulaire du préavis sous Conservation automatique,
 filtres de l’annuaire des clients et affichage conditionnel du plafond personnalisé.
 Les analyses restent en lecture seule, sans modifier les calculs ni déduire une
-présence d’une réservation. « Abonnements et crédits » reste un [projet futur](ROADMAP.md).
+présence d’une réservation. La candidate2.10.0 développe le module facultatif
+« Abonnements et crédits », non inclus dans cette stable 2.9.0.
 
 Télécharger l’[application OpenFabLab 2.9.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.9.0/OpenFabLab-2.9.0.zip),
 le [plugin facultatif Reservations 2.9.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.9.0/openfablab-reservations-2.9.0.zip)
@@ -103,7 +146,7 @@ docker compose build application
 docker compose up -d application
 ```
 
-Ouvrir `http://localhost:5080/stat/` ; santé : `/stat/sante`. Le projet/conteneur s'appelle `openfablab`, l'image générique `openfablab:v2.9.0`. Une installation existante conserve son Compose et peut garder son ancien alias d'image : vérifier la version réelle dans l'interface. Données : `./data:/data`, base `/data/openfablab.db`. Sauvegardes : `./backups:/nas-backups`, sous-dossier `OpenFabLab`. `.env.example` documente uniquement la racine de sauvegarde facultative. Employer des volumes et ports d'essai distincts ; ne pas exécuter ces commandes dans une installation de production. Protéger l'accès réseau ; aucun reverse proxy propre à une structure n'est livré.
+Ouvrir `http://localhost:5080/stat/` ; santé : `/stat/sante`. Le projet/conteneur s'appelle `openfablab`, l'image générique `openfablab:v2.10.0`. Une installation existante conserve son Compose et peut garder son ancien alias d'image : vérifier la version réelle dans l'interface. Données : `./data:/data`, base `/data/openfablab.db`. Sauvegardes : `./backups:/nas-backups`, sous-dossier `OpenFabLab`. `.env.example` documente uniquement la racine de sauvegarde facultative. Employer des volumes et ports d'essai distincts ; ne pas exécuter ces commandes dans une installation de production. Protéger l'accès réseau ; aucun reverse proxy propre à une structure n'est livré.
 
 ## Première initialisation
 

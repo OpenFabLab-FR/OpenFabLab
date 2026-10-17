@@ -7,6 +7,7 @@ import html
 import io
 import json
 import os
+from memberships import EntryDenied
 import re
 import secrets
 import shutil
@@ -163,6 +164,7 @@ HOME_THEMES = {
     },
 }
 MODULE_LABELS = {
+    "memberships": "Abonnements et crédits",
     "frequency": "Fréquentation",
     "users": "Usagers",
     "activities": "Activités",
@@ -1042,6 +1044,7 @@ def default_application_settings(_legacy_installation=False):
         ('structure_use_signature', '1'),
         ('structure_use_badge_template', '1'),
         ("module_frequency", "1"),
+        ("module_memberships", "0"),
         ("module_users", "1"),
         ("module_activities", "1"),
         ("module_resources", "1"),
@@ -3877,7 +3880,7 @@ def document_brand_assets(database):
 
 
 def load_modules(database):
-    return {key: read_setting(database, f"module_{key}", "1") == "1"
+    return {key: read_setting(database, f"module_{key}", "0" if key=='memberships' else "1") == "1"
             for key in MODULE_LABELS}
 
 
@@ -4062,6 +4065,9 @@ def home_state_signature(database):
             sessions["last_check_in"], sessions["last_check_out"],
             visitors["day_count"], visitors["last_id"],
             load_home_theme(database),
+            read_setting(database,'kiosk_sound_enabled','1'),
+            read_setting(database,'kiosk_sound_volume','50'),
+            read_setting(database,'kiosk_sound_ambience','auto'),
         )
     )
 
@@ -4949,6 +4955,8 @@ def close_all_open_sessions(database, exit_method, closed_at=None):
     """Ferme en une seule transaction toutes les sessions encore ouvertes."""
     with DATABASE_MAINTENANCE_LOCK:
         closure_time = closed_at or utc_now_iso()
+        if load_modules(database)['memberships']:
+            database.execute('UPDATE membership_session_links SET review_required=1 WHERE session_id IN(SELECT id FROM sessions WHERE check_out IS NULL)')
         cursor = database.execute(
             """
             UPDATE sessions
@@ -4985,6 +4993,8 @@ def run_automatic_closure(database, now=None):
             return 0
 
         scheduled_utc = scheduled_local.astimezone(timezone.utc).isoformat(timespec="seconds")
+        if load_modules(database)['memberships']:
+            database.execute('UPDATE membership_session_links SET review_required=1 WHERE session_id IN(SELECT id FROM sessions WHERE check_out IS NULL AND check_in<=?)',(scheduled_utc,))
         cursor = database.execute(
             """
             UPDATE sessions
@@ -5423,6 +5433,8 @@ def start_automatic_closure_worker(application):
                     run_data_retention(database)
                     run_invoice_payment_reminders(database)
                     run_monthly_animation_reminder(database)
+                    from membership_notices import process as process_membership_notices
+                    process_membership_notices(database,application.config['DATABASE'])
                     collect_openlab_weather_snapshot(database, application)
                     run_automatic_backup(database, application)
                     if load_modules(database)["public_reservations"]:
@@ -5726,6 +5738,13 @@ def record_user_presence(database, user_id, presence_method="manual"):
 
     # Le verrou évite deux actions simultanées créant deux sessions ouvertes.
     database.execute("BEGIN IMMEDIATE")
+    from kiosk_feedback import Feedback,replay,receipt
+    import memberships
+    payload=dict(action='presence',user=user_id,method=presence_method)
+    previous=replay(database,payload)
+    if previous:
+        database.commit()
+        return previous
     user = database.execute(
         """
         SELECT id, first_name, active, statistics_key, category, birth_year,
@@ -5758,8 +5777,14 @@ def record_user_presence(database, user_id, presence_method="manual"):
             (action_time, presence_method, open_session["id"]),
         )
         message = f"À bientôt {user['first_name']}, votre départ a bien été enregistré."
+        memberships.safe_exit(database,open_session['id'])
+        result=Feedback(message,'departure')
     else:
-        database.execute(
+        decision=memberships.access(database,user_id,datetime.fromisoformat(action_time))
+        if not decision['allowed']:
+            database.rollback()
+            raise memberships.EntryDenied('Compte reconnu. '+decision['message'])
+        cursor=database.execute(
             """
             INSERT INTO sessions (
                 user_id, check_in, entry_method, statistical_user_key,
@@ -5778,9 +5803,13 @@ def record_user_presence(database, user_id, presence_method="manual"):
             ),
         )
         message = f"Bonjour {user['first_name']}, votre arrivée a bien été enregistrée."
+        memberships.on_entry(database,user_id,cursor.lastrowid,datetime.fromisoformat(action_time),decision)
+        if decision['enabled']:message+=' '+decision['message']
+        result=Feedback(message,'arrival',warning=decision.get('warning',False))
 
+    receipt(database,payload,result)
     database.commit()
-    return message
+    return result
 
 
 def user_presence_notification_context(database, user_id):
@@ -5807,6 +5836,13 @@ def user_presence_notification_context(database, user_id):
 def record_quick_departure(database, user_id):
     """Ferme uniquement une présence déjà ouverte depuis l'accueil."""
     database.execute("BEGIN IMMEDIATE")
+    from kiosk_feedback import Feedback,replay,receipt
+    import memberships
+    payload=dict(action='departure',user=user_id)
+    previous=replay(database,payload)
+    if previous:
+        database.commit()
+        return previous
     user = database.execute(
         "SELECT id, first_name FROM users WHERE id = ?", (user_id,)
     ).fetchone()
@@ -5830,8 +5866,10 @@ def record_quick_departure(database, user_id):
         """,
         (utc_now_iso(), open_session["id"]),
     )
+    memberships.safe_exit(database,open_session['id'])
+    result=receipt(database,payload,Feedback(f"À bientôt {user['first_name']}, votre départ a bien été enregistré.",'departure'))
     database.commit()
-    return f"À bientôt {user['first_name']}, votre départ a bien été enregistré."
+    return result
 
 
 def register_template_helpers(application):
@@ -5928,6 +5966,7 @@ def register_admin_protection(application):
         'attendance_analysis.page', 'attendance_analysis.search', 'attendance_analysis.data',
         'booking_account_links.link',
         'evolution.calendar', 'evolution.resource_directory', 'evolution.resource_bookings',
+        'v210.calendar_note',
         'tablet_reservations.cancel_request',
         'evolution.authorizations', 'evolution.resend_welcome',
     }
@@ -5955,6 +5994,7 @@ def register_admin_protection(application):
             "admin_export_animations", "admin_export_paid_services",
             "admin_activity_report_form", "admin_activity_report_document",
             'evolution.calendar', 'evolution.resource_directory', 'evolution.resource_bookings', 'evolution.authorizations',
+            'v210.calendar_note',
         },
         "public_reservations": {
             "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
@@ -6249,11 +6289,16 @@ def register_routes(application):
             if message is None:
                 flash("Cet usager n'est pas actif.", "error")
                 return redirect(url_for("identification"))
-            if notification:
+            if notification and not getattr(message,'replayed',False):
                 send_discord_notification(
                     database, notification["event"], notification["name"]
                 )
             flash(message, "success")
+        except EntryDenied as error:
+            database.rollback()
+            from flask import g
+            g.kiosk_event='warning'
+            flash(str(error),'error')
         except sqlite3.Error:
             database.rollback()
             application.logger.exception(
@@ -6275,11 +6320,16 @@ def register_routes(application):
             message = record_user_presence(database, user_id, presence_method="list")
             if message is None:
                 abort(404)
-            if notification:
+            if notification and not getattr(message,'replayed',False):
                 send_discord_notification(
                     database, notification["event"], notification["name"]
                 )
             flash(message, "success")
+        except EntryDenied as error:
+            database.rollback()
+            from flask import g
+            g.kiosk_event='warning'
+            flash(str(error),'error')
         except sqlite3.Error:
             database.rollback()
             application.logger.exception("Erreur lors de l'enregistrement d'une présence")
@@ -6303,7 +6353,7 @@ def register_routes(application):
             if message is False:
                 flash("Cette personne n'est plus enregistrée comme présente.", "error")
             else:
-                if notification:
+                if notification and not getattr(message,'replayed',False):
                     send_discord_notification(
                         database, "departure", notification["name"]
                     )
@@ -6321,9 +6371,17 @@ def register_routes(application):
     def add_visitor():
         database = get_database()
         try:
+            from kiosk_feedback import Feedback,replay,receipt
+            database.execute('BEGIN IMMEDIATE')
+            previous=replay(database,dict(action='visitor'))
+            if previous:
+                database.commit()
+                flash(str(previous),'success')
+                return redirect(url_for('index'))
             database.execute(
                 "INSERT INTO visitors (created_at) VALUES (?)", (utc_now_iso(),)
             )
+            receipt(database,dict(action='visitor'),Feedback('Visite enregistrée.','visitor'))
             database.commit()
             send_discord_notification(database, "visitor")
             flash(
@@ -6677,6 +6735,8 @@ def register_routes(application):
             ),
         )
         new_row = database.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)).fetchone()
+        if load_modules(database)['memberships']:
+            database.execute('UPDATE membership_session_links SET review_required=1 WHERE session_id=?',(session_id,))
         record_attendance_correction(
             database, "update", "session", session_id, old_values,
             attendance_record_values(new_row, "session"),
@@ -7964,6 +8024,14 @@ def register_routes(application):
             with DATABASE_MAINTENANCE_LOCK:
                 create_database_safety_copy(database, "avant-remise-a-zero")
                 database.execute("BEGIN IMMEDIATE")
+                # Only the existing, explicitly confirmed full-reset operation.
+                for table in ('membership_notifications','membership_notice_state','membership_session_links',
+                              'membership_consumptions','membership_preferences'):
+                    database.execute('DELETE FROM '+table)
+                database.execute('DELETE FROM membership_ledger WHERE reversal_of IS NOT NULL')
+                for table in ('membership_ledger','membership_beneficiaries','membership_grants','membership_plans',
+                              'calendar_notes','wordpress_sync_incidents','kiosk_action_receipts'):
+                    database.execute('DELETE FROM '+table)
                 database.execute("DELETE FROM attendance_corrections")
                 database.execute("DELETE FROM weather_snapshots")
                 database.execute("DELETE FROM sessions")
@@ -9736,6 +9804,9 @@ def register_routes(application):
         if request.method == "POST":
             current_settings = load_discord_settings(database)
             webhook_url = request.form.get("webhook_url", "").strip()
+            if request.form.get('sync_preferences_present') == '1':
+                from evolution_routes import require_csrf
+                require_csrf()
             if request.form.get('webhook_only') == '1':
                 from evolution_routes import require_csrf
                 require_csrf()
@@ -9810,6 +9881,17 @@ def register_routes(application):
                 if request.form.get('reservation_presentation_present')=='1':
                     from reservation_notifications import MESSAGE_KINDS,validate_label
                     message_settings.update({'discord_reservation_message_'+kind:validate_label(request.form.get('reservation_message_'+kind),kind) for kind in MESSAGE_KINDS})
+                # Older forms do not include this group: retain their saved timing.
+                sync_settings = {}
+                if request.form.get('sync_preferences_present') == '1':
+                    from v210_config import validate as validate_preference
+                    sync_settings = {
+                        key: validate_preference(key, request.form.get(key, fallback))
+                        for key, fallback in (
+                            ('discord_sync_delay_minutes', ''),
+                            ('discord_sync_recovery_enabled', '0'),
+                        )
+                    }
                 if request.form.get("clear_webhook") == "1":
                     clear_discord_webhook()
                 elif webhook_url:
@@ -9842,6 +9924,8 @@ def register_routes(application):
             for name in RESERVATION_DISCORD_FLAGS:
                 write_setting(database, f"discord_reservation_{name}",
                               "1" if request.form.get(f"reservation_{name}") == "1" else "0")
+            for key, value in sync_settings.items():
+                write_setting(database, key, value)
             if request.form.get('reservation_presentation_present')=='1':
                 from reservation_notifications import DETAILS
                 for key in DETAILS:

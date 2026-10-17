@@ -299,7 +299,7 @@ function configureQuickDeparture() {
         form.dataset.submitting = "1";
         if (countdownTimer) window.clearInterval(countdownTimer);
         countdownTimer = null;
-        form.submit();
+        if (window.OFLKiosk) window.OFLKiosk.submit(form); else form.submit();
     };
 
     const openDialog = (trigger) => {

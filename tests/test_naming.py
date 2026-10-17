@@ -141,7 +141,7 @@ class NamingConsistencyTestCase(unittest.TestCase):
         self.assertIn("La sauvegarde a été restaurée", response.get_data(as_text=True))
         self.assertEqual(source.read_bytes(), original)
         with self.fixture.database() as database:
-            self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],20)
+            self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0],21)
             self.assertEqual(database.execute("PRAGMA integrity_check").fetchone()[0], "ok")
             self.assertEqual(database.execute("PRAGMA foreign_key_check").fetchall(), [])
             self.assertEqual(database.execute("SELECT COUNT(*) FROM users").fetchone()[0], before_users)

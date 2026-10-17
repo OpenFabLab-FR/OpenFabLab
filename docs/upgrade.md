@@ -1,5 +1,46 @@
 # Mettre à jour OpenFabLab
 
+## Vers la stable 2.10.0 : schéma 20 → 21
+
+Utiliser la [release 2.10.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.10.0)
+et vérifier `SHA256SUMS`. Elle contient tous les développements et les finitions
+de la corrective 1. Ne pas confondre version applicative et étiquette d’image.
+
+Depuis **2.9.0 / SQLite 20** : vérifier version, intégrité et clés étrangères,
+faire une sauvegarde complète **PRE20** avec runtime/image et configuration,
+puis préparer et tester le nouveau runtime sur une copie isolée, sans services
+externes. Arrêter proprement l’instance et compléter par une copie froide des
+dernières écritures. Installer les seuls fichiers applicatifs, sans remplacer
+Compose, `.env`, volumes, branding, PIN, secrets ni fichiers privés.
+
+L’initialisation 2.10.0 effectue la migration additive transactionnelle **20 → 21**
+(droits/crédits, notes par occurrence, incidents de synchronisation et reçus de
+pointage). Les données métier et les préférences existantes restent conservées.
+Le module Abonnements reste désactivé tant que la structure ne l’active pas.
+Les défauts sonores sont activé/50 % pour les clés absentes ; toute valeur déjà
+enregistrée reste inchangée, y compris une désactivation.
+
+Avant réouverture : contrôler HTTP/santé, version **2.10.0**, schéma **21**,
+`integrity_check`, `foreign_key_check`, utilisateurs/familles, réservations,
+factures, préférences, montages et fichiers privés. Vérifier le catalogue et la
+relève des demandes Normal/Test si WordPress est utilisé, sans réservation
+fictive automatique. Conserver une sauvegarde complète **POST21**.
+
+**Déjà en 2.10.0 / schéma 21** : ne pas rejouer la migration 20 → 21. Identifier
+le runtime exact, conserver PRE21 et l’image précédente, remplacer seulement
+le runtime corrigé puis vérifier schéma et données inchangés ; conserver POST21.
+
+Le plugin facultatif **Reservations 2.9.0 est inchangé** : aucune réinstallation
+nécessaire. Protocole 4/révision 3 et cadences enregistrées conservés. Le plugin
+2.8.5 conserve sa compatibilité historique sans les nouveaux affichages d’attente.
+
+Un retour contrôlé à 2.9.0 exige sa PRE20 et son runtime cohérents, uniquement
+avant toute première tentative de démarrage public et après décision humaine.
+**Ne jamais lancer 2.9.0 sur une base 21.** Après une tentative publique ou de
+nouvelles écritures potentielles : préserver l’état, diagnostiquer et décider,
+sans restauration destructive automatique. Les scripts privés d’une installation
+particulière ne sont pas distribués. Voir [guide 2.10.0](evolution-2.10.0.md).
+
 ## Vers la stable 2.9.0 : schéma 19 → 20
 
 Télécharger l’archive complète de la [release 2.9.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.9.0)

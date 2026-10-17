@@ -65,7 +65,7 @@
         if (typeof form.requestSubmit === "function") {
             form.requestSubmit();
         } else {
-            form.submit();
+            if (window.OFLKiosk) window.OFLKiosk.submit(form); else form.submit();
         }
     }
 
