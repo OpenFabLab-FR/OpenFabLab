@@ -33,6 +33,7 @@ docs/backup-restore.md
 docs/branding.md
 docs/candidate-2.8-guide.md
 docs/configuration.md
+docs/corrections-2.10.1.md
 docs/corrections-2.7.1.md
 docs/corrections-2.8.4.md
 docs/corrections-2.8.5.md
@@ -219,6 +220,7 @@ tests/test_branding.py
 tests/test_candidate_revision.py
 tests/test_catalogue_limits_290.py
 tests/test_clients_290.py
+tests/test_corrective_2101.py
 tests/test_corrective_271.py
 tests/test_corrective_285.py
 tests/test_corrective_ui.js

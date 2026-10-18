@@ -55,6 +55,8 @@ def observe(db,service,slot=None,environment='production',notify=True):
         from reservation_notifications import queue
         confirmed=db.execute("SELECT COUNT(*) FROM animation_bookings WHERE service_id=? AND environment=? AND COALESCE(slot_uuid,'')=? AND status IN('confirmed','present','absent')",(service['service_id'],environment,slot or '')).fetchone()[0]
         snapshot={'capacity':service['capacity'],'occupied':booking_capacity_used(db,service['service_id'],slot),'confirmed':confirmed,'waiting':count,'waiting_limit':maximum}
+        from reservation_notifications import slot_snapshot
+        snapshot.update(slot_snapshot(db,slot))
         queue(db,'waitlist-full/'+str(service['service_id'])+'/'+environment+'/'+(slot or '')+'/'+str(sequence),
             'waitlist_full',service['service_id'],environment,presentation=snapshot)
 

@@ -6,6 +6,7 @@ DEFAULTS={
     'membership_low_threshold':'2','membership_smtp_enabled':'0','membership_discord_enabled':'0',
     'membership_hourly_shortfall':'available',
     'kiosk_sound_enabled':'1','kiosk_sound_volume':'50','kiosk_sound_ambience':'auto',
+    'kiosk_sound_countdown':'1',
     'discord_sync_delay_minutes':'10','discord_sync_recovery_enabled':'0',
 }
 def ensure(db):

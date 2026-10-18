@@ -1,6 +1,22 @@
-# OpenFabLab Reservations 2.9.0 — plugin facultatif
+# OpenFabLab Reservations 2.10.1 — plugin facultatif stable
 
-## Avec OpenFabLab 2.10.0 stable
+Application **OpenFabLab 2.10.1**, plugin **Reservations 2.10.1**. OpenFabLab
+fonctionne entièrement sans WordPress. [Télécharger le plugin installable](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.10.1/openfablab-reservations-2.10.1.zip)
+et vérifier les [empreintes officielles](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.10.1/SHA256SUMS).
+Le ZIP approuvé reste inchangé ; ses mentions de préparation sont historiques.
+
+Le plugin 2.10.1 apporte les libellés de créneaux, les compteurs et le
+récapitulatif explicite. Application et plugin ont désormais le même numéro
+public, sans contrôle d’égalité imposé au relais. Protocole 4/révision 3 et
+`waitlist_limits_v1` inchangés. Mettre à jour l’application avant le plugin,
+en conservant les paramètres et sans désinstaller l’extension.
+Le plugin 2.9.0 reste utilisable pendant la transition avec son ancien affichage.
+Le plugin 2.10.1 accepte le catalogue de l’application 2.10.0.
+Voir le [guide de cette correction](corrections-2.10.1.md).
+
+## Référence historique : Reservations 2.9.0
+
+## Avec la stable antérieure OpenFabLab 2.10.0
 
 Plugin compatible facultatif : **OpenFabLab Reservations 2.9.0**, strictement
 inchangé par rapport à la release 2.9.0. Aucun nouveau plugin 2.10.0, aucune

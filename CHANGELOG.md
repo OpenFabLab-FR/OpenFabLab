@@ -1,5 +1,23 @@
 # Historique public
 
+## 2.10.1 — version stable — 18 octobre 2026
+
+Version corrective validée en utilisation réelle ; application et plugin
+facultatif Reservations 2.10.1. SQLite 21 conservé, aucune migration nouvelle,
+protocole 4/révision 3 inchangé. Les évolutions 2.10.0 restent intégralement présentes.
+
+- Créneaux WordPress : état et compteurs par option native, synthèse des places
+  disponibles et récapitulatif explicite pour réservation ou attente.
+- Discord : instantané non nominatif du créneau dans le journal existant pour
+  les horaires exacts, y compris les notifications différées de saturation.
+- Borne : ambiances synthétiques Summer et Steampunk, suivi du thème visuel et
+  son facultatif du timer de départ existant, sans second timer ni départ ajouté.
+- Calendrier : action Enregistrer dans l’en-tête de note, actions générales
+  compactes, permissions et protections inchangées.
+- Version publique commune application/plugin 2.10.1, indépendante du protocole
+  4/révision 3. SQLite 21 conservé, nouvelle préférence sans nouvelle migration.
+
+
 ## 2.10.0 — version stable — 18 octobre 2026
 
 Version complète incluant la corrective 1 validée en utilisation réelle.

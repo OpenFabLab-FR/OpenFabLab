@@ -25,7 +25,7 @@ def register(application,a):
     @bp.post('/admin/reglages/2-10/<section>')
     def settings(section):
         require_team(admin=True);require_csrf();db=a.get_database()
-        sets={'sound':({'kiosk_sound_enabled','kiosk_sound_volume','kiosk_sound_ambience'},'admin_settings_kiosk'),
+        sets={'sound':({'kiosk_sound_enabled','kiosk_sound_volume','kiosk_sound_ambience','kiosk_sound_countdown'},'admin_settings_kiosk'),
               'sync':({'discord_sync_delay_minutes','discord_sync_recovery_enabled'},'admin_notifications')}
         if section not in sets:abort(404)
         keys,dest=sets[section]

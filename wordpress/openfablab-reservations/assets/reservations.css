@@ -169,4 +169,5 @@ body:has([data-openfablab-link]) { margin:0; padding:24px; background:#f5f7f6; f
 .openfablab-scanner button { margin:4px; }
 .openfablab-guest-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .openfablab-guest-fields input { min-width:0; box-sizing:border-box; width:100%; }
+.openfablab-reservations .openfablab-slot-status{display:block;margin:.25rem 0 .75rem;white-space:normal;overflow-wrap:anywhere;font-size:.9rem}.openfablab-request-summary{border-left:3px solid #b6d7d1;background:#f4faf8;padding:.65rem .85rem;border-radius:8px;margin:.5rem 0 1rem}.openfablab-request-summary p{margin:.3rem 0;overflow-wrap:anywhere}.openfablab-booking-form select{max-width:100%;min-width:0;width:100%;box-sizing:border-box}
 @media(max-width:600px) { .openfablab-entry-choices, .openfablab-guest-fields { grid-template-columns:minmax(0,1fr); } }

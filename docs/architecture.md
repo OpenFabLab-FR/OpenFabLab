@@ -1,6 +1,18 @@
 # Architecture
 
-## Version stable 2.10.0
+## Version stable 2.10.1
+
+Application et plugin facultatif Reservations 2.10.1, SQLite **21** inchangé
+depuis 2.10.0. Le moteur d’attribution des places, les transactions et le relais
+sortant restent identiques. Les états de créneaux déjà fournis sont mieux
+présentés par le plugin. Le journal Discord existant conserve une portée
+technique de créneau pour les envois différés, sans coordonnées personnelles.
+Les sons Summer/Steampunk et les ticks suivent les thèmes et le timer existants,
+sans nouveau calendrier ni timer métier. Les notes restent privées et par occurrence.
+Le numéro public commun ne remplace pas la négociation protocole 4/révision 3 et
+`waitlist_limits_v1`. Voir [les corrections](corrections-2.10.1.md).
+
+## Référence historique : version stable 2.10.0
 
 SQLite **21**, migration additive depuis 20. Le module facultatif Abonnements
 et crédits réutilise usagers, familles et sessions ; conditions conservées,

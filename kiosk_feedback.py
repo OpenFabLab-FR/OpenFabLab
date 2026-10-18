@@ -60,10 +60,14 @@ def register(application,a):
         if request.endpoint not in endpoints|{'index','users','admin_settings_kiosk'}:return {}
         session.setdefault('kiosk_browser',secrets.token_urlsafe(24))
         db=a.get_database();ambience=a.read_setting(db,'kiosk_sound_ambience','auto')
-        if ambience=='auto':ambience=a.load_home_theme(db)
-        if ambience not in ('halloween','christmas'):ambience='classic'
+        themes=('halloween','christmas','summer','steampunk')
+        visual=a.load_home_theme(db)
+        visual=visual if visual in themes else 'classic'
+        if ambience=='auto':ambience=visual
+        if ambience not in themes:ambience='classic'
         return dict(kiosk_audio=dict(enabled=a.read_setting(db,'kiosk_sound_enabled','1')=='1',
-            volume=int(a.read_setting(db,'kiosk_sound_volume','50')),ambience=ambience,base=request.script_root),
+            volume=int(a.read_setting(db,'kiosk_sound_volume','50')),ambience=ambience,visual_ambience=visual,
+            countdown=a.read_setting(db,'kiosk_sound_countdown','1')=='1',base=request.script_root),
             kiosk_action=serializer.dumps(dict(browser=session['kiosk_browser'],nonce=secrets.token_urlsafe(24))))
 
     @application.after_request

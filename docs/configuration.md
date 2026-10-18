@@ -1,6 +1,16 @@
 # Configuration de la structure
 
-## Nouveautés de la stable 2.10.0
+## Corrections de la stable 2.10.1
+
+Réglages → Borne → Retour sonore : Summer et Steampunk s’ajoutent aux ambiances
+existantes. Le mode automatique suit le thème visuel ; « Son du compte à rebours »
+active ou coupe seulement les ticks du timer de départ existant. Les choix
+enregistrés et le volume logiciel restent conservés. Les sons restent facultatifs,
+sans microphone ni serveur extérieur. Voir [le guide 2.10.1](corrections-2.10.1.md).
+Les options Discord et les règles de réservation ne changent pas ; les notifications
+par créneau conservent désormais leurs horaires précis.
+
+## Fonctions introduites en 2.10.0 et conservées
 
 - Réglages → Modules : Abonnements et crédits facultatif, désactivé par défaut.
   Son activation ouvre la gestion des formules et droits ; désactiver conserve

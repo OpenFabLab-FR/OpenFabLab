@@ -230,19 +230,25 @@ document.querySelectorAll('[data-calendar-detail]').forEach(link => {
       const form = note.querySelector('form');
       for (const key of ['kind', 'key', 'day']) form.elements.namedItem(key).value = link.dataset[key];
       form.elements.namedItem('note').value = link.dataset.note || '';
+      form.addEventListener('submit', event => {
+        if (form.dataset.saving === '1') { event.preventDefault(); return; }
+        form.dataset.saving = '1';
+        form.querySelector('button[type=submit]').disabled = true;
+      });
       dialog.append(note);
     }
-    dialog.append(open, close); document.body.append(dialog); dialog.showModal(); close.focus();
+    const actions = document.createElement('div'); actions.className = 'calendar-dialog-actions';
+    actions.append(open, close); dialog.append(actions); document.body.append(dialog); dialog.showModal(); close.focus();
     dialog.querySelectorAll('.category-badge').forEach(prepareCategoryBadge);
     const visibility = document.getElementById('calendar-visibility');
     if (visibility) {
-      const button = document.createElement('button');button.type = 'button';button.className = 'admin-button secondary compact';
+      const button = document.createElement('button');button.type = 'button';button.className = 'admin-button secondary compact calendar-visibility-action';
       button.textContent = link.dataset.hidden === '1' ? 'Réafficher cet événement' : 'Masquer cet événement';
       button.addEventListener('click', () => {
         for (const key of ['kind', 'key', 'day']) visibility.elements.namedItem(key).value = link.dataset[key];
         visibility.elements.namedItem('hidden').value = link.dataset.hidden === '1' ? '0' : '1';
         visibility.submit();
-      });dialog.append(button);
+      });actions.append(button);
     }
   });
 });

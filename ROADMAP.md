@@ -1,5 +1,13 @@
 # OpenFabLab — Roadmap et conception
 
+## Disponible en 2.10.1 stable
+
+Correction des présentations par créneau, enrichissement sonore et compacité du
+calendrier, sans refonte des moteurs. À partir de cette version, application et
+plugin portent un numéro public commun. La compatibilité reste négociée par le
+protocole et les capacités, indépendamment de l’égalité des numéros publics.
+Voir [le guide 2.10.1](docs/corrections-2.10.1.md).
+
 ## Disponible en 2.10.0 stable
 
 Le module facultatif Abonnements et crédits est livré et désactivé par défaut :

@@ -273,6 +273,7 @@ function configureQuickDeparture() {
     const confirmButton = dialogBackdrop.querySelector("[data-departure-confirm]");
     let countdownTimer = null;
     let remainingSeconds = 10;
+    let deadline = 0;
 
     const startThemeProgress = () => {
         dialogBackdrop.style.setProperty("--departure-progress", "0%");
@@ -287,6 +288,7 @@ function configureQuickDeparture() {
     const closeDialog = () => {
         if (countdownTimer) window.clearInterval(countdownTimer);
         countdownTimer = null;
+        window.OFLKiosk?.stopCountdown?.();
         dialogBackdrop.hidden = true;
         dialogBackdrop.style.removeProperty("--departure-progress");
         dialogBackdrop.style.removeProperty("--departure-progress-duration");
@@ -294,34 +296,41 @@ function configureQuickDeparture() {
         form.dataset.submitting = "0";
     };
 
-    const submitDeparture = () => {
+    const submitDeparture = (expired = false) => {
         if (form.dataset.submitting === "1") return;
         form.dataset.submitting = "1";
         if (countdownTimer) window.clearInterval(countdownTimer);
         countdownTimer = null;
+        if (!expired) window.OFLKiosk?.stopCountdown?.();
         if (window.OFLKiosk) window.OFLKiosk.submit(form); else form.submit();
     };
 
     const openDialog = (trigger) => {
+        if (countdownTimer) window.clearInterval(countdownTimer);
+        window.OFLKiosk?.stopCountdown?.();
         form.action = trigger.dataset.departureUrl;
         form.dataset.submitting = "0";
         name.textContent = trigger.dataset.userName;
         remainingSeconds = 10;
+        deadline = performance.now() + 10000;
         countdown.textContent = remainingSeconds;
         dialogBackdrop.hidden = false;
         document.body.classList.add("dialog-open");
         startThemeProgress();
         cancelButton.focus();
+        window.OFLKiosk?.countdown?.(remainingSeconds);
 
         countdownTimer = window.setInterval(() => {
-            remainingSeconds -= 1;
+            remainingSeconds = Math.max(0, Math.ceil((deadline - performance.now()) / 1000));
             countdown.textContent = remainingSeconds;
-            if (remainingSeconds <= 0) submitDeparture();
+            window.OFLKiosk?.countdown?.(remainingSeconds);
+            if (remainingSeconds <= 0) submitDeparture(true);
         }, 1000);
     };
 
     triggers.forEach((trigger) => trigger.addEventListener("click", () => openDialog(trigger)));
     cancelButton.addEventListener("click", closeDialog);
+    window.addEventListener('pagehide', closeDialog);
     form.addEventListener("submit", (event) => {
         event.preventDefault();
         submitDeparture();

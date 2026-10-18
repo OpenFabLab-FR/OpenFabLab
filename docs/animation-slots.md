@@ -1,5 +1,21 @@
 # Réservations classiques et par créneaux
 
+## Affichage public depuis la version 2.10.1
+
+Le plugin facultatif Reservations 2.10.1 reprend les états fournis par OpenFabLab :
+place disponible, complet avec attente ouverte, attente saturée ou inscriptions
+closes. Le menu natif conserve des textes explicites et désactive les options
+fermées ; un indicateur rappelle le type de demande. La carte synthétise les places
+sur les créneaux encore disponibles, sans fermer toute l’animation pour un seul
+créneau saturé. Chaque créneau conserve son propre plafond d’attente.
+
+Le récapitulatif rappelle le créneau et le nombre de participants et distingue
+réservation et inscription en attente. Un groupe reste indivisible ; l’instantané
+affiché ne garantit pas une place. Le moteur transactionnel OpenFabLab revalide
+la demande et son résultat réel est affiché. Les notifications Discord de créneau
+en conservent les horaires exacts, même pour un envoi différé de saturation.
+Voir [compatibilité et mise à jour](corrections-2.10.1.md).
+
 ## Mode classique
 
 « Réservation pour toute l'animation » reste le mode de toutes les anciennes animations. La capacité concerne la plage globale, par exemple 10:00–12:00. Une réservation annulée/expirée ou uniquement en attente ne compte pas comme inscrite avec place ; une offre de place réserve sa capacité selon le modèle actuel. Présence et réservation restent indépendantes.

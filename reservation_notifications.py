@@ -65,6 +65,17 @@ def setting(db,key,default=''):
     return row[0] if row else default
 
 
+def slot_snapshot(db,slot):
+    """Non-personal occurrence identity, retained for deferred presentation only."""
+    if not slot:return {}
+    row=db.execute('SELECT starts_at,ends_at FROM animation_slots WHERE slot_uuid=?',(slot,)).fetchone()
+    if not row:return {}
+    from zoneinfo import ZoneInfo
+    zone=ZoneInfo(setting(db,'structure_timezone','Europe/Paris'))
+    start,end=(datetime.fromisoformat(value).astimezone(zone) for value in row)
+    return dict(slot_uuid=slot,date=start.date().isoformat(),hours=start.strftime('%H:%M')+'–'+end.strftime('%H:%M'))
+
+
 def queue(db,key,kind,service_id=None,environment='production',now=None,presentation=None):
     """No commits, no personal payload: share the caller's business transaction."""
     if kind not in LABELS or environment not in ('production','test'):
@@ -77,9 +88,17 @@ def queue(db,key,kind,service_id=None,environment='production',now=None,presenta
         (hashlib.sha256(str(key).encode()).hexdigest(),kind,service_id,environment,
          (now or datetime.now(timezone.utc)).isoformat(),'pending' if enabled else 'skipped'))
     if presentation is not None:
-        allowed={'capacity','occupied','confirmed','waiting','waiting_limit'}
-        if set(presentation)!=allowed or any(type(value) is not int or not 0<=value<=100000 for value in presentation.values()):
+        counters={'capacity','occupied','confirmed','waiting','waiting_limit'}
+        scope={'slot_uuid','date','hours'}
+        keys=set(presentation)
+        if keys not in (counters,scope,counters|scope) or any(type(presentation[key]) is not int or not 0<=presentation[key]<=100000 for key in keys&counters):
             raise ValueError('Instantané technique de disponibilité invalide.')
+        if keys&scope:
+            from uuid import UUID
+            try:
+                UUID(presentation['slot_uuid']);datetime.strptime(presentation['date'],'%Y-%m-%d')
+                if not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d–(?:[01]\d|2[0-3]):[0-5]\d',presentation['hours']):raise ValueError
+            except (ValueError,TypeError,AttributeError):raise ValueError('Créneau de notification invalide.') from None
         db.execute("UPDATE reservation_discord_events SET presentation_json=? WHERE event_key=? AND presentation_json='{}'",
             (json.dumps(presentation,separators=(',',':')),hashlib.sha256(str(key).encode()).hexdigest()))
 
@@ -89,8 +108,9 @@ def booking_event(db,group,kind,revision,notice=None):
     if not row:
         return
     flag='cancellation' if kind=='modified' and (notice or {}).get('cancelled_participants') else KINDS.get(kind)
+    scope=slot_snapshot(db,row['slot_uuid']) or None
     if flag:
-        queue(db,'booking/'+group+'/'+kind+'/'+str(revision),flag,row['service_id'],row['environment'])
+        queue(db,'booking/'+group+'/'+kind+'/'+str(revision),flag,row['service_id'],row['environment'],presentation=scope)
     if kind in ('confirmed','offer_pending'):
         from family_reservations import effective_service
         from reservations_sync import booking_capacity_used
@@ -100,7 +120,7 @@ def booking_event(db,group,kind,revision,notice=None):
         except ValueError:
             full=False
         if full:
-            queue(db,'full/'+group+'/'+kind+'/'+str(revision),'animation_full',row['service_id'],row['environment'])
+            queue(db,'full/'+group+'/'+kind+'/'+str(revision),'animation_full',row['service_id'],row['environment'],presentation=scope)
 
 
 def sync_episode(db,environment,channel,failed,now=None,critical=False):
@@ -153,16 +173,23 @@ def message(db,row):
     if kind in ('email_error','sync_error','sync_recovered'):
         return LABELS[kind]
     text=plain(options['messages'].get(kind,LABELS[kind]),150) or LABELS[kind]
+    snapshot=json.loads(dict(row).get('presentation_json','{}'))
+    scoped=bool(snapshot.get('slot_uuid'))
+    if scoped and kind=='animation_full' and text==LABELS[kind]:text='Créneau complet'
     info=email_snapshot(db,row);notice=info.get('notice') or {}
     if kind=='cancellation' and notice.get('partial'):
         text+=' — annulation partielle'
     lines=[text]
-    service=db.execute('SELECT title,service_date,start_time,end_time FROM fablab_services WHERE id=?',(row['service_id'],)).fetchone() if row['service_id'] is not None else None
+    service=db.execute('SELECT s.title,s.service_date,s.start_time,s.end_time,c.booking_mode FROM fablab_services s LEFT JOIN animation_reservation_config c ON c.service_id=s.id WHERE s.id=?',(row['service_id'],)).fetchone() if row['service_id'] is not None else None
+    legacy_slot=bool(kind=='waitlist_full' and service and service['booking_mode']=='slots' and not scoped)
     title=info.get('title') or (service['title'] if service else '')
     if details['title'] and plain(title):lines.append('Animation : '+plain(title))
-    date=info.get('date') or (service['service_date'] if service else '')
-    hours=info.get('hours') or ((service['start_time'] or '')+'–'+(service['end_time'] or '') if service else '')
-    if details['date'] and readable_date(date,hours):lines.append('Date : '+readable_date(date,hours))
+    date=snapshot.get('date') or info.get('date') or (service['service_date'] if service else '')
+    hours=snapshot.get('hours') or info.get('hours') or ((service['start_time'] or '')+'–'+(service['end_time'] or '') if service else '')
+    if details['date'] and readable_date(date,hours):
+        lines.append('Date : '+readable_date(date,'' if scoped or legacy_slot else hours))
+        if scoped:lines.append('Créneau : '+hours)
+        elif legacy_slot:lines.append('Créneau : détail indisponible pour cette ancienne notification.')
     if kind=='waitlist_full':
         snapshot=json.loads(dict(row).get('presentation_json','{}'))
         if details['participants'] and type(snapshot.get('confirmed')) is int and type(snapshot.get('capacity')) is int:
@@ -171,7 +198,7 @@ def message(db,row):
                 lines.append('Places proposées : '+str(snapshot['occupied']-snapshot['confirmed']))
         if details['remaining'] and type(snapshot.get('waiting')) is int and type(snapshot.get('waiting_limit')) is int:
             lines.append('Liste d’attente : '+str(snapshot['waiting'])+'/'+str(snapshot['waiting_limit']))
-        lines.append('Les nouvelles inscriptions en attente sont closes.')
+        lines.append('Les nouvelles inscriptions en attente sont closes'+(' pour ce créneau.' if scoped else '.'))
         return '\n'.join(lines)
     if info and kind!='animation_full' and any(details[key] for key in ('first_name','last_name','last_initial')):
         owner=db.execute('SELECT first_name,last_name FROM users WHERE id=?',(info['owner'],)).fetchone() if info['owner'] is not None else None
@@ -194,8 +221,9 @@ def message(db,row):
         try:
             from family_reservations import effective_service
             from reservations_sync import booking_capacity_used
-            current=effective_service(db,row['service_id'],info.get('slot'),info.get('environment','production'),False)
-            capacity=current['capacity'];used=booking_capacity_used(db,row['service_id'],info.get('slot'))
+            slot=snapshot.get('slot_uuid') or info.get('slot')
+            current=effective_service(db,row['service_id'],slot,info.get('environment','production'),False)
+            capacity=current['capacity'];used=booking_capacity_used(db,row['service_id'],slot)
             if capacity>0:
                 if kind=='animation_full':
                     maximum=notice.get('capacity');occupied=notice.get('occupied')

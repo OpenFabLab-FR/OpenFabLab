@@ -4068,6 +4068,7 @@ def home_state_signature(database):
             read_setting(database,'kiosk_sound_enabled','1'),
             read_setting(database,'kiosk_sound_volume','50'),
             read_setting(database,'kiosk_sound_ambience','auto'),
+            read_setting(database,'kiosk_sound_countdown','1'),
         )
     )
 

@@ -1,6 +1,30 @@
 # Mettre à jour OpenFabLab
 
-## Vers la stable 2.10.0 : schéma 20 → 21
+## Vers la stable 2.10.1 depuis 2.10.0
+
+Utiliser les [ZIP officiels et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.10.1).
+Vérifier leurs empreintes avant toute intervention. Conserver les configurations,
+volumes, données et personnalisations existants ; ne pas remplacer `.env` ou les secrets.
+
+SQLite reste en schéma **21** : ne pas rejouer la migration 20 → 21.
+Sauvegarder le runtime, les volumes, paramètres et données en PRE21, arrêter
+proprement, puis remplacer uniquement les fichiers applicatifs. Contrôler la
+version, l’intégrité SQLite, les volumes, préférences et la santé HTTP avant
+réouverture. Conserver une POST21 et l’image précédente. Après toute tentative
+publique, ne jamais restaurer automatiquement une ancienne base.
+
+Mettre à jour l’application d’abord, puis le plugin facultatif Reservations
+2.10.1 par remplacement du ZIP dans WordPress, sans désinstallation ni changement
+de secret. Les combinaisons transitoires avec le plugin 2.9.0 et l’application
+2.10.0 utilisent toujours le protocole 4/révision 3. [Détails](corrections-2.10.1.md).
+
+Depuis **2.9.0 / schéma 20**, la distribution complète 2.10.1 conserve le parcours
+additif 20 → 21 décrit ci-dessous : PRE20 complète, validation isolée, arrêt
+propre, contrôle après migration et POST21. Utiliser le runtime 2.10.1 pour la
+version cible. Ne jamais rouvrir une base 21 avec le runtime 2.9.0.
+
+
+## Référence historique : vers la stable 2.10.0, schéma 20 → 21
 
 Utiliser la [release 2.10.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.10.0)
 et vérifier `SHA256SUMS`. Elle contient tous les développements et les finitions

@@ -10,14 +10,26 @@
     return parsed.pathname.slice((config.base || '').length) || '/';
   };
   let context = null;
+  let countdownGeneration = 0, quietUntil = 0;
+  const countdownVoices = new Set();
   const Audio = window.AudioContext || window.webkitAudioContext;
   const notes = {
     navigation: [[430, 0, .035]], management: [[390, 0, .04], [510, .035, .04]],
     arrival: [[440, 0, .055], [660, .055, .075]],
     departure: [[560, 0, .06], [370, .055, .08]],
     visitor: [[520, 0, .045], [650, .045, .065]],
-    error: [[280, 0, .085]], warning: [[330, 0, .055], [310, .07, .055]]
+    error: [[280, 0, .085]], warning: [[330, 0, .055], [310, .07, .055]],
+    tick: [[390, 0, .025]], tock: [[310, 0, .03]], finish: [[390, 0, .04], [300, .04, .05]]
   };
+  const seasonal = {
+    summer: {navigation:[[360,0,.035]],management:[[360,0,.035],[540,.04,.04]],arrival:[[480,0,.055],[720,.055,.07]],departure:[[540,0,.06],[360,.055,.075]],visitor:[[600,0,.045],[750,.05,.06]],error:[[270,0,.06]],warning:[[320,0,.05],[280,.06,.05]],tick:[[420,0,.02]],tock:[[350,0,.025]],finish:[[450,0,.035],[340,.04,.045]]},
+    steampunk: {navigation:[[320,0,.025]],management:[[320,0,.025],[460,.035,.04]],arrival:[[360,0,.05],[540,.055,.065]],departure:[[480,0,.055],[320,.06,.065]],visitor:[[450,0,.04],[600,.05,.055]],error:[[240,0,.06]],warning:[[300,0,.04],[270,.06,.045]],tick:[[520,0,.018]],tock:[[340,0,.023]],finish:[[390,0,.025],[260,.035,.04]]}
+  };
+  function stopCountdown() {
+    countdownGeneration++;
+    for (const voice of countdownVoices) { try { voice.stop(); } catch (_) {} }
+    countdownVoices.clear();
+  }
   function unlock() {
     if (!Audio || !config.enabled) return;
     try {
@@ -25,13 +37,16 @@
       if (context.state === 'suspended') context.resume().catch(() => {});
     } catch (_) { /* The kiosk always remains usable. */ }
   }
-  function play(action, test = false) {
+  function play(action, test = false, countdown = false) {
     if (!notes[action] || (!config.enabled && !test) || !Audio) return false;
+    if (countdown && (document.hidden || !config.countdown || performance.now() < quietUntil)) return false;
+    if (!countdown) { stopCountdown(); quietUntil = performance.now() + 180; }
+    const generation = countdownGeneration;
     let volume = config.volume / 100, ambience = config.ambience;
     if (test) {
       volume = Number(document.querySelector('[name="kiosk_sound_volume"]').value) / 100;
       const value = document.querySelector('[name="kiosk_sound_ambience"]').value;
-      ambience = value === 'auto' ? config.ambience : value;
+      ambience = value === 'auto' ? (config.visual_ambience || config.ambience) : value;
     }
     if (!volume) return false;
     try {
@@ -40,18 +55,19 @@
       if (context.state === 'suspended') { context.resume().then(() => tone()).catch(() => {}); }
       else tone();
       function tone() {
-        if (context.state !== 'running') return;
+        if (context.state !== 'running' || (countdown && (generation !== countdownGeneration || document.hidden))) return;
         const shift = ambience === 'halloween' ? .78 : ambience === 'christmas' ? 1.15 : 1;
-        for (const [frequency, offset, duration] of notes[action]) {
+        for (const [frequency, offset, duration] of (seasonal[ambience]?.[action] || notes[action])) {
           const oscillator = context.createOscillator(), gain = context.createGain();
           const start = context.currentTime + offset;
-          oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(frequency * shift, start);
+          oscillator.type = ['summer','steampunk'].includes(ambience) ? 'triangle' : 'sine'; oscillator.frequency.setValueAtTime(frequency * shift, start);
           if (ambience === 'halloween') oscillator.frequency.exponentialRampToValueAtTime(frequency * shift * .94, start + duration);
-          gain.gain.setValueAtTime(0, start); gain.gain.linearRampToValueAtTime(volume * .13, start + .008);
+          gain.gain.setValueAtTime(0, start); gain.gain.linearRampToValueAtTime(volume * (countdown ? .055 : .13), start + .008);
           gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
           oscillator.connect(gain); gain.connect(context.destination);
           oscillator.start(start); oscillator.stop(start + duration + .01);
-          oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+          if (countdown) countdownVoices.add(oscillator);
+          oscillator.onended = () => { countdownVoices.delete(oscillator); oscillator.disconnect(); gain.disconnect(); };
         }
       }
       return true;
@@ -98,9 +114,16 @@
       form.querySelectorAll('button').forEach(button => { button.disabled = false; });
     }
   }
-  window.OFLKiosk = {submit};
+  // Driven exclusively by the existing departure timer: no timer or business action here.
+  let lastSecond = null;
+  window.OFLKiosk = {submit, stopCountdown: () => {lastSecond = null; stopCountdown();}, countdown: seconds => {
+    if (seconds === lastSecond) return;
+    lastSecond = seconds;
+    play(seconds === 0 ? 'finish' : seconds % 2 ? 'tock' : 'tick', false, true);
+  }};
   document.addEventListener('submit', event => {
     if (matches(event.target) && Audio) { event.preventDefault(); submit(event.target); }
   }, {capture: true});
-  window.addEventListener('pagehide', () => { if (context) context.close().catch(() => {}); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopCountdown(); });
+  window.addEventListener('pagehide', () => { stopCountdown(); if (context) context.close().catch(() => {}); });
 })();

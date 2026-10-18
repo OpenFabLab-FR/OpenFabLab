@@ -274,7 +274,7 @@ class MembershipTest(unittest.TestCase):
         self.assertEqual(result.json['event'],'error')
     def test_automatic_theme_fallbacks(self):
         self.set(kiosk_sound_ambience='auto')
-        for theme,expected in [('halloween','halloween'),('christmas','christmas'),('steampunk','classic'),('classic','classic')]:
+        for theme,expected in [('halloween','halloween'),('christmas','christmas'),('summer','summer'),('steampunk','steampunk'),('classic','classic')]:
             with self.subTest(theme=theme):
                 self.set(home_theme=theme)
                 settings=json.loads(re.search(r'id="kiosk-audio">(.*?)</script>',self.client.get('/').get_data(as_text=True))[1])
