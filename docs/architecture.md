@@ -1,6 +1,18 @@
 # Architecture
 
-## Version stable 2.10.1
+## Version stable 2.11.0
+
+Application et plugin facultatif Reservations 2.11.0 ; SQLite **22**, migration
+additive depuis 21. `animation_attendance.py` réutilise les sessions de présence
+et inscriptions confirmées vérifiées ; priorité aux choix manuels, ambiguïtés
+refusées, aucune nouvelle réservation. L’origine des présences et les comptages
+anonymes disposent de tables dédiées, sans réécriture des données historiques.
+`v211_routes.py` garde ces opérations internes sous les permissions existantes.
+Les sons Pâques/Saint-Valentin sont synthétisés localement. Le protocole reste
+4/révision 3 et `waitlist_limits_v1` ; le module Abonnements reste facultatif.
+Voir [les règles et limites](evolution-2.11.0.md).
+
+## Référence historique : version stable 2.10.1
 
 Application et plugin facultatif Reservations 2.10.1, SQLite **21** inchangé
 depuis 2.10.0. Le moteur d’attribution des places, les transactions et le relais

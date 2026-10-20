@@ -19,6 +19,7 @@ COPY booking_account_links.py ./
 COPY v290_schema.py waitlist_limits.py attendance_analysis.py client_categories.py ./
 COPY retention_notices.py ./
 COPY v210_schema.py v210_config.py v210_routes.py memberships.py membership_notices.py sync_incidents.py kiosk_feedback.py ./
+COPY animation_attendance.py v211_routes.py ./
 COPY tablet_reservations.py ./
 COPY family_model.py family_routes.py family_reservations.py family_reservation_routes.py family_waitlist.py ./
 COPY openfablab ./openfablab

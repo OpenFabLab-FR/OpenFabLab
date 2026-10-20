@@ -1,6 +1,16 @@
 # Configuration de la structure
 
-## Corrections de la stable 2.10.1
+## Nouveautés de la stable 2.11.0
+
+Réglages → Structure : **Validation automatique des présences aux animations**,
+activée par défaut et désactivable. Seuls les inscrits confirmés reliés à un compte
+vérifié et effectivement présents pendant leur animation/créneau sont concernés.
+Les choix manuels restent prioritaires, sans ajout d’usager non inscrit ni reprise
+des anciennes animations. Réglages → Borne : ambiances **Pâques** et
+**Saint-Valentin**, sélection automatique selon le thème ; Dark revient à Classique.
+Les préférences enregistrées restent conservées. Voir [le guide](evolution-2.11.0.md).
+
+## Fonctions introduites en 2.10.1 et conservées
 
 Réglages → Borne → Retour sonore : Summer et Steampunk s’ajoutent aux ambiances
 existantes. Le mode automatique suit le thème visuel ; « Son du compte à rebours »

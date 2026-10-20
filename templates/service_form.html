@@ -5,7 +5,7 @@
 {% block header_action %}<a class="header-link" href="{{ url_for('admin_services') }}">← Activités</a>{% endblock %}
 
 {% block content %}
-<section class="content-heading"><h1>{% if service %}Modifier l’animation{% else %}Ajouter une animation{% endif %}</h1><p>Programmez l’animation et renseignez sa participation réelle.</p></section>
+<section class="content-heading"><h1>{% if service %}Modifier l’animation{% else %}Ajouter une animation{% endif %}</h1><p>Programmez l’animation. Les présences se gèrent dans Inscriptions.</p></section>
 <form method="post" class="admin-form">
     <input type="hidden" name="service_type" value="animation">
     <section class="form-section"><div class="form-grid">
@@ -15,7 +15,6 @@
         <div class="form-field"><label for="minimum-age">Âge minimum</label><input id="minimum-age" name="minimum_age" type="number" min="0" max="120" value="{{ values.get('minimum_age', 10) if values.get('minimum_age') is not none else 10 }}"></div>
         <div class="form-field form-field-wide"><label for="service-title">Titre de l’animation</label><input id="service-title" name="title" type="text" maxlength="160" value="{{ values.get('title', '') }}" required></div>
         <div class="form-field"><label for="expected-participants">Places maximum</label><input id="expected-participants" name="expected_participants" type="number" min="0" max="100000" value="{{ values.get('expected_participants', '') if values.get('expected_participants') is not none else '' }}"></div>
-        <div class="form-field"><label for="actual-participants">Participants sur place</label><input id="actual-participants" name="actual_participants" type="number" min="0" max="100000" value="{{ values.get('actual_participants', '') if values.get('actual_participants') is not none else '' }}"><small>Les réservations marquées présentes sont ajoutées automatiquement.</small></div>
         <div class="form-field form-field-wide"><label for="service-description">Description de l’animation</label><textarea id="service-description" name="description" rows="5" maxlength="3000">{{ values.get('description', '') or '' }}</textarea></div>
         <div class="form-field form-field-wide"><label for="information-url">Lien d’information</label><input id="information-url" name="information_url" type="url" maxlength="2048" value="{{ values.get('information_url','') or '' }}" placeholder="https://example.org/programme"><small>Facultatif : une page publique pour en savoir plus. Ce lien est distinct du lien personnel de réservation.</small></div>
     </div></section>
@@ -30,7 +29,6 @@
             <div class="form-field" data-slot-field><label for="slot-gap">Battement entre deux créneaux (minutes)</label><input id="slot-gap" name="slot_gap_minutes" type="number" min="0" max="480" value="{{ online_config.slot_gap_minutes or 0 }}"></div>
             <div class="form-field" data-slot-field><label for="slot-capacity">Capacité par créneau</label><input id="slot-capacity" name="slot_capacity" type="number" min="1" max="100000" value="{{ online_config.slot_capacity or 1 }}"><small>Chaque personne sélectionnée occupe une place.</small></div>
             <div class="form-field form-field-wide" data-slot-field><h3>Créneaux générés</h3><div id="slot-preview" class="slot-preview" role="status" aria-live="polite"></div><small>Le battement n’est pas inclus dans le temps réservé. Des inscriptions existantes empêchent les changements qui déplaceraient les créneaux.</small></div>
-            <div class="form-field"><label for="capacity">Capacité totale *</label><input id="capacity" name="capacity" type="number" min="1" max="100000" value="{{ online_config.capacity if online_config.capacity is not none else values.get('expected_participants', '') or '' }}"><small>Une personne sélectionnée = une place, responsable compris s'il participe.</small></div>
             <div class="form-field"><label for="signup-open-at">Ouverture des inscriptions</label><input id="signup-open-at" name="signup_open_at" type="datetime-local" value="{{ (online_config.signup_open_at or '')[:16] }}"></div>
             <div class="form-field"><label for="close-minutes">Fermeture avant l'animation (minutes)</label><input id="close-minutes" name="close_minutes" type="number" min="0" max="1440" value="{{ online_config.close_minutes }}"></div>
             <input type="hidden" name="accompaniment_under_age" value="{{ online_config.accompaniment_under_age }}"><p class="form-help">L’autonomie et les responsables se règlent dans Usagers → Âges, autonomie et familles.</p>
@@ -47,5 +45,6 @@
     <div class="form-actions"><button class="admin-button primary" type="submit">{% if service %}Enregistrer les modifications{% else %}Ajouter l’animation{% endif %}</button><a class="admin-button secondary" href="{{ url_for('admin_services') }}">Annuler</a></div>
 </form>
 {% if service and admin_access_role == 'admin' %}<section class="danger-zone"><div><h2>Supprimer cette animation</h2><p>Cette action retire définitivement l’animation des statistiques.</p></div><form method="post" action="{{ url_for('admin_delete_service', service_id=service.id) }}" class="inline-confirmation-form"><label for="delete-service">Saisissez SUPPRIMER</label><input id="delete-service" name="confirmation" type="text" autocomplete="off" required><button class="admin-button danger" type="submit">Supprimer</button></form></section>{% endif %}
+<script type="application/json" id="existing-slot-capacities">{{ (slot_capacities or [])|tojson }}</script>
 <script src="{{ url_for('static', filename='animation-slots.js') }}" defer></script>
 {% endblock %}

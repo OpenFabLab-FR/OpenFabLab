@@ -1,4 +1,22 @@
-# OpenFabLab Reservations 2.10.1 — plugin facultatif stable
+# OpenFabLab Reservations 2.11.0 — plugin facultatif stable
+
+Application et plugin OpenFabLab 2.11.0, protocole 4/révision 3 inchangé.
+Cette version actualise le numéro public et la documentation ; le moteur du
+relais, ses signatures, ses capacités et ses ressources restent inchangés depuis
+2.10.1. Les présences automatiques restent internes à OpenFabLab : elles ne
+déclenchent ni inscription ni courriel de réservation. Installer sans désinstaller
+l’extension ni changer les secrets. Aucune connexion entrante vers OpenFabLab
+n’est nécessaire. Les paragraphes suivants sont les références historiques.
+
+[Release officielle](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.11.0) ·
+[Guide WordPress](https://github.com/OpenFabLab-FR/OpenFabLab/blob/v2.11.0/docs/wordpress.md).
+L’archive approuvée est distribuée à l’identique, sans reconstruction.
+OpenFabLab reste utilisable sans WordPress ; les mentions de préparation dans
+le README figé du ZIP sont historiques. La documentation de ce tag fait référence.
+
+---
+
+## Référence historique : OpenFabLab Reservations 2.10.1
 
 Extension libre sous licence MIT. [Release officielle](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.10.1)
 et [guide WordPress à jour](https://github.com/OpenFabLab-FR/OpenFabLab/blob/v2.10.1/docs/wordpress.md).

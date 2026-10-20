@@ -1,5 +1,6 @@
 """Additive schema21; no enrollment, credit, message or activation on upgrade."""
 DEFAULTS={
+    'animation_auto_presence_enabled':'1',
     'module_memberships':'0','membership_control':'informative',
     'membership_require_period':'0','membership_require_credit':'0',
     'membership_exempt_categories':'[]','membership_notice_days':'14',

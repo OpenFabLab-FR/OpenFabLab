@@ -87,7 +87,7 @@
                         {% if admin_access_role == 'admin' %}<td data-label="Recette">{% if service.amount_cents is not none %}{{ '%.2f'|format(service.amount_cents / 100)|replace('.', ',') }} €{% else %}—{% endif %}</td>{% endif %}
                         <td data-label="Actions" class="service-actions-cell">
                             <div class="service-row-actions">
-                            {% if service.service_type == 'animation' and modules.public_reservations %}<a class="table-action" href="{{ url_for('admin_animation_bookings', service_id=service.id) }}">Inscriptions</a>{% endif %}
+                            {% if service.service_type == 'animation' %}<a class="table-action" href="{{ url_for('admin_animation_bookings', service_id=service.id) }}">Inscriptions</a>{% endif %}
                             {% if admin_access_role == 'admin' %}
                             {% if service.billing_record_id %}
                                 <a class="table-action" href="{{ url_for('admin_billing_detail', record_id=service.billing_record_id) }}">Voir la facturation</a>

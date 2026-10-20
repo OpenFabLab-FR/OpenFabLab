@@ -1,6 +1,32 @@
 <p align="center"><img src="static/brand/OpenFabLab-logo-horizontal.svg" width="420" alt="OpenFabLab"></p>
 
-# OpenFabLab 2.10.1
+# OpenFabLab 2.11.0
+
+**Version stable · Application et plugin facultatif Reservations 2.11.0 · SQLite 22 · Licence MIT**
+
+Présences automatiques des inscrits confirmés, capacités unifiées, comptages
+anonymes dans Inscriptions, cartes tactiles et sons Pâques / Saint-Valentin.
+Plugin facultatif Reservations 2.11.0, protocole 4/révision 3 inchangé.
+SQLite 22 : migration additive depuis le schéma 21 de la 2.10.1.
+[Fonctionnement, précautions et limites](docs/evolution-2.11.0.md).
+OpenFabLab reste gratuit, libre, modulaire et utilisable sans WordPress.
+Le module Abonnements et crédits reste facultatif et désactivé par défaut.
+
+[Release et empreintes SHA-256](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.11.0) ·
+[Application 2.11.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.11.0/OpenFabLab-2.11.0.zip) ·
+[Plugin WordPress 2.11.0 facultatif](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.11.0/openfablab-reservations-2.11.0.zip)
+
+[Installation](docs/installation.md) · [Mise à jour](docs/upgrade.md) ·
+[Linux](docs/installation-linux.md) · [Raspberry Pi](docs/installation-raspberry-pi.md) ·
+[Windows](docs/installation-windows.md) · [Synology](docs/installation-synology.md)
+
+Sauvegarder l’installation complète avant la migration **21 → 22** et contrôler
+l’intégrité, les volumes et les données avant réouverture. Ne jamais redémarrer
+OpenFabLab 2.10.1 sur une base déjà migrée en schéma 22. Les archives approuvées
+sont distribuées sans reconstruction ; leurs mentions de préparation restent
+historiques, la documentation de ce tag est la référence stable à jour.
+
+## Référence historique : OpenFabLab 2.10.1
 
 **Version stable · Application et plugin facultatif Reservations 2.10.1 · SQLite 21 · Licence MIT**
 
@@ -115,7 +141,7 @@ Les corrections de la **2.8.4** restent conservées : formulaires simplifiés, c
 
 Les fonctions de personnalisation introduites en 2.8.3 sont conservées : badges pastel, modes d'attribution des identifiants, rattachement informatif à une structure, jauge de fréquentation, dates Discord et détails du calendrier. Voir le [guide 2.8.3](docs/usability-2.8.3.md). Le moteur de réservation reste celui de la 2.8.5 ; le plugin WordPress 2.8.5 est inchangé par la 2.8.6.
 
-La [release historique 2.8.6](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.6) et ses téléchargements restent accessibles. Pour la version actuelle, utiliser les liens 2.10.1 en tête de ce document. Lire les [règles familiales](docs/families-2.8.md) et les [instructions de mise à jour](docs/upgrade.md) avant de changer une installation existante.
+La [release historique 2.8.6](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.6) et ses téléchargements restent accessibles. Pour la version actuelle, utiliser les liens 2.11.0 en tête de ce document. Lire les [règles familiales](docs/families-2.8.md) et les [instructions de mise à jour](docs/upgrade.md) avant de changer une installation existante.
 
 OpenFabLab est un logiciel libre de gestion de FabLab créé par **William Aumand**, distribué sous licence MIT. Il réunit la fréquentation du lieu, les usagers et les activités dans une application web installée sur le serveur de votre structure.
 

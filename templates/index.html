@@ -73,7 +73,7 @@
                     >
                         <span class="avatar" aria-hidden="true">{{ user.first_name[0] }}{{ user.last_name[0] }}</span>
                         <span class="present-details">
-                            <span class="present-name">{{ user.first_name }} {{ user.last_name[0] }}.</span>
+                            <span class="present-name" title="{{ user.first_name }} {{ user.last_name[0] }}.">{{ user.first_name }} {{ user.last_name[0] }}.</span>
                             <span class="category-badge category-{{ user.category }}">{{ user.category|category_label }}</span>
                         </span>
                     </button>

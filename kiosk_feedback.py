@@ -60,7 +60,7 @@ def register(application,a):
         if request.endpoint not in endpoints|{'index','users','admin_settings_kiosk'}:return {}
         session.setdefault('kiosk_browser',secrets.token_urlsafe(24))
         db=a.get_database();ambience=a.read_setting(db,'kiosk_sound_ambience','auto')
-        themes=('halloween','christmas','summer','steampunk')
+        themes=('halloween','christmas','summer','steampunk','easter','valentine')
         visual=a.load_home_theme(db)
         visual=visual if visual in themes else 'classic'
         if ambience=='auto':ambience=visual

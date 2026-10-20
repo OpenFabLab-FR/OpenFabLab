@@ -512,6 +512,8 @@ def create_app(test_config=None):
     register_tablet_reservations(application, globals())
     from family_routes import register as register_family
     register_family(application, globals())
+    from v211_routes import register as register_211
+    register_211(application, globals())
     register_error_handlers(application)
 
     from runtime_policy import storage_guard
@@ -3886,6 +3888,8 @@ def load_modules(database):
 
 def write_setting(database, key, value):
     """Crée ou met à jour un réglage persistant."""
+    if key=='animation_auto_presence_enabled' and str(value)=='1' and read_setting(database,key,'1')!='1':
+        database.execute("INSERT INTO app_settings VALUES('animation_auto_presence_since',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",(utc_now_iso(),))
     database.execute(
         """
         INSERT INTO app_settings (key, value) VALUES (?, ?)
@@ -5431,6 +5435,8 @@ def start_automatic_closure_worker(application):
                         return
                     database = get_database()
                     run_automatic_closure(database)
+                    from animation_attendance import process as process_animation_attendance
+                    process_animation_attendance(database)
                     run_data_retention(database)
                     run_invoice_payment_reminders(database)
                     run_monthly_animation_reminder(database)
@@ -5810,6 +5816,7 @@ def record_user_presence(database, user_id, presence_method="manual"):
 
     receipt(database,payload,result)
     database.commit()
+    refresh_animation_attendance(database,user_id)
     return result
 
 
@@ -5870,7 +5877,18 @@ def record_quick_departure(database, user_id):
     memberships.safe_exit(database,open_session['id'])
     result=receipt(database,payload,Feedback(f"À bientôt {user['first_name']}, votre départ a bien été enregistré.",'departure'))
     database.commit()
+    refresh_animation_attendance(database,user_id)
     return result
+
+
+def refresh_animation_attendance(database,user_id=None):
+    """A failed optional match never undoes a successful kiosk action."""
+    try:
+        from animation_attendance import process
+        process(database,user_id=user_id)
+    except (ValueError,sqlite3.Error):
+        database.rollback()
+        current_app.logger.warning('Validation des présences différée ; reprise au prochain cycle.')
 
 
 def register_template_helpers(application):
@@ -5963,6 +5981,7 @@ def register_admin_protection(application):
         "admin_moderator_themes",
         "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
         "admin_animation_booking_action", "admin_animation_booking_walkin",
+        'v211.walkins',
         'participant_search.search',
         'attendance_analysis.page', 'attendance_analysis.search', 'attendance_analysis.data',
         'booking_account_links.link',
@@ -5989,6 +6008,9 @@ def register_admin_protection(application):
             'evolution.resend_welcome', 'family.unlink',
         },
         "activities": {
+            'v211.walkins', 'v211.settings',
+            'admin_animation_bookings', 'admin_animation_bookings_csv', 'admin_animation_bookings_pdf',
+            'admin_animation_booking_action',
             "admin_services", "admin_services_legacy", "admin_service_form",
             "admin_service_form_legacy_new", "admin_service_form_legacy_edit",
             "admin_delete_service", "admin_service_calendar", "admin_service_calendar_legacy",
@@ -5998,8 +6020,7 @@ def register_admin_protection(application):
             'v210.calendar_note',
         },
         "public_reservations": {
-            "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
-            "admin_animation_booking_action", "admin_animation_booking_walkin",
+            "admin_animation_booking_walkin",
             'participant_search.search',
             'booking_account_links.link',
             'tablet_reservations.cancel_request',
@@ -8177,10 +8198,12 @@ def register_routes(application):
             }
             if service and service["amount_cents"] is not None:
                 values["amount"] = f"{service['amount_cents'] / 100:.2f}"
-            if previous_config and previous_config["enabled"]:
-                values["actual_participants"] = previous_config["walkin_count"]
+            if previous_config and previous_config['capacity']:
+                # Display the existing booking authority if old fields diverge.
+                values['expected_participants']=previous_config['capacity']
             return render_template("service_form.html", values=values, service=service,
-                                   online_config=online_config)
+                                   online_config=online_config,
+                                   slot_capacities=slots_summary(database,service_id,read_setting(database,'structure_timezone','Europe/Paris')) if service_id else [])
 
         submitted_values = request.form.to_dict(flat=True)
         requested_type = submitted_values.get("service_type", "animation")
@@ -8207,6 +8230,8 @@ def register_routes(application):
         if service_id:
             previous_config = database.execute("SELECT * FROM animation_reservation_config WHERE service_id=?", (service_id,)).fetchone()
             service = database.execute("SELECT * FROM fablab_services WHERE id=?", (service_id,)).fetchone()
+        # Counts are edited only in Inscriptions. Ignore obsolete incoming fields.
+        values['actual_participants']=service['actual_participants'] if service else 0
         if load_modules(database)["public_reservations"]:
             online_config = {
                 "enabled": int(online_enabled),
@@ -8232,7 +8257,7 @@ def register_routes(application):
                 ("slot_capacity", 1, 100000),
             ):
                 try:
-                    candidate = request.form.get(key)
+                    candidate = values.get('expected_participants') if key=='capacity' else request.form.get(key)
                     if candidate is None or candidate == "":
                         candidate = (values.get("expected_participants") or 0) if key == "capacity" else online_defaults.get(key, 0)
                     online_config[key] = int(candidate)
@@ -8249,7 +8274,13 @@ def register_routes(application):
             elif online_config["booking_mode"] == "slots" and not errors:
                 try:
                     generated = generate_slots(values, online_config, read_setting(database, "structure_timezone", "Europe/Paris"), service_id or 0)
-                    online_config["capacity"] = len(generated) * online_config["slot_capacity"]
+                    # Preserve independent per-slot exceptions, including occupied slots.
+                    old_slots={r['slot_uuid']:r['capacity'] for r in database.execute('SELECT slot_uuid,capacity FROM animation_slots WHERE service_id=?',(service_id or 0,))}
+                    old_default=previous_config['slot_capacity'] if previous_config else None
+                    for slot in generated:
+                        if slot['slot_uuid'] in old_slots and old_slots[slot['slot_uuid']]!=old_default:
+                            slot['capacity']=old_slots[slot['slot_uuid']]
+                    online_config["capacity"] = sum(slot['capacity'] for slot in generated)
                     values["expected_participants"] = online_config["capacity"]
                 except ValueError as error:
                     errors.append(str(error))
@@ -8282,20 +8313,14 @@ def register_routes(application):
                     online_config["signup_open_at"] = opening.astimezone(timezone.utc).isoformat(timespec="seconds")
                 except ValueError:
                     errors.append("La date d'ouverture des inscriptions est invalide.")
-            online_config["walkin_count"] = values.get("actual_participants") or 0
-            if previous_config and previous_config["enabled"] and not online_enabled:
-                # The manual count remains the explicit form value after disabling.
-                pass
-            elif online_enabled and service_id:
-                present_count = database.execute(
-                    "SELECT COUNT(*) FROM animation_bookings WHERE service_id = ? "
-                    "AND status IN ('confirmed', 'present') AND is_present = 1", (service_id,)
-                ).fetchone()[0]
-                values["actual_participants"] = online_config["walkin_count"] + present_count
+            count=database.execute('SELECT quantity FROM animation_walkins WHERE service_id=?',(service_id or 0,)).fetchone()
+            online_config['walkin_count']=count[0] if count else 0
         if service_id and not load_modules(database)["public_reservations"] and database.execute(
             "SELECT 1 FROM animation_bookings WHERE service_id=? LIMIT 1", (service_id,)).fetchone():
             if any(values.get(key) != service[key] for key in ("service_date", "start_time", "end_time")):
                 errors.append("Des inscriptions existent : les horaires sont protégés même lorsque le module est désactivé.")
+        if previous_config and not load_modules(database)['public_reservations'] and values['expected_participants']!=previous_config['capacity']:
+            errors.append('La capacité de réservation est conservée. Réactivez les réservations publiques pour modifier leur capacité.')
         if errors:
             database.rollback()
             for error in errors:
@@ -8303,7 +8328,8 @@ def register_routes(application):
             display_values = dict(submitted_values)
             return render_template(
                 "service_form.html", values=display_values, service=service,
-                online_config=online_config
+                online_config=online_config,
+                slot_capacities=slots_summary(database,service_id,read_setting(database,'structure_timezone','Europe/Paris')) if service_id else []
             ), 400
 
         timestamp = utc_now_iso()
@@ -8366,7 +8392,7 @@ def register_routes(application):
             saved_service = database.execute("SELECT * FROM fablab_services WHERE id=?", (service_id,)).fetchone()
             database.execute('UPDATE animation_reservation_config SET waitlist_limit_mode=?,waitlist_limit_value=? WHERE service_id=?',
                 (online_config['waitlist_limit_mode'],online_config['waitlist_limit_value'],service_id))
-            save_slots(database, saved_service, online_config, read_setting(database, "structure_timezone", "Europe/Paris"))
+            save_slots(database, saved_service, online_config, read_setting(database, "structure_timezone", "Europe/Paris"),previous_config)
             from waitlist_limits import observe_service
             observe_service(database,service_id)
             enqueue_animation(database, service_id)
@@ -8442,7 +8468,7 @@ def register_routes(application):
     def admin_animation_bookings(service_id):
         database = get_database()
         from family_waitlist import process_due, contact
-        process_due(database)
+        if load_modules(database)['public_reservations']:process_due(database)
         service, config = booking_service(database, service_id)
         bookings = database.execute(
             "SELECT b.*, u.category, sl.starts_at, sl.ends_at, "
@@ -8456,12 +8482,16 @@ def register_routes(application):
             (service_id,),
         ).fetchall()
         counts = booking_counts(bookings)
+        from animation_attendance import summary
+        attendance_summary=summary(database,service_id,bookings)
         zone = read_setting(database, "structure_timezone", "Europe/Paris")
         bookings = [dict(row, slot_label=slot_label(row, zone)) for row in bookings]
         active = booking_capacity_used(database, service_id)
         pending = pending_confirmation_ids(database, service_id)
         groups = {}
         for booking in bookings:
+            origin=database.execute('SELECT origin FROM animation_attendance_origin WHERE booking_uuid=?',(booking['external_uuid'],)).fetchone()
+            booking['attendance_origin']=origin[0] if origin else ('manual' if booking_presence(booking) is not None else '')
             if booking["group_uuid"]:
                 groups.setdefault(booking["group_uuid"], []).append(booking)
         from family_model import responsibles, age
@@ -8503,6 +8533,7 @@ def register_routes(application):
             "animation_bookings.html", service=service, config=config,
             tablet_requests=__import__('tablet_reservations').requests_for(database,service_id),
             bookings=bookings, counts=counts, users=users,
+            attendance_summary=attendance_summary,
             remaining=max(0, (config["capacity"] if config else 0) - active),
             current_year=int(service["service_date"][:4]),
             booking_reservation_status=booking_reservation_status,
@@ -8586,6 +8617,14 @@ def register_routes(application):
         if not pin_csrf_valid():
             abort(400)
         database = get_database()
+        if request.form.get('action') in ('present','absent','unknown'):
+            from animation_attendance import manual
+            try:
+                manual(database,service_id,booking_uuid,request.form['action'],session.get('access_role'))
+                flash('Présence mise à jour.','success')
+            except ValueError as error:flash(str(error),'error')
+            return redirect(url_for('admin_animation_bookings',service_id=service_id))
+        if not load_modules(database)['public_reservations']:abort(404)
         current=database.execute('SELECT source FROM animation_bookings WHERE service_id=? AND external_uuid=?',(service_id,booking_uuid)).fetchone()
         if current and current['source'].startswith('family_'):
             from family_reservations import team_action

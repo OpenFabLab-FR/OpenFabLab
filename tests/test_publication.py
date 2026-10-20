@@ -22,20 +22,22 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.10.1')
+        self.assertEqual(__version__,'2.11.0')
         # The approved ZIP retains its build image label, not its runtime version.
         # No archive or Compose configuration is changed for publishing.
-        self.assertIn('openfablab:v2.10.1',(ROOT/'compose.yaml').read_text())
+        self.assertIn('openfablab:v2.11.0',(ROOT/'compose.yaml').read_text())
 
     def test_stable_release_documentation_is_consistent(self):
         readme=(ROOT/'README.md').read_text()
-        self.assertIn('# OpenFabLab 2.10.1',readme)
+        self.assertIn('# OpenFabLab 2.11.0',readme)
+        self.assertIn('SQLite 22',readme[:700])
         self.assertIn('**Version stable · SQLite schéma 21',readme)
-        self.assertNotIn('candidate locale',readme[:500])
-        self.assertIn('releases/tag/v2.10.1',readme)
-        self.assertIn('releases/download/v2.10.1/OpenFabLab-2.10.1.zip',readme)
-        self.assertIn('releases/download/v2.10.1/openfablab-reservations-2.10.1.zip',readme)
-        self.assertIn('## 2.10.1 — version stable',(ROOT/'CHANGELOG.md').read_text())
+        self.assertIn('**Version stable · Application et plugin facultatif Reservations 2.11.0',readme)
+        self.assertNotIn('candidate',readme[:500])
+        self.assertIn('releases/tag/v2.11.0',readme)
+        self.assertIn('releases/download/v2.11.0/OpenFabLab-2.11.0.zip',readme)
+        self.assertIn('releases/download/v2.11.0/openfablab-reservations-2.11.0.zip',readme)
+        self.assertIn('## 2.11.0 — version stable',(ROOT/'CHANGELOG.md').read_text())
         self.assertIn('OpenFabLab Reservations 2.9.0',readme)
         self.assertIn('plugin 2.8.5 reste compatible',readme)
         self.assertIn('OpenFabLab **2.8.6**',readme)
@@ -76,7 +78,7 @@ class PublicReleaseTests(unittest.TestCase):
                                         AUTO_CLOSURE_WORKER=False,WEATHER_ENABLED=False))
             with application.app_context():
                 db=get_database()
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],21)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],22)
                 self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
                 self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
                 for table in ('users','sessions','visitors','rental_catalog','billing_tariff_catalog','billing_clients','billing_records','animation_bookings'):
@@ -191,13 +193,13 @@ import pathlib,sqlite3,app
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.flask_app.config['APP_VERSION']=='V2.10.1'
+assert app.flask_app.config['APP_VERSION']=='V2.11.0'
 client=Client(app.app,Response)
 for route in ('/stat/sante','/stat/','/stat/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     if route=='/stat/':
-        assert b'V2.10.1' in response.data
+        assert b'V2.11.0' in response.data
     response.close()
 with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
     assert db.execute('PRAGMA user_version').fetchone()[0]==21
@@ -247,7 +249,7 @@ with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.10.1'
+assert app.app.config['APP_VERSION']=='V2.11.0'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)

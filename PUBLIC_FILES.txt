@@ -11,6 +11,7 @@ README.md
 ROADMAP.md
 SECURITY.md
 THIRD_PARTY_NOTICES.md
+animation_attendance.py
 animation_information.py
 animation_report.py
 animation_slots.py
@@ -41,6 +42,7 @@ docs/corrections-2.8.6.md
 docs/development.md
 docs/email-templates.md
 docs/evolution-2.10.0.md
+docs/evolution-2.11.0.md
 docs/evolution-2.7.md
 docs/evolution-2.9.0.md
 docs/families-2.8.md
@@ -226,6 +228,7 @@ tests/test_corrective_285.py
 tests/test_corrective_ui.js
 tests/test_enrollment_privacy.py
 tests/test_evolution.py
+tests/test_evolution_211.py
 tests/test_evolution_ui.js
 tests/test_families.py
 tests/test_family_evolution.py
@@ -272,6 +275,7 @@ usability.py
 v210_config.py
 v210_routes.py
 v210_schema.py
+v211_routes.py
 v290_schema.py
 waitlist_limits.py
 welcome_mail.py

@@ -12,7 +12,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-SCHEMA = 21
+SCHEMA = 22
 POLICIES = {'none':'Aucun', 'email':'E-mail', 'phone':'Téléphone',
             'either':'E-mail ou téléphone', 'both':'E-mail et téléphone'}
 DEFAULTS = {'family_autonomy_age':'15', 'family_responsible_age':'18',
@@ -40,13 +40,13 @@ def backup_before(db, path):
     """Coherent offline PRE before *any* initialization writes, not a DB copy."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
     if version > SCHEMA:
-        raise RuntimeError('Base plus récente que la candidate 2.10.0 ; démarrage refusé.')
+        raise RuntimeError('Base plus récente que la candidate 2.11.0 ; démarrage refusé.')
     extra_needed = (version == 15 and not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_booking_groups'").fetchone())
-    if version not in (14, 15, 16, 17, 18, 19, 20) and not extra_needed:
+    if version not in (14, 15, 16, 17, 18, 19, 20, 21) and not extra_needed:
         return None
     root = Path(path).parent / 'migration-backups'
     root.mkdir(mode=0o700, exist_ok=True)
-    target = root / (('before-2.10-schema-' if version==20 else 'before-2.8-schema-') + str(version) + '-' + uuid4().hex + '.db')
+    target = root / (('before-2.11-schema-' if version==21 else 'before-2.10-schema-' if version==20 else 'before-2.8-schema-') + str(version) + '-' + uuid4().hex + '.db')
     with sqlite3.connect(target) as copy:
         db.backup(copy)
         if copy.execute('PRAGMA integrity_check').fetchone()[0] != 'ok' or copy.execute('PRAGMA foreign_key_check').fetchall():
@@ -56,9 +56,9 @@ def backup_before(db, path):
 
 
 def migrate(db, fail_after=None):
-    """Additive migration through schema21; existing business IDs stay intact."""
+    """Additive migration through schema22; existing business IDs stay intact."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
-    if version not in (14, 15, 16, 17, 18, 19, 20, SCHEMA):
+    if version not in (14, 15, 16, 17, 18, 19, 20, 21, SCHEMA):
         # Earlier schemas must first complete the existing evolution migration.
         # In particular, never stamp an incomplete old database as schema 15.
         if version > SCHEMA:
@@ -129,11 +129,13 @@ def migrate(db, fail_after=None):
         ensure_290(db)
         from v210_schema import ensure as ensure_210
         ensure_210(db)
+        from animation_attendance import ensure as ensure_211
+        ensure_211(db)
         if fail_after:
             fail_after(db)
         if db.execute('PRAGMA foreign_key_check').fetchall() or db.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
             raise RuntimeError('Migration famille refusée : intégrité invalide.')
-        db.execute('PRAGMA user_version=21')
+        db.execute('PRAGMA user_version=22')
         db.commit()
     except Exception:
         db.rollback()

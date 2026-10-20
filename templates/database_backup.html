@@ -45,6 +45,12 @@
         <div class="form-actions structure-save-actions"><button class="admin-button primary" type="submit">Enregistrer la structure et les modules</button></div>
     </section>
 </form>
+{% if module_settings.activities %}<form id="presences-animations" method="post" action="{{ url_for('v211.settings') }}" class="admin-form form-section">
+<input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+<h2>Présences aux animations</h2>
+<label class="checkbox-field"><input type="checkbox" name="enabled" value="1" {% if v210.animation_auto_presence_enabled=='1' %}checked{% endif %}><span><strong>Validation automatique des présences aux animations</strong><small>Un usager déjà inscrit et confirmé est déclaré présent lorsqu’il est détecté à la borne pendant son animation.</small></span></label>
+<div class="form-actions"><button class="admin-button secondary compact">Enregistrer la validation des présences</button></div>
+</form>{% endif %}
 {% for kind in ('wordmark', 'header_institution', 'network', 'institution', 'main', 'signature', 'badge') %}<form id="remove-{{ kind }}" method="post" action="{{ url_for('admin_remove_branding', kind=kind) }}"><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><input type="hidden" name="confirmation" value="SUPPRIMER"></form>{% endfor %}
 {% include '_reservation_settings.html' %}
 {% include '_smtp_settings.html' %}

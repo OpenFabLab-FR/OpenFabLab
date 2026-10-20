@@ -91,7 +91,9 @@ def register(application,a):
         # Service edits, capacity increases and historical cancellations also
         # release places. Never send network mail inside the HTTP request.
         if (request.method=='POST' and response.status_code<400 and
-                request.path.startswith('/admin/') and session.get('access_role') in ('admin','moderator')):
+                request.path.startswith('/admin/') and session.get('access_role') in ('admin','moderator')
+                and not (request.endpoint or '').startswith('v211.')
+                and not (request.endpoint=='admin_animation_booking_action' and request.form.get('action') in ('present','absent','unknown'))):
             db=a.get_database()
             if not db.in_transaction:
                 try:

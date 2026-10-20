@@ -39,8 +39,13 @@ def generate_slots(service, config, zone="Europe/Paris", service_id=0):
     return slots
 
 
-def save_slots(database, service, config, zone):
+def save_slots(database, service, config, zone, previous_config=None):
     slots = generate_slots(dict(service), dict(config), zone, service["id"])
+    if previous_config is not None:
+        previous={r['slot_uuid']:r['capacity'] for r in database.execute('SELECT * FROM animation_slots WHERE service_id=?',(service['id'],))}
+        for slot in slots:
+            if slot['slot_uuid'] in previous and previous[slot['slot_uuid']]!=previous_config['slot_capacity']:
+                slot['capacity']=previous[slot['slot_uuid']]
     # Keep removed rows for historical references; never delete a booking or move it.
     database.execute("UPDATE animation_slots SET active = 0 WHERE service_id = ?", (service["id"],))
     for slot in slots:

@@ -35,7 +35,8 @@ class MembershipTest(unittest.TestCase):
     def grant(self,plan=None,start='2026-01-01',key='assign'):
         return m.assign(self.db,plan or self.plan(),self.user,[self.user],start,key)
     def test_defaults_and_no_side_effect_off(self):
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],21)
+        from family_model import SCHEMA
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],SCHEMA)
         self.assertEqual(m.setting(self.db,'module_memberships'),'0')
         self.assertEqual(m.setting(self.db,'kiosk_sound_enabled'),'1')
         self.assertEqual(m.setting(self.db,'kiosk_sound_volume'),'50')

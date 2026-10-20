@@ -1,6 +1,39 @@
+# Mettre à jour vers OpenFabLab 2.11.0 stable
+
+Depuis **2.10.1 / SQLite 21**, utiliser les
+[ZIP officiels et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.11.0).
+La version 2.11.0 effectue une migration additive transactionnelle **21 → 22**.
+Ne jamais utiliser un runtime 2.10.1 sur une base 22.
+
+1. Vérifier les empreintes, les versions et l’intégrité de la base source.
+   Conserver une sauvegarde complète **PRE21**, le runtime ou l’image précédente,
+   les volumes et les paramètres. Tester le nouveau runtime sur une copie isolée,
+   sans communications externes.
+2. Arrêter proprement l’instance et sauvegarder les dernières écritures.
+   Remplacer uniquement les fichiers applicatifs, sans écraser les données,
+   Compose personnalisé, `.env`, secrets, branding ni fichiers privés.
+3. Démarrer le runtime 2.11.0 ; contrôler la version, le schéma **22**,
+   `integrity_check`, `foreign_key_check`, les montages persistants, les réglages,
+   les données et la santé HTTP avant réouverture. Conserver une **POST22** complète.
+4. Si WordPress est utilisé, sauvegarder puis remplacer le plugin par
+   **Reservations 2.11.0**, sans désinstallation ni changement des secrets.
+   Vérifier les catalogues Normal/Test ; le protocole reste **4/révision 3**.
+
+Déjà en **2.11.0 / schéma 22** : ne pas rejouer une migration 21 → 22.
+En cas d’anomalie, arrêter proprement et conserver l’état pour diagnostic.
+Après toute tentative de démarrage public, ne jamais restaurer automatiquement
+une ancienne base pouvant écraser des écritures récentes. Un retour hors ligne
+exige une décision humaine sur un ensemble runtime/base cohérent.
+
+La présence automatique ne rejoue pas les anciennes animations. Les préférences,
+réservations et comptages existants sont conservés. [Détails](evolution-2.11.0.md).
+Les instructions historiques ci-dessous conservent leur contexte de version.
+
+---
+
 # Mettre à jour OpenFabLab
 
-## Vers la stable 2.10.1 depuis 2.10.0
+## Référence historique : vers la stable 2.10.1 depuis 2.10.0
 
 Utiliser les [ZIP officiels et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.10.1).
 Vérifier leurs empreintes avant toute intervention. Conserver les configurations,

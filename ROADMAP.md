@@ -1,5 +1,12 @@
 # OpenFabLab — Roadmap et conception
 
+## Disponible en 2.11.0 stable
+
+Présences automatiques des seuls inscrits confirmés, comptages anonymes distincts,
+capacité unifiée, borne tactile et sons saisonniers complémentaires.
+[Périmètre et limites](docs/evolution-2.11.0.md). Les projets historiques ci-dessous
+restent conservés ; aucun paiement bancaire ni autre module nouveau n’est annoncé.
+
 ## Disponible en 2.10.1 stable
 
 Correction des présentations par créneau, enrichissement sonore et compacité du

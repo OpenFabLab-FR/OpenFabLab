@@ -343,6 +343,9 @@ def grant(db, token, service_id, environment):
 
 def team_action(db, service_id, booking_uuid, action, role, person_id=None):
     """Team rights are checked by the route; business checks remain here."""
+    if action in ('present','absent','unknown'):
+        from animation_attendance import manual
+        return manual(db,service_id,booking_uuid,action,role)
     if role not in ('admin','moderator') or action not in ('confirm','cancel','remove','add','present','absent','verify'):
         raise ValueError('Action non autorisée pour cette réservation.')
     db.execute('BEGIN IMMEDIATE')
@@ -418,7 +421,8 @@ def team_action(db, service_id, booking_uuid, action, role, person_id=None):
                     notice={'participants':1,'cancelled_participants':1,'partial':False,'released':int(booking['status'] in ('confirmed','offer_pending','present','absent'))} if action=='remove' else None
                     waiting.transition(db,booking['group_uuid'],'cancelled',role,discord_notice=notice)
         waiting.settle(db)
-        db.execute("UPDATE fablab_services SET actual_participants=COALESCE((SELECT walkin_count FROM animation_reservation_config WHERE service_id=?),0)+(SELECT COUNT(*) FROM animation_bookings WHERE service_id=? AND status IN('confirmed','present') AND is_present=1) WHERE id=?",(service_id,service_id,service_id))
+        from animation_attendance import total
+        total(db,service_id)
         db.commit()
     except Exception:
         db.rollback();raise

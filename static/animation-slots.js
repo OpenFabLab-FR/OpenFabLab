@@ -4,7 +4,11 @@
   if (!mode) return;
   const inputs = ['start-time','end-time','slot-duration','slot-gap','slot-capacity'].map(id => document.getElementById(id));
   const preview = document.getElementById('slot-preview');
-  const capacity = document.getElementById('capacity');
+  const capacity = document.getElementById('expected-participants');
+  const existing = JSON.parse(document.getElementById('existing-slot-capacities')?.textContent || '[]');
+  const initialDefault = Number(document.getElementById('slot-capacity').value);
+  const date = document.getElementById('service-date'), initialDate = date.value;
+  const overrides = new Map(existing.filter(s => s.capacity !== initialDefault).map(s => [s.label,s.capacity]));
   function update() {
     const enabled = mode.value === 'slots';
     document.querySelectorAll('[data-slot-field]').forEach(node => { node.hidden = !enabled; });
@@ -19,13 +23,14 @@
     }
     const list = document.createElement('ul'); list.className='animation-slot-preview';
     const format = m => String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-    let total=0;
+    let total=0, places=0;
     for (let time=start;time+duration<=end;time+=duration+gap) {
-      const item=document.createElement('li');item.textContent=format(time)+'–'+format(time+duration); list.appendChild(item);total++;
+      const label=format(time)+'–'+format(time+duration), seats=(date.value===initialDate ? overrides.get(label) : undefined) ?? count;
+      const item=document.createElement('li');item.textContent=label+' · '+seats+' place(s)'; list.appendChild(item);total++;places+=seats;
     }
     preview.appendChild(list);
-    const summary=document.createElement('p');summary.textContent=total+' créneaux · '+count+' place(s) par créneau · capacité théorique totale : '+total*count+' personnes';
-    preview.appendChild(summary); capacity.value=total*count;
+    const summary=document.createElement('p');summary.textContent=total+' créneaux · total : '+places+' places'+(overrides.size ? ' · capacités particulières conservées' : '');
+    preview.appendChild(summary); capacity.value=places;
   }
-  [...inputs,mode].forEach(node => node.addEventListener('input',update)); update();
+  [...inputs,mode,date].forEach(node => node.addEventListener('input',update)); update();
 })();

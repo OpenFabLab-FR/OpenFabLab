@@ -11,7 +11,7 @@ RANGES={'membership_notice_days':(1,365),'membership_low_threshold':(0,100000),
         'kiosk_sound_volume':(0,100),'discord_sync_delay_minutes':(0,1440)}
 CHOICES={'membership_control':{'informative','warning','strict'},
          'membership_hourly_shortfall':{'available','manual'},
-         'kiosk_sound_ambience':{'auto','classic','halloween','christmas','summer','steampunk'}}
+         'kiosk_sound_ambience':{'auto','classic','halloween','christmas','summer','steampunk','easter','valentine'}}
 
 def validate(key,value):
     if key not in DEFAULTS:raise ValueError('Réglage inconnu.')

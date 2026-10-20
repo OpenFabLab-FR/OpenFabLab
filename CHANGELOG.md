@@ -1,5 +1,23 @@
 # Historique public
 
+## 2.11.0 — version stable — 20 octobre 2026
+
+Version complète validée en utilisation réelle ; application et plugin
+facultatif Reservations 2.11.0. Les réglages et données existants sont conservés.
+
+- Présences des inscrits confirmés détectées par chevauchement avec les passages
+  réels, sans nouvelle réservation ; priorité manuelle et protection des ambiguïtés.
+- Réglage général activé par défaut, sans option par animation ni reprise historique.
+- Places maximum unique, capacités propres aux créneaux et anciens comptages conservés.
+- Participants non inscrits anonymes dans Inscriptions ; encore attendus et
+  participation réelle distincts des places réservées et de la fréquentation.
+- Cartes tactiles de 88 px minimum, nom et catégorie sur deux lignes stables.
+- Sons synthétiques Pâques et Saint-Valentin ; Dark utilise Classique en automatique.
+- SQLite 21 → 22 additif ; application et plugin facultatif 2.11.0,
+  protocole 4/révision 3 inchangé.
+
+Voir [les règles, précautions et limites](docs/evolution-2.11.0.md).
+
 ## 2.10.1 — version stable — 18 octobre 2026
 
 Version corrective validée en utilisation réelle ; application et plugin
