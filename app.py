@@ -2916,13 +2916,14 @@ def build_single_day_attendance_bars(
     start_minutes,
     end_minutes,
     show_decimals=False,
+    zone=PARIS_TIMEZONE,
 ):
     """Construit le profil d'une journée avec la convention des pics existants."""
     local_day_start = datetime(
         local_day.year,
         local_day.month,
         local_day.day,
-        tzinfo=PARIS_TIMEZONE,
+        tzinfo=zone,
     )
     bars = []
     for bucket_start_minutes in range(start_minutes, end_minutes, 15):
@@ -2931,8 +2932,8 @@ def build_single_day_attendance_bars(
         bucket_end = local_day_start + timedelta(minutes=bucket_end_minutes)
         occupied_seconds = 0.0
         for session_start, session_end in session_intervals:
-            local_session_start = session_start.astimezone(PARIS_TIMEZONE)
-            local_session_end = session_end.astimezone(PARIS_TIMEZONE)
+            local_session_start = session_start.astimezone(zone)
+            local_session_end = session_end.astimezone(zone)
             overlap_start = max(local_session_start, bucket_start)
             overlap_end = min(local_session_end, bucket_end)
             if overlap_end > overlap_start:
@@ -2940,7 +2941,7 @@ def build_single_day_attendance_bars(
         visitor_arrivals = sum(
             1
             for created_at in visitor_times
-            if bucket_start <= created_at.astimezone(PARIS_TIMEZONE) < bucket_end
+            if bucket_start <= created_at.astimezone(zone) < bucket_end
         )
         bucket_seconds = (bucket_end_minutes - bucket_start_minutes) * 60
         users = round(occupied_seconds / bucket_seconds, 1) if bucket_seconds else 0.0
@@ -3087,41 +3088,17 @@ def build_day_attendance_graph(database, local_day, session_rows, visitor_rows):
 
 
 def load_service_statistics(database, selected_year):
-    """Calcule les indicateurs des animations et services pour la période choisie."""
-    rows = database.execute(
-        """
-        SELECT service_type, service_date, expected_participants,
-               actual_participants, participants, amount_cents, duration_minutes
-        FROM fablab_services ORDER BY service_date
-        """
-    ).fetchall()
-    selected = (
-        rows
-        if selected_year == "total"
-        else [row for row in rows if int(row["service_date"][:4]) == selected_year]
-    )
-    animations = [row for row in selected if row["service_type"] == "animation"]
-    reservations = [row for row in selected if row["service_type"] == "reservation"]
-    rentals = [row for row in selected if row["service_type"] == "rental"]
-    return {
-        "animations": len(animations),
-        "animation_participants": sum(row["actual_participants"] or 0 for row in animations),
-        "animation_duration_minutes": sum(row["duration_minutes"] or 0 for row in animations),
-        "reservations": len(reservations),
-        "reservation_participants": sum(row["participants"] or 0 for row in reservations),
-        "reservation_duration_minutes": sum(row["duration_minutes"] or 0 for row in reservations),
-        "rentals": len(rentals),
-        "rental_duration_minutes": sum(row["duration_minutes"] or 0 for row in rentals),
-        "revenue_cents": sum(row["amount_cents"] or 0 for row in reservations + rentals),
-        "revenue": f"{sum(row['amount_cents'] or 0 for row in reservations + rentals) / 100:.2f}".replace(".", ","),
-        "years": sorted({int(row["service_date"][:4]) for row in rows}, reverse=True),
-    }
+    """Shared read-only figures for screen, CSV, annual report and visual PDF."""
+    from statistics_quality import service_statistics
+    return service_statistics(database, selected_year)
 
 
 def load_statistics(database, selected_year):
     """Calcule les répartitions annuelles ou cumulées utiles au bilan du FabLab."""
+    from statistics_quality import local_zone, coverage
+    zone = local_zone(database)
     now_utc = datetime.now(timezone.utc)
-    now_local = now_utc.astimezone(PARIS_TIMEZONE)
+    now_local = now_utc.astimezone(zone)
     show_attendance_decimals = (
         read_setting(database, "openlab_attendance_show_decimals", "0") == "1"
     )
@@ -3161,7 +3138,7 @@ def load_statistics(database, selected_year):
     for row in session_rows:
         check_in = parse_timestamp(row["check_in"])
         check_out = parse_timestamp(row["check_out"]) if row["check_out"] else None
-        local_check_in = check_in.astimezone(PARIS_TIMEZONE)
+        local_check_in = check_in.astimezone(zone)
         parsed_sessions.append(
             {
                 "row": row,
@@ -3182,9 +3159,9 @@ def load_statistics(database, selected_year):
         {
             "row": row,
             "created_at": parse_timestamp(row["created_at"]),
-            "year": local_year(row["created_at"]),
+            "year": parse_timestamp(row["created_at"]).astimezone(zone).year,
             "local_date": parse_timestamp(row["created_at"])
-            .astimezone(PARIS_TIMEZONE)
+            .astimezone(zone)
             .date(),
         }
         for row in visitor_rows
@@ -3484,15 +3461,15 @@ def load_statistics(database, selected_year):
                     local_date.year,
                     local_date.month,
                     local_date.day,
-                    tzinfo=PARIS_TIMEZONE,
+                    tzinfo=zone,
                 )
                 bucket_start = local_day_start + timedelta(
                     minutes=bucket_start_minutes
                 )
                 bucket_end = local_day_start + timedelta(minutes=bucket_end_minutes)
                 for item in sessions_by_date[local_date]:
-                    session_start = item["check_in"].astimezone(PARIS_TIMEZONE)
-                    session_end = item["check_out"].astimezone(PARIS_TIMEZONE)
+                    session_start = item["check_in"].astimezone(zone)
+                    session_end = item["check_out"].astimezone(zone)
                     overlap_start = max(session_start, bucket_start)
                     overlap_end = min(session_end, bucket_end)
                     if overlap_end > overlap_start:
@@ -3503,7 +3480,7 @@ def load_statistics(database, selected_year):
                     1
                     for created_at in visitors_by_date[local_date]
                     if bucket_start
-                    <= created_at.astimezone(PARIS_TIMEZONE)
+                    <= created_at.astimezone(zone)
                     < bucket_end
                 )
 
@@ -3674,6 +3651,7 @@ def load_statistics(database, selected_year):
             schedule_day["start_minutes"],
             schedule_day["end_minutes"],
             show_attendance_decimals,
+            zone=zone,
         )
         bars = profile["bars"]
         peak = profile["peak"]
@@ -3772,6 +3750,7 @@ def load_statistics(database, selected_year):
         "selected_period_label": (
             "Toutes les années" if is_total_period else str(selected_year)
         ),
+        "coverage": coverage(database, selected_year, parsed_sessions, parsed_visitors, now_utc),
         "available_years": available_years,
         "current_periods": current_periods,
         "selected_summary": selected_summary,
@@ -6001,6 +5980,7 @@ def register_admin_protection(application):
             "admin_delete_historical_session", "admin_delete_historical_visitor",
             "admin_export_users", "admin_export_volunteers", "admin_export_sessions",
             "admin_export_statistics",
+            "admin_export_visual_statistics",
         },
         "users": {
             "admin_users_directory", "admin_add_user", "admin_edit_user", "admin_delete_user",
@@ -7049,6 +7029,8 @@ def register_routes(application):
         return render_template(
             "database_backup.html",
             settings_view=settings_view,
+            installation_diagnostic=__import__('installation_health').diagnostic(database)
+                if settings_view == 'donnees' else None,
             keep_screen_awake=wake_lock["enabled"], wake_lock=wake_lock,
             openlab_schedule=load_openlab_schedule(database),
             show_attendance_decimals=(read_setting(database, "openlab_attendance_show_decimals", "0") == "1"),
@@ -10187,7 +10169,7 @@ def register_routes(application):
             (period_section, "Sessions d'usagers", summary["sessions"]),
             (period_section, "Visiteurs anonymes", summary["visitors"]),
             (period_section, "Usagers uniques", summary["unique_users"]),
-            (period_section, "OpenLabs effectués", summary["open_lab_days"]),
+            (period_section, "Jours avec passages identifiés", summary["open_lab_days"]),
             (period_section, "Heures de présence", summary["hours"]),
             (
                 period_section,
@@ -10199,13 +10181,17 @@ def register_routes(application):
                 "Âge moyen approximatif",
                 statistics["mean_age"] if statistics["mean_age"] is not None else "",
             ),
-            (period_section, "Animations", statistics["service_statistics"]["animations"]),
-            (period_section, "Participants aux animations", statistics["service_statistics"]["animation_participants"]),
+            (period_section, "Animations passées", statistics["service_statistics"]["animations"]),
+            (period_section, "Participations renseignées aux animations passées", statistics["service_statistics"]["animation_participants"]),
             (period_section, "Créneaux réservables", statistics["service_statistics"]["reservations"]),
             (period_section, "Participants aux réservations", statistics["service_statistics"]["reservation_participants"]),
             (period_section, "Locations de machines", statistics["service_statistics"]["rentals"]),
             (period_section, "Recettes des réservations et locations (€)", statistics["service_statistics"]["revenue"]),
         ]
+        rows.extend([(period_section, 'Début des données de fréquentation', statistics['coverage']['first'] or ''),
+                     (period_section, 'Première donnée de fréquentation de la période', statistics['coverage']['selected_first'] or ''),
+                     (period_section, 'Animations programmées', statistics['service_statistics']['animations_scheduled']),
+                     (period_section, 'Animations passées aux présences incomplètes ou non renseignées', statistics['service_statistics']['animation_presence_incomplete'])])
         for section, distribution in (
             ("Genre", statistics["gender_rows"]),
             ("Tranche d'âge", statistics["age_rows"]),
@@ -10234,10 +10220,10 @@ def register_routes(application):
         for rank, weekday in enumerate(statistics["busiest_weekdays"], start=1):
             rows.append(
                 (
-                    "Jours d'OpenLab les plus fréquentés",
+                    "Jours avec passages identifiés les plus fréquentés",
                     f"{rank}. {weekday['label']}",
                     (
-                        f"{weekday['open_labs']} OpenLabs ; "
+                        f"{weekday['open_labs']} jours avec passages identifiés ; "
                         f"{str(weekday['average_users']).replace('.', ',')} usagers en moyenne ; "
                         f"{str(weekday['average_visitors']).replace('.', ',')} visiteurs en moyenne"
                     ),
@@ -10263,7 +10249,7 @@ def register_routes(application):
                     (f"Historique {year['year']}", "Sessions d'usagers", year["sessions"]),
                     (f"Historique {year['year']}", "Visiteurs anonymes", year["visitors"]),
                     (f"Historique {year['year']}", "Usagers uniques", year["unique_users"]),
-                    (f"Historique {year['year']}", "OpenLabs effectués", year["open_lab_days"]),
+                    (f"Historique {year['year']}", "Jours avec passages identifiés", year["open_lab_days"]),
                     (f"Historique {year['year']}", "Heures de présence", year["hours"]),
                 ]
             )
@@ -10272,6 +10258,17 @@ def register_routes(application):
             ("Section", "Indicateur", "Valeur"),
             rows,
         )
+
+    @application.get('/admin/exports/bilan-visuel.pdf')
+    def admin_export_visual_statistics():
+        from visual_report import generate_visual_report
+        database=get_database()
+        selected_year=parse_requested_year(request.args.get('year'),allow_total=True)
+        statistics=load_statistics(database,selected_year)
+        content=generate_visual_report(statistics,load_structure_settings(database))
+        return Response(content,mimetype='application/pdf',headers={
+            'Content-Disposition':f'attachment; filename="bilan-visuel-{selected_year}.pdf"',
+            'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'})
 
     @application.get("/admin/exports/animations.csv")
     def admin_export_animations():

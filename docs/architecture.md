@@ -1,6 +1,17 @@
 # Architecture
 
-## Version stable 2.11.0
+## Version stable 2.12.0
+
+Application 2.12.0, plugin facultatif Reservations 2.11.0 inchangé ; SQLite **22**
+conservé depuis 2.11.0. `statistics_quality.py` centralise les précautions de date
+et de couverture ; les écrans, CSV, rapport annuel et bilan visuel réutilisent
+les mêmes résultats. `visual_report.py` ne reçoit que des agrégats et produit le
+PDF en mémoire. `installation_health.py` expose un diagnostic administrateur léger
+sans nouvelle table ni surveillance permanente. Protocole 4/révision 3 inchangé.
+Les moteurs métier, l'accueil et les sons sont conservés. Voir
+[la consolidation](consolidation-2.12.0.md) et [la maintenance](maintenance.md).
+
+## Référence historique : version stable 2.11.0
 
 Application et plugin facultatif Reservations 2.11.0 ; SQLite **22**, migration
 additive depuis 21. `animation_attendance.py` réutilise les sessions de présence

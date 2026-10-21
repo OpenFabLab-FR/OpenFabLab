@@ -1,6 +1,15 @@
 # Configuration de la structure
 
-## Nouveautés de la stable 2.11.0
+## Nouveautés de la stable 2.12.0
+
+Réglages → Données → **État de l'installation** : diagnostic administrateur en
+lecture seule. Fréquentation → Exports → **Bilan visuel de fréquentation (PDF)** :
+choisir une année ou Total pour obtenir une synthèse agrégée. Les petits effectifs
+sont affichés ; examiner le PDF avant diffusion extérieure. Les préférences
+existantes, la borne et les intégrations restent inchangées.
+[Détails](consolidation-2.12.0.md) · [Maintenance](maintenance.md).
+
+## Fonctions introduites en 2.11.0 et conservées
 
 Réglages → Structure : **Validation automatique des présences aux animations**,
 activée par défaut et désactivable. Seuls les inscrits confirmés reliés à un compte

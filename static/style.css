@@ -6756,3 +6756,19 @@ tbody tr:last-child td {
 .attendance-walkins-form {display:flex;align-items:end;gap:14px;flex-wrap:wrap;margin-top:14px}
 .attendance-walkins-form .form-field {flex:1 1 220px;max-width:420px;min-width:0}
 @media(max-width:480px){.home-page .present-list{gap:8px}.attendance-walkins-form>button{width:100%}}
+
+/* 2.12: management-only refinements. No home selector or shared component override. */
+.animation-details-grid {grid-template-columns:repeat(6,minmax(0,1fr));gap:16px}
+.animation-details-grid .animation-date-field {grid-column:span 2}
+.admin-form .animation-waitlist-inline {display:flex;align-items:center;align-self:start;gap:10px;min-height:44px;padding:4px 0;margin:0;background:none;border:0;box-shadow:none}
+.admin-form .animation-waitlist-inline input[type=checkbox] {width:22px;height:22px;min-width:22px;min-height:22px;padding:0;margin:0;flex:0 0 22px}
+.reservation-booking-actions .attendance-status-group {display:inline-flex;flex-wrap:wrap;gap:4px;max-width:100%;align-items:center}
+.reservation-booking-actions .attendance-status {min-height:36px;padding:6px 9px;font-size:.79rem;line-height:1.2;border:1px solid var(--border);background:var(--surface);border-radius:8px;white-space:nowrap}
+.reservation-booking-actions .attendance-status[aria-pressed=true] {font-weight:700;background:#e6f1f4;border-color:#6d9dac;color:#214e60}
+.attendance-status:focus-visible {outline:3px solid #497c9c;outline-offset:2px}
+.installation-health-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0}
+.installation-health-grid div {min-width:0}.installation-health-grid dt {font-size:.84rem;color:var(--muted);margin-bottom:4px}
+.installation-health-grid dd {margin:0;overflow-wrap:anywhere}.health-environment {margin:12px 0}.health-environment>summary {cursor:pointer;min-height:44px;padding:10px 0;font-weight:600}
+@media(max-width:1100px){.animation-details-grid {grid-template-columns:repeat(2,minmax(0,1fr))}.animation-details-grid .animation-date-field {grid-column:auto}}
+@media(max-width:767px){.reservation-booking-actions .attendance-status {min-height:44px;padding:9px 10px}.installation-health-grid {grid-template-columns:1fr}}
+@media(max-width:480px){.animation-details-grid .animation-date-field {grid-column:1/-1}.animation-details-grid {gap:14px 10px}}

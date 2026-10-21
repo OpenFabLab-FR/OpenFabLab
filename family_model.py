@@ -40,7 +40,7 @@ def backup_before(db, path):
     """Coherent offline PRE before *any* initialization writes, not a DB copy."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
     if version > SCHEMA:
-        raise RuntimeError('Base plus récente que la candidate 2.11.0 ; démarrage refusé.')
+        raise RuntimeError('Base plus récente que ce runtime ; démarrage refusé.')
     extra_needed = (version == 15 and not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_booking_groups'").fetchone())
     if version not in (14, 15, 16, 17, 18, 19, 20, 21) and not extra_needed:
         return None

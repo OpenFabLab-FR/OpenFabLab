@@ -112,6 +112,7 @@
         <article><strong>{{ selected_summary.hours|string|replace('.', ',') }} h</strong><span>Temps des sessions terminées</span></article>
         <article><strong>{{ selected_summary.average_minutes }} min</strong><span>Durée moyenne d'une visite terminée</span></article>
     </div>
+    <p class="statistics-note">{{ coverage.message }} {{ coverage.period }}</p>
     <p class="statistics-note">Les sessions encore ouvertes ne sont ajoutées au temps cumulé qu'après l'enregistrement du départ.</p>
 </section>
 
@@ -119,7 +120,7 @@
     <div class="section-heading">
         <div>
             <p class="eyebrow">Rythme d’ouverture · {{ selected_period_label }}</p>
-            <h2 id="busiest-weekdays-title">OpenLabs les plus fréquentés</h2>
+            <h2 id="busiest-weekdays-title">Jours avec passages identifiés les plus fréquentés</h2>
         </div>
     </div>
     {% if busiest_weekdays %}
@@ -129,7 +130,7 @@
                     <tr>
                         <th>Rang</th>
                         <th>Jour</th>
-                        <th>OpenLabs comptabilisés</th>
+                        <th>Jours avec passages identifiés</th>
                         <th>Moyenne d’usagers</th>
                         <th>Moyenne de visiteurs</th>
                     </tr>
@@ -147,9 +148,9 @@
                 </tbody>
             </table>
         </div>
-        <p class="statistics-note">Seuls les jours comptant au moins un usager inscrit sont considérés comme des OpenLabs. Un même usager n’est compté qu’une fois par journée.</p>
+        <p class="statistics-note">Jours comptant au moins un usager identifié, sans mesure exhaustive des ouvertures organisées. Un même usager n’est compté qu’une fois par journée.</p>
     {% else %}
-        <p class="empty-statistics">Aucun OpenLab comptabilisé pour cette période.</p>
+        <p class="empty-statistics">Aucun jour avec passage identifié pour cette période.</p>
     {% endif %}
 </section>
 
@@ -183,7 +184,7 @@
                     <header>
                         <div>
                             <h3>{{ day.label }}</h3>
-                            <span>{{ day.start }}–{{ day.end }} · {{ day.open_labs }} OpenLab{% if day.open_labs != 1 %}s{% endif %} effectué{% if day.open_labs != 1 %}s{% endif %}</span>
+                            <span>{{ day.start }}–{{ day.end }} · {{ day.open_labs }} jour{% if day.open_labs != 1 %}s{% endif %} avec passages identifiés</span>
                         </div>
                         <div class="traffic-card-summary">
                             {% if day.peak %}
@@ -213,7 +214,7 @@
             {% endfor %}
         </div>
     {% else %}
-        <p class="empty-statistics">Aucun OpenLab comptabilisé pour cette période.</p>
+        <p class="empty-statistics">Aucun jour avec passage identifié pour cette période.</p>
     {% endif %}
 
     {% if openlab_attendance.record.users or openlab_attendance.record.combined %}
@@ -236,13 +237,14 @@
         </div>
     </div>
     <div class="annual-summary-grid service-summary-grid">
-        <article><strong>{{ service_statistics.animations }}</strong><span>Animations effectuées</span></article>
-        <article><strong>{{ service_statistics.animation_participants }}</strong><span>Participants aux animations</span></article>
+        <article><strong>{{ service_statistics.animations }}</strong><span>Animations passées</span></article>
+        <article><strong>{{ service_statistics.animation_participants }}</strong><span>Participations renseignées aux animations passées</span></article>
         <article><strong>{{ service_statistics.reservations }}</strong><span>Créneaux réservables</span></article>
         <article><strong>{{ service_statistics.reservation_participants }}</strong><span>Participants aux réservations</span></article>
         <article><strong>{{ service_statistics.rentals }}</strong><span>Locations de machines</span></article>
         <article><strong>{{ service_statistics.revenue }} €</strong><span>Recettes des réservations et locations</span></article>
     </div>
+    <p class="statistics-note">{{ service_statistics.animations_scheduled }} animation(s) programmée(s) sur la période. Une date passée ne prouve pas que l’animation a été tenue.{% if service_statistics.animation_presence_incomplete %} Présences incomplètes ou non renseignées pour {{ service_statistics.animation_presence_incomplete }} animation(s) passée(s) ; le total des participations n’est pas exhaustif.{% endif %}</p>
 </section>
 
 <div class="statistics-panels">
@@ -342,7 +344,7 @@
                     <th>Sessions d'usagers</th>
                     <th>Visiteurs anonymes</th>
                     <th>Usagers uniques</th>
-                    <th>OpenLabs effectués</th>
+                    <th>Jours avec passages identifiés</th>
                     <th>Heures de présence</th>
                 </tr>
             </thead>
@@ -354,7 +356,7 @@
                         <td data-label="Sessions">{{ row.sessions }}</td>
                         <td data-label="Visiteurs">{{ row.visitors }}</td>
                         <td data-label="Usagers uniques">{{ row.unique_users }}</td>
-                        <td data-label="OpenLabs effectués">{{ row.open_lab_days }}</td>
+                        <td data-label="Jours avec passages identifiés">{{ row.open_lab_days }}</td>
                         <td data-label="Temps de présence">{{ row.hours|string|replace('.', ',') }} h</td>
                     </tr>
                 {% endfor %}

@@ -37,8 +37,8 @@ def _metric_rows(statistics):
         ("Visiteurs", summary["visitors"]),
         ("Usagers distincts", summary["unique_users"]),
         ("Temps de présence", f"{str(summary['hours']).replace('.', ',')} h"),
-        ("Animations", services["animations"]),
-        ("Participants aux animations", services["animation_participants"]),
+        ("Animations passées", services["animations"]),
+        ("Participations renseignées", services["animation_participants"]),
         ("Durée des animations", _minutes_label(services["animation_duration_minutes"])),
         ("Créneaux réservables", services["reservations"]),
         ("Participants aux réservations", services["reservation_participants"]),
@@ -53,6 +53,14 @@ def _minutes_label(value):
     if hours:
         return f"{hours} h {minutes:02d} min"
     return f"{minutes} min"
+
+
+def _statistics_note(statistics):
+    coverage=statistics.get('coverage',{})
+    text=' '.join(filter(None,(coverage.get('message'),coverage.get('period'))))
+    missing=statistics['service_statistics'].get('animation_presence_incomplete',0)
+    if missing:text+=f' {missing} animation(s) passée(s) : présences incomplètes ou non renseignées. Les participations indiquées ne sont pas un total exhaustif.'
+    return text
 
 
 def _distribution_text(rows, limit=8):
@@ -117,6 +125,7 @@ def generate_activity_report_docx(report, statistics, logo_path: Path | None = N
             document.add_paragraph(text)
 
     document.add_heading("Chiffres clés", level=1)
+    if _statistics_note(statistics):document.add_paragraph(_statistics_note(statistics))
     metrics = _metric_rows(statistics)
     table = document.add_table(rows=0, cols=4)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -228,6 +237,7 @@ def generate_activity_report_pdf(report, statistics, logo_path: Path | None = No
         story.extend(Paragraph(text, body) for text in _paragraphs(report["introduction"]))
 
     story.append(Paragraph("Chiffres clés", h1))
+    if _statistics_note(statistics):story.append(Paragraph(escape(_statistics_note(statistics)), body))
     metrics = _metric_rows(statistics)
     metric_cells = []
     for label, value in metrics:

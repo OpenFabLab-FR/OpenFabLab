@@ -1,3 +1,18 @@
+# Application OpenFabLab 2.12.0 et Reservations 2.11.0
+
+Le plugin facultatif **2.11.0 reste intégralement inchangé** : aucun nouveau ZIP
+ni remplacement WordPress n'est nécessaire pour l'application 2.12.0. Protocole
+4/révision 3, capacités, ressources et signatures restent compatibles. Ne pas
+imposer d'égalité stricte des versions pour synchroniser. Une future modification
+réelle du plugin disposera de son propre incrément et de ses métadonnées cohérentes.
+Préserver configuration et secrets. OpenFabLab fonctionne sans WordPress.
+Conserver le [téléchargement officiel existant du plugin 2.11.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.11.0/openfablab-reservations-2.11.0.zip)
+et ses [empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.11.0/SHA256SUMS).
+Il n'est ni reconstruit ni republié dans la release applicative 2.12.0.
+Les références stables précédentes sont conservées ci-dessous.
+
+---
+
 # OpenFabLab Reservations 2.11.0 — plugin facultatif stable
 
 Application et plugin facultatif Reservations 2.11.0, protocole 4/révision 3

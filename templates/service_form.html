@@ -8,13 +8,13 @@
 <section class="content-heading"><h1>{% if service %}Modifier l’animation{% else %}Ajouter une animation{% endif %}</h1><p>Programmez l’animation. Les présences se gèrent dans Inscriptions.</p></section>
 <form method="post" class="admin-form">
     <input type="hidden" name="service_type" value="animation">
-    <section class="form-section"><div class="form-grid">
-        <div class="form-field"><label for="service-date">Date effectuée</label><input id="service-date" name="service_date" type="date" value="{{ values.get('service_date', '') }}" required></div>
+    <section class="form-section"><div class="form-grid animation-details-grid">
+        <div class="form-field animation-date-field"><label for="service-date">Date de l’animation</label><input id="service-date" name="service_date" type="date" value="{{ values.get('service_date', '') }}" required></div>
         <div class="form-field"><label for="start-time">Heure de début</label><input id="start-time" name="start_time" type="time" step="60" value="{{ values.get('start_time', '') or '' }}" required></div>
         <div class="form-field"><label for="end-time">Heure de fin</label><input id="end-time" name="end_time" type="time" step="60" value="{{ values.get('end_time', '') or '' }}" required><small>Durée acceptée : de 15 minutes à 8 heures.</small></div>
         <div class="form-field"><label for="minimum-age">Âge minimum</label><input id="minimum-age" name="minimum_age" type="number" min="0" max="120" value="{{ values.get('minimum_age', 10) if values.get('minimum_age') is not none else 10 }}"></div>
-        <div class="form-field form-field-wide"><label for="service-title">Titre de l’animation</label><input id="service-title" name="title" type="text" maxlength="160" value="{{ values.get('title', '') }}" required></div>
         <div class="form-field"><label for="expected-participants">Places maximum</label><input id="expected-participants" name="expected_participants" type="number" min="0" max="100000" value="{{ values.get('expected_participants', '') if values.get('expected_participants') is not none else '' }}"></div>
+        <div class="form-field form-field-wide"><label for="service-title">Titre de l’animation</label><input id="service-title" name="title" type="text" maxlength="160" value="{{ values.get('title', '') }}" required></div>
         <div class="form-field form-field-wide"><label for="service-description">Description de l’animation</label><textarea id="service-description" name="description" rows="5" maxlength="3000">{{ values.get('description', '') or '' }}</textarea></div>
         <div class="form-field form-field-wide"><label for="information-url">Lien d’information</label><input id="information-url" name="information_url" type="url" maxlength="2048" value="{{ values.get('information_url','') or '' }}" placeholder="https://example.org/programme"><small>Facultatif : une page publique pour en savoir plus. Ce lien est distinct du lien personnel de réservation.</small></div>
     </div></section>
@@ -32,7 +32,7 @@
             <div class="form-field"><label for="signup-open-at">Ouverture des inscriptions</label><input id="signup-open-at" name="signup_open_at" type="datetime-local" value="{{ (online_config.signup_open_at or '')[:16] }}"></div>
             <div class="form-field"><label for="close-minutes">Fermeture avant l'animation (minutes)</label><input id="close-minutes" name="close_minutes" type="number" min="0" max="1440" value="{{ online_config.close_minutes }}"></div>
             <input type="hidden" name="accompaniment_under_age" value="{{ online_config.accompaniment_under_age }}"><p class="form-help">L’autonomie et les responsables se règlent dans Usagers → Âges, autonomie et familles.</p>
-            <label class="checkbox-field reservation-checkbox"><input type="checkbox" name="waitlist_enabled" value="1" {% if online_config.waitlist_enabled %}checked{% endif %}><span><strong>Activer la liste d'attente</strong></span></label>
+            <label class="checkbox-field animation-waitlist-inline"><input type="checkbox" name="waitlist_enabled" value="1" {% if online_config.waitlist_enabled %}checked{% endif %}><span>Activer la liste d'attente</span></label>
             <div class="form-grid two-columns">
                 <label class="form-field"><span>Limite de la liste d’attente</span><select name="waitlist_limit_mode">{% for key,label in [('general','Utiliser le réglage général'),('custom','Limite personnalisée'),('unlimited','Sans limite')] %}<option value="{{ key }}" {% if (online_config.waitlist_limit_mode or 'general')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><small>Par créneau si l’animation utilise des créneaux. Aucun groupe n’est scindé.</small></label>
                 <label class="form-field"><span>Personnes en attente — limite personnalisée</span><input name="waitlist_limit_value" type="number" min="0" max="100000" step="1" value="{{ online_config.waitlist_limit_value or 0 }}"><small>Réduire cette valeur conserve l’attente et les propositions existantes ; seules les nouvelles entrées sont limitées.</small></label>

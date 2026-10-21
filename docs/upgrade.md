@@ -1,3 +1,22 @@
+# Mettre à jour vers OpenFabLab 2.12.0 stable
+
+Depuis 2.11.0, conserver le schéma **22**, sans rejouer la migration 21 → 22. Effectuer une
+sauvegarde complète PRE22, conserver l’ancien runtime et les volumes/configurations,
+vérifier les empreintes, remplacer les fichiers applicatifs puis contrôler santé,
+intégrité, données et préférences. Conserver une POST22. Après démarrage public,
+aucune restauration destructrice automatique : protéger les nouvelles écritures.
+Le plugin facultatif Reservations **2.11.0 reste inchangé**, protocole 4/révision 3.
+Ne pas le réinstaller ni modifier ses secrets pour cette mise à jour applicative.
+Télécharger l'[application et les empreintes officielles](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.12.0).
+Identifier le runtime source par version et empreintes ; ne pas se fier au seul
+nom d'image Docker. Déjà en 2.12.0 finale : ne pas réexécuter un lanceur prévu pour
+2.11.0. Les procédures propres à une installation restent privées. Aucun rollback
+automatique destructeur ne doit effacer des écritures enregistrées après réouverture.
+Voir [le guide de maintenance](maintenance.md) et [le périmètre](consolidation-2.12.0.md).
+Les paragraphes suivants restent les références historiques des stables.
+
+---
+
 # Mettre à jour vers OpenFabLab 2.11.0 stable
 
 Depuis **2.10.1 / SQLite 21**, utiliser les

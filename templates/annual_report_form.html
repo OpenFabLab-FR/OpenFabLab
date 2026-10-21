@@ -16,10 +16,11 @@
 <form method="post" class="admin-form">
     <section class="form-section">
         <div class="form-section-heading"><p class="eyebrow">Données automatiques</p><h2>Repères pour {{ report.year }}</h2></div>
+        <p class="form-help">{{ statistics.coverage.message }} {{ statistics.coverage.period }}</p>
         <div class="billing-summary annual-report-summary">
             <article><strong>{{ statistics.selected_summary.total }}</strong><span>Passages comptabilisés</span></article>
             <article><strong>{{ statistics.selected_summary.unique_users }}</strong><span>Usagers distincts</span></article>
-            <article><strong>{{ statistics.service_statistics.animations }}</strong><span>Animations</span></article>
+            <article><strong>{{ statistics.service_statistics.animations }}</strong><span>Animations passées</span></article>
             <article><strong>{{ statistics.service_statistics.reservations }}</strong><span>Créneaux réservables</span></article>
         </div>
     </section>

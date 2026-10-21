@@ -1,0 +1,17 @@
+<section class="admin-section" id="etat-installation" aria-labelledby="installation-title">
+    <div class="section-heading"><div><p class="eyebrow">Maintenance · lecture seule</p><h2 id="installation-title">État de l’installation</h2></div><a class="admin-button secondary compact" href="{{ url_for('admin_settings_data') }}#etat-installation">Actualiser le diagnostic</a></div>
+    <dl class="installation-health-grid">
+        <div><dt>Application</dt><dd>OpenFabLab {{ installation_diagnostic.version }}</dd></div>
+        <div><dt>SQLite</dt><dd>Schéma {{ installation_diagnostic.schema }}</dd></div>
+        <div><dt>Dernier contrôle d’intégrité connu</dt><dd>{{ installation_diagnostic.integrity }}</dd></div>
+        <div><dt>Dernière sauvegarde automatique réussie connue</dt><dd>{{ installation_diagnostic.backup_success|paris_datetime if installation_diagnostic.backup_success else 'Non disponible' }}{% if installation_diagnostic.backup_error %}<br>Le dernier essai a signalé une erreur.{% endif %}</dd></div>
+    </dl>
+    <p class="form-help">Un succès de sauvegarde enregistré ne prouve pas sa restauration. Vérifiez l’archive puis essayez sa restauration dans un environnement isolé.</p>
+    {% if installation_diagnostic.wordpress %}<h3>Synchronisation WordPress</h3>
+    {% if not installation_diagnostic.wordpress.configured %}<p>Non configurée. Aucun échange n’est vérifié.</p>{% else %}
+    {% for state in installation_diagnostic.wordpress.states %}<details class="health-environment"><summary>{{ 'Normal' if state.environment=='production' else 'Test' }} · {{ 'Échange récent observé' if state.freshness=='recent' and not state.error_known else 'Vérification nécessaire' if state.error_known else 'Aucune observation récente disponible' }}</summary>
+    <p>Dernier relevé : {{ state.observed_at|paris_datetime if state.observed_at else 'Non disponible' }}. Cet état ne remplace pas un contrôle du parcours de réservation.</p>
+    <dl class="installation-health-grid"><div><dt>Demandes à traiter lors du dernier relevé</dt><dd>{{ state.pending if state.pending is not none else 'Non disponible' }}</dd></div><div><dt>À réessayer / en échec</dt><dd>{{ state.retrying if state.retrying is not none else 'Non disponible' }} / {{ state.failed if state.failed is not none else 'Non disponible' }}</dd></div><div><dt>Résultats acquittés</dt><dd>{{ state.acknowledged }}</dd></div><div><dt>Résultats en attente d’acquittement</dt><dd>{{ state.awaiting_ack }} récents · {{ state.retry_ack }} plus anciens, à vérifier</dd></div><div><dt>Traces historiques de commandes</dt><dd>{{ state.legacy }} conservées, dont {{ state.legacy_resolved }} résolues et {{ state.legacy_review }} anciennes demandes à examiner</dd></div></dl>
+    <p class="form-help">Une ancienne commande sans date d’envoi n’est pas nécessairement bloquée : le relais actuel utilise des reçus et un catalogue distincts. Aucune purge ni relance n’est effectuée ici.</p>
+    </details>{% endfor %}{% endif %}{% endif %}
+</section>

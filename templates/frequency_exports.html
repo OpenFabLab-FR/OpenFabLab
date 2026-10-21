@@ -17,6 +17,7 @@
 <section class="admin-section export-section statistics-compact-section" aria-labelledby="exports-title">
     <div class="section-heading"><div><h2 id="exports-title">Fichiers disponibles</h2></div></div>
     <div class="export-grid">
+        <a class="export-card" href="{{ url_for('admin_export_visual_statistics', year=selected_year) }}"><strong>Bilan visuel de fréquentation (PDF)</strong><span>Chiffres clés et graphiques de la période, prêts à présenter.</span></a>
         <a class="export-card" href="{{ url_for('admin_export_statistics', year=selected_year) }}"><strong>Statistiques {{ selected_period_label }}</strong><span>Résumé de la période, répartitions et historique</span></a>
         <a class="export-card" href="{{ url_for('admin_export_sessions', year=selected_year) }}"><strong>Présences {{ selected_period_label }}</strong><span>Détail des arrivées, départs et durées</span></a>
         <a class="export-card" href="{{ url_for('admin_export_users') }}"><strong>Répertoire des usagers</strong><span>Fiches, catégories et nombre de visites</span></a>

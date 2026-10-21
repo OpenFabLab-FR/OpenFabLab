@@ -1,8 +1,8 @@
 # Installer une nouvelle instance
 
-## OpenFabLab 2.11.0 stable
+## OpenFabLab 2.12.0 stable
 
-Télécharger l’[application et les empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.11.0),
+Télécharger l’[application et les empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.12.0),
 vérifier le ZIP puis l’extraire dans un dossier neuf. SQLite **22** est créée
 à l’initialisation, sans usagers ni abonnements préchargés. Le module Abonnements
 et crédits est **désactivé par défaut** ; l’application fonctionne sans ce module
@@ -10,16 +10,16 @@ et sans WordPress. Sons activés à **50 %** pour les préférences absentes,
 désactivables dans Réglages → Borne. Les confirmations visuelles sont conservées.
 
 Le plugin facultatif **Reservations 2.11.0** utilise le protocole **4/révision 3**.
-Il apporte les présentations par créneau ; remplacer l’ancien plugin sans le
-désinstaller ni changer son secret. Voir [WordPress](wordpress.md),
-[les nouveautés 2.11.0](evolution-2.11.0.md), [les fonctions 2.10.0 conservées](evolution-2.10.0.md)
+S'il est déjà installé, ne pas le remplacer. Sinon, utiliser son téléchargement
+existant, sans désinstallation ni changement de secret. Voir [WordPress](wordpress.md),
+[les nouveautés 2.12.0](consolidation-2.12.0.md), [les fonctions 2.11.0 conservées](evolution-2.11.0.md)
 et [la configuration](configuration.md).
 Les prérequis et les méthodes Python/Compose ci-dessous restent applicables.
 Guides : [Linux](installation-linux.md), [Raspberry Pi](installation-raspberry-pi.md),
 [Windows](installation-windows.md), [Synology](installation-synology.md).
 Une installation existante doit suivre [la mise à jour](upgrade.md) avec sauvegarde.
-Les ZIP validés sont conservés sans reconstruction ; la documentation de ce tag
-est la référence stable si un guide embarqué conserve une mention de préparation.
+Depuis 2.11.0, aucune migration : SQLite 22 reste 22. La documentation embarquée
+est harmonisée avec la stable, sans changement des fichiers exécutables validés.
 
 ## Référence historique : installation 2.9.0
 
@@ -46,7 +46,7 @@ Lire aussi [les limites réellement vérifiées](platform-compatibility.md) et
 réalisé n’est présenté comme validé. Les ZIP approuvés restent inchangés ; leurs
 guides peuvent conserver des mentions de préparation. La documentation du tag
 `v2.9.0` reste la référence pour cette ancienne version ; la stable courante
-est 2.11.0, présentée ci-dessus.
+est 2.12.0, présentée ci-dessus.
 
 Prérequis : Python 3.10+ (3.12 dans Docker), navigateur moderne, disque persistant. Le plugin demande WordPress avec PHP 8.1+, OpenSSL AES-GCM, InnoDB, JavaScript et HTTPS ; seul OpenFabLab doit pouvoir joindre WordPress en HTTPS sortant. La borne et l'application fonctionnent sans plugin. Voir [le guide WordPress](wordpress.md) et [les vérifications isolées](candidate-2.8-guide.md).
 
@@ -66,9 +66,9 @@ docker compose up -d application
 
 Le compose fourni publie `5080:8000`, préfixe `/stat`, `restart: unless-stopped` et healthcheck `/stat/sante`. Il monte **`./data:/data`** et **`${OPENFABLAB_BACKUP_HOST_ROOT:-./backups}:/nas-backups`**. Le sous-dossier de sauvegarde initial est `OpenFabLab`, modifiable dans les réglages. Une racine différente peut être définie dans un `.env` privé à partir de `.env.example`, sans y mettre de secret.
 
-L'exemple Compose courant nomme l'image `openfablab:v2.11.0`.
+L'exemple Compose courant nomme l'image `openfablab:v2.12.0`.
 L'étiquette nomme l'image construite depuis ce dossier ; elle ne suffit pas à
-prouver sa version réelle. Le runtime de l'archive courante est **2.11.0**.
+prouver sa version réelle. Le runtime de l'archive courante est **2.12.0**.
 Une installation existante peut conserver un ancien alias : vérifier la version
 dans l'interface après construction, sans remplacer son Compose personnalisé.
 

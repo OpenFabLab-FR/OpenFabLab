@@ -34,6 +34,7 @@ docs/backup-restore.md
 docs/branding.md
 docs/candidate-2.8-guide.md
 docs/configuration.md
+docs/consolidation-2.12.0.md
 docs/corrections-2.10.1.md
 docs/corrections-2.7.1.md
 docs/corrections-2.8.4.md
@@ -53,6 +54,7 @@ docs/installation-synology.md
 docs/installation-windows.md
 docs/installation.md
 docs/legacy-migration.md
+docs/maintenance.md
 docs/outbound-2.8.1.md
 docs/platform-compatibility.md
 docs/private-backup.md
@@ -70,6 +72,7 @@ family_reservation_routes.py
 family_reservations.py
 family_routes.py
 family_waitlist.py
+installation_health.py
 kiosk_feedback.py
 membership_notices.py
 memberships.py
@@ -117,6 +120,7 @@ static/qr-scanner.js
 static/style.css
 static/vendor/jsQR-1.4.0.js
 static/vendor/jsQR-LICENSE.txt
+statistics_quality.py
 sync_incidents.py
 tablet_reservations.py
 templates/_admin_nav.html
@@ -132,6 +136,7 @@ templates/_family_fields.html
 templates/_family_settings.html
 templates/_frequency_nav.html
 templates/_home_title.html
+templates/_installation_health.html
 templates/_participant_picker.html
 templates/_reservation_settings.html
 templates/_resource_fields.html
@@ -222,6 +227,7 @@ tests/test_branding.py
 tests/test_candidate_revision.py
 tests/test_catalogue_limits_290.py
 tests/test_clients_290.py
+tests/test_consolidation_212.py
 tests/test_corrective_2101.py
 tests/test_corrective_271.py
 tests/test_corrective_285.py
@@ -238,6 +244,7 @@ tests/test_guest_reservations.py
 tests/test_logo_shadow_ui.js
 tests/test_memberships_210.py
 tests/test_micro_286.py
+tests/test_migration_restore.py
 tests/test_naming.py
 tests/test_outbound_actions.py
 tests/test_participants_ui.js
@@ -254,6 +261,7 @@ tests/test_sync_reconciliation.py
 tests/test_tablet_reservations.py
 tests/test_usability_283.py
 tests/test_usability_ui.js
+tests/test_visual_report_internal.py
 tests/test_waiting_cards_290.js
 tests/test_waitlist_limits_290.py
 tests/test_walkin_prefill.js
@@ -277,6 +285,7 @@ v210_routes.py
 v210_schema.py
 v211_routes.py
 v290_schema.py
+visual_report.py
 waitlist_limits.py
 welcome_mail.py
 wordpress/openfablab-reservations/LICENSE

@@ -1,5 +1,14 @@
 # OpenFabLab — Roadmap et conception
 
+## Disponible en 2.12.0 stable — consolidation
+
+Ergonomie ciblée, fiabilité et lisibilité des indicateurs, bilan visuel PDF,
+diagnostic léger et maintenance. Aucun nouveau grand module, aucune refonte de
+l’accueil ou des statistiques. [Détails](docs/consolidation-2.12.0.md).
+SQLite 22 conservé. Le plugin facultatif Reservations 2.11.0 reste inchangé et
+conserve sa version : ne pas reconstruire ni renuméroter un plugin compatible
+qui n'a pas évolué. Les autres projets futurs ci-dessous restent conservés.
+
 ## Disponible en 2.11.0 stable
 
 Présences automatiques des seuls inscrits confirmés, comptages anonymes distincts,

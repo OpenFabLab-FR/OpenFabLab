@@ -1,5 +1,25 @@
 # Historique public
 
+## 2.12.0 — version stable — 21 octobre 2026
+
+- Fiche d’animation plus compacte : case d’attente et capacité unique mieux intégrées.
+- Statuts de présence compacts et accessibles ; À confirmer garde la valeur Non renseigné.
+- Animations passées selon leur fin locale, futures exclues ; participations renseignées
+  distinctes des données manquantes et des réservations. Historiques conservés.
+- Couverture de fréquentation calculée, périodes partielles et jours avec passages
+  identifiés explicités ; mêmes chiffres pour écran, CSV et rapport annuel existant.
+- Un seul nouvel export : bilan visuel de fréquentation PDF, agrégé, sans coordonnées
+  ni compte individuel. Petits effectifs affichés,
+  pourcentages et totaux explicites. Communes et nationalités : 20 valeurs détaillées,
+  reliquat dans « Autres », données absentes séparées dans « Non renseigné ».
+- Diagnostic administrateur en lecture seule, états du relais distingués des traces
+  historiques ; guide de maintenance et tests réutilisables de migration/restauration.
+- Application 2.12.0, plugin facultatif 2.11.0 inchangé, SQLite 22 sans nouvelle migration.
+  Le plugin conserve son téléchargement existant ; les versions applicative et
+  WordPress sont indépendantes du protocole 4/révision 3.
+
+Voir [périmètre et limites](docs/consolidation-2.12.0.md).
+
 ## 2.11.0 — version stable — 20 octobre 2026
 
 Version complète validée en utilisation réelle ; application et plugin

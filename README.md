@@ -1,6 +1,42 @@
+# OpenFabLab 2.12.0
+
+**Version stable · SQLite 22 · Licence MIT · Plugin facultatif Reservations 2.11.0 inchangé**
+
+OpenFabLab 2.12.0 consolide la gestion quotidienne : formulaires d'animation et
+statuts de présence plus compacts, indicateurs statistiques plus explicites,
+bilan visuel PDF de fréquentation et diagnostic léger de l'installation.
+
+- Les animations futures sont exclues des animations passées et de leurs participations.
+  Les périodes partielles et les données de présence incomplètes restent identifiables.
+- Un bilan PDF interne présente chiffres clés et graphiques agrégés, y compris les
+  petits effectifs. Communes et nationalités : 20 valeurs renseignées détaillées,
+  puis « Autres » ; « Non renseigné » reste séparé. Examiner le document avant partage.
+- Les six CSV, le rapport annuel, les graphiques existants et l'accueil de la borne
+  sont conservés. Le guide de maintenance couvre les vérifications et sauvegardes.
+
+Application **2.12.0**, plugin facultatif **Reservations 2.11.0 inchangé**,
+protocole **4 / révision 3**. OpenFabLab reste libre, gratuit et utilisable sans WordPress.
+Le module Abonnements et crédits reste facultatif et désactivé par défaut.
+
+[Release et SHA-256](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.12.0) ·
+[Application 2.12.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.12.0/OpenFabLab-2.12.0.zip) ·
+[Plugin facultatif 2.11.0, téléchargement existant](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.11.0/openfablab-reservations-2.11.0.zip)
+
+Depuis 2.11.0, **SQLite 22 reste inchangé**, sans nouvelle migration. Conserver une
+sauvegarde complète avant/après, le runtime précédent, les volumes et les réglages.
+Après un démarrage public, ne jamais restaurer une ancienne base en écrasant les
+nouvelles écritures. Une ancienne application 2.10.1 ne doit pas ouvrir une base 22.
+[Nouveautés et limites](docs/consolidation-2.12.0.md) · [Maintenance](docs/maintenance.md).
+
+[Installation](docs/installation.md) · [Mise à jour](docs/upgrade.md) ·
+[Linux](docs/installation-linux.md) · [Raspberry Pi](docs/installation-raspberry-pi.md) ·
+[Windows](docs/installation-windows.md) · [Synology](docs/installation-synology.md)
+
+---
+
 <p align="center"><img src="static/brand/OpenFabLab-logo-horizontal.svg" width="420" alt="OpenFabLab"></p>
 
-# OpenFabLab 2.11.0
+## Référence historique : OpenFabLab 2.11.0
 
 **Version stable · Application et plugin facultatif Reservations 2.11.0 · SQLite 22 · Licence MIT**
 
@@ -141,7 +177,7 @@ Les corrections de la **2.8.4** restent conservées : formulaires simplifiés, c
 
 Les fonctions de personnalisation introduites en 2.8.3 sont conservées : badges pastel, modes d'attribution des identifiants, rattachement informatif à une structure, jauge de fréquentation, dates Discord et détails du calendrier. Voir le [guide 2.8.3](docs/usability-2.8.3.md). Le moteur de réservation reste celui de la 2.8.5 ; le plugin WordPress 2.8.5 est inchangé par la 2.8.6.
 
-La [release historique 2.8.6](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.6) et ses téléchargements restent accessibles. Pour la version actuelle, utiliser les liens 2.11.0 en tête de ce document. Lire les [règles familiales](docs/families-2.8.md) et les [instructions de mise à jour](docs/upgrade.md) avant de changer une installation existante.
+La [release historique 2.8.6](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.8.6) et ses téléchargements restent accessibles. Pour la version actuelle, utiliser les liens 2.12.0 en tête de ce document. Lire les [règles familiales](docs/families-2.8.md) et les [instructions de mise à jour](docs/upgrade.md) avant de changer une installation existante.
 
 OpenFabLab est un logiciel libre de gestion de FabLab créé par **William Aumand**, distribué sous licence MIT. Il réunit la fréquentation du lieu, les usagers et les activités dans une application web installée sur le serveur de votre structure.
 

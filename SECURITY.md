@@ -8,7 +8,7 @@ Décrire les versions concernées, les étapes reproductibles avec des données 
 
 ## Protection d'une installation
 
-Version de référence : **OpenFabLab 2.11.0 / SQLite 22**, plugin facultatif
+Version de référence : **OpenFabLab 2.12.0 / SQLite 22**, plugin facultatif
 **Reservations 2.11.0 / protocole 4, révision 3**. Les informations nominatives des
 notifications Discord de réservation sont désactivées par défaut et doivent
 résulter d'un choix explicite, indépendant des notifications de création d'usager.
@@ -21,5 +21,10 @@ Ne pas inclure de coordonnées, jeton ou lien privé dans un libellé destiné �
 - En 2.8.1, aucun annuaire n'est synchronisé vers WordPress : les demandes et réponses temporaires sont chiffrées, puis expurgées. Les tables historiques peuvent encore contenir des données privées et doivent rester protégées. ID + un contact concordant est le contrôle prévu côté OpenFabLab, **pas une preuve cryptographique de possession du contact**. Évaluer ce compromis, limiter les accès et informer les personnes.
 - Le protocole 4 utilise uniquement des échanges sortants OpenFabLab → WordPress. N'ouvrir aucune route NAS pour ce parcours ; les liens publics reviennent vers la page WordPress dédiée. Les jetons sont des capacités privées : ne pas les partager, les journaliser ou les inclure dans les captures. Voir [sécurité et conservation du relais](docs/outbound-2.8.1.md).
 - Mettre à jour le serveur, WordPress et leurs dépendances. Limiter les comptes administrateurs et tester les restaurations.
+
+Le bilan visuel de fréquentation est un document interne agrégé, accessible aux
+administrateurs autorisés. Il affiche aussi les petits effectifs ; cette agrégation
+ne garantit pas à elle seule l'anonymat lors d'une diffusion extérieure. Examiner
+le contexte avant partage, sans joindre de base ou d'export nominatif.
 
 La licence MIT ne fournit aucune garantie. Chaque structure reste responsable de sa configuration, de ses contrôles d'accès et des règles de conservation applicables.
