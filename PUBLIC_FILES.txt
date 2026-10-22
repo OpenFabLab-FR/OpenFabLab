@@ -13,6 +13,7 @@ SECURITY.md
 THIRD_PARTY_NOTICES.md
 animation_attendance.py
 animation_information.py
+animation_publication.py
 animation_report.py
 animation_slots.py
 annual_report.py
@@ -22,6 +23,7 @@ badge_palette.py
 badge_templates/OpenFabLab-template.svg
 billing.py
 booking_account_links.py
+booking_presentation.py
 branding.py
 build_openfablab.py
 build_wordpress_plugin.py
@@ -42,6 +44,7 @@ docs/corrections-2.8.5.md
 docs/corrections-2.8.6.md
 docs/development.md
 docs/email-templates.md
+docs/ergonomie-2.13.0.md
 docs/evolution-2.10.0.md
 docs/evolution-2.11.0.md
 docs/evolution-2.7.md
@@ -117,6 +120,7 @@ static/memberships.css
 static/participant-picker.js
 static/public-enrollment.js
 static/qr-scanner.js
+static/settings-panels.js
 static/style.css
 static/vendor/jsQR-1.4.0.js
 static/vendor/jsQR-LICENSE.txt
@@ -125,6 +129,8 @@ sync_incidents.py
 tablet_reservations.py
 templates/_admin_nav.html
 templates/_affiliation_fields.html
+templates/_animation_availability.html
+templates/_booking_details.html
 templates/_branding_settings.html
 templates/_calendar_colors.html
 templates/_closure_options.html
@@ -138,6 +144,7 @@ templates/_frequency_nav.html
 templates/_home_title.html
 templates/_installation_health.html
 templates/_participant_picker.html
+templates/_rental_catalog.html
 templates/_reservation_settings.html
 templates/_resource_fields.html
 templates/_settings_nav.html
@@ -253,12 +260,14 @@ tests/test_privacy_resources_ui.js
 tests/test_private_backup.py
 tests/test_public_guest_qr.js
 tests/test_publication.py
+tests/test_publication_clock.php
 tests/test_reservation_email_templates.py
 tests/test_reservation_notifications.py
 tests/test_retention_notices_290.py
 tests/test_slots_ui.js
 tests/test_sync_reconciliation.py
 tests/test_tablet_reservations.py
+tests/test_usability_213.py
 tests/test_usability_283.py
 tests/test_usability_ui.js
 tests/test_visual_report_internal.py

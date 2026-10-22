@@ -1,0 +1,10 @@
+{% set state = item.availability_state %}
+<p class="animation-availability">
+{% if state == 'ended' %}<strong>Animation terminée</strong>
+{% elif state == 'not_open' %}<strong>Inscriptions à venir</strong>{% if item.signup_open_label %}<br>Ouverture le {{ item.signup_open_label }}{% endif %}
+{% elif state == 'available' %}{{ item.available }} {{ 'place disponible' if item.available == 1 else 'places disponibles' }}
+{% elif state == 'waiting' %}Liste d’attente ouverte
+{% elif state == 'waiting_full' %}Liste d’attente complète
+{% elif state == 'full' %}Animation complète
+{% else %}Inscriptions closes{% endif %}
+</p>

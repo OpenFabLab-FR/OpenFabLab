@@ -62,14 +62,15 @@ def action_interval(value):
         return 10
 
 
-def public_catalogue(db, environment, include_information=False,include_limits=False):
+def public_catalogue(db, environment, include_information=False,include_limits=False,include_publication=False):
     import family_model as family
     from tablet_reservations import local_catalogue
     if environment not in ENVIRONMENTS: raise ValueError('Environnement invalide.')
     keys = ('service_id','title','description','date','hours','minimum_age',
             'booking_mode','slots','available','waitlist_enabled')
     result=[]
-    for item in local_catalogue(db, lambda _db,k,default='':family.setting(_db,k,default), environment=environment,include_closed=include_limits):
+    for item in local_catalogue(db, lambda _db,k,default='':family.setting(_db,k,default), environment=environment,include_closed=include_limits,include_hidden=include_publication):
+        if item['ended'] and not include_publication:continue
         public={k:item[k] for k in keys}
         public['waitlist_enabled']=bool(public['waitlist_enabled'])
         public['account_required']=family.setting(db,'reservation_account_required','0')=='1'
@@ -83,6 +84,11 @@ def public_catalogue(db, environment, include_information=False,include_limits=F
             for key in ('availability_state','waiting','waiting_limit'):public[key]=item[key]
             for entry,slot in zip(public['slots'],item['slots']):
                 for key in ('availability_state','waiting','waiting_limit'):entry[key]=slot[key]
+        if include_publication:
+            public['publication']={key:item[key] for key in ('starts_at','ends_at','signup_open_at','signup_open_label','public_until','hide_before_opening')}
+            public['publication']['close_minutes']=item['close_minutes']
+            for entry,slot in zip(public['slots'],item['slots']):
+                entry['starts_at']=slot['starts_at'];entry['ends_at']=slot['ends_at']
         result.append(public)
     return result
 

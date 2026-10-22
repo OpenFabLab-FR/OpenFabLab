@@ -1,14 +1,12 @@
 <section class="admin-section" id="contact-notice">
     <h2>Préavis d’effacement des coordonnées</h2>
-    <p>Informez automatiquement l’usager avant la suppression de son e-mail et de son téléphone.</p>
+    <p>Le préavis est envoyé par e-mail, sans modifier les délais de conservation.</p>
     <form method="post" action="{{ url_for('retention_notices.save') }}" class="admin-form">
         <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
         <div class="contact-notice-options"><label class="checkbox-field"><input type="checkbox" name="enabled" value="1"{% if contact_notice.enabled %} checked{% endif %}><span>Prévenir l’usager par e-mail</span></label>
         <label class="form-field contact-notice-delay"><span>Délai avant effacement</span><span class="number-with-unit"><input name="days" type="number" min="1" max="90" value="{{ contact_notice.days }}" required><span>jours</span></span><small>Entre 1 et 90 jours.</small></label></div>
-        <p class="form-help">Envoi à l’adresse du compte via votre configuration SMTP. Les durées de conservation restent inchangées.</p>
         <details class="form-section contact-notice-template"><summary>Personnaliser le modèle d’e-mail</summary><div class="contact-notice-editor"><label class="form-field"><span>Objet</span><input name="subject" value="{{ contact_notice.subject }}" maxlength="240" required></label><label class="form-field"><span>Message</span><textarea name="body" rows="12" maxlength="8000" required>{{ contact_notice.body }}</textarea></label><small>Variables : <code>{structure_name}</code>, <code>{date_suppression}</code> (obligatoire), <code>{contact_equipe}</code>.</small></div></details>
-        <div class="form-actions"><button class="admin-button primary compact">Enregistrer le préavis</button></div>
+        <div class="form-actions contact-notice-save"><button class="admin-button primary compact">Enregistrer le préavis</button></div>
     </form>
     <div class="period-grid"><article class="period-card"><strong>{{ contact_notice_summary.upcoming }}</strong><span>effacements prévus dans les 30 jours</span><small>Prochaine échéance : {{ contact_notice_summary.next_date or 'aucune' }}</small></article><article class="period-card"><strong>{{ contact_notice_summary.sent }}</strong><span>préavis envoyés</span><small>{{ contact_notice_summary.pending }} en attente · {{ contact_notice_summary.errors }} échec(s) ou incertain(s)</small></article></div>
-    <details class="contact-notice-help"><summary>Confidentialité et suivi des envois</summary><p class="form-help">Aucune copie de coordonnées ni de contenu dans le journal. Aucun destinataire familial de secours. Un envoi interrompu ou incertain n’est pas renvoyé automatiquement. Un échec ne bloque pas la purge.</p></details>
 </section>

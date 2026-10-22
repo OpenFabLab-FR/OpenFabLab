@@ -1,4 +1,43 @@
-# OpenFabLab 2.12.0
+# OpenFabLab 2.13.0
+
+**Version stable · SQLite 22 inchangé · Licence MIT · Plugin facultatif Reservations 2.13.0**
+
+OpenFabLab facilite la gestion quotidienne d'un FabLab, sur votre propre serveur.
+La version 2.13.0 améliore les Activités, la publication des animations et les Réglages.
+
+- Inscriptions regroupées par statut, demandes familiales associées, six
+  indicateurs compacts et présence distincte de la confirmation de réservation.
+- Visibilité avant ouverture configurable ; animations terminées conservées
+  24 heures dans les catalogues, sans nouvelle réservation.
+- Réglages plus compacts, formulaires PIN indépendants, sauvegardes et opérations
+  sensibles accessibles dans des panneaux repliables.
+- Catalogue de machines simplifié, avec conservation des anciens dossiers.
+  Sur smartphone, les détails se replient sans perdre les modifications en cours.
+
+Les places temporairement proposées sont expliquées près des six indicateurs :
+la capacité, les confirmations et les places disponibles restent faciles à lire.
+
+Le plugin est réellement adapté à ces affichages. Protocole **4/révision 3**
+conservé, compatibilité négociée par capacités et non par égalité de versions.
+L’application reste utilisable sans WordPress. Abonnements et crédits restent
+facultatifs et désactivés par défaut. L’accueil de la borne n’est pas modifié.
+
+[Périmètre, règles et limites](docs/ergonomie-2.13.0.md) ·
+[Mise à jour](docs/upgrade.md) · [Maintenance](docs/maintenance.md) ·
+[Documentation WordPress](docs/wordpress.md).
+
+[Release et SHA-256](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.13.0) ·
+[Application 2.13.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.13.0/OpenFabLab-2.13.0.zip) ·
+[Plugin facultatif 2.13.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.13.0/openfablab-reservations-2.13.0.zip) ·
+[Installer OpenFabLab](docs/installation.md) · [Site officiel](https://openfablab.fr).
+
+Depuis 2.12.0, SQLite **22 reste 22**, sans nouvelle migration. Sauvegarder avant
+la mise à jour et conserver les nouvelles écritures après réouverture. Le plugin
+WordPress se met à jour séparément ; la mise à jour de l'application ne l'installe pas.
+
+---
+
+## Référence historique : OpenFabLab 2.12.0
 
 **Version stable · SQLite 22 · Licence MIT · Plugin facultatif Reservations 2.11.0 inchangé**
 

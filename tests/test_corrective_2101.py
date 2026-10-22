@@ -124,7 +124,7 @@ class SoundPreferencesTests(unittest.TestCase):
     database=sound_fixture.MembershipTest.database;set=sound_fixture.MembershipTest.set
     login_admin=sound_fixture.MembershipTest.login_admin;_login_token=sound_fixture.MembershipTest._login_token
     def test_schema_and_new_default_only(self):
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],21)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],22)
         self.assertEqual(self.db.execute("SELECT value FROM app_settings WHERE key='kiosk_sound_countdown'").fetchone()[0],'1')
         self.assertEqual(self.db.execute("SELECT value FROM app_settings WHERE key='module_memberships'").fetchone()[0],'0')
     def test_all_ambiences_profile_roundtrip(self):

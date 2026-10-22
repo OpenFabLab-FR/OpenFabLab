@@ -237,7 +237,7 @@ class FamilyTests(unittest.TestCase):
         self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],14)
         self.assertEqual([tuple(r) for r in self.db.execute('SELECT * FROM users ORDER BY id')],before)
         family.migrate(self.db);family.migrate(self.db)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],21)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],22)
         columns=[r['name'] for r in self.db.execute('PRAGMA table_info(users)') if r['name'] not in ('birth_date','birth_precision')]
         self.assertEqual([tuple(r) for r in self.db.execute('SELECT '+','.join(columns)+' FROM users ORDER BY id')],before)
         self.assertEqual(self.db.execute('PRAGMA integrity_check').fetchone()[0],'ok');self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])
@@ -246,7 +246,7 @@ class FamilyTests(unittest.TestCase):
         self.book([self.a,self.c,self.d]);self.f.login_admin()
         page=self.client.get(f'/admin/animations/{self.service}/inscriptions')
         self.assertEqual(page.status_code,200);text=page.get_data(as_text=True)
-        self.assertIn('Une même demande · 3 place(s)',text);self.assertIn('Ajouter des participants',text)
+        self.assertIn('Même demande · 3 participants',text);self.assertIn('Ajouter des participants',text)
         self.assertNotIn('Usager existant (facultatif)',text)
 
 

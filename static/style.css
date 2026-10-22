@@ -6772,3 +6772,93 @@ tbody tr:last-child td {
 @media(max-width:1100px){.animation-details-grid {grid-template-columns:repeat(2,minmax(0,1fr))}.animation-details-grid .animation-date-field {grid-column:auto}}
 @media(max-width:767px){.reservation-booking-actions .attendance-status {min-height:44px;padding:9px 10px}.installation-health-grid {grid-template-columns:1fr}}
 @media(max-width:480px){.animation-details-grid .animation-date-field {grid-column:1/-1}.animation-details-grid {gap:14px 10px}}
+
+/* 2.13: scoped management layout; kiosk home, themes and audio are untouched. */
+.booking-summary-grid {grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.booking-summary-grid article {padding:12px 16px;min-height:0}
+.booking-summary-grid article strong {font-size:1.65rem;line-height:1.2}
+.booking-summary-grid article span {font-size:.88rem}
+.booking-section {border-left:4px solid var(--border)}
+.booking-section>h2 {margin:0 0 14px}.booking-section h2 small {font-size:.85rem;font-weight:400}
+.booking-confirmed {border-left-color:#7aad90;background:color-mix(in srgb,var(--surface) 94%,#bce3cd)}
+.booking-offer_pending {border-left-color:#7eabc9;background:color-mix(in srgb,var(--surface) 94%,#bddced)}
+.booking-waitlisted {border-left-color:#ceb471;background:color-mix(in srgb,var(--surface) 93%,#f2ddb1)}
+.booking-closed {border-left-color:#a4adaf}
+.booking-family-group {border:1px solid var(--border);border-radius:12px;margin:12px 0;overflow:hidden;background:var(--surface)}
+.booking-family-group:last-child {margin-bottom:0}
+.booking-group-caption {padding:7px 14px;margin:0;background:var(--surface-soft);font-size:.83rem;color:var(--muted)}
+.booking-person {padding:14px;min-width:0;overflow-wrap:anywhere}
+.booking-person+.booking-person {border-top:1px solid var(--border)}
+.booking-person-main {display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:12px;align-items:center}
+.booking-identity,.booking-statuses {display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center;min-width:0}
+.booking-identity small,.booking-statuses small {flex-basis:100%;font-size:.8rem;color:var(--muted)}
+.booking-person-main>form {margin:0;min-width:0}
+.booking-status,.presence-badge {font-size:.79rem;border-radius:7px;padding:3px 7px;border:1px solid var(--border)}
+.booking-status {font-weight:600}.presence-present {background:#e6f4eb;color:#235537;border-color:#8fb59c}.presence-absent {background:#fae9e7;color:#85352e;border-color:#d2a3a0}.presence-unknown {color:var(--muted)}
+.booking-person .attendance-status-group {display:flex;flex-wrap:wrap;gap:4px;max-width:100%}
+.booking-person .attendance-status {min-height:40px;padding:7px 9px;font-size:.8rem;white-space:nowrap;border-radius:7px}
+.booking-person .attendance-status[aria-pressed=true] {background:var(--primary-soft);color:var(--primary-dark);border-color:var(--primary);font-weight:700}
+.booking-person-main>form>small {color:var(--muted);font-size:.74rem}
+.booking-details {margin-top:8px}.booking-details>summary {font-size:.86rem;min-height:36px;padding:6px 0}
+.booking-details-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:12px 0}
+.booking-details-grid>div {min-width:0}.booking-details h4 {margin:0 0 6px}.booking-details p {margin:6px 0}
+.booking-offer-info {font-size:.88rem;background:var(--primary-soft);border-radius:9px;padding:8px 12px}
+.settings-disclosure,.service-delete-disclosure {margin:18px 0;border:1px solid var(--border);border-radius:12px;padding:0 18px;background:var(--surface)}
+.settings-disclosure>summary,.service-delete-disclosure>summary,.booking-closed>summary {cursor:pointer;min-height:48px;padding:12px 0;font-weight:600}
+.settings-disclosure>section,.settings-disclosure>form {box-shadow:none;margin:12px 0}
+.settings-disclosure[open],.service-delete-disclosure[open] {padding-bottom:18px}
+.settings-disclosure:focus-within,.service-delete-disclosure:focus-within {border-color:var(--primary)}
+.sensitive-access-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.sensitive-access-grid>.admin-form {margin:0;min-width:0}.sensitive-access-grid>form+form {border-left:1px solid var(--border);padding-left:24px}
+.sensitive-access-grid h3 {margin:0;font-size:1.1rem}.sensitive-access-grid .admin-pin-grid {grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sensitive-access-grid .admin-pin-grid label:first-child {grid-column:auto}
+.sensitive-access-grid .admin-pin-grid input {min-height:48px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text)}
+.sensitive-access-grid input:focus-visible {outline:var(--ui-focus);outline-offset:2px}
+.sensitive-access-grid .moderator-pin-row {display:flex;flex-wrap:wrap;gap:14px}.sensitive-access-grid .moderator-pin-row input {max-width:140px}
+.contact-notice-save {justify-content:flex-end;margin:22px 0 8px}.contact-notice-template {margin-top:16px}
+.settings-page #contact-notice>.period-grid {margin-top:22px}
+.rental-catalog-table {table-layout:fixed;width:100%;min-width:0}
+.rental-catalog-table th,.rental-catalog-table td {padding:10px 7px}
+.rental-catalog-table th:first-child {width:65px}.rental-catalog-table th:nth-child(3),.rental-catalog-table th:nth-child(4) {width:145px}.rental-catalog-table th:last-child {width:125px}
+.rental-catalog-table input[type=number] {width:calc(100% - 20px);min-width:0;padding:9px 6px}
+.rental-catalog-table input[type=text] {width:100%;min-width:0;padding:9px 8px}
+.rental-catalog-table input[type=checkbox] {width:22px;height:22px;min-width:22px;margin:0}
+.rental-catalog-table button {font-size:.82rem;padding:9px 10px;min-height:42px}
+.tablet-animation-card.is-ended,.animation-presentation.is-ended {background:var(--surface-soft);border-color:var(--border)}
+.animation-details-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.animation-details-grid .animation-date-field {grid-column:auto}
+.animation-details-grid .animation-title-field {grid-column:span 3}
+.animation-details-grid>.form-field-wide {grid-column:1/-1}
+.rental-catalog-table input[type=text],.rental-catalog-table input[type=number] {border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);min-height:44px}
+.admin-form .animation-waitlist-inline {grid-column:1/-1}
+.rental-summary-row {display:none}
+#attendance-display>.form-grid {align-items:start}
+#attendance-display .form-field {display:flex;flex-direction:column;gap:7px;min-width:0}
+#attendance-display .form-field>span:first-child {min-height:3em;line-height:1.5;display:flex;align-items:flex-end}
+#attendance-display input[type=color] {width:76px;height:46px;padding:4px;border:1px solid var(--border);border-radius:9px;align-self:start;margin:0}
+.settings-status-warning {padding:10px 14px;border-left:3px solid #b67e24;border-radius:7px;background:var(--surface);font-size:.9rem}
+.settings-view-structure .settings-disclosure .admin-section {padding:14px 0;border:0;box-shadow:none}
+.settings-view-structure #smtp .form-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+.settings-view-structure #smtp .admin-form>button {margin-top:14px}
+.settings-view-structure .profile-section>.admin-button,.settings-view-structure .profile-section form>button:not(.primary) {border:1px solid var(--border);background:var(--surface);color:var(--primary-dark);min-height:44px;padding:10px 14px}
+.settings-view-structure .profile-section>.admin-button {margin:8px 0 18px}
+@media(max-width:1100px){.booking-person-main {grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.booking-person-main>form {grid-column:1/-1}.rental-catalog-table th:nth-child(3),.rental-catalog-table th:nth-child(4) {width:118px}.rental-catalog-table th:last-child {width:110px}.animation-details-grid {grid-template-columns:repeat(2,minmax(0,1fr))}.animation-details-grid .animation-title-field {grid-column:auto}}
+@media(max-width:850px){.sensitive-access-grid {grid-template-columns:1fr}.sensitive-access-grid>form+form {border-left:0;border-top:1px solid var(--border);padding:20px 0 0}}
+@media(max-width:767px){.booking-person .attendance-status {min-height:44px}.booking-details-grid {grid-template-columns:1fr}.rental-catalog-table,.rental-catalog-table tbody,.rental-catalog-table tr,.rental-catalog-table td {display:block;width:100%}.rental-catalog-table thead {display:none}.rental-catalog-table tr {border-bottom:1px solid var(--border);padding:12px 0}.rental-catalog-table td {padding:6px;min-height:36px}.rental-catalog-table td::before {content:attr(data-label);display:block;font-size:.83rem;color:var(--muted)}.rental-catalog-table input[type=number] {width:calc(100% - 24px)}.rental-catalog-table input[type=text] {width:100%}}
+@media(max-width:480px){.booking-summary-grid {grid-template-columns:repeat(2,minmax(0,1fr))}.booking-person-main {grid-template-columns:1fr}.booking-person-main>form {grid-column:auto}.sensitive-access-grid .admin-pin-grid {grid-template-columns:1fr}.settings-disclosure,.service-delete-disclosure {padding-left:12px;padding-right:12px}.animation-details-grid .animation-title-field {grid-column:1/-1}}
+@media(max-width:767px){
+  #attendance-display .form-field>span:first-child {min-height:0}
+  .settings-view-structure #smtp .form-grid {grid-template-columns:1fr}
+  .rental-enhanced .rental-summary-row {display:block;border:0;padding:0}
+  .rental-summary-row>td {padding:0}
+  .rental-summary-row>td::before {display:none}
+  .rental-enhanced .rental-edit-row:not(.is-open) {display:none}
+  .rental-enhanced [data-rental-machine] {border:1px solid var(--border);border-radius:10px;margin-bottom:9px;overflow:hidden}
+  .rental-summary-row .rental-toggle {display:flex;flex-direction:column;align-items:stretch;gap:6px;width:100%;min-height:76px;padding:12px;text-align:left;color:var(--text);background:var(--surface);border:0;border-radius:0;white-space:normal}
+  .rental-summary-heading {display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .rental-summary-heading strong {min-width:0;overflow-wrap:anywhere;font-size:.95rem}
+  .rental-state {font-size:.76rem;color:var(--muted);white-space:nowrap}
+  .rental-summary-amounts {font-size:.8rem;color:var(--muted)}
+  .rental-toggle-label {align-self:flex-end;font-size:.78rem;color:var(--primary-dark)}
+  .rental-edit-row.is-open {border-top:1px solid var(--border);padding:8px}
+}

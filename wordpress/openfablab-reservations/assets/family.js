@@ -60,6 +60,8 @@
     wrapper.appendChild(input); return wrapper;
   }
   function availability(animation) {
+    if (animation.availability_state==='ended') return {state:'ended',disabled:true,tone:'closed',title:'Animation terminée',button:'Animation terminée'};
+    if (animation.availability_state==='not_open') return {state:'not_open',disabled:true,tone:'closed',title:'Inscriptions à venir',button:'Inscriptions à venir',detail:animation.signup_open_label?'Ouverture le '+animation.signup_open_label:''};
     if (animation.booking_mode === 'slots' && animation.slots?.length) {
       const states=animation.slots.map(slot=>availability({...slot,waitlist_enabled:animation.waitlist_enabled}));
       const available=states.filter(state=>state.state==='available').length;
@@ -122,6 +124,7 @@
           card.appendChild(node('h3', '', animation.title));
           card.appendChild(node('p', 'openfablab-date', animation.date + ' · ' + animation.hours));
           const state=availability(animation);
+          if(state.state==='ended')card.classList.add('is-ended');
           const availabilityBox=node('div','openfablab-card-availability');
           availabilityBox.appendChild(node('span','openfablab-availability-badge is-'+state.tone,state.title));
           if(state.detail)availabilityBox.appendChild(node('p','openfablab-waiting-detail',state.detail));

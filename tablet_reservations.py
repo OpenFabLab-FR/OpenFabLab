@@ -29,12 +29,15 @@ def timestamp():
     return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
 
-def local_catalogue(database, settings, current=None, environment='production',include_closed=False):
+def local_catalogue(database, settings, current=None, environment='production',include_closed=False, include_hidden=False):
     """Read-only local projection; availability is indicative, never a promise."""
     current = current or datetime.now(timezone.utc)
     zone = ZoneInfo(settings(database, 'structure_timezone', 'Europe/Paris'))
     result = []
-    for row in database.execute('SELECT s.*,c.* FROM fablab_services s JOIN animation_reservation_config c ON c.service_id=s.id WHERE s.service_type=\'animation\' AND c.enabled=1 AND c.environment=? AND s.service_date>=? ORDER BY s.service_date,s.start_time LIMIT 100', (environment,current.astimezone(zone).date().isoformat())):
+    # Three local dates cover 24 elapsed hours even across DST. The final UTC
+    # deadline, not this SQL prefilter, decides visibility.
+    earliest=(current.astimezone(zone).date()-timedelta(days=3)).isoformat()
+    for row in database.execute('SELECT s.*,c.* FROM fablab_services s JOIN animation_reservation_config c ON c.service_id=s.id WHERE s.service_type=\'animation\' AND c.enabled=1 AND c.environment=? AND s.service_date>=? ORDER BY s.service_date,s.start_time', (environment,earliest)):
         item = dict(row)
         from animation_information import optional_url
         item['information_url']=optional_url(item.get('information_url',''))
@@ -45,15 +48,20 @@ def local_catalogue(database, settings, current=None, environment='production',i
         opening = datetime.fromisoformat(row['signup_open_at'].replace('Z','+00:00')) if row['signup_open_at'] else None
         if opening and not opening.tzinfo:
             opening = opening.replace(tzinfo=zone)
-        if finish<=current:
+        from animation_publication import clock
+        publication=clock(database,item,current)
+        if current >= datetime.fromisoformat(publication['public_until']):
             continue
+        if not publication['visible'] and not include_hidden:continue
+        if publication['ended'] and not include_closed:continue
+        item.update(publication)
         if opening and opening > current and not include_closed:
             continue
         item['slots'] = []
         if row['booking_mode'] == 'slots':
             for slot in database.execute('SELECT * FROM animation_slots WHERE service_id=? AND active=1 ORDER BY starts_at', (row['service_id'],)):
                 start = datetime.fromisoformat(slot['starts_at']).astimezone(zone)
-                if current >= datetime.fromisoformat(slot['ends_at']):continue
+                if current >= datetime.fromisoformat(slot['ends_at']) and not include_closed:continue
                 if current >= start - timedelta(minutes=row['close_minutes']) and not include_closed:
                     continue
                 entry = dict(slot, label=start.strftime('%d/%m/%Y · %H:%M')+'–'+datetime.fromisoformat(slot['ends_at']).astimezone(zone).strftime('%H:%M'))
@@ -62,7 +70,7 @@ def local_catalogue(database, settings, current=None, environment='production',i
                     from waitlist_limits import availability
                     snapshot=availability(database,dict(item,capacity=slot['capacity']),slot['slot_uuid'],environment,current)
                     entry.update(availability_state=snapshot['state'],waiting=snapshot['waiting'],waiting_limit=snapshot['waiting_limit'])
-                    if snapshot['state'] not in ('available','waiting'):entry['available']=0
+                    if snapshot['state'] not in ('available','waiting','not_open'):entry['available']=0
                 item['slots'].append(entry)
             if not item['slots']:
                 continue
@@ -81,10 +89,17 @@ def local_catalogue(database, settings, current=None, environment='production',i
             else:
                 snapshot=availability(database,item,None,environment,current)
                 item.update(availability_state=snapshot['state'],waiting=snapshot['waiting'],waiting_limit=snapshot['waiting_limit'])
-                if snapshot['state'] not in ('available','waiting'):item['available']=0
+                if snapshot['state'] not in ('available','waiting','not_open'):item['available']=0
+            # These states concern the whole occurrence and take precedence
+            # over the aggregate of individual slots.
+            if publication['ended']:
+                item.update(availability_state='ended',available=0)
+            elif publication['not_open']:
+                item.update(availability_state='not_open')
         item.update(date=begin.strftime('%d/%m/%Y'), hours=begin.strftime('%H:%M')+'–'+finish.strftime('%H:%M'))
         result.append(item)
-    return result
+    result.sort(key=lambda item:(item['ended'],item['starts_at'],item['service_id']))
+    return result[:100]
 
 
 def person(values, prefix=''):
@@ -203,7 +218,7 @@ def register(application, api):
         return response
 
     def animations():
-        return local_catalogue(a.get_database(),a.read_setting)
+        return local_catalogue(a.get_database(),a.read_setting,include_closed=True)
 
     def animation(service_id):
         item = next((item for item in animations() if item['service_id']==service_id),None)

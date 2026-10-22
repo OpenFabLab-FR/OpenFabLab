@@ -50,8 +50,10 @@ def negotiate(client, environment):
     value=client.post('/sync/capabilities',{'environment':environment})
     if value.get('protocol_version')!=4 or value.get('relay_revision')!=3 or value.get('outbound_actions_v1') is not True:
         raise ValueError('OpenFabLab et son plugin doivent être compatibles avec le protocole 4, révision 3. Aucune demande n’a été confirmée.')
-    if 'waitlist_limits_v1' in value and type(value['waitlist_limits_v1']) is not bool:
+    if any(key in value and type(value[key]) is not bool for key in ('waitlist_limits_v1','publication_visibility_v1')):
         raise ValueError('La capacité de liste d’attente annoncée par WordPress est incompatible. Aucun nouveau catalogue n’a été envoyé.')
+    if value.get('publication_visibility_v1') is True and value.get('waitlist_limits_v1') is not True:
+        raise ValueError('Les capacités de publication annoncées par WordPress sont incohérentes. Aucun catalogue n’a été envoyé.')
     return value
 
 
@@ -75,7 +77,7 @@ def catalogue(db, database_path, site_url, client=None, environments=actions.ENV
             capabilities=negotiate(client,env)
             from runtime_policy import storage_guard
             with storage_guard(database_path):
-                public=actions.public_catalogue(db,env,include_information=capabilities.get('animation_information_v1') is True,include_limits=capabilities.get('waitlist_limits_v1') is True)
+                public=actions.public_catalogue(db,env,include_information=capabilities.get('animation_information_v1') is True,include_limits=capabilities.get('waitlist_limits_v1') is True,include_publication=capabilities.get('publication_visibility_v1') is True)
             result=client.post('/outbound/catalogue',{'environment':env,'animations':public,'protocol_version':4,'relay_revision':3})
             if result.get('ok') is not True: raise ValueError('Catalogue refusé.')
             with actions.transaction(db):

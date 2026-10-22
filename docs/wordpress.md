@@ -1,3 +1,28 @@
+# Reservations 2.13.0 et OpenFabLab 2.13.0
+
+Le plugin facultatif est réellement modifié : visibilité avant ouverture,
+mention « Inscriptions à venir » avec horaire, cartes « Animation terminée »
+conservées 24 heures et classées après les animations à venir. Les délais sont
+appliqués côté serveur à chaque lecture, y compris sur un catalogue en cache.
+L’attribution des places reste exclusivement dans OpenFabLab.
+
+Capacité optionnelle : `publication_visibility_v1`. Protocole **4/révision 3**,
+HTTPS signé, environnements Normal/Test, secrets et parcours familiaux conservés.
+Le numéro du plugin est indépendant de celui du protocole. Aucune reconfiguration
+ni désinstallation requise pour mettre à jour les fichiers du plugin.
+
+L’ancien plugin 2.11.0 conserve ses échanges mais n’affiche pas les animations
+terminées selon les nouvelles règles. Le nouveau plugin accepte aussi les anciens
+catalogues explicitement dépourvus des nouveaux champs. Sans WordPress,
+le catalogue de la borne utilise les mêmes règles de publication de l’application.
+
+[Plugin installable 2.13.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.13.0/openfablab-reservations-2.13.0.zip) ·
+[Release et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.13.0).
+La mise à jour de l'application n'installe pas le plugin : remplacer séparément
+l'extension sur WordPress, puis vérifier sa version et les échanges Normal/Test.
+
+---
+
 # Application OpenFabLab 2.12.0 et Reservations 2.11.0
 
 Le plugin facultatif **2.11.0 reste intégralement inchangé** : aucun nouveau ZIP

@@ -22,19 +22,23 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.12.0')
+        self.assertEqual(__version__,'2.13.0')
         # The approved ZIP retains its build image label, not its runtime version.
         # No archive or Compose configuration is changed for publishing.
-        self.assertIn('openfablab:v2.12.0',(ROOT/'compose.yaml').read_text())
+        self.assertIn('openfablab:v2.13.0',(ROOT/'compose.yaml').read_text())
 
-    def test_stable_release_documentation_is_consistent(self):
+    def test_stable_release_documentation_and_historical_stables_are_consistent(self):
         readme=(ROOT/'README.md').read_text()
-        self.assertTrue(readme.startswith('# OpenFabLab 2.12.0\n'))
+        self.assertTrue(readme.startswith('# OpenFabLab 2.13.0\n'))
         self.assertNotIn('candidate',readme.split('## Référence historique',1)[0].lower())
         self.assertIn('SQLite 22',readme[:700])
         self.assertIn('**Version stable · SQLite schéma 21',readme)
         self.assertIn('Version stable',readme[:200])
         self.assertIn('SQLite 22',readme[:700])
+        self.assertIn('releases/tag/v2.13.0',readme)
+        self.assertIn('releases/download/v2.13.0/OpenFabLab-2.13.0.zip',readme)
+        self.assertIn('releases/download/v2.13.0/openfablab-reservations-2.13.0.zip',readme)
+        self.assertIn('## 2.13.0 — version stable',(ROOT/'CHANGELOG.md').read_text())
         self.assertIn('releases/tag/v2.12.0',readme)
         self.assertIn('releases/download/v2.12.0/OpenFabLab-2.12.0.zip',readme)
         self.assertIn('releases/download/v2.11.0/openfablab-reservations-2.11.0.zip',readme)
@@ -196,13 +200,13 @@ import pathlib,sqlite3,app
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.flask_app.config['APP_VERSION']=='V2.12.0'
+assert app.flask_app.config['APP_VERSION']=='V2.13.0'
 client=Client(app.app,Response)
 for route in ('/stat/sante','/stat/','/stat/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     if route=='/stat/':
-        assert b'V2.12.0' in response.data
+        assert b'V2.13.0' in response.data
     response.close()
 with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
     assert db.execute('PRAGMA user_version').fetchone()[0]==22
@@ -252,7 +256,7 @@ with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.12.0'
+assert app.app.config['APP_VERSION']=='V2.13.0'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)

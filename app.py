@@ -1736,6 +1736,19 @@ def available_rental_catalog(database, record=None):
         previous = load_rental_catalog(database, include_inactive=True).get(previous_key)
         if previous:
             catalog[previous_key] = previous
+        elif record.get('rental_machine_name'):
+            # Legacy imports may retain a dossier snapshot without a catalogue
+            # row. Never silently replace it with the first available machine.
+            catalog[previous_key]=dict(name=record['rental_machine_name'],
+                monthly_cents=record.get('rental_monthly_cents') or 0,
+                deposit_cents=record.get('rental_deposit_cents') or 0,active=0,archived=1)
+    if previous_key in catalog:
+        # Editing the same machine keeps the dossier's snapshot, even when
+        # the catalogue's name or prices have changed in the meantime.
+        historical=dict(catalog[previous_key])
+        for source,target in (('rental_machine_name','name'),('rental_monthly_cents','monthly_cents'),('rental_deposit_cents','deposit_cents')):
+            if record.get(source) is not None:historical[target]=record[source]
+        catalog[previous_key]=historical
     return catalog
 
 
@@ -7627,6 +7640,13 @@ def register_routes(application):
 
         if settings_view in {"affichage", "legacy"}:
             home_theme = request.form.get("home_theme", load_home_theme(database)).strip()
+            if request.form.get('attendance_display')=='1':
+                from badge_palette import validate_color
+                from usability import validate_reference
+                try:
+                    visitor_color=validate_color(request.form.get('anonymous_visitor_color'))
+                    attendance_value=validate_reference(request.form.get('attendance_reference'))
+                except ValueError as error:errors.append(str(error))
             if home_theme not in HOME_THEMES:
                 errors.append("Le thème d’accueil sélectionné n’est pas disponible.")
             calendar_start = request.form.get('calendar_display_start', read_setting(database, 'calendar_display_start', '09:00'))
@@ -7715,6 +7735,9 @@ def register_routes(application):
 
         if settings_view in {"affichage", "legacy"}:
             write_setting(database, "home_theme", home_theme)
+            if request.form.get('attendance_display')=='1':
+                write_setting(database,'anonymous_visitor_color',visitor_color)
+                write_setting(database,'attendance_reference',attendance_value)
             write_setting(database, 'calendar_display_start', calendar_start)
             write_setting(database, 'calendar_display_end', calendar_end)
             write_setting(database, "openlab_attendance_show_decimals", "1" if request.form.get("openlab_attendance_show_decimals") == "1" else "0")
@@ -7788,6 +7811,8 @@ def register_routes(application):
         errors = []
         timestamp = utc_now_iso()
         for key, machine in rows.items():
+            if machine['archived']:
+                continue  # Historical-only references are not editable here.
             name = request.form.get(f"machine_name_{key}", "").strip()
             monthly, monthly_error = parse_money_cents(
                 request.form.get(f"machine_monthly_{key}"), f"Tarif de {machine['name']}"
@@ -7809,9 +7834,8 @@ def register_routes(application):
                     """,
                     (
                         name, monthly, deposit,
-                        1 if request.form.get(f"machine_active_{key}") == "1" and
-                             request.form.get(f"machine_archived_{key}") != "1" else 0,
-                        1 if request.form.get(f"machine_archived_{key}") == "1" else 0,
+                        1 if request.form.get(f"machine_active_{key}") == "1" else 0,
+                        0,
                         timestamp, key,
                     ),
                 )
@@ -7871,7 +7895,9 @@ def register_routes(application):
             "SELECT 1 FROM billing_records WHERE rental_machine_key = ? LIMIT 1", (machine_key,)
         ).fetchone()
         if referenced:
-            flash("Machine déjà utilisée dans un dossier : désactivez-la ou archivez-la pour préserver l'historique.", "error")
+            database.execute('UPDATE rental_catalog SET active=0,archived=1,updated_at=? WHERE machine_key=?',(utc_now_iso(),machine_key))
+            database.commit()
+            flash("Machine retirée du catalogue. Les anciens dossiers et leurs montants sont conservés.", "success")
         else:
             database.execute("DELETE FROM rental_catalog WHERE machine_key = ?", (machine_key,))
             database.commit()
@@ -8173,11 +8199,17 @@ def register_routes(application):
             "slot_gap_minutes": 0, "slot_capacity": 1,
         }
         online_config = dict(previous_config) if previous_config else online_defaults
+        from animation_publication import visibility_key
+        online_config['hide_before_opening']=read_setting(database,visibility_key(service_id),'0')=='1' if service_id else False
         if request.method == "GET":
             values = dict(service) if service else {
                 "service_type": "animation",
                 "service_date": datetime.now(PARIS_TIMEZONE).strftime("%Y-%m-%d"),
             }
+            if online_config.get('signup_open_at'):
+                opening=datetime.fromisoformat(online_config['signup_open_at'].replace('Z','+00:00'))
+                zone=ZoneInfo(read_setting(database,'structure_timezone','Europe/Paris'))
+                online_config['signup_open_local']=(opening if opening.tzinfo else opening.replace(tzinfo=zone)).astimezone(zone).strftime('%Y-%m-%dT%H:%M')
             if service and service["amount_cents"] is not None:
                 values["amount"] = f"{service['amount_cents'] / 100:.2f}"
             if previous_config and previous_config['capacity']:
@@ -8221,11 +8253,15 @@ def register_routes(application):
                                                 if previous_config else "production"),
                 "audience": request.form.get("online_audience", "all"),
                 "signup_open_at": request.form.get("signup_open_at", "").strip(),
+                "signup_open_local": request.form.get("signup_open_at", "").strip(),
+                "hide_before_opening": request.form.get('hide_before_opening','1' if online_config['hide_before_opening'] else '0')=='1',
                 "waitlist_enabled": int(request.form.get("waitlist_enabled") == "1"),
                 "booking_mode": request.form.get("booking_mode", previous_config["booking_mode"] if previous_config else "whole"),
                 "waitlist_limit_mode": request.form.get('waitlist_limit_mode',previous_config['waitlist_limit_mode'] if previous_config else 'general'),
                 "waitlist_limit_value": request.form.get('waitlist_limit_value',previous_config['waitlist_limit_value'] if previous_config else 0),
             }
+            if request.form.get('hide_before_opening','0') not in ('0','1'):
+                errors.append('Choisissez une visibilité valide avant l’ouverture des inscriptions.')
             from waitlist_limits import SERVICE_MODES,integer as waitlist_integer
             try:
                 if online_config['waitlist_limit_mode'] not in SERVICE_MODES:raise ValueError('Choisissez un mode de liste d’attente valide.')
@@ -8289,10 +8325,10 @@ def register_routes(application):
                 errors.append("La capacité théorique totale ne doit pas dépasser 100 000 places.")
             if online_config["signup_open_at"]:
                 try:
-                    opening = datetime.fromisoformat(online_config["signup_open_at"])
-                    if opening.tzinfo is None:
-                        opening = opening.replace(tzinfo=PARIS_TIMEZONE)
-                    online_config["signup_open_at"] = opening.astimezone(timezone.utc).isoformat(timespec="seconds")
+                    from animation_publication import opening_value
+                    online_config["signup_open_at"] = opening_value(online_config['signup_open_at'],
+                        read_setting(database,'structure_timezone','Europe/Paris'),
+                        previous_config['signup_open_at'] if previous_config else None)
                 except ValueError:
                     errors.append("La date d'ouverture des inscriptions est invalide.")
             count=database.execute('SELECT quantity FROM animation_walkins WHERE service_id=?',(service_id or 0,)).fetchone()
@@ -8372,6 +8408,7 @@ def register_routes(application):
                  online_config["slot_duration_minutes"], online_config["slot_gap_minutes"], online_config["slot_capacity"]),
             )
             saved_service = database.execute("SELECT * FROM fablab_services WHERE id=?", (service_id,)).fetchone()
+            write_setting(database,visibility_key(service_id),'1' if online_config['hide_before_opening'] else '0')
             database.execute('UPDATE animation_reservation_config SET waitlist_limit_mode=?,waitlist_limit_value=? WHERE service_id=?',
                 (online_config['waitlist_limit_mode'],online_config['waitlist_limit_value'],service_id))
             save_slots(database, saved_service, online_config, read_setting(database, "structure_timezone", "Europe/Paris"),previous_config)
@@ -8511,8 +8548,11 @@ def register_routes(application):
             if payload.get("action") == "confirm":
                 for booking_id in payload.get("members") or [row["entity_key"]]:
                     confirmation_errors[booking_id] = row["last_error"]
+        from booking_presentation import sections
+        booking_sections,active_offers=sections(bookings,booking_reservation_status)
         return render_template(
             "animation_bookings.html", service=service, config=config,
+            booking_sections=booking_sections,active_offers=active_offers,
             tablet_requests=__import__('tablet_reservations').requests_for(database,service_id),
             bookings=bookings, counts=counts, users=users,
             attendance_summary=attendance_summary,

@@ -1,6 +1,15 @@
 # Configuration de la structure
 
-## Nouveautés de la stable 2.12.0
+## Nouveautés de la stable 2.13.0
+
+Activités → Modifier : choisir la visibilité avant ouverture des inscriptions.
+Les animations terminées restent visibles 24 heures, sans réservation. Les
+six indicateurs d'Inscriptions explicitent les places temporairement proposées.
+Réglages : options de fréquentation réunies, catalogue mobile repliable et
+panneaux techniques conservant leurs formulaires et autorisations.
+[Fonctionnement détaillé](ergonomie-2.13.0.md).
+
+## Fonctions conservées depuis 2.12.0
 
 Réglages → Données → **État de l'installation** : diagnostic administrateur en
 lecture seule. Fréquentation → Exports → **Bilan visuel de fréquentation (PDF)** :

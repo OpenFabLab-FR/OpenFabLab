@@ -1,5 +1,12 @@
 # OpenFabLab — Roadmap et conception
 
+## Disponible en 2.13.0 stable — Activités et Réglages
+
+Regroupement des inscriptions, publication avant ouverture et maintien de 24 h,
+réglages compacts et catalogue de machines simplifié. SQLite 22 conservé.
+Version validée en utilisation réelle ; aucun nouveau grand module métier.
+[Détails et limites](docs/ergonomie-2.13.0.md). Les projets futurs restent conservés.
+
 ## Disponible en 2.12.0 stable — consolidation
 
 Ergonomie ciblée, fiabilité et lisibilité des indicateurs, bilan visuel PDF,

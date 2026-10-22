@@ -3,6 +3,7 @@
 {% block title %}Réglages · OpenFabLab{% endblock %}
 {% block body_class %}admin-page settings-page settings-view-{{ settings_view }}{% endblock %}
 {% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+{% block page_scripts %}{% if settings_view in ('tarifs','structure') %}<script defer src="{{ url_for('static',filename='settings-panels.js') }}"></script>{% endif %}{% endblock %}
 
 {% block content %}
 <section class="content-heading">
@@ -52,9 +53,11 @@
 <div class="form-actions"><button class="admin-button secondary compact">Enregistrer la validation des présences</button></div>
 </form>{% endif %}
 {% for kind in ('wordmark', 'header_institution', 'network', 'institution', 'main', 'signature', 'badge') %}<form id="remove-{{ kind }}" method="post" action="{{ url_for('admin_remove_branding', kind=kind) }}"><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><input type="hidden" name="confirmation" value="SUPPRIMER"></form>{% endfor %}
-{% include '_reservation_settings.html' %}
-{% include '_smtp_settings.html' %}
-<section class="admin-section profile-section">
+{% set wp_state=namespace(error=false) %}{% for state in reservation_relay_states %}{% if state.last_error or state.retrying %}{% set wp_state.error=true %}{% endif %}{% endfor %}
+{% if wp_state.error %}<p class="settings-status-warning" role="status">Synchronisation WordPress à vérifier : consultez les états Normal et Test ci-dessous.</p>{% endif %}
+<details class="settings-disclosure" id="wordpress-settings"{% if wp_state.error %} open{% endif %}><summary>Connexion WordPress{% if wp_state.error %} · à vérifier{% elif reservation_secret_set %} · configurée{% else %} · facultative{% endif %}</summary>{% include '_reservation_settings.html' %}</details>
+<details class="settings-disclosure" id="smtp-settings"><summary>Configuration SMTP · e-mails{% if smtp.host|default('') %} · paramètres enregistrés{% endif %}</summary>{% include '_smtp_settings.html' %}</details>
+<details class="settings-disclosure" id="profile-settings"{% if profile_preview %} open{% endif %}><summary>Profil privé de configuration</summary><section class="admin-section profile-section">
     <h2>Profil privé de configuration</h2>
     <p>Un seul format <code>.openfablab-profile.zip</code> sauvegarde l'identité, les logos, les modules, les tarifs, les machines et les règles de réservation, sans usagers, factures, réservations ni secrets. Il peut contenir des données administratives et bancaires : conservez-le dans un emplacement protégé.</p>
     <a class="admin-button" href="{{ url_for('admin_export_profile') }}">Exporter le profil</a>
@@ -70,6 +73,7 @@
         {% endif %}
     </form>
 </section>
+</details>
 {% elif settings_view == 'affichage' %}
 <form id="display-options" method="post" action="{{ url_for('admin_update_options', settings_view='affichage') }}" class="admin-form options-main-form settings-save-form">
     <section class="form-section options-section" id="affichage">
@@ -78,31 +82,16 @@
     </section>
 </form>
 {% include '_calendar_colors.html' %}
-<section class="form-section" id="anonymous-visitor-color">
-    <div class="form-section-heading"><h2>Visiteurs anonymes</h2><p>La couleur repère leurs passages, sans créer de compte ni de catégorie d’usager.</p></div>
-    <form method="post" action="{{ url_for('evolution.visitor_color_settings') }}">
-        <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
-        <div class="calendar-color-grid">
-            <label class="calendar-color-row"><span>Visiteur anonyme</span><input name="anonymous_visitor_color" type="color" value="{{ anonymous_visitor_color }}" aria-label="Couleur des visiteurs anonymes"></label>
-        </div>
-        <div class="form-actions"><span class="category-badge category-visitor anonymous-visitor-badge">Visiteur</span><button class="admin-button primary compact" type="submit">Enregistrer la couleur</button></div>
-    </form>
+<section class="form-section" id="attendance-display"><h2>Affichage de la fréquentation</h2>
+<input form="display-options" type="hidden" name="attendance_display" value="1">
+<div class="form-grid two-columns">
+<label class="form-field" id="anonymous-visitor-color"><span>Couleur des visiteurs anonymes</span><input form="display-options" name="anonymous_visitor_color" type="color" value="{{ anonymous_visitor_color }}" aria-label="Couleur des visiteurs anonymes"></label>
+<label class="form-field" id="attendance-reference"><span>Seuil de fréquentation de référence (personnes)</span><input form="display-options" type="number" name="attendance_reference" min="1" max="10000" value="{{ attendance_reference }}" required><small>Un indicateur visuel, sans limitation des entrées.</small></label>
+</div><label class="checkbox-field compact-checkbox"><input form="display-options" name="openlab_attendance_show_decimals" type="checkbox" value="1" {% if show_attendance_decimals %}checked{% endif %}><span>Afficher les décimales dans les graphiques d’affluence</span></label>
 </section>
-<section class="form-section options-section">
-        <h3>Plage horaire visible du Calendrier</h3>
-        <p>Ces heures concernent uniquement l’affichage. Les horaires OpenLab et les réservations restent inchangés. La semaine est étendue si un événement déborde exceptionnellement.</p>
-        <div class="form-grid two-columns"><label class="form-field"><span>Heure de début affichée</span><input form="display-options" type="time" name="calendar_display_start" value="{{ calendar_display_start }}" required></label><label class="form-field"><span>Heure de fin affichée</span><input form="display-options" type="time" name="calendar_display_end" value="{{ calendar_display_end }}" required></label></div>
-        <label class="checkbox-field"><input form="display-options" name="openlab_attendance_show_decimals" type="checkbox" value="1" {% if show_attendance_decimals %}checked{% endif %}><span><strong>Afficher les décimales dans les graphiques d’affluence</strong><small>Rétablit les valeurs détaillées, par exemple 2,8 usagers au lieu de 3 usagers.</small></span></label>
-    </section>
-    <section class="form-section" id="attendance-reference">
-        <h2>Indicateur de fréquentation</h2>
-        <form method="post" action="{{ url_for('evolution.attendance_settings') }}" class="compact-form attendance-reference-form">
-            <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
-            <label class="form-field"><span>Seuil de fréquentation de référence (personnes)</span><input type="number" name="attendance_reference" min="1" max="10000" value="{{ attendance_reference }}" aria-describedby="attendance-reference-help" required><small id="attendance-reference-help">Un indicateur visuel de fréquentation, sans limitation des entrées.</small></label>
-            <button class="admin-button primary compact">Enregistrer le seuil</button>
-        </form>
-    </section>
-    <div class="form-actions display-options-actions"><button form="display-options" class="admin-button primary" type="submit">Enregistrer les options</button></div>
+<section class="form-section options-section"><h2>Plage horaire visible du Calendrier</h2><p class="form-help">Affichage uniquement ; la plage s’étend si un événement déborde.</p>
+<div class="form-grid two-columns"><label class="form-field"><span>Heure de début affichée</span><input form="display-options" type="time" name="calendar_display_start" value="{{ calendar_display_start }}" required></label><label class="form-field"><span>Heure de fin affichée</span><input form="display-options" type="time" name="calendar_display_end" value="{{ calendar_display_end }}" required></label></div></section>
+<div class="form-actions display-options-actions"><button form="display-options" class="admin-button primary" type="submit">Enregistrer l’affichage</button></div>
 {% elif settings_view == 'borne' %}
 {% include '_home_title.html' %}
 {% include '_sound_settings.html' %}
@@ -137,21 +126,23 @@
     </section>
     <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les options</button></div>
 </form>
+<section class="form-section" id="sensitive-access"><h2>ACCÈS SENSIBLE</h2><div class="sensitive-access-grid">
 <form method="post" action="{{ url_for('admin_change_admin_pin') }}" class="admin-form" id="acces-administrateur">
-    <section class="form-section"><div class="form-section-heading"><p class="eyebrow">Accès sensible</p><h2>Modifier le PIN administrateur</h2><p>Le PIN actuel n’est jamais affiché ni exporté.</p></div>
+    <section><div class="form-section-heading"><h3>Administrateur</h3><p>Le PIN actuel n’est jamais affiché ni exporté.</p></div>
         <input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}">
         <div class="admin-pin-grid"><label><span>PIN actuel</span><input name="current_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="current-password" required></label><label><span>Nouveau PIN</span><input name="new_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label><label><span>Confirmer le nouveau PIN</span><input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required></label></div>
         <div class="form-actions admin-pin-actions"><button class="admin-button primary" type="submit">Modifier le PIN administrateur</button></div>
     </section>
 </form>
-<form method="post" action="{{ url_for('admin_update_moderator_pin') }}" class="admin-form" id="acces-moderateur"><section class="form-section"><div class="form-section-heading"><p class="eyebrow">Accès restreint</p><h2>Code PIN modérateur</h2><p>{% if moderator_pin_set %}Un code est configuré ; il n’est plus affichable.{% else %}Aucun code modérateur n’est encore configuré.{% endif %}</p></div><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><div class="moderator-pin-row"><input name="moderator_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" aria-label="Nouveau PIN modérateur à 4 chiffres" required><button class="admin-button primary" type="submit">Changer le code modérateur</button></div></section></form>
+<form method="post" action="{{ url_for('admin_update_moderator_pin') }}" class="admin-form" id="acces-moderateur"><section><div class="form-section-heading"><h3>Modérateur</h3><p>{% if moderator_pin_set %}Un code est configuré ; il n’est plus affichable.{% else %}Aucun code modérateur n’est encore configuré.{% endif %}</p></div><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><div class="moderator-pin-row"><input name="moderator_pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" aria-label="Nouveau PIN modérateur à 4 chiffres" required><button class="admin-button primary" type="submit">Changer le code modérateur</button></div></section></form>
+</div></section>
 {% include "_closure_options.html" %}
 {% elif settings_view == 'tarifs' %}
 <form method="post" action="{{ url_for('admin_update_billing_tariffs') }}" class="admin-form" id="tarifs-facturation"><section class="form-section"><div class="form-section-heading"><p class="eyebrow">Paramètres métier</p><h2>Tarifs des prochains devis</h2><p>Les dossiers déjà créés conservent leurs tarifs d'origine.</p></div><div class="form-grid two-columns">
 {% for name, label in (('normal_hourly', 'Créneau normal · heure'),('normal_half_day', 'Créneau normal · demi-journée'),('reduced_hourly', 'Créneau réduit · heure'),('reduced_half_day', 'Créneau réduit · demi-journée'),('travel', 'Déplacement hors secteur · heure'),('consumable', 'Forfait consommables'),('rental_contract', 'Frais fixes du contrat de location'),('rental_delivery', 'Livraison et installation sur site')) %}<label><span>{{ label }}</span><span class="number-with-unit"><input name="{{ name }}" type="number" min="0" max="1000000" step="0.01" value="{{ '%.2f'|format(billing_tariffs[name] / 100) }}" required><span>€</span></span></label>{% endfor %}
 </div><div class="form-actions settings-inline-save"><button class="admin-button primary" type="submit">Enregistrer les options</button></div></section></form>
 <form method="post" action="{{ url_for('admin_update_custom_tariffs') }}" class="admin-form" id="tarifs-personnalises"><section class="form-section"><div class="form-section-heading"><h2>Tarifs personnalisés</h2><p>Créez des tarifs complémentaires pour les prochains devis. Les devis existants conservent leur désignation et leur prix ; un tarif archivé n'est plus proposé.</p></div><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><div class="table-scroll"><table class="services-table"><thead><tr><th>Actif</th><th>Archivé</th><th>Nom</th><th>Unité</th><th>Prix</th><th>Suppression</th></tr></thead><tbody>{% for key, tariff in custom_tariffs.items() %}<tr><td><input type="checkbox" name="tariff_active_{{ key }}" value="1"{% if tariff.active %} checked{% endif %}></td><td><input type="checkbox" name="tariff_archived_{{ key }}" value="1"{% if tariff.archived %} checked{% endif %}></td><td><input name="tariff_name_{{ key }}" value="{{ tariff.name }}" maxlength="180" required></td><td><select name="tariff_unit_{{ key }}"><option value="hourly"{% if tariff.unit == 'hourly' %} selected{% endif %}>Heure</option><option value="half_day"{% if tariff.unit == 'half_day' %} selected{% endif %}>Demi-journée</option></select></td><td><input name="tariff_amount_{{ key }}" type="number" min="0" step="0.01" value="{{ '%.2f'|format(tariff.cents / 100) }}" required> €</td><td><button type="submit" class="admin-button danger" formnovalidate formaction="{{ url_for('admin_delete_custom_tariff', tariff_key=key) }}" onclick="return confirm('Supprimer ce tarif si aucun devis ne le référence ?')">Supprimer</button></td></tr>{% endfor %}<tr><td>＋</td><td>—</td><td><input name="new_tariff_name" maxlength="180" placeholder="Nouveau tarif"></td><td><select name="new_tariff_unit"><option value="hourly">Heure</option><option value="half_day">Demi-journée</option></select></td><td><input name="new_tariff_amount" type="number" min="0" step="0.01" placeholder="0,00"> €</td><td></td></tr></tbody></table></div><div class="form-actions settings-inline-save"><button class="admin-button primary" type="submit">Enregistrer les tarifs personnalisés</button></div></section></form>
-<form method="post" action="{{ url_for('admin_update_rental_catalog') }}" class="admin-form" id="catalogue-location"><section class="form-section"><div class="form-section-heading"><p class="eyebrow">Location de machines</p><h2>Catalogue, tarifs et cautions</h2><p>Une machine désactivée ou archivée disparaît des nouveaux devis. Une machine utilisée dans un dossier ne peut pas être supprimée.</p></div><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><div class="table-scroll"><table class="services-table"><thead><tr><th>Active</th><th>Archivée</th><th>Machine</th><th>Tarif mensuel</th><th>Caution</th><th>Suppression</th></tr></thead><tbody>{% for key, machine in rental_catalog.items() %}<tr><td data-label="Active"><input name="machine_active_{{ key }}" type="checkbox" value="1"{% if machine.active %} checked{% endif %}></td><td data-label="Archivée"><input name="machine_archived_{{ key }}" type="checkbox" value="1"{% if machine.archived %} checked{% endif %}></td><td data-label="Machine"><input name="machine_name_{{ key }}" type="text" maxlength="180" value="{{ machine.name }}" required></td><td data-label="Tarif mensuel"><input name="machine_monthly_{{ key }}" type="number" min="0" step="0.01" value="{{ '%.2f'|format(machine.monthly_cents / 100) }}" required> €</td><td data-label="Caution"><input name="machine_deposit_{{ key }}" type="number" min="0" step="0.01" value="{{ '%.2f'|format(machine.deposit_cents / 100) }}" required> €</td><td data-label="Suppression"><button class="admin-button danger" type="submit" formnovalidate formaction="{{ url_for('admin_delete_rental_machine', machine_key=key) }}" onclick="return confirm('Supprimer cette machine si aucun dossier ne la référence ?')">Supprimer</button></td></tr>{% endfor %}<tr><td data-label="Nouvelle">＋</td><td>—</td><td data-label="Nouvelle machine"><input name="new_machine_name" type="text" maxlength="180" placeholder="Ajouter une machine"></td><td data-label="Tarif mensuel"><input name="new_machine_monthly" type="number" min="0" step="0.01" placeholder="0,00"> €</td><td data-label="Caution"><input name="new_machine_deposit" type="number" min="0" step="0.01" placeholder="0,00"> €</td><td></td></tr></tbody></table></div><div class="form-actions settings-inline-save"><button class="admin-button primary" type="submit">Enregistrer les options</button></div></section></form>
+{% include '_rental_catalog.html' %}
 {% elif settings_view == 'donnees' %}
 {% if installation_diagnostic %}{% include '_installation_health.html' %}{% endif %}
 <form class="admin-form form-section" method="post" action="{{ url_for('admin_settings_structure') }}">
@@ -167,6 +158,7 @@
     <section class="form-section automatic-backup-section"><div class="form-section-heading"><p class="eyebrow">Copie de sécurité planifiée</p><h2>Sauvegarde automatique</h2><p>Crée régulièrement un instantané cohérent de la base dans le dossier de sauvegarde du NAS.</p></div><label class="checkbox-field"><input form="data-retention-options" name="automatic_backup_enabled" type="checkbox" value="1" {% if automatic_backup.enabled %}checked{% endif %}><span><strong>Activer la sauvegarde automatique</strong></span></label><div class="automatic-backup-grid"><label><span>Intervalle entre deux sauvegardes</span><span class="number-with-unit"><input form="data-retention-options" name="automatic_backup_interval_days" type="number" min="1" max="365" value="{{ automatic_backup.interval_days }}" required><span>jour(s)</span></span></label><label><span>Sous-dossier des sauvegardes NAS</span><input form="data-retention-options" name="automatic_backup_subdirectory" type="text" maxlength="120" value="{{ automatic_backup.subdirectory }}" required></label></div><p class="form-help">Ce sous-dossier se trouve dans le répertoire de sauvegarde monté par votre administrateur. La valeur par défaut est OpenFabLab ; vous pouvez la personnaliser.</p><p class="form-help">Dossier complet : <strong>{{ automatic_backup.display_path }}</strong></p></section>
     <div class="form-actions"><button form="data-retention-options" class="admin-button primary" type="submit">Enregistrer les options</button></div>
 </section>
+<details class="settings-disclosure" id="manual-backups"><summary>Exports et sauvegardes manuelles</summary>
 <section class="admin-section backup-export-card"><div><p class="eyebrow">Données métier uniquement</p><h2>Exporter la base SQLite</h2><p>Instantané cohérent des données métier. Ne contient pas les PIN, clés, logos et autres fichiers privés de l’installation.</p></div><a class="admin-button primary" href="{{ url_for('admin_export_database') }}">Télécharger la sauvegarde SQLite</a></section>
 <section class="admin-section"><p class="eyebrow">Installation complète · sensible</p><h2>Sauvegarde complète privée</h2>
 <p>Inclut la base, les dérivations de PIN, les clés, la configuration et les ressources du stockage persistant. Archive privée, non chiffrée, vérifiée par manifeste et empreintes.</p>
@@ -182,6 +174,8 @@
 <input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}">
 <label class="checkbox-field"><input type="checkbox" name="sensitive_ack" value="1" required><span>Je conserverai cette copie de test dans un emplacement sécurisé.</span></label>
 <button class="admin-button primary" type="submit">Créer une copie privée pour test</button></form></section>
+</details>
+<details class="settings-disclosure" id="restore-and-delete"><summary>Restauration et suppression</summary>
 <section class="admin-section restore-section"><p class="eyebrow">Remplacement de l’installation</p><h2>Restaurer une sauvegarde complète ou une copie de test</h2>
 <p>Vérification du format, des empreintes et de SQLite avant remplacement. Une sauvegarde complète de sécurité est conservée dans restore-backups. Les données ne sont pas fusionnées. Après restauration, reconnectez-vous avec le PIN de l’archive.</p>
 <form method="post" action="{{ url_for('admin_restore_private') }}" enctype="multipart/form-data" class="admin-form restore-form">
@@ -191,5 +185,6 @@
 <button class="admin-button danger" type="submit">Restaurer l’installation privée</button></form></section>
 <section class="admin-section restore-section"><p class="eyebrow">Opération sensible</p><h2>Restaurer une sauvegarde</h2><p>La base actuelle sera remplacée. Une copie automatique de l'état précédent sera créée avant la restauration.</p><form method="post" action="{{ url_for('admin_settings_data') }}" enctype="multipart/form-data" class="admin-form restore-form"><div class="form-field"><label for="database-file">Fichier SQLite exporté par OpenFabLab</label><input id="database-file" name="database_file" type="file" accept=".db,.sqlite,.sqlite3,application/vnd.sqlite3" required></div><div class="form-field"><label for="confirmation">Confirmation</label><input id="confirmation" name="confirmation" type="text" autocomplete="off" placeholder="RESTAURER" required><small>Saisissez exactement RESTAURER.</small></div><button class="admin-button danger" type="submit">Importer et remplacer la base</button></form></section>
 <section class="admin-section restore-section full-reset-section"><p class="eyebrow">Remise à zéro complète</p><h2>Supprimer toutes les données</h2><p>Cette action vide définitivement les données métier et les réglages après une copie de sécurité.</p><form method="post" action="{{ url_for('admin_reset_database') }}" class="admin-form restore-form"><div class="form-field"><label for="full-reset-confirmation">Confirmation</label><input id="full-reset-confirmation" name="confirmation" type="text" autocomplete="off" placeholder="TOUT SUPPRIMER" required><small>Saisissez exactement TOUT SUPPRIMER.</small></div><button class="admin-button danger" type="submit">Supprimer toute la base active</button></form></section>
+</details>
 {% endif %}
 {% endblock %}

@@ -1,3 +1,26 @@
+# Mettre à jour vers OpenFabLab 2.13.0 stable
+
+SQLite reste **22 → 22** : aucune nouvelle migration, aucune réécriture des
+présences ou inscriptions historiques. Conserver une sauvegarde complète PRE22
+et le runtime source, puis vérifier intégrité, santé, réglages, volumes et données
+avant de valider la POST22. Un ZIP valide seul ne prouve pas une restauration.
+
+Le plugin facultatif Reservations **2.13.0** est modifié pour la visibilité du
+catalogue. Sauvegarder WordPress et remplacer l’extension sans désinstallation,
+sans changer les secrets ; vérifier Normal et Test. Le protocole reste 4/révision 3.
+Le plugin 2.11.0 conserve les échanges antérieurs mais pas tous les nouveaux affichages.
+
+Après tout démarrage public, préserver les écritures récentes avant toute décision
+humaine de retour arrière. Aucun rollback destructeur automatique. Ne pas redémarrer
+une application antérieure incompatible sur une base plus récente.
+
+Télécharger les [distributions officielles et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.13.0).
+Les commandes NAS propres à une structure restent dans sa livraison privée.
+La mise à jour applicative n'installe pas l'extension sur WordPress : vérifier
+sa version dans l'administration WordPress après son remplacement séparé.
+
+---
+
 # Mettre à jour vers OpenFabLab 2.12.0 stable
 
 Depuis 2.11.0, conserver le schéma **22**, sans rejouer la migration 21 → 22. Effectuer une

@@ -30,6 +30,7 @@
 .openfablab-card h3, .openfablab-booking-form h3 { margin: 0 0 .55rem; color: var(--openfablab-ink); }
 .openfablab-card p { margin: .45rem 0; }
 .openfablab-card { overflow-wrap:anywhere; min-width:0; }
+.openfablab-card.is-ended { background:#f1f3f4;border-color:#cdd4d8; }
 .openfablab-animation-list>.openfablab-card { display:flex;flex-direction:column; }
 .openfablab-card-footer { margin-top:auto;padding-top:1rem; }
 .openfablab-card-availability { margin:.35rem 0 .6rem; }

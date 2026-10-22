@@ -10,6 +10,8 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "dist" / f"OpenFabLab-{__version__}.zip"
 FILES = (
+    'static/settings-panels.js',
+    'animation_publication.py','booking_presentation.py','docs/ergonomie-2.13.0.md',
     'statistics_quality.py','installation_health.py','visual_report.py',
     'docs/consolidation-2.12.0.md','docs/maintenance.md',
     'animation_attendance.py', 'v211_routes.py', 'docs/evolution-2.11.0.md',

@@ -129,7 +129,7 @@ class OutboundTests(unittest.TestCase):
         client=mock.Mock();client.post.return_value={'protocol_version':3,'family_gateway_v1':True}
         with self.assertRaises(ValueError):sync.negotiate(client,'production')
     def test_sqlite_schema_and_integrity(self):
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],21)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],22)
         self.assertEqual(self.db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
         self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
@@ -150,7 +150,7 @@ class OutboundTests(unittest.TestCase):
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM sqlite_master WHERE name IN ('wordpress_action_receipts','wordpress_relay_state')").fetchone()[0],0)
         family.migrate(self.db);after=list(self.db.iterdump());family.migrate(self.db)
         self.assertEqual(list(self.db.iterdump()),after)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],21)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],22)
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM animation_bookings WHERE status='confirmed'").fetchone()[0],3)
         self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
@@ -176,10 +176,10 @@ class OutboundTests(unittest.TestCase):
         def sleep(seconds):
             self.assertEqual(seconds,15);clock[0]+=seconds
             if clock[0]>=105:raise StopWorker()
-        with mock.patch('threading.Thread') as thread:
+        with mock.patch('threading.Thread') as thread,mock.patch('runtime_policy.external_allowed',return_value=True),mock.patch('runtime_policy.storage_guard'):
             sync.start_worker(self.f.f.app,lambda:self.db,lambda db:{'public_reservations':True})
         worker=thread.call_args.kwargs['target']
-        with mock.patch('runtime_policy.external_allowed',return_value=True),mock.patch('outbound_sync.time.monotonic',side_effect=lambda:clock[0]),mock.patch('outbound_sync.time.sleep',side_effect=sleep),mock.patch('outbound_sync.catalogue',side_effect=lambda *a,**kw:catalogue_times.append(clock[0])),mock.patch('outbound_sync.poll',side_effect=lambda *a,**kw:poll_times.append(clock[0])),mock.patch('outbound_actions.prune_private_receipts'):
+        with mock.patch('runtime_policy.external_allowed',return_value=True),mock.patch('runtime_policy.storage_guard'),mock.patch('outbound_sync.time.monotonic',side_effect=lambda:clock[0]),mock.patch('outbound_sync.time.sleep',side_effect=sleep),mock.patch('outbound_sync.catalogue',side_effect=lambda *a,**kw:catalogue_times.append(clock[0])),mock.patch('outbound_sync.poll',side_effect=lambda *a,**kw:poll_times.append(clock[0])),mock.patch('outbound_actions.prune_private_receipts'):
             with self.assertRaises(StopWorker):worker()
         self.assertEqual(catalogue_times,[0,90])
         self.assertEqual(poll_times,[0,15,30,45,60,75,90])
@@ -191,7 +191,7 @@ class OutboundTests(unittest.TestCase):
         write_setting(self.db,'module_public_reservations','1');write_setting(self.db,'reservation_wordpress_url','https://example.invalid');self.db.commit()
         save_sync_secret(self.f.f.database_path,'fictional-secret-'+('x'*48))
         class StopWorker(BaseException):pass
-        with mock.patch('app.threading.Thread') as thread:
+        with mock.patch('app.threading.Thread') as thread,mock.patch('runtime_policy.external_allowed',return_value=True):
             app.start_local_reservation_sync_worker(self.f.f.app)
         worker=thread.call_args.kwargs['target']
         with mock.patch('app.run_sync_cycle') as old,mock.patch('app.time.sleep',side_effect=StopWorker):

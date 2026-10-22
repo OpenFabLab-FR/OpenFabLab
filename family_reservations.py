@@ -241,6 +241,8 @@ def delete_animation(db, service_id):
             db.execute('DELETE FROM animation_bookings WHERE service_id=?', (service_id,))
             db.execute("DELETE FROM calendar_visibility WHERE event_kind='animation' AND event_key=?", (str(service_id),))
             db.execute('DELETE FROM fablab_services WHERE id=?', (service_id,))
+            from animation_publication import visibility_key
+            db.execute('DELETE FROM app_settings WHERE key=?',(visibility_key(service_id),))
         except BaseException as error:
             db.execute('ROLLBACK TO animation_deletion')
             db.execute('RELEASE animation_deletion')

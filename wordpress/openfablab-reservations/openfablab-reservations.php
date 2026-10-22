@@ -2,13 +2,13 @@
 /**
  * Plugin Name: OpenFabLab Reservations
  * Description: Catalogue public et relais sécurisé sortant du moteur OpenFabLab.
- * Version: 2.11.0
+ * Version: 2.13.0
  * Requires PHP: 8.1
  * License: MIT
  * Text Domain: openfablab-reservations
  */
 if (!defined('ABSPATH')) { exit; }
-define('OPENFABLAB_RES_VERSION','2.11.0');
+define('OPENFABLAB_RES_VERSION','2.13.0');
 define('OPENFABLAB_RES_SCHEMA_VERSION','2.8.2-relay3');
 define('OPENFABLAB_RES_FILE',__FILE__);
 define('OPENFABLAB_RES_PATH',plugin_dir_path(__FILE__));

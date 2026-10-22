@@ -11,7 +11,7 @@
 
 <form class="admin-form closure-options-form" method="post" action="{{ url_for('admin_closure_settings') }}">
     <section class="form-section">
-        <div class="form-section-heading"><p class="eyebrow">Planning hebdomadaire</p><h2>Heure d'éjection quotidienne</h2></div>
+        <div class="form-section-heading"><p class="eyebrow">Planning hebdomadaire</p><h2>Clôture automatique des présences</h2></div>
         <label class="checkbox-field">
             <input name="enabled" type="checkbox" value="1" {% if closure.enabled %}checked{% endif %}>
             <span><strong>Activer la clôture automatique</strong><small>Décochez pour conserver les heures sans les appliquer.</small></span>
@@ -26,7 +26,7 @@
 
 <section class="danger-zone closure-now-zone">
     <div><h2>Fermer le FabLab maintenant</h2><p>Clôture toutes les sessions ouvertes à l'heure réelle, sans modifier le planning.</p></div>
-    <form method="post" action="{{ url_for('admin_close_all_now') }}" onsubmit="return confirm('Clôturer maintenant toutes les sessions ouvertes ?');"><button class="admin-button danger" type="submit">Éjecter tous les usagers présents</button></form>
+    <form method="post" action="{{ url_for('admin_close_all_now') }}" onsubmit="return confirm('Clôturer maintenant toutes les sessions ouvertes ?');"><button class="admin-button danger" type="submit">Clôturer les présences maintenant</button></form>
 </section>
 
 <details id="daily-reset" class="admin-section daily-reset-section">

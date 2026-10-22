@@ -1,5 +1,27 @@
 # Historique public
 
+## 2.13.0 — version stable — 22 octobre 2026
+
+- Inscriptions regroupées, détails repliables et présence toujours distincte
+  de la réservation ; compteurs et échéances issus des données existantes.
+- Six indicateurs compacts : places disponibles et propositions temporaires
+  expliquées avec leur échéance, sans changer les règles d'attribution.
+- Publication avant ouverture configurable, rétention publique de 24 heures
+  après la dernière fin effective et choix du canal dans les options avancées.
+- Réglages Affichage, Données, Borne, Structure et catalogue de machines allégés.
+- Catalogue mobile repliable, modification de plusieurs machines et sauvegarde
+  commune ; champs conservés au repli. Sélecteur de couleur aligné sur tablette.
+- Panneaux WordPress, SMTP et profil privé accessibles ; erreurs importantes
+  signalées sans imposer l'ouverture manuelle d'un panneau fermé.
+- Retrait des machines utilisées sans perte des dossiers ; conservation des
+  instantanés de nom, de tarif et de caution lors d’une modification de dossier.
+- SQLite 22 inchangé, aucune nouvelle migration. Plugin Reservations 2.13.0
+  réellement adapté au catalogue ; protocole 4/révision 3 conservé.
+
+[Fonctionnement et limites](docs/ergonomie-2.13.0.md).
+
+---
+
 ## 2.12.0 — version stable — 21 octobre 2026
 
 - Fiche d’animation plus compacte : case d’attente et capacité unique mieux intégrées.

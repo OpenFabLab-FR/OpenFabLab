@@ -1,0 +1,24 @@
+<form method="post" action="{{ url_for('admin_update_rental_catalog') }}" class="admin-form" id="catalogue-location">
+<section class="form-section">
+<div class="form-section-heading"><p class="eyebrow">Location de machines</p><h2>Catalogue, tarifs et cautions</h2><p>Décochez Active pour suspendre les nouveaux devis. Supprimer retire la machine du catalogue sans modifier les anciens dossiers.</p></div>
+<input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}">
+<div class="table-scroll"><table class="services-table rental-catalog-table">
+<thead><tr><th>Active</th><th>Machine</th><th>Tarif mensuel</th><th>Caution</th><th>Suppression</th></tr></thead>
+{% for key, machine in rental_catalog.items() if not machine.archived %}
+<tbody data-rental-machine>
+<tr class="rental-summary-row"><td colspan="5"><button type="button" class="rental-toggle" aria-expanded="false" aria-controls="rental-editor-{{ loop.index }}">
+<span class="rental-summary-heading"><strong data-rental-name>{{ machine.name }}</strong><span class="rental-state" data-rental-state>{{ 'Active' if machine.active else 'Inactive' }}</span></span>
+<span class="rental-summary-amounts" data-rental-amounts>{{ '%.2f'|format(machine.monthly_cents / 100) }} €/mois · caution {{ '%.2f'|format(machine.deposit_cents / 100) }} €</span>
+<span class="rental-toggle-label">Modifier <span aria-hidden="true">⌄</span></span>
+</button></td></tr>
+<tr class="rental-edit-row" id="rental-editor-{{ loop.index }}">
+<td data-label="Active"><input name="machine_active_{{ key }}" type="checkbox" value="1" aria-label="Machine active : {{ machine.name }}"{% if machine.active %} checked{% endif %}></td>
+<td data-label="Machine"><input name="machine_name_{{ key }}" type="text" maxlength="180" value="{{ machine.name }}" aria-label="Nom de la machine" required></td>
+<td data-label="Tarif mensuel"><input name="machine_monthly_{{ key }}" type="number" min="0" step="0.01" value="{{ '%.2f'|format(machine.monthly_cents / 100) }}" aria-label="Tarif mensuel en euros" required> €</td>
+<td data-label="Caution"><input name="machine_deposit_{{ key }}" type="number" min="0" step="0.01" value="{{ '%.2f'|format(machine.deposit_cents / 100) }}" aria-label="Caution en euros" required> €</td>
+<td data-label="Suppression"><button class="admin-button danger" type="submit" formnovalidate formaction="{{ url_for('admin_delete_rental_machine', machine_key=key) }}" onclick="return confirm('Retirer cette machine du catalogue ? Les anciens dossiers seront conservés.')">Supprimer</button></td>
+</tr></tbody>{% endfor %}
+<tbody><tr class="rental-new-row"><td data-label="Nouvelle">＋</td><td data-label="Nouvelle machine"><input name="new_machine_name" type="text" maxlength="180" placeholder="Ajouter une machine" aria-label="Nouvelle machine"></td><td data-label="Tarif mensuel"><input name="new_machine_monthly" type="number" min="0" step="0.01" placeholder="0,00" aria-label="Nouveau tarif mensuel en euros"> €</td><td data-label="Caution"><input name="new_machine_deposit" type="number" min="0" step="0.01" placeholder="0,00" aria-label="Nouvelle caution en euros"> €</td><td></td></tr></tbody>
+</table></div>
+<div class="form-actions settings-inline-save"><button class="admin-button primary" type="submit">Enregistrer les options</button></div>
+</section></form>

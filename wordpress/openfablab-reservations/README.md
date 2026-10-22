@@ -1,4 +1,25 @@
-# OpenFabLab Reservations 2.11.0 — plugin facultatif stable
+# OpenFabLab Reservations 2.13.0 — plugin facultatif
+
+Adaptation du catalogue à la visibilité avant ouverture et au maintien des
+animations terminées pendant 24 heures. Aucun changement d’attribution des
+places, de signatures ou de secrets. Protocole 4/révision 3 conservé ; capacité
+optionnelle `publication_visibility_v1`.
+
+À utiliser avec OpenFabLab 2.13.0 pour l’ensemble des affichages.
+Les anciens catalogues restent acceptés. Les nouvelles règles d’ouverture et
+la limite de 24 heures sont appliquées côté serveur aux instantanés signés.
+Installer en remplacement, sans désinstallation ni changement du secret.
+Ce plugin n’est pas obligatoire pour utiliser OpenFabLab.
+
+[Release officielle 2.13.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.13.0) ·
+[Documentation actuelle](https://github.com/OpenFabLab-FR/OpenFabLab/blob/v2.13.0/docs/wordpress.md).
+L'archive validée est conservée octet pour octet ; les mentions de préparation
+dans sa documentation figée ne changent pas son statut stable.
+Les numéros de version publique sont indépendants du protocole.
+
+---
+
+## Référence historique : Reservations 2.11.0
 
 Application et plugin OpenFabLab 2.11.0, protocole 4/révision 3 inchangé.
 Cette version actualise le numéro public et la documentation ; le moteur du

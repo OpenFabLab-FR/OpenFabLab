@@ -1,6 +1,15 @@
 # Architecture
 
-## Version stable 2.12.0
+## Version stable 2.13.0
+
+Application et plugin facultatif Reservations 2.13.0, SQLite **22** inchangé.
+`animation_publication.py` centralise la visibilité avant ouverture et les
+24 heures après fin ; `booking_presentation.py` prépare les regroupements sans
+changer l'attribution des places. Capacité optionnelle `publication_visibility_v1`,
+protocole 4/révision 3 conservé. Les historiques, l'accueil et les sons restent
+inchangés. [Règles et limites](ergonomie-2.13.0.md).
+
+## Référence historique : version stable 2.12.0
 
 Application 2.12.0, plugin facultatif Reservations 2.11.0 inchangé ; SQLite **22**
 conservé depuis 2.11.0. `statistics_quality.py` centralise les précautions de date

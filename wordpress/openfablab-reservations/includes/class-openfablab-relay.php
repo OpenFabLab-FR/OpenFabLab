@@ -155,9 +155,43 @@ final class OpenFabLab_Relay {
             self::env(['environment'=>$env]);
             $row=$wpdb->get_row($wpdb->prepare('SELECT * FROM '.OpenFabLab_Database::table('relay_catalogues').' WHERE environment=%s',$env));
             if (!$row || $row->received_at<time()-900) { return self::error('Les inscriptions ne sont pas disponibles pour le moment. Réessayez dans quelques instants.'); }
-            return self::reply(['environment'=>$env,'updated_at'=>(int)$row->received_at,'animations'=>json_decode($row->catalogue_json,true),
+            return self::reply(['environment'=>$env,'updated_at'=>(int)$row->received_at,'animations'=>self::visible_catalogue(json_decode($row->catalogue_json,true)),
                 'notice'=>'Les disponibilités sont indicatives. Votre groupe est confirmé après vérification.']);
         } catch (Throwable $error) { return self::error('Catalogue indisponible.'); }
+    }
+    /** Apply the authenticated publication clock on every public read, including
+     * cached snapshots. Never grants a seat; the core revalidates every action. */
+    public static function visible_catalogue(array $items, $now=null) {
+        $now=$now ?? time();$visible=[];
+        foreach ($items as $item) {
+            $p=$item['publication'] ?? null;
+            if ($p) {
+                $open=$p['signup_open_at']!=='' ? strtotime($p['signup_open_at']) : 0;
+                $end=strtotime($p['ends_at']);
+                if ($now>=strtotime($p['public_until']) || ($p['hide_before_opening'] && $open && $now<$open)) { continue; }
+                $snapshot=function($entry,$start) use ($item,$p,$now,$open) {
+                    if ($open && $now<$open) { return 'not_open'; }
+                    if ($now>=strtotime($start)-$p['close_minutes']*60) { return 'closed'; }
+                    if ($entry['available']>0) { return 'available'; }
+                    if (!$item['waitlist_enabled']) { return 'full'; }
+                    if (isset($entry['waiting_limit']) && $entry['waiting']>=$entry['waiting_limit']) { return 'waiting_full'; }
+                    return 'waiting';
+                };
+                foreach ($item['slots'] as &$slot) { $slot['availability_state']=$snapshot($slot,$slot['starts_at']); } unset($slot);
+                if ($now>=$end) { $item['availability_state']='ended';$item['available']=0; }
+                elseif ($open && $now<$open) { $item['availability_state']='not_open'; }
+                elseif ($item['slots']) {
+                    $states=array_column($item['slots'],'availability_state');$item['availability_state']='closed';
+                    foreach (['available','waiting','waiting_full','full','closed'] as $state) { if (in_array($state,$states,true)) { $item['availability_state']=$state;break; } }
+                } else { $item['availability_state']=$snapshot($item,$p['starts_at']); }
+                $item['signup_open_label']=$p['signup_open_label'];
+                // The publication payload is technical, not a second public API.
+                unset($item['publication']);
+            }
+            $visible[]=$item;
+        }
+        usort($visible,fn($a,$b)=>(($a['availability_state']??'')==='ended') <=> (($b['availability_state']??'')==='ended'));
+        return $visible;
     }
     public static function enqueue($type, array $data) {
         global $wpdb;
@@ -210,7 +244,7 @@ final class OpenFabLab_Relay {
         $present=array_intersect(array_keys($item),$fields);
         if (!$present) { return true; } // Explicit backwards-compatible catalogue.
         if (count($present)!==3 || !is_string($item['availability_state'])
-            || !in_array($item['availability_state'],['available','waiting','waiting_full','full','not_open','closed','unpublished'],true)
+            || !in_array($item['availability_state'],['available','waiting','waiting_full','full','not_open','closed','unpublished','ended'],true)
             || !is_int($item['waiting']) || $item['waiting']<0 || $item['waiting']>10000000
             || (!is_null($item['waiting_limit']) && (!is_int($item['waiting_limit']) || $item['waiting_limit']<0 || $item['waiting_limit']>10000000))) { return false; }
         return true; // Shape only: WordPress never decides capacity or admission.
@@ -221,10 +255,22 @@ final class OpenFabLab_Relay {
             $data=self::body($request,1000000);$env=self::env($data);$items=$data['animations'] ?? null;
             if (($data['protocol_version'] ?? 0)!==4 || ($data['relay_revision'] ?? 0)!==3 || !is_array($items) || count($items)>100) { return self::error('Catalogue invalide.',400); }
             $required=['service_id','title','description','date','hours','minimum_age','booking_mode','slots','available','waitlist_enabled','account_required','phone_required','autonomy_age'];
-            $allowed=array_merge($required,['information_url','availability_state','waiting','waiting_limit']);
+            $allowed=array_merge($required,['information_url','availability_state','waiting','waiting_limit','publication']);
             foreach ($items as $item) {
                 if (!is_array($item) || array_diff(array_keys($item),$allowed) || array_diff($required,array_keys($item))) { return self::error('Catalogue invalide.',400); }
                 if (!self::valid_availability($item)) { return self::error('Disponibilité du catalogue invalide.',400); }
+                if (isset($item['publication'])) {
+                    $p=$item['publication'];
+                    $fields=['starts_at','ends_at','signup_open_at','signup_open_label','public_until','hide_before_opening','close_minutes'];
+                    if (!is_array($p) || array_diff(array_keys($p),$fields) || array_diff($fields,array_keys($p))
+                        || !is_bool($p['hide_before_opening']) || !is_int($p['close_minutes']) || $p['close_minutes']<0 || $p['close_minutes']>1440
+                        || !is_string($p['signup_open_label']) || strlen($p['signup_open_label'])>100) { return self::error('Publication invalide.',400); }
+                    foreach (['starts_at','ends_at','public_until','signup_open_at'] as $key) {
+                        if (!is_string($p[$key]) || ($key==='signup_open_at' && $p[$key]==='')) { if ($key==='signup_open_at' && $p[$key]==='') { continue; } return self::error('Publication invalide.',400); }
+                        if (!preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/D',$p[$key]) || strtotime($p[$key])===false) { return self::error('Publication invalide.',400); }
+                    }
+                    if (strtotime($p['public_until'])-strtotime($p['ends_at'])!==86400) { return self::error('Publication invalide.',400); }
+                }
                 if (isset($item['information_url']) && $item['information_url']!=='') {
                     $url=$item['information_url'];$parts=is_string($url)?parse_url($url):false;
                     if (!$parts || strlen($url)>2048 || !filter_var($url,FILTER_VALIDATE_URL)
@@ -242,8 +288,9 @@ final class OpenFabLab_Relay {
                     if (!is_string($item[$field]) || strlen($item[$field])>12000) { return self::error('Catalogue invalide.',400); }
                 }
                 foreach ($item['slots'] as $slot) {
-                    if (!is_array($slot) || array_diff(array_keys($slot),['slot_uuid','label','available','availability_state','waiting','waiting_limit'])
+                    if (!is_array($slot) || array_diff(array_keys($slot),['slot_uuid','label','available','availability_state','waiting','waiting_limit','starts_at','ends_at'])
                         || !self::valid_availability($slot)) { return self::error('Catalogue invalide.',400); }
+                    if (isset($item['publication']) && (!isset($slot['starts_at'],$slot['ends_at']) || !is_string($slot['starts_at']) || !is_string($slot['ends_at']) || strtotime($slot['starts_at'])===false || strtotime($slot['ends_at'])===false)) { return self::error('Créneau invalide.',400); }
                 }
             }
             $table=OpenFabLab_Database::table('relay_catalogues');
