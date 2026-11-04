@@ -26,7 +26,7 @@
 
 <section class="danger-zone closure-now-zone">
     <div><h2>Fermer le FabLab maintenant</h2><p>Clôture toutes les sessions ouvertes à l'heure réelle, sans modifier le planning.</p></div>
-    <form method="post" action="{{ url_for('admin_close_all_now') }}" onsubmit="return confirm('Clôturer maintenant toutes les sessions ouvertes ?');"><button class="admin-button danger" type="submit">Clôturer les présences maintenant</button></form>
+    <form method="post" action="{{ url_for('admin_close_all_now') }}" onsubmit="return confirm({{ _('Clôturer maintenant toutes les sessions ouvertes ?')|tojson|forceescape }});"><button class="admin-button danger" type="submit">Clôturer les présences maintenant</button></form>
 </section>
 
 <details id="daily-reset" class="admin-section daily-reset-section">

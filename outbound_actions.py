@@ -62,14 +62,14 @@ def action_interval(value):
         return 10
 
 
-def public_catalogue(db, environment, include_information=False,include_limits=False,include_publication=False):
+def public_catalogue(db, environment, include_information=False,include_limits=False,include_publication=False,current=None):
     import family_model as family
     from tablet_reservations import local_catalogue
     if environment not in ENVIRONMENTS: raise ValueError('Environnement invalide.')
     keys = ('service_id','title','description','date','hours','minimum_age',
             'booking_mode','slots','available','waitlist_enabled')
     result=[]
-    for item in local_catalogue(db, lambda _db,k,default='':family.setting(_db,k,default), environment=environment,include_closed=include_limits,include_hidden=include_publication):
+    for item in local_catalogue(db, lambda _db,k,default='':family.setting(_db,k,default), current=current,environment=environment,include_closed=include_limits,include_hidden=include_publication):
         if item['ended'] and not include_publication:continue
         public={k:item[k] for k in keys}
         public['waitlist_enabled']=bool(public['waitlist_enabled'])
@@ -151,6 +151,7 @@ def email_link(db, database_path, payload, kind, environment):
 
 
 def dispatch(db, data, action, environment, secret, request_key):
+    import family_model as family
     import family_reservations as engine
     import family_waitlist as waiting
     from family_reservation_routes import identity
@@ -172,7 +173,11 @@ def dispatch(db, data, action, environment, secret, request_key):
                     start=datetime.fromisoformat(slot['starts_at']).astimezone(zone)
                     end=datetime.fromisoformat(slot['ends_at']).astimezone(zone)
                     date=start.date().isoformat();hours=start.strftime('%H:%M')+'–'+end.strftime('%H:%M')
-            return {'status':group['status'],'label':waiting.LABELS.get(group['status'],'Indisponible'),
+            calendar={}
+            if group['status']=='confirmed' and family.setting(db,'reservation_participant_calendar_'+environment,'0')=='1' and family.setting(db,'reservation_calendar_enabled','1')=='1':
+                from reservation_calendar import event,ics,google
+                value=event(db,group);calendar={'calendar':{'ics':ics(value).decode(),'google':google(value)}}
+            return {**calendar,'status':group['status'],'label':waiting.LABELS.get(group['status'],'Indisponible'),
                     'title':service['title'],'date':date,'hours':hours,'count':len(people),
                     'participants':[person['first_name']+' '+person['last_name'] for person in people],
                     'information_url':__import__('animation_information').optional_url(service['information_url']),
@@ -236,6 +241,11 @@ def process_action(db, envelope, environment, secret, fail_after=None):
         try:
             if rate_error: raise rate_error
             value=dispatch(db,data,kind,environment,secret,request_key)
+            if (kind in ('reserve','guest','accept') and value.get('status')=='confirmed'
+                and family_calendar_enabled(db,environment)):
+                from reservation_calendar import event,ics,google
+                group=db.execute('SELECT * FROM family_booking_groups WHERE group_uuid=?',(value['group_uuid'],)).fetchone()
+                calendar=event(db,group);value=dict(value,calendar=dict(ics=ics(calendar).decode(),google=google(calendar)))
             result={'ok':True,'value':value}
             db.execute('RELEASE outbound_business')
         except (ValueError,TypeError) as error:
@@ -245,6 +255,11 @@ def process_action(db, envelope, environment, secret, fail_after=None):
         db.execute('INSERT INTO wordpress_action_receipts VALUES(?,?,?,?,?,?,?,NULL)',
                    (environment,action_id,digest,kind,json.dumps(result,ensure_ascii=False,separators=(',',':')),now,now+IDENTITY_TTL))
     return result
+
+
+def family_calendar_enabled(db,environment):
+    from family_model import setting
+    return setting(db,'reservation_participant_calendar_'+environment,'0')=='1' and setting(db,'reservation_calendar_enabled','1')=='1'
 
 
 def prune_private_receipts(db):

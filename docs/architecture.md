@@ -1,3 +1,32 @@
+## Architecture actuelle : stable 2.14.4
+
+SQLite25, moteur de migration existant, dernier ajout `resources.archived_at`.
+Aucun stockage parallèle d’archivage. Protocole4/révision3, capacité historique
+publique facultative. [Guide](resources-maintenance.md) · [Migrations](upgrade.md).
+Les sections ci-dessous décrivent les étapes historiques de construction.
+
+## Architecture historique 2.14.0
+
+`v214_schema.ensure` s’exécute dans la transaction de migration existante de
+`family_model`, schéma 22 → 23. Six nouvelles tables additives portent les états
+techniques, interventions, audit, rappels, exceptions et revendications d’envoi.
+La ressource et son lien au catalogue de location restent l’identité de la machine.
+Le diagnostic reste calculé en lecture seule, sans nouvelle table de surveillance.
+
+`machine_maintenance`, `openlab_openings` et `v214_routes` assurent les fonctions
+et permissions ciblées. `automatic_reminders` réutilise les cycles existants,
+revendique avant transport et ne rejoue jamais un envoi incertain.
+`reservation_calendar` prépare une projection publique dédiée, jamais l’export
+du calendrier privé ; UID stable, dates UTC et fuseau déclaré, aucune identité.
+`public_snapshot` prépare les seuls champs autorisés, séparés par environnement.
+Le plugin les valide et ne recalcule pas les décisions de réservation.
+
+`i18n.py` et les catalogues locaux séparent données et libellés. Les scripts
+marquent les textes natifs ; les contenus enregistrés ne subissent pas de remplacement
+global. Protocole 4/révision 3 inchangé, nouvelles capacités optionnelles négociées.
+
+---
+
 # Architecture
 
 ## Version stable 2.13.0

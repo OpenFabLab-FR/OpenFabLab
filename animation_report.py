@@ -1,4 +1,5 @@
 """Printable animation attendance sheet using the existing ReportLab engine."""
+from i18n import native as __ui_native__
 
 import io
 from datetime import date
@@ -14,10 +15,10 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from reservations_sync import booking_counts, booking_presence, booking_reservation_status
 
 
-STATUS_LABELS = {"confirmed": "Confirmé", "waitlisted": "Liste d'attente",
-                 "offer_pending": "Place proposée", "cancelled": "Annulé", "expired": "Offre expirée", "declined": "Refusée"}
-LINK_LABELS = {"matched": "Coordonnées concordantes", "manual": "Vérifié manuellement",
-               "needs_review": "À vérifier", "candidate": "À vérifier", "visitor": "Non rattaché"}
+STATUS_LABELS = {"confirmed": __ui_native__("Confirmé"), "waitlisted": __ui_native__("Liste d'attente"),
+                 "offer_pending": __ui_native__("Place proposée"), "cancelled": __ui_native__("Annulé"), "expired": __ui_native__("Offre expirée"), "declined": __ui_native__("Refusée")}
+LINK_LABELS = {"matched": __ui_native__("Coordonnées concordantes"), "manual": __ui_native__("Vérifié manuellement"),
+               "needs_review": __ui_native__("À vérifier"), "candidate": __ui_native__("À vérifier"), "visitor": __ui_native__("Non rattaché")}
 
 
 def generate_animation_bookings_pdf(service, config, bookings, structure, category_labels,

@@ -57,7 +57,10 @@ class WaitlistTests(unittest.TestCase):
         self.assertEqual(self.db.execute('SELECT COUNT(*) FROM family_booking_emails').fetchone()[0],1)
         sent=[];self.assertEqual(self.deliver(sent.append),1);self.assertEqual(self.deliver(sent.append),0)
         self.assertEqual(len(sent),1);self.assertIn('Réservation confirmée',str(sent[0]['Subject']))
-        self.assertEqual(list(sent[0].iter_attachments()),[])
+        attachments=list(sent[0].iter_attachments())
+        self.assertEqual(len(attachments),1)
+        self.assertEqual(attachments[0].get_filename(),'animation.ics')
+        self.assertIn(b'BEGIN:VCALENDAR',attachments[0].get_payload(decode=True))
 
     def test_email_missing_or_invalid_refuses_all_before_writes(self):
         for value in (None,'bad','a\r\n@example.invalid','x'*255+'@example.invalid'):

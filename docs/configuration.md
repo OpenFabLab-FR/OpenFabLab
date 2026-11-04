@@ -1,3 +1,26 @@
+## Configuration de la stable 2.14.4
+
+Les réglages de ressources se trouvent sous Structure → Modules ; le programme
+public OpenLab et sa moyenne facultative sont dans Connexion WordPress. Dans
+Borne, langues, accueil personnalisé, sons et informations de ressources restent
+indépendants. [Guide actuel](utilisation.md) · [Ressources](resources-maintenance.md)
+· [WordPress](wordpress-2.14.4.md). Les rubriques suivantes donnent l’historique
+et les valeurs initiales ; les préférences enregistrées restent prioritaires.
+
+## Réglages introduits en 2.14.0
+
+Maintenance des machines : désactivée. Publication OpenLab : désactivée.
+Langue de borne : français ; FR/EN disponibles ; retour après 10 minutes d’inactivité.
+Informations machines : accueil et identification, uniquement sur annonce explicite.
+Rappels Discord : désactivés, heure locale 9 h. Rappel e-mail : délai 48 h,
+activation SMTP-aware sur installation neuve, pas d’activation rétroactive en migration.
+Calendrier personnel : activé, réservé aux confirmations réelles.
+Les choix enregistrés sont conservés. Le plugin gère séparément ses activations
+de calendrier, machines et multilingue, toutes désactivées initialement.
+Voir [le guide](evolution-2.14.0.md) et [les langues](i18n.md).
+
+---
+
 # Configuration de la structure
 
 ## Nouveautés de la stable 2.13.0

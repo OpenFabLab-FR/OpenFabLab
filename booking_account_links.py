@@ -42,6 +42,7 @@ def attach(db,service_id,booking_uuid,user_id,role,consent=False):
 
 def register(application,a):
     from flask import Blueprint,abort,flash,redirect,render_template,request,url_for
+    from i18n import flash
     from evolution_routes import require_team,require_csrf
     from participant_search import search_users
     bp=Blueprint('booking_account_links',__name__)

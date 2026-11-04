@@ -7,6 +7,7 @@ import secrets
 import time
 from types import SimpleNamespace
 from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
+from i18n import flash
 from evolution_routes import actor, require_csrf, require_team
 import family_model as families
 

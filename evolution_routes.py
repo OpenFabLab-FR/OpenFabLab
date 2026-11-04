@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, send_file, session, url_for
+from i18n import flash
 from evolution_schema import categories, default_category, save_category, remove_category, sync_legacy_machines, audit, now, reorder
 from evolution_users import create_user, creation_message, SOURCES
 import resource_booking as resources
@@ -149,9 +150,10 @@ def register(application, api):
         if request.endpoint=='evolution.enroll' and request.method=='POST':
             # Every rendered public form gets a fresh document token. The
             # same flow/grant survives ordinary correction, not POST reload.
-            session['_enrollment_previous_document']=hashlib.sha256(session.get('evolution_csrf','').encode()).hexdigest()
-            session['evolution_csrf']=secrets.token_urlsafe(32)
-        return {'evolution_csrf':csrf_token(), 'category_colors':colors, 'category_styles': ''.join(styles),
+            from enrollment_feedback import rotate_document
+            rotate_document()
+        from enrollment_feedback import remaining_seconds
+        return {'evolution_csrf':csrf_token(), 'enrollment_seconds':remaining_seconds() if request.endpoint=='evolution.enroll' else 0, 'category_colors':colors, 'category_styles': ''.join(styles),
                 'enrollment_mode':enrollment_mode(db), 'public_id_modes':ID_MODES,
                 'attendance_reference':attendance_reference(db),
                 'affiliation_choices':affiliation_choices(db) if request.endpoint in ('admin_edit_user','admin_add_user') else [],
@@ -306,6 +308,7 @@ def register(application, api):
 
     @bp.route('/inscription', methods=['GET','POST'])
     def enroll():
+        from enrollment_feedback import response as form_response,enhanced,USED_ID,OLD_USED_ID,TEMPORARY
         db=a.get_database()
         if not a.load_modules(db)['users'] or a.read_setting(db,'self_enrollment_enabled','0')!='1':
             abort(404)
@@ -315,12 +318,15 @@ def register(application, api):
         blank={'public_id':a.next_available_public_id(db),'first_name':'','last_name':'','active':1,
                'category':default_category(db),'phone_country_code':'+33'}
         mode=enrollment_mode(db)
+        def feedback(user,errors,status=400,proposed=False):
+            def render(template,**values):
+                return render_template(template,country_names=a.COUNTRY_NAMES,**values)
+            return form_response(user,errors,status,render,proposed)
         def proposal(user, errors, status=400):
             user['public_id']=a.next_available_public_id(db)
             session['enrollment_proposal']=user['public_id']
             session['enrollment_mode']=mode
-            return render_template('user_form.html',user=user,form_mode='create',kiosk=True,errors=errors,
-                duplicate_users=[],country_names=a.COUNTRY_NAMES),status
+            return feedback(user,errors,status,True)
         if request.method=='GET':
             enrollment.begin(db)
             return proposal(blank, [], 200)
@@ -345,26 +351,41 @@ def register(application, api):
               session.get('enrollment_proposal','') if mode=='automatic_visible' else a.next_available_public_id(db))
         for key,value in {'public_id':code,'category':default_category(db),'active':'1'}.items():
             values[key]=value
-        user,errors=a.validate_user_form(values,db,public_enrollment=True)
+        try:user,errors=a.validate_user_form(values,db,public_enrollment=True)
+        except sqlite3.DatabaseError:
+            db.rollback()
+            # Enhanced requests leave their existing DOM intact. The HTML
+            # fallback carries only this form's allowlisted, escaped values.
+            user={key:values.get(key,'') for key in ('public_id','first_name','last_name','birth_year','birth_date','gender','city','postal_code','nationality','email','phone_country_code','phone')}
+            user.update(active=1,category=default_category(db))
+            return feedback(user,[TEMPORARY],503)
         if errors:
             # A proposed ID is not a reservation and reveals no other person's
             # identity/contact. No anonymous availability/directory endpoint.
-            if any('identifiant' in error.lower() and 'utilisé' in error for error in errors):
-                return proposal(user, errors + ['Un autre identifiant vous est proposé. Vérifiez-le avant de valider.'], 409)
-            return render_template('user_form.html',user=user,form_mode='create',kiosk=True,errors=errors,duplicate_users=[],country_names=a.COUNTRY_NAMES),400
+            if OLD_USED_ID in errors:
+                if mode=='customizable':return feedback(user,[USED_ID if error==OLD_USED_ID else error for error in errors],409)
+                return proposal(user,errors+['Un autre identifiant vous est proposé. Vérifiez-le avant de valider.'],409)
+            return feedback(user,errors)
         try:
             db.execute('BEGIN IMMEDIATE')
             if mode=='automatic_discreet':
                 user['public_id']=a.next_available_public_id(db)
             elif db.execute('SELECT 1 FROM users WHERE public_id=?',(user['public_id'],)).fetchone():
                 db.rollback()
+                if mode=='customizable':return feedback(user,[USED_ID],409)
                 return proposal(user, ['Cet identifiant vient d’être attribué. Vérifiez la nouvelle proposition avant de valider.'], 409)
             enrollment.consume(db)
             user_id=create_user(db,user,'kiosk')
             db.commit()
-        except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError as error:
             db.rollback()
-            return proposal(user, ['L’identifiant vient d’être attribué. Vérifiez la nouvelle proposition.'], 409)
+            if str(error)=='UNIQUE constraint failed: users.public_id':
+                if mode=='customizable':return feedback(user,[USED_ID],409)
+                return proposal(user,['L’identifiant vient d’être attribué. Vérifiez la nouvelle proposition.'],409)
+            return feedback(user,[TEMPORARY],503)
+        except sqlite3.DatabaseError:
+            db.rollback()
+            return feedback(user,[TEMPORARY],503)
         except ValueError as error:
             db.rollback()
             enrollment.abandon(db)
@@ -372,6 +393,7 @@ def register(application, api):
         after_creation(a,db,user_id,request.form.get('send_welcome')=='1')
         session['enrollment_receipt']={'id':user_id,'until':time.time()+120}
         enrollment.forget()
+        if enhanced():return jsonify(enrollment=True,ok=True,redirect=url_for('evolution.enrollment_done'))
         return redirect(url_for('evolution.enrollment_done'))
 
     @bp.get('/inscription/etat')
@@ -425,11 +447,16 @@ def register(application, api):
             require_csrf()
             try:
                 with db:
+                    db.execute('BEGIN IMMEDIATE')
                     action=request.form.get('action')
                     if action=='type':
                         require_team(True)
                         resources.save_type(db,request.form.get('name',''),request.form.get('color','#16849c'),
                                             request.form.get('active')=='1',request.form.get('key') or None)
+                    elif action in ('archive','restore','delete'):
+                        require_team(True)
+                        from resource_lifecycle import change
+                        change(db,request.form.get('key'),action,role,request.form.get('confirm_delete',''))
                     elif action=='resource':
                         require_team(True)
                         if request.form.get('required_authorization') and not a.load_modules(db)['authorizations']:
@@ -442,15 +469,17 @@ def register(application, api):
                         raise ValueError('Action inconnue.')
                 if request.headers.get('X-OpenFabLab-Autosave') == '1':
                     return {'ok': True}
-                flash('Ressource enregistrée.', 'success')
+                flash({'archive':'Ressource archivée. Son historique est conservé.','restore':'Ressource restaurée.','delete':'Ressource supprimée définitivement.'}.get(action,'Ressource enregistrée.'), 'success')
             except (ValueError,sqlite3.IntegrityError) as error:
                 if request.headers.get('X-OpenFabLab-Autosave') == '1':
                     db.rollback()
                     return {'ok':False, 'message':str(error) if isinstance(error,ValueError) else 'Référence incompatible.'},400
                 db.rollback();flash(str(error) if isinstance(error,ValueError) else 'Nom déjà utilisé ou référence invalide.','error')
-            return redirect(url_for('evolution.resource_directory'))
+            return redirect(url_for('evolution.resource_directory',archived='1' if request.form.get('show_archived')=='1' else None))
         return render_template('resources.html',resource_types=db.execute('SELECT * FROM resource_types ORDER BY sort_order,name').fetchall(),
-            resources=db.execute('SELECT r.*, t.name AS type_name,COALESCE(r.color,t.color) AS display_color,a.name AS authorization_name FROM resources r JOIN resource_types t USING(type_key) LEFT JOIN authorizations a ON a.authorization_uuid=r.required_authorization ORDER BY r.name').fetchall(),
+            resources=db.execute("SELECT r.*,t.name AS type_name,COALESCE(r.color,t.color) AS display_color,a.name AS authorization_name,COALESCE(c.status,'operational') AS condition_status FROM resources r JOIN resource_types t USING(type_key) LEFT JOIN authorizations a ON a.authorization_uuid=r.required_authorization LEFT JOIN machine_condition c USING(resource_uuid) WHERE (?=1 OR r.archived_at IS NULL) ORDER BY (r.archived_at IS NOT NULL),r.name,r.resource_uuid",(int(request.args.get('archived')=='1'),)).fetchall(),
+            show_archived=request.args.get('archived')=='1',
+            resource_states=__import__('machine_maintenance').STATES,
             authorizations=resources.definitions(db,True))
 
     @bp.route('/admin/ressources/reservations', methods=['GET','POST'])
@@ -485,7 +514,7 @@ def register(application, api):
                 db.rollback();flash(str(error) if isinstance(error,ValueError) else 'Référence incompatible ou dossier déjà utilisé.','error')
             return redirect(url_for('evolution.resource_bookings'))
         return render_template('resource_bookings.html',
-            resources=db.execute('SELECT * FROM resources WHERE active=1 ORDER BY name').fetchall(),
+            resources=db.execute('SELECT * FROM resources WHERE active=1 AND archived_at IS NULL ORDER BY name').fetchall(),
             users=db.execute('SELECT id,first_name,last_name FROM users WHERE active=1 ORDER BY first_name').fetchall(),
             bookings=db.execute('SELECT b.*,r.name,u.first_name,u.last_name FROM resource_bookings b JOIN resources r USING(resource_uuid) LEFT JOIN users u ON u.id=b.user_id ORDER BY b.starts_at DESC').fetchall(),
             records=db.execute('SELECT id,quote_number,client_contact FROM billing_records WHERE id NOT IN(SELECT billing_record_id FROM resource_bookings WHERE billing_record_id IS NOT NULL) ORDER BY id DESC').fetchall(),

@@ -79,7 +79,7 @@ class UsabilityTests(unittest.TestCase):
         new=outbound_actions.public_catalogue(self.db,'production',True,True,True)[0]
         old=outbound_actions.public_catalogue(self.db,'production',True,True)[0]
         self.assertIn('publication',new);self.assertNotIn('publication',old)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],22)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],__import__('family_model').SCHEMA)
     def test_incoherent_publication_capability_refused_before_catalogue(self):
         from outbound_sync import negotiate
         from unittest.mock import Mock

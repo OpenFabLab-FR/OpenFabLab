@@ -1,3 +1,21 @@
+## Disponible en 2.14.4 stable — consolidation de l’évolution 2.14
+
+FR/EN natif, suivi des ressources, interventions/rappels liés, indisponibilités,
+horaires exceptionnels, calendrier et ressources WordPress, calendrier personnel,
+confirmation de compte, diagnostic enrichi et finitions sont maintenant livrés.
+L’archivage/restauration et la suppression protégée complètent le cycle des ressources.
+Le calendrier public possède un mois d’historique admissible, distinct des réservations.
+SQLite25 ; protocole4/révision3. [Guide actuel](docs/utilisation.md).
+
+Ces fonctions ne sont plus présentées comme à développer. La modularité et
+l’auto-hébergement restent prioritaires ; aucun paiement bancaire en ligne ni
+traduction automatique des contenus personnalisés n’est annoncé. Les évolutions
+futures restent soumises à une décision et ne sont pas des engagements de livraison.
+Les rubriques de conception historiques ci-dessous restent accessibles pour
+comprendre les décisions ; leurs mentions « non disponible » concernent leur version.
+
+---
+
 # OpenFabLab — Roadmap et conception
 
 ## Disponible en 2.13.0 stable — Activités et Réglages

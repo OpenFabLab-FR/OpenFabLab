@@ -1,4 +1,6 @@
+/* OFL native UI marked */
 'use strict';
+  const __oflT_97bf2a78=text=>window.OFLTranslate?.(text)||text;
 // One reusable badge behavior: real text stays in the DOM for assistive
 // technology; truncated labels can be read in a touch/keyboard dialog.
 function refreshCategoryBadge(badge) {
@@ -8,7 +10,7 @@ function refreshCategoryBadge(badge) {
   badge.toggleAttribute('data-category-truncated', truncated);
   if (truncated && !badge.closest('button, a')) {
     badge.tabIndex = 0; badge.setAttribute('role', 'button');
-    badge.setAttribute('aria-label', 'Catégorie : ' + label + '. Afficher le nom complet.');
+    badge.setAttribute('aria-label', __oflT_97bf2a78("Catégorie : ") + label + __oflT_97bf2a78(". Afficher le nom complet."));
     badge.setAttribute('aria-haspopup', 'dialog');
   } else { badge.removeAttribute('tabindex'); badge.removeAttribute('role'); badge.removeAttribute('aria-haspopup'); badge.removeAttribute('aria-label'); }
 }
@@ -20,9 +22,9 @@ function revealCategory(badge) {
   if (document.querySelector('.category-label-dialog[open]')) return;
   document.querySelectorAll('.category-label-dialog:not([open])').forEach(dialog => dialog.remove());
   const dialog = document.createElement('dialog'); dialog.className = 'category-label-dialog';
-  const title = document.createElement('h2'); title.id = 'category-label-title'; title.textContent = 'Catégorie';
+  const title = document.createElement('h2'); title.id = 'category-label-title'; title.textContent = __oflT_97bf2a78("Catégorie");
   const text = document.createElement('p'); text.textContent = badge.textContent.trim();
-  const close = document.createElement('button'); close.type = 'button'; close.className = 'admin-button secondary compact'; close.textContent = 'Fermer';
+  const close = document.createElement('button'); close.type = 'button'; close.className = 'admin-button secondary compact'; close.textContent = __oflT_97bf2a78("Fermer");
   close.addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => { dialog.remove(); if (!document.querySelector('.category-label-dialog[open]')) (badge.closest('button,a') || badge).focus(); });
   dialog.setAttribute('aria-labelledby', title.id); dialog.append(title, text, close); document.body.append(dialog); dialog.showModal(); close.focus();
@@ -56,7 +58,7 @@ document.querySelectorAll('[data-minor-toggle]').forEach(box => {
 });
 document.querySelectorAll('[data-character-count]').forEach(input => {
   const status = input.parentElement.querySelector('[data-character-status]');
-  const update = () => { if (status) status.textContent = Array.from(input.value).length + ' / ' + input.maxLength + ' caractères'; };
+  const update = () => { if (status) status.textContent = Array.from(input.value).length + ' / ' + input.maxLength + __oflT_97bf2a78(" caractères"); };
   input.addEventListener('input', update); update();
 });
 document.querySelectorAll('[data-welcome-email]').forEach(box => {
@@ -163,16 +165,16 @@ document.querySelectorAll('[data-order-key] .category-form, [data-order-key] .re
     if (!form.reportValidity()) return;
     const body = new FormData(form), version = ++sequence;
     queue = queue.then(async () => {
-      if (status) status.textContent = 'Enregistrement…';
+      if (status) status.textContent = __oflT_97bf2a78("Enregistrement…");
       try {
         // A hidden input named "action" masks HTMLFormElement.action.
         const response = await fetch(form.getAttribute('action') || location.href, {method:'POST', body, credentials:'same-origin', headers:{'X-OpenFabLab-Autosave':'1'}});
-        if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('Réglages non enregistrés. La session ou le serveur doit être vérifié.');
+        if (!response.headers.get('content-type')?.includes('application/json')) throw new Error(__oflT_97bf2a78("Réglages non enregistrés. La session ou le serveur doit être vérifié."));
         const result = await response.json();
-        if (!response.ok || !result.ok) throw new Error(result.message || 'Réglages non enregistrés.');
-        if (version === sequence && status) status.textContent = 'Réglages enregistrés.';
+        if (!response.ok || !result.ok) throw new Error(__oflT_97bf2a78(result.message) || __oflT_97bf2a78("Réglages non enregistrés."));
+        if (version === sequence && status) status.textContent = __oflT_97bf2a78("Réglages enregistrés.");
       } catch (error) {
-        if (status) status.textContent = error.message + ' Rechargez pour retrouver les réglages enregistrés.';
+        if (status) status.textContent = __oflT_97bf2a78(error.message) + __oflT_97bf2a78(" Rechargez pour retrouver les réglages enregistrés.");
       }
     });
   };
@@ -205,8 +207,8 @@ document.querySelectorAll('[data-calendar-detail]').forEach(link => {
       if (person.state) { const state = document.createElement('span'); state.className = 'calendar-person-state'; state.textContent = person.state; row.append(state); }
       people.append(row);
     });
-    const open = document.createElement('a'); open.href = link.href; open.className = 'admin-button primary compact'; open.textContent = link.dataset.actionLabel || 'Ouvrir la page';
-    const close = document.createElement('button'); close.type = 'button'; close.className = 'admin-button secondary compact'; close.textContent = 'Fermer';
+    const open = document.createElement('a'); open.href = link.href; open.className = 'admin-button primary compact'; open.textContent = link.dataset.actionLabel || __oflT_97bf2a78("Ouvrir la page");
+    const close = document.createElement('button'); close.type = 'button'; close.className = 'admin-button secondary compact'; close.textContent = __oflT_97bf2a78("Fermer");
     close.addEventListener('click', () => dialog.close());
     dialog.addEventListener('close', () => { dialog.remove(); link.focus(); });
     dialog.append(title, details);
@@ -214,7 +216,7 @@ document.querySelectorAll('[data-calendar-detail]').forEach(link => {
       const text = link.dataset.description;
       const description = document.createElement(text.length > 260 ? 'details' : 'p'); description.className = 'calendar-description';
       if (text.length > 260) {
-        const summary = document.createElement('summary'); summary.textContent = 'Lire la description complète';
+        const summary = document.createElement('summary'); summary.textContent = __oflT_97bf2a78("Lire la description complète");
         const preview = document.createElement('p'); preview.className = 'calendar-description-preview'; preview.textContent = text.slice(0, 160) + '…';
         const full = document.createElement('p'); full.textContent = text; description.append(summary, full);
         const update = () => { preview.hidden = description.open; full.hidden = !description.open; };
@@ -243,7 +245,7 @@ document.querySelectorAll('[data-calendar-detail]').forEach(link => {
     const visibility = document.getElementById('calendar-visibility');
     if (visibility) {
       const button = document.createElement('button');button.type = 'button';button.className = 'admin-button secondary compact calendar-visibility-action';
-      button.textContent = link.dataset.hidden === '1' ? 'Réafficher cet événement' : 'Masquer cet événement';
+      button.textContent = link.dataset.hidden === '1' ? __oflT_97bf2a78("Réafficher cet événement") : __oflT_97bf2a78("Masquer cet événement");
       button.addEventListener('click', () => {
         for (const key of ['kind', 'key', 'day']) visibility.elements.namedItem(key).value = link.dataset[key];
         visibility.elements.namedItem('hidden').value = link.dataset.hidden === '1' ? '0' : '1';

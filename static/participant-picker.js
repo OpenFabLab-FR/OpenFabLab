@@ -1,6 +1,8 @@
+/* OFL native UI marked */
 /* Same-origin authorized staff search; keep selected people across searches. */
 document.querySelectorAll('[data-participant-picker]').forEach(root=>{
   'use strict';
+  const __oflT_e0e76215=text=>window.OFLTranslate?.(text)||text;
   const input=root.querySelector('[data-participant-query]'),results=root.querySelector('[data-participant-results]');
   const selectedHost=root.querySelector('[data-participant-selected]'),status=root.querySelector('[data-participant-status]');
   const summary=root.querySelector('[data-participant-selection-summary]');
@@ -27,23 +29,23 @@ document.querySelectorAll('[data-participant-picker]').forEach(root=>{
     lastResults=people;lastMore=more;selectedHost.replaceChildren();results.replaceChildren();
     for(const person of selected.values())selectedHost.append(choice(person));
     for(const person of people)if(!selected.has(String(person.id)))results.append(choice(person));
-    status.textContent=idle?prompt:(people.length?people.length+' résultat(s)'+(more?' — affinez votre recherche.':'.'):'Aucun résultat.');
-    if(summary){summary.hidden=!selected.size;summary.textContent=selected.size+' personne(s) sélectionnée(s).';}
+    status.textContent=idle?prompt:(people.length?people.length+__oflT_e0e76215(" résultat(s)")+(more?__oflT_e0e76215(" — affinez votre recherche."):'.'):__oflT_e0e76215("Aucun résultat."));
+    if(summary){summary.hidden=!selected.size;summary.textContent=selected.size+__oflT_e0e76215(" personne(s) sélectionnée(s).");}
   }
   draw([],false,true);
   input.addEventListener('input',()=>{
     clearTimeout(timer);const requestSequence=++sequence,query=input.value.trim();
     if(controller)controller.abort();
     if(!query){draw([],false,true);return;}
-    draw([],false);status.textContent='Recherche en cours…';
+    draw([],false);status.textContent=__oflT_e0e76215("Recherche en cours…");
     timer=setTimeout(async()=>{
       controller=new AbortController();
       try{
         const response=await fetch(root.dataset.api+'?q='+encodeURIComponent(query),{signal:controller.signal,credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
-        if(!response.ok)throw Error('Recherche indisponible.');const data=await response.json();
+        if(!response.ok)throw Error(__oflT_e0e76215("Recherche indisponible."));const data=await response.json();
         if(requestSequence!==sequence)return;
         draw(data.users.map(p=>({id:String(p.id),name:p.first_name+' '+p.last_name,code:'#'+p.public_id})),data.more);
-      }catch(error){if(requestSequence===sequence&&error.name!=='AbortError')status.textContent='Recherche momentanément indisponible. Les personnes sélectionnées sont conservées.';}
+      }catch(error){if(requestSequence===sequence&&error.name!=='AbortError')status.textContent=__oflT_e0e76215("Recherche momentanément indisponible. Les personnes sélectionnées sont conservées.");}
     },250);
   });
 });

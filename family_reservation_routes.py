@@ -141,6 +141,8 @@ def register(application,a):
                 service.update(service_date=start.date().isoformat(),start_time=start.strftime('%H:%M'),end_time=end.strftime('%H:%M'))
         people=db.execute("SELECT first_name,last_name FROM animation_bookings WHERE group_uuid=? AND (status NOT IN('cancelled','expired','declined') OR status=?) ORDER BY rowid",(group['group_uuid'],group['status'])).fetchall()
         response=application.make_response(render_template('family_response.html',group=group,service=service,
+            calendar_google=(__import__('reservation_calendar').google(__import__('reservation_calendar').event(db,group)) if group['status']=='confirmed' and family.setting(db,'reservation_calendar_enabled','1')=='1' else None),
+            calendar_token=token,
             people=people,errors=errors,stage=stage,can_answer=group['status']=='offer_pending' and group['offer_token_hash']==waiting.digest(token)))
         response.headers['Cache-Control']='private, no-store'
         response.headers['Referrer-Policy']='no-referrer'
@@ -152,7 +154,12 @@ def register(application,a):
         value=session.get('family_receipt',{})
         if value.get('until',0)<time.time():
             abort(404)
-        response=application.make_response(render_template('family_receipt.html',receipt=value))
+        db=a.get_database();group=db.execute('SELECT * FROM family_booking_groups WHERE group_uuid=?',(value.get('group_uuid'),)).fetchone()
+        calendar_google=calendar_token=None
+        if group and group['status']=='confirmed' and family.setting(db,'reservation_calendar_enabled','1')=='1':
+            from reservation_calendar import event,google
+            calendar_google=google(event(db,group));calendar_token=group['manage_token']
+        response=application.make_response(render_template('family_receipt.html',receipt=value,calendar_google=calendar_google,calendar_token=calendar_token))
         response.headers['Cache-Control']='private, no-store'
         response.headers['Referrer-Policy']='no-referrer'
         return response

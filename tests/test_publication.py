@@ -22,48 +22,33 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class PublicReleaseTests(unittest.TestCase):
     def test_canonical_version_and_compose(self):
-        self.assertEqual(__version__,'2.13.0')
-        # The approved ZIP retains its build image label, not its runtime version.
-        # No archive or Compose configuration is changed for publishing.
-        self.assertIn('openfablab:v2.13.0',(ROOT/'compose.yaml').read_text())
+        self.assertEqual(__version__,'2.14.4')
+        self.assertIn('openfablab:v2.14.4',(ROOT/'compose.yaml').read_text())
+        for name in ('package.json','package-lock.json'):
+            self.assertEqual(__import__('json').loads((ROOT/name).read_text())['version'],__version__)
 
     def test_stable_release_documentation_and_historical_stables_are_consistent(self):
         readme=(ROOT/'README.md').read_text()
-        self.assertTrue(readme.startswith('# OpenFabLab 2.13.0\n'))
-        self.assertNotIn('candidate',readme.split('## Référence historique',1)[0].lower())
-        self.assertIn('SQLite 22',readme[:700])
-        self.assertIn('**Version stable · SQLite schéma 21',readme)
-        self.assertIn('Version stable',readme[:200])
-        self.assertIn('SQLite 22',readme[:700])
-        self.assertIn('releases/tag/v2.13.0',readme)
-        self.assertIn('releases/download/v2.13.0/OpenFabLab-2.13.0.zip',readme)
-        self.assertIn('releases/download/v2.13.0/openfablab-reservations-2.13.0.zip',readme)
-        self.assertIn('## 2.13.0 — version stable',(ROOT/'CHANGELOG.md').read_text())
-        self.assertIn('releases/tag/v2.12.0',readme)
-        self.assertIn('releases/download/v2.12.0/OpenFabLab-2.12.0.zip',readme)
-        self.assertIn('releases/download/v2.11.0/openfablab-reservations-2.11.0.zip',readme)
-        self.assertNotIn('openfablab-reservations-2.12.0.zip',readme)
-        self.assertIn('## 2.12.0 — version stable',(ROOT/'CHANGELOG.md').read_text())
-        self.assertIn('## 2.11.0 — version stable',(ROOT/'CHANGELOG.md').read_text())
-        self.assertIn('OpenFabLab Reservations 2.9.0',readme)
-        self.assertIn('plugin 2.8.5 reste compatible',readme)
-        self.assertIn('OpenFabLab **2.8.6**',readme)
-        self.assertIn('releases/tag/v2.10.0',readme)
-        self.assertIn('releases/download/v2.10.0/openfablab-reservations-2.9.0.zip',readme)
-        self.assertNotIn('releases/tag/v2.8.0',readme)
-        self.assertIn('## 2.9.0 — version stable',(ROOT/'CHANGELOG.md').read_text())
-        self.assertIn('## 2.10.0 — version stable',(ROOT/'CHANGELOG.md').read_text())
-        self.assertIn('waitlist_limits_v1',(ROOT/'docs/wordpress.md').read_text())
-        self.assertIn('Abonnements et crédits',(ROOT/'ROADMAP.md').read_text())
-        self.assertIn('## 2.8.6 — version stable',(ROOT/'CHANGELOG.md').read_text())
-        self.assertIn('## 2.8.5 — étape locale non publiée séparément',(ROOT/'CHANGELOG.md').read_text())
-        self.assertEqual(__import__('json').loads((ROOT/'package.json').read_text())['version'],__version__)
-        self.assertEqual(__import__('json').loads((ROOT/'package-lock.json').read_text())['version'],__version__)
-        self.assertIn('Seul le stockage historique du plugin WordPress',(ROOT/'docs/families-2.8.md').read_text())
-        changelog=(ROOT/'CHANGELOG.md').read_text().split('## 2.6.3')[0]
-        for section in ('Calendrier','Usagers','E-mails et notifications','Ressources et réservations',
-                        'Formations et habilitations','WordPress','Sauvegardes','Interface','Migration'):
-            self.assertIn('### '+section,changelog)
+        self.assertEqual(readme.splitlines()[0],'# OpenFabLab 2.14.4')
+        self.assertIn('Version stable 2.14.4',readme)
+        self.assertIn('SQLite 25',readme)
+        self.assertNotIn('candidate',readme.lower())
+        for name in ('OpenFabLab-2.14.4.zip','openfablab-reservations-2.14.4.zip'):
+            self.assertIn('releases/download/v2.14.4/'+name,readme)
+        self.assertIn('protocole',readme.lower())
+        self.assertIn('révision 3',readme)
+        for guide in ('utilisation.md','resources-maintenance.md','wordpress-2.14.4.md','upgrade.md'):
+            self.assertTrue((ROOT/'docs'/guide).is_file())
+        changelog=(ROOT/'CHANGELOG.md').read_text()
+        self.assertIn('## 2.14.4 — version stable',changelog)
+        for version in ('2.13.0','2.12.0','2.11.0','2.10.0','2.9.0'):
+            self.assertIn('## '+version+' — version stable',changelog)
+        for version in ('2.14.0','2.14.1','2.14.2','2.14.3'):
+            self.assertIn('## '+version+' — ',changelog)
+        self.assertIn('Abonnements et crédits',readme)
+        self.assertIn('désactivé par défaut',readme)
+        self.assertIn('aucun paiement bancaire',(ROOT/'ROADMAP.md').read_text())
+        self.assertIn('22→25',(ROOT/'docs/upgrade.md').read_text())
 
     def test_every_default_is_generic_even_with_legacy_flag(self):
         for flag in (False,True):
@@ -85,7 +70,7 @@ class PublicReleaseTests(unittest.TestCase):
                                         AUTO_CLOSURE_WORKER=False,WEATHER_ENABLED=False))
             with application.app_context():
                 db=get_database()
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],22)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],25)
                 self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
                 self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
                 for table in ('users','sessions','visitors','rental_catalog','billing_tariff_catalog','billing_clients','billing_records','animation_bookings'):
@@ -179,7 +164,7 @@ class PublicReleaseTests(unittest.TestCase):
                 if not line.startswith('COPY '):
                     continue
                 _,*sources,destination=shlex.split(line)
-                self.assertIn(destination,('./','./openfablab','./templates','./static','./badge_templates'))
+                self.assertIn(destination,('./','./openfablab','./templates','./static','./badge_templates','./translations'))
                 for name in sources:
                     if omit_tablet_module and name=='tablet_reservations.py':
                         continue
@@ -200,16 +185,16 @@ import pathlib,sqlite3,app
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.flask_app.config['APP_VERSION']=='V2.13.0'
+assert app.flask_app.config['APP_VERSION']=='V2.14.4'
 client=Client(app.app,Response)
 for route in ('/stat/sante','/stat/','/stat/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     if route=='/stat/':
-        assert b'V2.13.0' in response.data
+        assert b'V2.14.4' in response.data
     response.close()
 with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==22
+    assert db.execute('PRAGMA user_version').fetchone()[0]==25
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     for table in ('users','sessions','visitors','animation_bookings','billing_clients'):
@@ -251,19 +236,19 @@ with sqlite3.connect(app.flask_app.config['DATABASE']) as db:
             env={k:v for k,v in os.environ.items() if not k.startswith(('OPENFABLAB_','COMPTEUR_')) and k!='PYTHONPATH'}
             env.update(OPENFABLAB_DATABASE=str(base/'data/openfablab.db'),
                        OPENFABLAB_SECRET_KEY_FILE=str(base/'data/.secret_key'),
-                       OPENFABLAB_ENABLE_SCHEDULER='0',OPENFABLAB_ENABLE_WEATHER='0',
+                       OPENFABLAB_ENABLE_SCHEDULER='0',OPENFABLAB_ENABLE_WEATHER='0',OPENFABLAB_EXTERNAL_ACTIONS='0',
                        PYTHONDONTWRITEBYTECODE='1')
             code='''
 import pathlib,sqlite3,app
 assert pathlib.Path(app.__file__).resolve().parent==pathlib.Path.cwd()
-assert app.app.config['APP_VERSION']=='V2.13.0'
+assert app.app.config['APP_VERSION']=='V2.14.4'
 client=app.app.test_client()
 for route in ('/','/sante','/gestion-des-donnees','/static/fonts/LibreFranklin-Regular.ttf','/static/fonts/LibreFranklin-Bold.ttf','/static/brand/OpenFabLab-logo-horizontal.svg'):
     response=client.get(route)
     assert response.status_code==200,route
     response.close()
 with sqlite3.connect(app.app.config['DATABASE']) as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0]==22
+    assert db.execute('PRAGMA user_version').fetchone()[0]==25
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
     assert db.execute('SELECT COUNT(*) FROM users').fetchone()[0]==0

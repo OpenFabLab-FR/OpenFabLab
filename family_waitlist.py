@@ -3,6 +3,7 @@
 Only new family requests are managed here. Historical animation rows are never
 adopted, converted or purged. Network delivery always happens after commit.
 """
+from i18n import native as __ui_native__
 import hashlib
 import html
 import json
@@ -17,9 +18,9 @@ from zoneinfo import ZoneInfo
 import family_model as family
 
 TERMINAL = ('cancelled', 'expired', 'declined')
-LABELS = {'confirmed':'Confirmée', 'waitlisted':'En attente',
-          'offer_pending':'Place proposée', 'expired':'Expirée',
-          'declined':'Refusée', 'cancelled':'Annulée'}
+LABELS = {'confirmed':__ui_native__('Confirmée'), 'waitlisted':__ui_native__('En attente'),
+          'offer_pending':__ui_native__('Place proposée'), 'expired':__ui_native__('Expirée'),
+          'declined':__ui_native__('Refusée'), 'cancelled':__ui_native__('Annulée')}
 
 
 def utcnow():
@@ -403,6 +404,8 @@ def start_worker(application,get_database,load_modules):
                     db=get_database()
                     if load_modules(db)['public_reservations']:
                         run(db,application.config['DATABASE'])
+                    from automatic_reminders import process as process_automatic_reminders
+                    process_automatic_reminders(db,application.config['DATABASE'])
             except Exception as error:
                 logging.getLogger(__name__).warning('Reservation maintenance: %s',type(error).__name__)
             time.sleep(30)

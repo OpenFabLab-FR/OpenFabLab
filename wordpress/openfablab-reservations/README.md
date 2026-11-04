@@ -1,3 +1,106 @@
+# OpenFabLab Reservations 2.14.4 — version stable
+
+[Guide complet : installation, Gutenberg et trois shortcodes](https://github.com/OpenFabLab-FR/OpenFabLab/blob/main/docs/wordpress-2.14.4.md).
+Le plugin est facultatif, libre sous licence MIT et se met à jour séparément.
+Dans Gutenberg, utiliser des blocs Code court :
+
+```text
+[openfablab_reservations environment="production"]
+[openfablab_calendar environment="production" view="week"]
+[openfablab_machines environment="production"]
+```
+
+Remplacer production par test uniquement pour l’environnement Test, configuré
+séparément. Ne jamais inclure de secret dans un shortcode ou une page.
+
+Sélecteur unique intégré à la première ligne des ressources sans titre, menu
+ouvrable/fermable au clic et au clavier, contraste isolé des thèmes, survol des
+événements et consultation du calendrier jusqu’à un mois local en arrière.
+Les réservations restent retirées après 24 h ; aucune nouvelle réservation
+n’est proposée pour un événement passé. Les noms, descriptions et catégories
+personnalisés ne sont pas traduits automatiquement.
+
+Protocole 4/révision 3 inchangé. La capacité facultative `public_calendar_history_v1`
+négocie une projection historique distincte, validée par liste blanche et limitée
+à un mois aussi dans l’API publique. Avec une application 2.14.3, les améliorations
+du menu fonctionnent, mais l’historique reste limité aux données déjà synchronisées
+par celle-ci. Avec l’application 2.14.4, les anciennes versions du plugin continuent
+à recevoir leur format habituel. Ne pas imposer l’égalité des versions pour communiquer.
+
+Mettre à jour depuis 2.14.3 en remplaçant l’extension avec son ZIP, sans
+désinstallation ni changement de secret. Conserver les options et files de demandes.
+
+## Titre facultatif du catalogue public
+
+Dans « Calendrier, machines et langues publiques », sous l’activation de la liste,
+« Afficher le titre de la liste des ressources » utilise le nom public reçu
+d’OpenFabLab (Ressources, Machines, Équipements ou Salles), en français/anglais.
+Décochée, cette option n’ajoute ni titre automatique ni espace vide. Un titre
+personnalisé peut être ajouté avec un bloc Titre de l’éditeur WordPress.
+
+L’affichage existant est conservé après mise à jour. Une installation neuve
+commence sans titre automatique. Le choix explicite est conservé lors d’une
+réactivation. Cette préférence ne modifie ni la borne, ni les catégories,
+ni la visibilité, ni les trois shortcodes, ni les échanges Normal/Test.
+La commande de langue unique reste disponible, même si seul le catalogue est utilisé.
+Le nouveau réglage et son aide sont préparés pour gettext WordPress ; le plugin
+ne possède pas actuellement de catalogue PHP d’administration FR/EN livré.
+Les titres publics prédéfinis utilisent les traductions locales existantes.
+
+## Fonctions conservées depuis 2.14.2
+
+Lorsqu’il est affiché, le titre public reprend l’appellation configurée dans l’application : Ressources,
+Machines, Équipements ou Salles. Les moyennes OpenLab opt-in portent sur douze mois
+glissants, avec une légende courte FR/EN. La capacité facultative
+`public_display_options_v1` négocie ces données ; protocole 4/révision 3 inchangé.
+Les anciennes projections restent acceptées, sans exiger l’égalité des versions.
+Mise à jour séparée depuis 2.14.1, sans désinstallation ni modification des secrets.
+
+## Fonctions conservées depuis 2.14.1
+
+En 2.14.1, les shortcodes calendrier et machines sont disponibles dès init sur le
+frontend et dans les blocs Shortcode Gutenberg, sans initialisation REST préalable.
+Le même réglage « Permettre aux visiteurs de changer de langue » contrôle les trois
+interfaces publiques. Protocole 4/révision 3, secrets et files durables inchangés.
+
+Un seul sélecteur de langue par page contrôle tous les modules et s’intègre au
+premier module visible. Les listes vides ne laissent aucun bloc ni sélecteur
+orphelin ; une erreur de synchronisation reste distincte. Les dates suivent FR/EN.
+Le calendrier reprend les descriptions publiques et capacités par créneau, ainsi
+qu’un texte OpenLab informatif. Une moyenne agrégée peut être publiée uniquement
+si la structure l’a explicitement activée et si les seuils statistiques sont remplis.
+La capacité facultative `public_resources_details_v1` négocie ces détails ; le
+numéro du protocole ne change pas.
+
+Extension facultative, libre et gratuite sous licence MIT. Protocole 4/révision 3
+conservé. Le moteur OpenFabLab décide toujours des places et des inscriptions.
+
+Nouveaux shortcodes indépendants, à activer dans les réglages du plugin :
+
+```text
+[openfablab_calendar environment="production" view="week"]
+[openfablab_machines environment="production"]
+[openfablab_resources environment="production" category="machine"]
+```
+
+Le calendrier présente les seuls OpenLab autorisés et animations publiées.
+La liste des ressources ne reçoit que les informations explicitement publiques.
+`openfablab_resources` est un alias de `openfablab_machines`, qui reste compatible.
+Le filtre `category` est facultatif et utilise la clé de catégorie de la structure.
+Les échanges Normal/Test sont distincts ; une information ancienne est signalée.
+Les notes internes et données des participants ne font pas partie de ces flux.
+
+Le multilingue public est indépendant, désactivé par défaut : FR/EN, langue
+initiale configurable et choix du navigateur. Les textes personnalisés restent
+dans leur langue d’origine. Après confirmation réelle, la page personnelle peut
+proposer .ics et Google Agenda, sans accès à un compte de calendrier.
+
+Remplacer le plugin après sauvegarde, sans désinstallation ni changement du secret.
+La mise à jour d’OpenFabLab sur un serveur ne l’installe pas sur WordPress.
+Les instructions historiques et le shortcode de réservation restent ci-dessous.
+
+---
+
 # OpenFabLab Reservations 2.13.0 — plugin facultatif
 
 Adaptation du catalogue à la visibilité avant ouverture et au maintien des

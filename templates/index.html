@@ -21,16 +21,17 @@
         data-paris-clock
         datetime="{{ current_time.isoformat() }}"
     >{{ current_time.strftime('%d/%m/%Y · %H:%M') }}</time>
+    {% if unavailable_machines %}<button type="button" class="home-machine-banner" data-machine-dialog aria-haspopup="dialog">🔧 {{ resource_unavailable_count }}</button>{% endif %}
 </section>
 
 <section class="counter-grid" aria-label="Fréquentation actuelle">
     <article class="counter-card counter-primary">
         <strong>{{ present_count }}</strong>
-        <span>Usager{% if present_count != 1 %}s{% endif %} présent{% if present_count != 1 %}s{% endif %}</span>
+        <span>{{ _('Usager présent' if present_count == 1 else 'Usagers présents') }}</span>
     </article>
     <article class="counter-card">
         <strong>{{ visitor_count }}</strong>
-        <span>Visiteur{% if visitor_count != 1 %}s{% endif %} aujourd'hui</span>
+        <span>{{ _("Visiteur aujourd'hui" if visitor_count == 1 else "Visiteurs aujourd'hui") }}</span>
     </article>
 </section>
 
@@ -101,8 +102,8 @@
     </form>
 </section>
 
-<div class="departure-dialog-backdrop" data-departure-dialog hidden>
-    <section class="departure-dialog" role="dialog" aria-modal="true" aria-labelledby="departure-dialog-title">
+<dialog class="departure-dialog-backdrop" data-departure-dialog aria-labelledby="departure-dialog-title" hidden>
+    <section class="departure-dialog">
         <div class="departure-theme-fill" aria-hidden="true"></div>
         <div class="departure-snowfall" aria-hidden="true">
             {% for _ in range(18) %}<span>❄</span>{% endfor %}
@@ -127,5 +128,5 @@
             </div>
         </form>
     </section>
-</div>
+</dialog>
 {% endblock %}

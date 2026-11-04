@@ -6,8 +6,9 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parent
 PLUGIN = ROOT / "wordpress" / "openfablab-reservations"
-OUTPUT = ROOT / "dist" / "openfablab-reservations-2.13.0.zip"
+OUTPUT = ROOT / "dist" / "openfablab-reservations-2.14.1.zip"
 INCLUDED = (
+    'includes/class-openfablab-public.php','assets/public.js','assets/public.css','assets/translations.js',
     "openfablab-reservations.php",
     "uninstall.php",
     "includes/class-openfablab-database.php",

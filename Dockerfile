@@ -22,6 +22,12 @@ COPY v210_schema.py v210_config.py v210_routes.py memberships.py membership_noti
 COPY animation_attendance.py v211_routes.py ./
 COPY animation_publication.py booking_presentation.py ./
 COPY statistics_quality.py installation_health.py visual_report.py ./
+COPY v214_schema.py v214_routes.py machine_maintenance.py openlab_openings.py automatic_reminders.py reservation_calendar.py public_snapshot.py i18n.py ./
+COPY v2141_schema.py ./
+COPY v2144_schema.py resource_lifecycle.py public_calendar_history.py ./
+COPY public_resource_labels.py ./
+COPY enrollment_feedback.py ./
+COPY translations ./translations
 COPY tablet_reservations.py ./
 COPY family_model.py family_routes.py family_reservations.py family_reservation_routes.py family_waitlist.py ./
 COPY openfablab ./openfablab

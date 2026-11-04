@@ -1,5 +1,6 @@
 """Explicit team-only controls; attendance is not a reservation operation."""
 from flask import Blueprint, abort, flash, redirect, request, session, url_for
+from i18n import flash
 from evolution_routes import require_team, require_csrf
 from types import SimpleNamespace
 import animation_attendance as attendance

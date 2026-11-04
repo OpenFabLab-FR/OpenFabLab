@@ -3,6 +3,7 @@
 Visits count recorded arrivals in the selected interval. Durations are clipped
 to that interval and use closed sessions only. Categories are session snapshots.
 """
+from i18n import native as __ui_native__
 import base64
 import calendar
 import json
@@ -13,10 +14,11 @@ from participant_search import normalized
 from family_model import setting
 
 UTC = timezone.utc
-WEEKDAYS = ('Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche')
+WEEKDAYS = (__ui_native__('Lundi'), __ui_native__('Mardi'), __ui_native__('Mercredi'), __ui_native__('Jeudi'), __ui_native__('Vendredi'), __ui_native__('Samedi'), __ui_native__('Dimanche'))
 STATUS = {'confirmed':'Confirmée', 'waitlisted':'Liste d’attente', 'offer_pending':'Place proposée',
           'cancelled':'Annulée', 'declined':'Refusée', 'expired':'Proposition expirée',
           'present':'Présence renseignée', 'absent':'Absence renseignée', 'review':'À vérifier'}
+STATUS = {key:__ui_native__(label) for key,label in STATUS.items()}
 
 
 def instant(value):
@@ -46,7 +48,7 @@ def scope(db, values):
             raise ValueError('Sélectionnez une catégorie existante.')
         return 'statistical_category=?', [key], dict(mode=mode, category=key, label=row['name'])
     if mode == 'all':
-        return '1=1', [], dict(mode=mode, label='Ensemble des usagers')
+        return '1=1', [], dict(mode=mode, label=__ui_native__('Ensemble des usagers'))
     raise ValueError('Mode d’analyse invalide.')
 
 
@@ -248,15 +250,15 @@ def animations(db, info, start, end, now, tz):
             continue
         entry = dict(title=row['title'],date=begin.astimezone(tz).date().isoformat(),
             hours=(row['start_time'] or '')+'–'+(row['end_time'] or ''),
-            status=STATUS.get(row['status'],'Autre état enregistré'),presence='Présence renseignée' if row['is_present']==1
-            else ('Absence renseignée' if row['status']=='absent' else 'Présence non renseignée'),places=1)
+            status=STATUS.get(row['status'],__ui_native__('Autre état enregistré')),presence=__ui_native__('Présence renseignée' if row['is_present']==1
+            else ('Absence renseignée' if row['status']=='absent' else 'Présence non renseignée')),places=1)
         if begin >= now and row['status'] in ('confirmed','waitlisted','offer_pending'):
             future.append(entry)
         elif start <= begin < end and begin < now:
             past.append(entry)
     return dict(present=present,upcoming=future[:50],past=past[-50:][::-1],
         aggregate=[dict(title=title,count=count) for (_,title),count in collective.most_common(10)],
-        category_basis='Catégorie actuelle des comptes pour les animations (pas d’instantané de catégorie dans les réservations).')
+        category_basis=__ui_native__('Catégorie actuelle des comptes pour les animations (pas d’instantané de catégorie dans les réservations).'))
 
 
 def analyse(db, values, now=None):

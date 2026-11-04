@@ -1,3 +1,27 @@
+# Reservations 2.14.4 — documentation courante
+
+Application et plugin2.14.4 stables, protocole4/révision3 inchangé.
+Le [guide actuel](wordpress-2.14.4.md) explique l’installation, Gutenberg,
+les trois shortcodes, Normal/Test, les langues, le catalogue et l’historique.
+[Téléchargement et SHA-256](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.14.4).
+WordPress reste facultatif et se met à jour séparément de l’application.
+
+Les sections suivantes sont des références historiques ; pour une installation
+courante, suivre le guide2.14.4 ci-dessus, notamment pour le mois d’historique.
+
+---
+
+# Référence historique : Reservations 2.14.0 et OpenFabLab 2.14.0
+
+Le plugin est réellement enrichi : calendrier public hebdomadaire, liste de
+machines choisies, multilingue indépendant et calendrier personnel confirmé.
+Ces fonctions sont facultatives. La connexion HTTPS sortante signée et le protocole
+4/révision 3 sont conservés, sans nouvelle clé ni égalité de numéros imposée.
+Lire [le guide 2.14](wordpress-2.14.0.md). Les sections suivantes décrivent les
+versions historiques et leurs téléchargements ; elles ne publient pas la candidate.
+
+---
+
 # Reservations 2.13.0 et OpenFabLab 2.13.0
 
 Le plugin facultatif est réellement modifié : visibilité avant ouverture,

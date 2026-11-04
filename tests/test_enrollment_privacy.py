@@ -137,7 +137,7 @@ class EnrollmentPrivacyTests(unittest.TestCase):
         self.assertEqual(len(rows),1)
         for value in (flow,token,'person0@example.invalid','Fictif0','2001'):
             self.assertNotIn(value,repr([tuple(row) for row in rows]))
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],21)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],__import__('family_model').SCHEMA)
 
     def test_static_fetch_does_not_abandon(self):
         token=self.start();self.client.get('/static/public-enrollment.js')
@@ -165,7 +165,8 @@ class EnrollmentPrivacyTests(unittest.TestCase):
         token,_=self.verify()
         with mock.patch('evolution_routes.create_user',side_effect=sqlite3.IntegrityError()):
             result=self.client.post('/inscription',data=self.values(token))
-            self.assertEqual(result.status_code,409)
+            # An unspecified DB constraint is not evidence of an ID collision.
+            self.assertEqual(result.status_code,503)
         token=re.search(r'name="evolution_csrf" value="([^"]+)"',result.text)[1]
         self.no_created()
         self.assertTrue(self.client.get('/inscription/etat',headers={'X-OpenFabLab-Enrollment':token}).json['active'])
@@ -235,7 +236,9 @@ class EnrollmentPrivacyTests(unittest.TestCase):
         with self.client.session_transaction() as s:s['access_role']='admin';s['admin_authenticated']=True
         text=self.client.get('/admin/reglages/affichage').text
         self.assertIn('min="1" max="10000"',text)
-        self.assertIn('Un indicateur visuel de fréquentation, sans limitation des entrées.',text)
+        self.assertIn('Un indicateur visuel, sans limitation des entrées.',text)
         text=self.client.get('/animations').text
         self.assertNotIn('Depuis la borne',text)
-        self.assertIn('Liste d’attente activée',text)
+        # The stable catalogue displays current availability, not a permanent
+        # waitlist-enabled badge when confirmed places are still available.
+        self.assertIn('4 places disponibles',text)

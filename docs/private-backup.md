@@ -1,5 +1,11 @@
 # Sauvegardes privées complètes et copies de test
 
+Référence actuelle2.14.4 : schéma25, format privé existant conservé. Le manifeste
+porte la version et le schéma réels ; un ancien runtime ne doit pas ouvrir une
+base plus récente. Restaurer uniquement en environnement isolé compatible,
+avec réseau/workers externes désactivés avant import. [Mise à jour](upgrade.md).
+Les références2.8 ci-dessous sont historiques, pas les versions actuellement proposées.
+
 OpenFabLab 2.8.0 conserve le format v1 et prend en charge le schéma 15, avec naissance précise et relations familiales. Ces éléments sont privés et exclus des exports publics de configuration. Conserver la PRE 14 complète pour un éventuel retour avec le runtime 2.7.1.
 
 Réglages → Données distingue trois exports : SQLite seul (données métier),

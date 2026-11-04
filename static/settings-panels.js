@@ -1,25 +1,26 @@
+/* OFL native UI marked */
 /* Progressive enhancement only: one form, no duplicated/disabled inputs. */
 document.addEventListener('DOMContentLoaded', () => {
   const catalogue = document.getElementById('catalogue-location');
   if (catalogue) {
     catalogue.classList.add('rental-enhanced');
-    const money = new Intl.NumberFormat('fr-FR', {style: 'currency', currency: 'EUR'});
+    const money = new Intl.NumberFormat((document.documentElement.lang==='en'?'en-GB':'fr-FR'), {style: 'currency', currency: 'EUR'});
     catalogue.querySelectorAll('[data-rental-machine]').forEach(machine => {
       const button = machine.querySelector('.rental-toggle');
       const editor = machine.querySelector('.rental-edit-row');
       const open = value => {
         editor.classList.toggle('is-open', value);
         button.setAttribute('aria-expanded', String(value));
-        button.querySelector('.rental-toggle-label').textContent = value ? 'Replier ⌃' : 'Modifier ⌄';
+        button.querySelector('.rental-toggle-label').textContent = value ? __oflT_07641638("Replier ⌃") : __oflT_07641638("Modifier ⌄");
       };
       button.addEventListener('click', () => open(button.getAttribute('aria-expanded') !== 'true'));
       machine.addEventListener('invalid', () => open(true), true);
       const update = () => {
-        machine.querySelector('[data-rental-name]').textContent = machine.querySelector('[name^=machine_name_]').value || 'Machine sans nom';
-        machine.querySelector('[data-rental-state]').textContent = machine.querySelector('[type=checkbox]').checked ? 'Active' : 'Inactive';
+        machine.querySelector('[data-rental-name]').textContent = machine.querySelector('[name^=machine_name_]').value || __oflT_07641638("Machine sans nom");
+        machine.querySelector('[data-rental-state]').textContent = machine.querySelector('[type=checkbox]').checked ? __oflT_07641638("Active") : __oflT_07641638("Inactive");
         const monthly = machine.querySelector('[name^=machine_monthly_]').valueAsNumber;
         const deposit = machine.querySelector('[name^=machine_deposit_]').valueAsNumber;
-        machine.querySelector('[data-rental-amounts]').textContent = `${Number.isFinite(monthly) ? money.format(monthly) : '—'}/mois · caution ${Number.isFinite(deposit) ? money.format(deposit) : '—'}`;
+        machine.querySelector('[data-rental-amounts]').textContent = `${Number.isFinite(monthly) ? money.format(monthly) : '—'}${__oflT_07641638("/mois · caution ")}${Number.isFinite(deposit) ? money.format(deposit) : '—'}`;
       };
       machine.addEventListener('input', update); machine.addEventListener('change', update);
       update();

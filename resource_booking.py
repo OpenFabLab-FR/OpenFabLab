@@ -1,12 +1,13 @@
 """FabLab resources, booking states and training/authorization history."""
+from i18n import native as __ui_native__
 import re
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone
 from uuid import uuid4
 from evolution_schema import audit, now, reorder, ordered_keys
 
-STATUS_LABELS = {'requested':'En attente de validation', 'confirmed':'Confirmée',
-                 'performed':'Effectuée', 'refused':'Refusée', 'cancelled':'Annulée'}
+STATUS_LABELS = {'requested':__ui_native__('En attente de validation'), 'confirmed':__ui_native__('Confirmée'),
+                 'performed':__ui_native__('Effectuée'), 'refused':__ui_native__('Refusée'), 'cancelled':__ui_native__('Annulée')}
 TRANSITIONS = {'requested':{'confirmed','refused','cancelled'}, 'confirmed':{'performed','cancelled'},
                'performed':set(), 'refused':set(), 'cancelled':set()}
 
@@ -109,13 +110,13 @@ def save_resource(database, values, role, key=None):
         raise ValueError('Gestion des ressources réservée à l’Administrateur.')
     name = str(values.get('name') or '').strip()
     type_key = values.get('type_key')
-    existing = database.execute('SELECT type_key,required_authorization FROM resources WHERE resource_uuid=?', (key,)).fetchone() if key else None
+    existing = database.execute('SELECT * FROM resources WHERE resource_uuid=?', (key,)).fetchone() if key else None
     type_row = database.execute('SELECT active FROM resource_types WHERE type_key=?', (type_key,)).fetchone()
     if not name or len(name)>180 or not type_row or (not type_row['active'] and (not existing or existing['type_key']!=type_key)):
         raise ValueError('Nom et catégorie active de ressource requis.')
     color = str(values.get('color') or '').strip() or None
     if color and not re.fullmatch(r'#[a-fA-F0-9]{6}', color):
-        raise ValueError('Couleur de ressource invalide.')
+        raise ValueError('Choisissez une couleur dans la palette ou utilisez un code de la forme #FFA500.')
     amount = int(values.get('price_cents') or 0)
     if not 0<=amount<=100000000:
         raise ValueError('Tarif de réservation invalide.')
@@ -131,6 +132,11 @@ def save_resource(database, values, role, key=None):
                      (key,type_key,name,str(values.get('description') or '')[:2000],int(values.get('active') in (True,1,'1')),color,
                       int(values.get('approval_required') in (True,1,'1')),amount,requirement,now(),now()))
     audit(database,'resource',key,'saved',role)
+    if existing:
+        updated=dict(database.execute('SELECT * FROM resources WHERE resource_uuid=?',(key,)).fetchone())
+        if any(existing[field]!=updated[field] for field in ('name','description','type_key','color','active')):
+            from machine_maintenance import history
+            history(database,key,key,'resource',role,dict(existing),updated)
     return key
 
 
@@ -176,7 +182,7 @@ def authorization_valid(database, user_id, requirement, starts_at, ends_at=None)
 def validate_booking(database, resource, user_id, start, end, role, override='', exclude=None):
     if role not in {'admin','moderator'}:
         raise ValueError('Réservation réservée à l’équipe.')
-    if not resource or not resource['active']:
+    if not resource or not resource['active'] or resource['archived_at']:
         raise ValueError('Ressource indisponible.')
     if not database.execute('SELECT 1 FROM users WHERE id=? AND active=1', (user_id,)).fetchone():
         raise ValueError('Usager actif requis.')
@@ -198,6 +204,9 @@ def validate_booking(database, resource, user_id, start, end, role, override='',
 
 
 def book(database, resource_uuid, user_id, start, end, role, override=''):
+    from machine_maintenance import technically_available
+    if not technically_available(database,resource_uuid):
+        raise ValueError('Cette machine est techniquement indisponible. Les réservations existantes sont conservées.')
     resource = database.execute('SELECT * FROM resources WHERE resource_uuid=?', (resource_uuid,)).fetchone()
     start, end = validate_booking(database,resource,user_id,start,end,role,override)
     key = str(uuid4())
@@ -215,6 +224,9 @@ def transition(database, key, state, role):
     if not row or state not in TRANSITIONS[row['status']]:
         raise ValueError('Transition de réservation refusée.')
     if state=='confirmed':
+        from machine_maintenance import technically_available
+        if not technically_available(database,row['resource_uuid']):
+            raise ValueError('Cette machine est techniquement indisponible.')
         resource = database.execute('SELECT * FROM resources WHERE resource_uuid=?', (row['resource_uuid'],)).fetchone()
         validate_booking(database,resource,row['user_id'],row['starts_at'],row['ends_at'],role,row['override_reason'] if role=='admin' else '',key)
     database.execute('UPDATE resource_bookings SET status=?,updated_at=? WHERE booking_uuid=?', (state,now(),key))

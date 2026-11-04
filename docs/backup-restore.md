@@ -1,5 +1,18 @@
 # Sauvegarde et restauration
 
+## Référence actuelle : 2.14.4 / SQLite25
+
+Une sauvegarde complète cohérente est nécessaire avant la migration, puis après
+contrôle du nouveau runtime. La copie SQLite seule n’inclut pas tous les secrets,
+PIN et logos. Les archives privées ne sont pas chiffrées et ne doivent jamais
+être publiées. Tester une restauration dans un répertoire/volumes isolés, avec
+le runtime compatible et les communications externes désactivées avant import.
+Vérifier intégrité, clés étrangères, réglages et données connues : un ZIP valide
+n’est pas une preuve suffisante de restauration. Ne jamais supprimer les WAL/SHM
+d’une base ouverte. Après réouverture publique, préserver les nouvelles écritures
+avant toute décision de retour. [Parcours actuel](upgrade.md).
+Les numéros des paragraphes historiques ci-dessous décrivent leurs anciennes versions.
+
 En **2.8.0**, ces formats incluent le schéma **15**, les dates de naissance, rattachements privés, groupes, propositions et journal d'e-mails. Migration additive avec PRE 14 ; restauration POST 15 dans un dossier distinct à vérifier. Rien n'est purgé dans OpenFabLab. Voir [la mise à jour](upgrade.md) et [les vérifications isolées](candidate-2.8-guide.md).
 
 Depuis OpenFabLab 2.7.0, **Réglages → Données** distingue trois niveaux.

@@ -1,3 +1,21 @@
+## Recette actuelle : stable 2.14.4
+
+[Contrôles de publication, périmètre et limites](publication-2.14.4.md).
+Les assertions de version courantes sont dans `tests/test_publication.py` ;
+les suites fonctionnelles par version restent réutilisables. Les totaux historiques
+ci-dessous ne sont pas présentés comme des suites toutes réexécutées en 2.14.4.
+
+## Référence historique : développement et recette 2.14.0
+
+La candidate est développée depuis la stable publique 2.13.0, sans modifier celle-ci.
+Voir [les tests de la candidate](tests-2.14.0.md) et [l’internationalisation](i18n.md).
+Les bases de recette sont fictives, les appels externes sont bloqués avant import,
+et les transports e-mail/Discord/WordPress sont simulés. Les échecs et reprises
+restent dans les preuves techniques ; ne pas annoncer une validation matérielle
+ou une publication à partir d’un test local.
+
+---
+
 # Développement et contrôles reproductibles
 
 Prérequis : Python 3.10+ avec `venv`/pip, Node.js **24.18+**, npm **11.16+**, PHP CLI 8.1+ recommandé. Les versions Node/npm sont celles exigées par l'alternative PHP WebAssembly choisie. Les dépendances applicatives sont figées dans `requirements.txt` ; les dépendances complémentaires de développement sont dans `requirements-dev.txt`. Les outils Node sont verrouillés par `package-lock.json`.

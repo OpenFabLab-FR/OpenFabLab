@@ -10,6 +10,15 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "dist" / f"OpenFabLab-{__version__}.zip"
 FILES = (
+    'docs/utilisation.md','docs/resources-maintenance.md','docs/wordpress-2.14.4.md','docs/publication-2.14.4.md',
+    'v2144_schema.py','resource_lifecycle.py','public_calendar_history.py','docs/corrections-2.14.4.md',
+    'enrollment_feedback.py',
+    'docs/corrections-2.14.3.md',
+    'public_resource_labels.py','docs/corrections-2.14.2.md',
+    'v2141_schema.py','docs/corrections-2.14.1.md','docs/tests-2.14.1.md',
+    'docs/evolution-2.14.0.md','docs/wordpress-2.14.0.md','docs/i18n.md','docs/tests-2.14.0.md',
+    'v214_schema.py','v214_routes.py','machine_maintenance.py','openlab_openings.py','automatic_reminders.py','reservation_calendar.py','public_snapshot.py','i18n.py',
+    'static/v214.js','static/v214.css','static/i18n.css',
     'static/settings-panels.js',
     'animation_publication.py','booking_presentation.py','docs/ergonomie-2.13.0.md',
     'statistics_quality.py','installation_health.py','visual_report.py',
@@ -55,6 +64,7 @@ FILES = (
     "badge_templates/OpenFabLab-template.svg",
 )
 DIRECTORIES = {
+    "translations": {".json"},
     "openfablab": {".py"},
     "templates": {".html"},
 }

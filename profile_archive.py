@@ -40,6 +40,7 @@ BILLING_KEYS = {
     "billing_rental_contract_fee_cents", "billing_rental_delivery_fee_cents",
 }
 EXACT_KEYS = {
+    'resource_public_name',
     'retention_contact_notice_enabled','retention_contact_notice_days',
     'retention_contact_notice_subject','retention_contact_notice_body',
     'public_id_assignment_mode', 'attendance_reference',
@@ -213,6 +214,8 @@ def parse_profile(raw):
                     raise ValueError("Le profil contient un réglage non autorisé.")
                 from v210_config import DEFAULTS,validate as validate_210
                 if key in DEFAULTS:validate_210(key,value)
+                if key=='resource_public_name' and value not in ('resources','machines','equipment','rooms'):
+                    raise ValueError('Nom public des ressources invalide.')
                 if key=='home_title' and (not value.strip() or len(value)>40 or any(ord(c)<32 for c in value)):
                     raise ValueError('Titre d’accueil invalide.')
                 if key=='retention_contact_notice_enabled' and value not in ('0','1'):

@@ -1,6 +1,8 @@
+/* OFL native UI marked */
 /* Synthesized locally, no microphone, media file, external transport or telemetry. */
 (() => {
   'use strict';
+  const __oflT_6afb2b90=text=>window.OFLTranslate?.(text)||text;
   const configNode = document.getElementById('kiosk-audio');
   if (!configNode) return;
   const config = JSON.parse(configNode.textContent);
@@ -78,7 +80,7 @@
   document.querySelectorAll('[data-sound-test]').forEach(button => button.addEventListener('click', () => {
     const okay = play(button.dataset.soundTest, true);
     const status = document.getElementById('sound-test-status');
-    if (status) status.textContent = okay ? 'Test demandé. Si aucun son n’est audible, vérifiez le volume de l’appareil.' : 'Son indisponible ou volume nul. La borne reste utilisable.';
+    if (status) status.textContent = okay ? __oflT_6afb2b90("Test demandé. Si aucun son n’est audible, vérifiez le volume de l’appareil.") : __oflT_6afb2b90("Son indisponible ou volume nul. La borne reste utilisable.");
   }));
   if (!config.enabled) return; // No context, listeners, fetch or sound engine when off.
   document.addEventListener('pointerdown', unlock, {capture: true});
@@ -100,10 +102,10 @@
     if (pathOf(form.action) === '/visiteurs') play('navigation');
     try {
       const response = await fetch(form.action, {method: 'POST', body: data, headers: {'X-OFL-Kiosk': '1'}, credentials: 'same-origin'});
-      if (!response.ok) throw new Error('Action non confirmée');
+      if (!response.ok) throw new Error(__oflT_6afb2b90("Action non confirmée"));
       const result = await response.json();
       const target = new URL(result.location, location.origin);
-      if (target.origin !== location.origin) throw new Error('Destination incorrecte');
+      if (target.origin !== location.origin) throw new Error(__oflT_6afb2b90("Destination incorrecte"));
       if (result.event) play(result.event);
       // No timer and no audio wait: navigation and attendance never wait on sound.
       location.assign(target.href);
@@ -111,7 +113,7 @@
       play('error');
       let status = document.getElementById('kiosk-action-status');
       if (!status) { status = document.createElement('p'); status.id = 'kiosk-action-status'; status.setAttribute('role', 'alert'); form.after(status); }
-      status.textContent = 'Confirmation indisponible. Réessayez cette action ou actualisez la page. Aucun son de réussite n’a été joué.';
+      status.textContent = __oflT_6afb2b90("Confirmation indisponible. Réessayez cette action ou actualisez la page. Aucun son de réussite n’a été joué.");
       pending.delete(form); delete form.dataset.submitting;
       form.querySelectorAll('button').forEach(button => { button.disabled = false; });
     }

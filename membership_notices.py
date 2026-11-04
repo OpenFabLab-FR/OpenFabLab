@@ -1,4 +1,5 @@
 """Minimal outbox, no copied contacts, no ambiguous retry and no payments."""
+from i18n import native as __ui_native__
 import hashlib
 import json
 from datetime import datetime,timedelta,timezone
@@ -6,11 +7,11 @@ from email.message import EmailMessage
 import memberships as m
 import v210_config
 
-LABELS={'soon':'Votre formule arrive bientôt à expiration.','expired':'Votre formule est arrivée à expiration.',
-        'low':'Votre solde de crédits est faible.','empty':'Votre carnet de crédits est épuisé.',
-        'renewal':'Votre renouvellement est enregistré. Aucun paiement n’est confirmé par ce message.',
-        'recharge':'Votre recharge de crédits est enregistrée. Aucun paiement n’est confirmé par ce message.',
-        'review':'Une situation de crédits nécessite une régularisation.'}
+LABELS={'soon':__ui_native__('Votre formule arrive bientôt à expiration.'),'expired':__ui_native__('Votre formule est arrivée à expiration.'),
+        'low':__ui_native__('Votre solde de crédits est faible.'),'empty':__ui_native__('Votre carnet de crédits est épuisé.'),
+        'renewal':__ui_native__('Votre renouvellement est enregistré. Aucun paiement n’est confirmé par ce message.'),
+        'recharge':__ui_native__('Votre recharge de crédits est enregistrée. Aucun paiement n’est confirmé par ce message.'),
+        'review':__ui_native__('Une situation de crédits nécessite une régularisation.')}
 
 
 def queue(db,grant_id,kind,key,now=None):

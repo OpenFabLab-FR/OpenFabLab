@@ -17,7 +17,7 @@
     <div class="logo-preview"><img src="{{ url_for('static', filename='brand/OpenFabLab-logo-horizontal.svg') }}" alt="Logo OpenFabLab par défaut"></div><p class="form-help">État : {% if structure_settings.wordmark_logo %}fichier personnalisé manquant{% elif not structure_settings.show_wordmark_logo %}affichage désactivé{% else %}logo OpenFabLab par défaut{% endif %}.</p>
     {% else %}<p class="form-help">État : {% if structure_settings[kind + '_logo'] %}fichier configuré manquant{% else %}aucun logo personnalisé{% endif %}.</p>{% endif %}
     <label class="form-field"><span>Téléverser / remplacer</span><input name="logo_{{ kind }}" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP · 2 Mo. Sans nouveau fichier, aucune modification du fichier actuel.</small></label>
-    {% if structure_settings[kind + '_logo'] %}<button class="admin-button secondary" type="submit" form="remove-{{ kind }}" onclick="return confirm('Supprimer ce logo personnalisé de cet usage uniquement ?')">Supprimer le logo{% if kind == 'wordmark' %} personnalisé{% endif %}</button>{% endif %}
+    {% if structure_settings[kind + '_logo'] %}<button class="admin-button secondary" type="submit" form="remove-{{ kind }}" onclick="return confirm({{ _('Supprimer ce logo personnalisé de cet usage uniquement ?')|tojson|forceescape }})">Supprimer le logo{% if kind == 'wordmark' %} personnalisé{% endif %}</button>{% endif %}
 </section>
 {% endfor %}
 </div>
@@ -38,7 +38,7 @@
 <p class="form-help">État : {{ configured_state }}{% if not structure_settings[toggle] %}, utilisation désactivée{% endif %}.</p>
 {% else %}<p class="form-help">État : {% if structure_settings['signature' if kind == 'signature' else 'main_logo'] %}fichier configuré manquant{% elif kind == 'signature' %}aucune signature personnalisée{% else %}aucun logo personnalisé{% endif %}.</p>{% endif %}
 <label class="form-field"><span>Téléverser / remplacer</span><input name="logo_{{ kind }}" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP · 2 Mo. Sans nouveau fichier, le fichier actuel est conservé.</small></label>
-{% if structure_settings['signature' if kind == 'signature' else 'main_logo'] %}<button class="admin-button secondary" type="submit" form="remove-{{ kind }}" onclick="return confirm('Retirer cette ressource des prochains documents ?')">Supprimer {% if kind == 'signature' %}la signature{% else %}le logo complémentaire{% endif %}</button>{% endif %}
+{% if structure_settings['signature' if kind == 'signature' else 'main_logo'] %}<button class="admin-button secondary" type="submit" form="remove-{{ kind }}" onclick="return confirm({{ _('Retirer cette ressource des prochains documents ?')|tojson|forceescape }})">Supprimer {% if kind == 'signature' %}la signature{% else %}le logo complémentaire{% endif %}</button>{% endif %}
 </section>
 {% endfor %}
 <section class="branding-card" data-resource="badge">
@@ -48,7 +48,7 @@
 <p class="form-help">Un modèle privé activé mais manquant ou invalide bloque la génération avec une erreur explicite.</p>
 <label class="form-field"><span>Téléverser / remplacer le gabarit SVG</span><input name="badge_template" type="file" accept="image/svg+xml,.svg"><small>SVG autonome 54 × 86 mm · 2 Mo, sans contenu actif ou lien externe. Sans fichier : aucune modification.</small></label>
 <a class="header-link" href="{{ url_for('admin_badge_preview') }}" target="_blank" rel="noopener">Prévisualiser le badge avec un usager fictif</a>
-{% if structure_settings.badge_template %}<button class="admin-button secondary" type="submit" form="remove-badge" onclick="return confirm('Retirer le modèle privé et revenir au badge générique ?')">Supprimer le modèle privé</button>{% endif %}
+{% if structure_settings.badge_template %}<button class="admin-button secondary" type="submit" form="remove-badge" onclick="return confirm({{ _('Retirer le modèle privé et revenir au badge générique ?')|tojson|forceescape }})">Supprimer le modèle privé</button>{% endif %}
 </section>
 </div>
 </section>

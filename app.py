@@ -1,4 +1,5 @@
 """Application locale OpenFabLab de suivi et de gestion de fablab."""
+from i18n import native as __ui_native__
 
 import csv
 import hashlib
@@ -49,6 +50,7 @@ from flask import (
     session,
     url_for,
 )
+from i18n import flash
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from billing import (
@@ -82,28 +84,28 @@ DATABASE_PATH = BASE_DIR / "openfablab.db"
 PARIS_TIMEZONE = ZoneInfo("Europe/Paris")
 ALLOWED_GENDERS = {"female", "male", "non_binary"}
 CATEGORY_LABELS = {
-    "user": "Usager",
-    "volunteer": "Bénévole",
-    "voluntary": "Volontaire",
-    "fabmanager": "Fabmanager",
-    "intern": "Stagiaire",
-    "staff": "Personnel",
+    "user": __ui_native__("Usager"),
+    "volunteer": __ui_native__("Bénévole"),
+    "voluntary": __ui_native__("Volontaire"),
+    "fabmanager": __ui_native__("Fabmanager"),
+    "intern": __ui_native__("Stagiaire"),
+    "staff": __ui_native__("Personnel"),
 }
 PRESENCE_METHOD_LABELS = {
-    "manual": "ID",
-    "id": "ID",
-    "qr": "QR",
-    "automatic": "Auto",
-    "admin": "Admin",
-    "list": "Liste",
-    "departure": "Départ",
-    "anonymous": "Anonyme",
+    "manual": __ui_native__("ID"),
+    "id": __ui_native__("ID"),
+    "qr": __ui_native__("QR"),
+    "automatic": __ui_native__("Auto"),
+    "admin": __ui_native__("Admin"),
+    "list": __ui_native__("Liste"),
+    "departure": __ui_native__("Départ"),
+    "anonymous": __ui_native__("Anonyme"),
 }
 GENDER_LABELS = {
-    "female": "Femme",
-    "male": "Homme",
-    "non_binary": "Non-binaire",
-    None: "Inconnu",
+    "female": __ui_native__("Femme"),
+    "male": __ui_native__("Homme"),
+    "non_binary": __ui_native__("Non-binaire"),
+    None: __ui_native__("Inconnu"),
 }
 ALLOWED_CATEGORIES = set(CATEGORY_LABELS)
 DISPLAY_CAPACITY = 10
@@ -112,13 +114,13 @@ PHONE_PATTERN = re.compile(r"^[0-9+().\-\s]+$")
 PHONE_COUNTRY_CODE_PATTERN = re.compile(r"^(?:\+|00)\d{1,4}$")
 TIME_PATTERN = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$")
 WEEKDAYS = (
-    ("monday", "Lundi"),
-    ("tuesday", "Mardi"),
-    ("wednesday", "Mercredi"),
-    ("thursday", "Jeudi"),
-    ("friday", "Vendredi"),
-    ("saturday", "Samedi"),
-    ("sunday", "Dimanche"),
+    ("monday", __ui_native__("Lundi")),
+    ("tuesday", __ui_native__("Mardi")),
+    ("wednesday", __ui_native__("Mercredi")),
+    ("thursday", __ui_native__("Jeudi")),
+    ("friday", __ui_native__("Vendredi")),
+    ("saturday", __ui_native__("Samedi")),
+    ("sunday", __ui_native__("Dimanche")),
 )
 DEFAULT_OPENLAB_SCHEDULE = {
     "monday": ("", ""),
@@ -131,51 +133,51 @@ DEFAULT_OPENLAB_SCHEDULE = {
 }
 HOME_THEMES = {
     "classic": {
-        "label": "Classique",
-        "description": "L’interface claire et sobre utilisée actuellement.",
+        "label": __ui_native__("Classique"),
+        "description": __ui_native__("L’interface claire et sobre utilisée actuellement."),
     },
     "dark": {
-        "label": "Dark",
-        "description": "Une interface noire à faible luminosité, adaptée aux écrans OLED.",
+        "label": __ui_native__("Dark"),
+        "description": __ui_native__("Une interface noire à faible luminosité, adaptée aux écrans OLED."),
     },
     "halloween": {
-        "label": "Halloween",
-        "description": "Une nuit violette animée, avec lune, chauves-souris et citrouilles.",
+        "label": __ui_native__("Halloween"),
+        "description": __ui_native__("Une nuit violette animée, avec lune, chauves-souris et citrouilles."),
     },
     "christmas": {
-        "label": "Noël",
-        "description": "Une ambiance chaleureuse rouge et sapin, avec neige animée.",
+        "label": __ui_native__("Noël"),
+        "description": __ui_native__("Une ambiance chaleureuse rouge et sapin, avec neige animée."),
     },
     "easter": {
-        "label": "Pâques",
-        "description": "Des couleurs printanières, des œufs décorés et des fleurs animées.",
+        "label": __ui_native__("Pâques"),
+        "description": __ui_native__("Des couleurs printanières, des œufs décorés et des fleurs animées."),
     },
     "valentine": {
-        "label": "St Valentin",
-        "description": "Une ambiance tendre rose et bordeaux, animée de cœurs et de messages.",
+        "label": __ui_native__("St Valentin"),
+        "description": __ui_native__("Une ambiance tendre rose et bordeaux, animée de cœurs et de messages."),
     },
     "summer": {
-        "label": "Summer",
-        "description": "Une escapade estivale entre ciel bleu, sable chaud et bord de mer.",
+        "label": __ui_native__("Summer"),
+        "description": __ui_native__("Une escapade estivale entre ciel bleu, sable chaud et bord de mer."),
     },
     "steampunk": {
-        "label": "Steampunk",
-        "description": "Un atelier mécanique haut de gamme, entre cuivre, laiton et engrenages animés.",
+        "label": __ui_native__("Steampunk"),
+        "description": __ui_native__("Un atelier mécanique haut de gamme, entre cuivre, laiton et engrenages animés."),
     },
 }
 MODULE_LABELS = {
-    "memberships": "Abonnements et crédits",
-    "frequency": "Fréquentation",
-    "users": "Usagers",
-    "activities": "Activités",
-    "resources": "Ressources",
-    "authorizations": "Formations et habilitations",
-    "public_reservations": "Réservations publiques",
-    "booking_slots": "Créneaux réservables",
-    "rentals": "Locations de machines",
-    "billing": "Facturation",
-    "weather": "Météo",
-    "discord": "Notifications Discord",
+    "memberships": __ui_native__("Abonnements et crédits"),
+    "frequency": __ui_native__("Fréquentation"),
+    "users": __ui_native__("Usagers"),
+    "activities": __ui_native__("Activités"),
+    "resources": __ui_native__("Ressources"),
+    "authorizations": __ui_native__("Formations et habilitations"),
+    "public_reservations": __ui_native__("Réservations publiques"),
+    "booking_slots": __ui_native__("Créneaux réservables"),
+    "rentals": __ui_native__("Locations de machines"),
+    "billing": __ui_native__("Facturation"),
+    "weather": __ui_native__("Météo"),
+    "discord": __ui_native__("Notifications Discord"),
 }
 from branding import (LOGO_KINDS, VISIBILITY_KEYS, RESOURCE_USAGE_KEYS, BADGE_FILENAME, validate_badge_template,
                       badge_source, outline_private_text, migrate_branding_settings, logo_status)
@@ -255,8 +257,8 @@ RESERVATION_DISCORD_FLAGS = (
     "offer_accepted", "link_review", "animation_full", "waitlist_full", "email_error", "sync_error",
 )
 FRENCH_MONTH_NAMES = (
-    "janvier", "février", "mars", "avril", "mai", "juin",
-    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+    "janvier", __ui_native__("février"), "mars", "avril", "mai", "juin",
+    "juillet", __ui_native__("août"), "septembre", "octobre", "novembre", __ui_native__("décembre"),
 )
 COUNTRY_NAMES = (
     "Afghanistan", "Afrique du Sud", "Albanie", "Algérie", "Allemagne",
@@ -503,6 +505,8 @@ def create_app(test_config=None):
     register_storage(application)
 
     application.teardown_appcontext(close_database)
+    from i18n import register as register_i18n
+    register_i18n(application,globals())
     register_template_helpers(application)
     register_admin_protection(application)
     register_routes(application)
@@ -514,6 +518,8 @@ def create_app(test_config=None):
     register_family(application, globals())
     from v211_routes import register as register_211
     register_211(application, globals())
+    from v214_routes import register as register_214
+    register_214(application, globals())
     register_error_handlers(application)
 
     from runtime_policy import storage_guard
@@ -853,6 +859,10 @@ def initialize_database():
     # Existing installation settings win; only missing keys receive neutral defaults.
     migrate_branding_settings(database, Path(current_database_path()).parent)
     default_settings = default_application_settings(legacy_installation)
+    # Keep the pre-initialization evidence: the historical bootstrap stamps an
+    # intermediate schema even for an empty new database, before family.migrate.
+    # Never infer "new installation" from that intermediate version number.
+    default_settings=list(default_settings)+[('reservation_reminder_enabled','0' if legacy_installation or existing_users_table else 'auto')]
     from reservation_notifications import DETAILS as notice_details,MESSAGE_KINDS as notice_kinds,LABELS as notice_labels
     default_settings=list(default_settings)+[('discord_reservation_detail_'+key,default) for key,(_,default) in notice_details.items()]+[('discord_reservation_message_'+key,notice_labels[key]) for key in notice_kinds]
     database.executemany(
@@ -1721,7 +1731,7 @@ def seed_rental_catalog(database):
 
 def load_rental_catalog(database, include_inactive=False):
     """Retourne le catalogue éditable dans un format compatible avec les vues."""
-    condition = "" if include_inactive else "WHERE active = 1 AND archived = 0"
+    condition = "" if include_inactive else "WHERE active = 1 AND archived = 0 AND NOT EXISTS(SELECT 1 FROM resources r WHERE r.legacy_machine_key=rental_catalog.machine_key AND r.archived_at IS NOT NULL)"
     rows = database.execute(
         "SELECT * FROM rental_catalog " + condition + " ORDER BY sort_order, name"
     ).fetchall()
@@ -4054,6 +4064,8 @@ def home_state_signature(database):
         """,
         (day_start, day_end),
     ).fetchone()
+    from machine_maintenance import public_machines
+    machines_hash=hashlib.sha256(json.dumps(public_machines(database,True),sort_keys=True).encode()).hexdigest()
     return "|".join(
         str(value)
         for value in (
@@ -4065,6 +4077,9 @@ def home_state_signature(database):
             read_setting(database,'kiosk_sound_volume','50'),
             read_setting(database,'kiosk_sound_ambience','auto'),
             read_setting(database,'kiosk_sound_countdown','1'),
+            machines_hash,read_setting(database,'kiosk_machine_information','both'),
+            read_setting(database,'kiosk_language','fr'),read_setting(database,'kiosk_languages','fr,en'),
+            read_setting(database,'kiosk_language_idle_minutes','10'),
         )
     )
 
@@ -5432,6 +5447,8 @@ def start_automatic_closure_worker(application):
                     run_data_retention(database)
                     run_invoice_payment_reminders(database)
                     run_monthly_animation_reminder(database)
+                    from automatic_reminders import process as process_automatic_reminders
+                    process_automatic_reminders(database,application.config['DATABASE'])
                     from membership_notices import process as process_membership_notices
                     process_membership_notices(database,application.config['DATABASE'])
                     collect_openlab_weather_snapshot(database, application)
@@ -5573,11 +5590,11 @@ def billing_reference_suffix(value):
 
 
 def compact_french_date(value):
-    """Formate une date ISO en JJMMYYYY pour les documents client."""
+    """Sortable YYYYMMDD filename prefix; dates inside documents stay French."""
     try:
-        return datetime.strptime(str(value or "")[:10], "%Y-%m-%d").strftime("%d%m%Y")
+        return datetime.strptime(str(value or "")[:10], "%Y-%m-%d").strftime("%Y%m%d")
     except ValueError:
-        return datetime.now(PARIS_TIMEZONE).strftime("%d%m%Y")
+        return datetime.now(PARIS_TIMEZONE).strftime("%Y%m%d")
 
 
 def generate_badge_svg(user, structure=None):
@@ -5891,7 +5908,7 @@ def register_template_helpers(application):
         if not value:
             return "—"
         return parse_timestamp(value).astimezone(PARIS_TIMEZONE).strftime(
-            "%d/%m/%Y à %H:%M"
+            "%d/%m/%Y at %H:%M" if __import__("i18n").language()=="en" else "%d/%m/%Y à %H:%M"
         )
 
     @application.template_filter("duration")
@@ -5909,15 +5926,15 @@ def register_template_helpers(application):
     @application.template_filter("last_visit")
     def last_visit(value):
         if not value:
-            return "Aucun passage enregistré"
+            return __ui_native__('Aucun passage enregistré')
         visit_date = parse_timestamp(value).astimezone(PARIS_TIMEZONE).date()
         today = datetime.now(PARIS_TIMEZONE).date()
         days = max(0, (today - visit_date).days)
         if days == 0:
-            return "Aujourd'hui"
+            return __ui_native__("Aujourd'hui")
         if days == 1:
-            return "Hier"
-        return f"Il y a {days} jours"
+            return __ui_native__('Hier')
+        return __ui_native__(f"Il y a {days} jours")
 
     @application.template_filter("category_label")
     def category_label(value):
@@ -5974,6 +5991,7 @@ def register_admin_protection(application):
         "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
         "admin_animation_booking_action", "admin_animation_booking_walkin",
         'v211.walkins',
+        'v214.directory','v214.machine','v214.openings',
         'participant_search.search',
         'attendance_analysis.page', 'attendance_analysis.search', 'attendance_analysis.data',
         'booking_account_links.link',
@@ -6062,6 +6080,8 @@ def register_admin_protection(application):
             modules = load_modules(get_database())
             for module, endpoints in module_endpoints.items():
                 if request.endpoint not in endpoints or modules[module]:
+                    continue
+                if request.endpoint in ('evolution.calendar','evolution.resource_directory') and __import__('machine_maintenance').enabled(get_database()):
                     continue
                 if request.endpoint == "admin":
                     for fallback_module, fallback_endpoint in (
@@ -6510,7 +6530,7 @@ def register_routes(application):
                 return redirect(url_for("admin"))
             log_security_event(database, f"{requested_role}_login_failed")
             database.commit()
-            return render_template("admin_login.html", csrf_token=pin_csrf_token(), login_error="Le code PIN est incorrect.")
+            return render_template("admin_login.html", csrf_token=pin_csrf_token(), login_error=__ui_native__("Le code PIN est incorrect."))
         return render_template("admin_login.html", csrf_token=pin_csrf_token())
 
     @application.post("/admin/deconnexion")
@@ -7020,17 +7040,19 @@ def register_routes(application):
             purge_security_events(database)
             database.commit()
             labels = {
-                "invalid_id_alert": "Seuil de tentatives invalides atteint",
-                "invalid_id_discord_queued": "Alerte Discord déclenchée",
-                "id_lock_started": "Blocage temporaire de la saisie ID activé",
-                "admin_login_success": "Connexion Administrateur réussie",
-                "moderator_login_success": "Connexion Modérateur réussie",
-                "admin_login_failed": "PIN Administrateur incorrect",
-                "moderator_login_failed": "PIN Modérateur incorrect",
-                "admin_pin_changed": "PIN Administrateur modifié",
-                "admin_recovery_requested": "Récupération administrateur demandée",
-                "admin_recovery_success": "Récupération administrateur réussie",
-                "admin_recovery_expired": "Jeton de récupération expiré",
+                "invalid_id_alert": __ui_native__("Seuil de tentatives invalides atteint"),
+                "enrollment_attempt": __ui_native__("Tentative de création d’un compte usager"),
+                "family_identify_attempt": __ui_native__("Tentative d’identification d’une famille"),
+                "invalid_id_discord_queued": __ui_native__("Alerte Discord déclenchée"),
+                "id_lock_started": __ui_native__("Blocage temporaire de la saisie ID activé"),
+                "admin_login_success": __ui_native__("Connexion Administrateur réussie"),
+                "moderator_login_success": __ui_native__("Connexion Modérateur réussie"),
+                "admin_login_failed": __ui_native__("PIN Administrateur incorrect"),
+                "moderator_login_failed": __ui_native__("PIN Modérateur incorrect"),
+                "admin_pin_changed": __ui_native__("PIN Administrateur modifié"),
+                "admin_recovery_requested": __ui_native__("Récupération administrateur demandée"),
+                "admin_recovery_success": __ui_native__("Récupération administrateur réussie"),
+                "admin_recovery_expired": __ui_native__("Jeton de récupération expiré"),
             }
             rows = database.execute(
                 "SELECT event_type, created_at FROM security_events "
@@ -10627,16 +10649,16 @@ def register_error_handlers(application):
     def page_not_found(_error):
         return render_template(
             "error.html",
-            title="Page introuvable",
-            message="La page demandée n'existe pas ou n'est plus disponible.",
+            title=__ui_native__("Page introuvable"),
+            message=__ui_native__("La page demandée n'existe pas ou n'est plus disponible."),
         ), 404
 
     @application.errorhandler(500)
     def internal_error(_error):
         return render_template(
             "error.html",
-            title="Un problème est survenu",
-            message="L'application a rencontré une erreur. Merci de réessayer.",
+            title=__ui_native__("Un problème est survenu"),
+            message=__ui_native__("L'application a rencontré une erreur. Merci de réessayer."),
         ), 500
 
 

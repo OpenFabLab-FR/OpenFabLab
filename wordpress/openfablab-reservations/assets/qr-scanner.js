@@ -1,7 +1,9 @@
+/* OFL native UI marked */
 /* Existing OpenFabLab/jsQR decoder and four-digit badges, browser-only.
  * The QR replaces the identifier field, never the additional identity check. */
 (function () {
   'use strict';
+  const __oflT_2ccdb535=text=>window.OpenFabLabPublicI18n?.t(text)||text;
   window.OpenFabLabQR = function (host, input, onRead) {
     let generation = 0, stream, frame, devices = [], deviceIndex = -1;
     function stop() {
@@ -23,10 +25,10 @@
       const message = item('p', 'Présentez votre badge ou votre QR Code devant la caméra.');
       message.setAttribute('role', 'status'); host.appendChild(message);
       if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || !window.jsQR) {
-        message.textContent = 'Caméra indisponible. Vous pouvez saisir votre identifiant.'; return;
+        message.textContent = __oflT_2ccdb535("Caméra indisponible. Vous pouvez saisir votre identifiant."); return;
       }
       const video = item('video'); video.muted = true; video.setAttribute('playsinline', '');
-      video.setAttribute('aria-label', 'Aperçu de la caméra, traité uniquement sur votre appareil');host.appendChild(video);
+      video.setAttribute('aria-label', __oflT_2ccdb535("Aperçu de la caméra, traité uniquement sur votre appareil"));host.appendChild(video);
       const close = item('button', 'Fermer le scanner');close.type = 'button';close.className = 'openfablab-secondary';
       close.addEventListener('click', stop);host.appendChild(close);
       try {
@@ -63,7 +65,7 @@
             if (found) {
               const id = found.data.trim();
               if (/^[0-9]{4}$/.test(id)) {input.value = id;input.dispatchEvent(new Event('input', {bubbles:true}));stop();onRead(id);return;}
-              message.textContent = 'Ce QR Code n’est pas un badge OpenFabLab. Essayez à nouveau ou saisissez votre identifiant.';
+              message.textContent = __oflT_2ccdb535("Ce QR Code n’est pas un badge OpenFabLab. Essayez à nouveau ou saisissez votre identifiant.");
             }
           }
           frame = requestAnimationFrame(scan);
@@ -72,7 +74,7 @@
       } catch (error) {
         if (current !== generation) return;
         stop();host.hidden = false;
-        const messages = {NotAllowedError:'L’accès à la caméra a été refusé.', NotFoundError:'Aucune caméra disponible.', NotReadableError:'La caméra est déjà utilisée ou indisponible.'};
+        const messages = {NotAllowedError:__oflT_2ccdb535("L’accès à la caméra a été refusé."), NotFoundError:__oflT_2ccdb535("Aucune caméra disponible."), NotReadableError:__oflT_2ccdb535("La caméra est déjà utilisée ou indisponible.")};
         const note = item('p', (messages[error.name] || 'Le scanner est indisponible.') + ' Vous pouvez saisir votre identifiant.');note.setAttribute('role','status');host.appendChild(note);
       }
     }

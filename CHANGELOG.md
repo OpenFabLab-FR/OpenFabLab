@@ -1,4 +1,88 @@
-# Historique public
+# Historique des versions
+
+## 2.14.4 — version stable — 4 novembre 2026
+
+Stable publique réunissant les étapes2.14.0 à2.14.4 validées sur le terrain.
+Les étapes intermédiaires sont documentées ci-dessous, sans releases rétroactives.
+
+- Ressources : archivage distinct d’une panne, filtre des archives, restauration sans perte de réglages ; réservations/locations/rappels à traiter bloquent l’archivage.
+- Suppression définitive administrateur, confirmation explicite et absence de toute dépendance contrôlée côté serveur ; aucun effacement en cascade.
+- Maintenance : retrait du texte historique sur la visibilité, sans changement de préférence publique.
+- WordPress : sélecteur unique intégré à la première ressource sans titre automatique ; fermeture au second clic, clic extérieur, Échap et sélection, clavier et contraste renforcés.
+- Calendrier public : survol/focus sans déplacement, réduction des animations respectée ; consultation jusqu’à un mois calendaire local, borne contrôlée côté serveur et historique public distinct des réservations.
+- Après 24 h, l’historique ne reprend que les animations publiques non masquées avec participation constatée ; aucune information individuelle publiée. Catalogue de réservation et retrait à 24 h inchangés.
+- Devis/factures PDF et DOCX : préfixe de téléchargement AAAAMMJJ ; contenu et dates imprimées inchangés.
+- SQLite 24 → 25 : seul ajout nullable `resources.archived_at`, migration transactionnelle et réexécution sans modification des données existantes.
+- Plugin Reservations 2.14.4 réellement modifié, protocole 4/révision 3 inchangé ; historique négocié avec la capacité facultative `public_calendar_history_v1`.
+- [Guide et limites](docs/corrections-2.14.4.md).
+
+## 2.14.3 — étape validée, intégrée à la stable 2.14.4
+
+- Catalogue public : catégorie, nom et statut regroupés à gauche, noms longs et petits écrans pris en charge ; informations facultatives conservées dessous.
+- Moyenne OpenLab : résumé dynamique compact FR/EN ; calcul, confidentialité et période de douze mois inchangés.
+- Borne : deux commandes centrées sous leur module, mêmes colonnes et espacements, scanner QR inchangé.
+- Discord maintenance : date française jj/mm/aaaa, anglais non ambigu, fuseau, planification et déduplication conservés.
+- Calendrier interne : deux lignes de commandes rapprochées, filtres indépendants et navigation inchangés.
+- Présence manuelle : suppression des indisponibilités sur « Choisissez votre nom », sans changer l’accueil ou l’identification classique.
+- Inscription borne : identifiant occupé expliqué sous le champ, saisie conservée et nouvelle tentative possible ; erreurs serveur/connexion distinctes et protections de confidentialité maintenues.
+- Départ : fenêtre bloquante au-dessus de l’en-tête et des langues, menu refermé, arrière-plan inaccessible, boucle clavier ; compte à rebours et enregistrement inchangés.
+- Plugin : titre automatique du catalogue facultatif, choix existants conservés, désactivé initialement sur une nouvelle installation.
+- Application et plugin réellement modifiés en 2.14.3 ; SQLite 24, protocole 4/révision 3 et capacités inchangés.
+- [Détails et précautions](docs/corrections-2.14.3.md).
+
+## 2.14.2 — étape validée, intégrée à la stable 2.14.4
+
+- Structure : identité en premier, suivi des ressources sous Modules, programme public OpenLab dans Connexion WordPress.
+- Borne : formulaires harmonisés, visibilité des indisponibilités regroupée avec l’affichage.
+- Nom public central : Ressources, Machines, Équipements ou Salles ; singulier/pluriel et FR/EN, valeurs existantes conservées.
+- Identification : bouton secondaire dans le contenu, sans réduction de la caméra QR.
+- Moyennes publiques facultatives : douze mois calendaires glissants, seuils et règles de mesure inchangés, légende courte.
+- Calendrier : cases homogènes et suppression d’une explication technique, sans changement des filtres ou horaires.
+- Journal de sécurité : libellés lisibles sans réécriture de l’audit.
+- Reservations 2.14.2 : titre personnalisé, moyenne 12 mois et compatibilité négociée ; protocole 4/révision 3.
+- SQLite 24 inchangé ; paquet DSM distinct de la migration 23 → 24. [Guide](docs/corrections-2.14.2.md).
+
+## 2.14.1 — étape validée, intégrée à la stable 2.14.4
+
+- Registre unique de ressources : machines, salles et catégories personnalisées ; entretien sous Activités, liens directs et anciennes URL conservées.
+- Disponible, En maintenance, Hors service : état distinct de l’activation des réservations, sans annulation silencieuse.
+- Suivi en trois sections, formulaires repliés, historique lisible dans le fuseau de la structure et palette de couleur visuelle.
+- Une seule visibilité par ressource, commune à la borne et au catalogue WordPress ; anciens canaux dissociés préservés sans élargissement automatique.
+- Interventions : entretien/prévention, réparation, vérification et autre, historique conservé.
+- Rappel associé explicitement à une intervention ; traitement après réussite, report, annulation ou classement sans intervention.
+- Calendrier : commandes regroupées, filtre explicite conservé, horaires exceptionnels clarifiés.
+- Réglages Structure compacts et formulaires indépendants.
+- Sélecteur FR/EN compact et désactivable publiquement sans toucher à la langue de gestion.
+- Reservations 2.14.1 : shortcodes enregistrés pendant init ; REST séparé, protocole 4/révision 3 inchangé.
+- WordPress : un seul sélecteur FR/EN par page, catalogues vides masqués, alias compatible openfablab_resources et filtre par catégorie.
+- Calendrier public : dates localisées, descriptions existantes et capacités propres aux créneaux ; informations OpenLab plus utiles.
+- Moyenne publique de fréquentation facultative, désactivée par défaut ; données agrégées, séances observées comparables et seuils de publication.
+- SQLite 24 : extension transactionnelle de la contrainte des types d’intervention, conservation des données et liens existants.
+- [Détails et précautions](docs/corrections-2.14.1.md).
+
+
+## 2.14.0 — évolution initiale, intégrée à la stable 2.14.4
+
+- Interface native FR/EN, sessions de langue indépendantes et retour de la borne
+  après inactivité ; données et contenus personnalisés non traduits.
+- Carnet de maintenance facultatif : états techniques, interventions à date réelle,
+  corrections tracées, rappels indépendants ou associés et annonces publiques choisies.
+- Calendrier interne enrichi, exceptions d’ouverture OpenLab et filtre de maintenance.
+- Rappel Discord facultatif et envoi durable anti-doublons ; envoi incertain non rejoué.
+- Rappel e-mail unique configurable avant animation, modèle personnalisable et
+  calendrier personnel .ics / Google après confirmation réelle.
+- Confirmation de création de compte plus claire et diagnostic existant enrichi
+  par des observations explicites, sans exposer de secret ni attester une restauration.
+- Plugin Reservations 2.14 : calendrier public hebdomadaire, machines choisies,
+  langues publiques indépendantes et calendrier personnel dans les pages privées.
+- Migration additive SQLite 22 → 23, sauvegardes et données historiques préservées.
+  Protocole 4/révision 3 inchangé ; ancien plugin 2.13 compatible avec ses fonctions.
+
+[Guide et réglages](docs/evolution-2.14.0.md) · [WordPress](docs/wordpress-2.14.0.md).
+
+---
+
+<!-- Versions publiques précédentes conservées ci-dessous. -->
 
 ## 2.13.0 — version stable — 22 octobre 2026
 

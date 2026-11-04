@@ -5,6 +5,7 @@ from decimal import Decimal,InvalidOperation
 from datetime import date
 from uuid import uuid4
 from flask import Blueprint,abort,flash,redirect,render_template,request,url_for
+from i18n import flash
 import memberships as m
 import v210_config as config
 

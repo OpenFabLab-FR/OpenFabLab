@@ -1,20 +1,26 @@
 """Local calendar projection, no cloud/library, no business writes."""
+from i18n import native as __ui_native__
+from i18n import t as __ui_text__
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from flask import abort, url_for, session
 import re
 
-COLORS = {'openlab':'#447e68','animation':'#16849c','reservation':'#94703a','rental':'#7657a5','training':'#a65378'}
+COLORS = {'openlab':'#447e68','animation':'#16849c','reservation':'#94703a','rental':'#7657a5','training':'#a65378','maintenance':'#8b6540'}
+
+def show_maintenance(args):
+    values=args.getlist('maintenance') if hasattr(args,'getlist') else [args.get('maintenance','1')]
+    return (values[-1] if values else '1')!='0'
 
 
 def set_visibility(db,kind,key,day,hidden):
     if kind not in COLORS or not isinstance(key,str) or len(key)>120:
-        raise ValueError('Événement inconnu.')
+        raise ValueError(__ui_text__('Événement inconnu.'))
     date.fromisoformat(day)
     exists=(kind=='openlab' and key==day) or (kind in ('animation','rental','reservation') and db.execute('SELECT 1 FROM fablab_services WHERE id=? AND service_type=?',(key,kind)).fetchone()) or (kind=='reservation' and db.execute('SELECT 1 FROM resource_bookings WHERE booking_uuid=?',(key,)).fetchone()) or (kind=='training' and db.execute('SELECT 1 FROM user_authorizations WHERE grant_uuid=?',(key,)).fetchone())
     if not exists:
-        raise ValueError('Événement inconnu.')
+        raise ValueError(__ui_text__('Événement inconnu.'))
     db.execute('INSERT INTO calendar_visibility VALUES(?,?,?,?,?) ON CONFLICT(event_kind,event_key,occurrence_date) DO UPDATE SET hidden=excluded.hidden,updated_at=excluded.updated_at',
                (kind,key,day,int(hidden),datetime.now(timezone.utc).isoformat()))
 
@@ -64,17 +70,17 @@ def enrich_billing_event(db, event, modules, a):
     if not row:
         return []
     event['url'] = url_for('admin_billing_detail', record_id=row['id'])
-    event['action_label'] = 'Ouvrir le dossier'
+    event['action_label'] = __ui_text__('Ouvrir le dossier')
     event['detail_title'] = row['title'] or event['title']
     event['description'] = row['description'] or ''
-    return ['Client : ' + (row['client_structure'] or row['client_contact']),
-            'Dossier : ' + row['quote_number'], 'Statut : ' + a.billing_status_label(dict(row))]
+    return [__ui_text__('Client : ') + (row['client_structure'] or row['client_contact']),
+            __ui_text__('Dossier : ') + row['quote_number'], __ui_text__('Statut : ') + a.billing_status_label(dict(row))]
 
 
 def calendar_view(db,args,a):
     view=args.get('view','week')
     if view not in {'week','month'}:abort(400)
-    zone=ZoneInfo(a.read_setting(db,'structure_timezone','Europe/Paris'))
+    zone=ZoneInfo(a.read_setting(db,'structure_timezone',__ui_text__('Europe/Paris')))
     today=datetime.now(zone).date()
     modules = a.load_modules(db)
     current = datetime.now(zone)
@@ -94,7 +100,7 @@ def calendar_view(db,args,a):
     def add(title,kind,key,day,begin=None,finish=None,link=None,color=None):
         if not start<=day<end:return
         item={'title':title,'kind':kind,'key':str(key),'day':day,'url':link or '#',
-              'color':a.read_setting(db,'calendar_color_'+kind,COLORS[kind]), 'all_day':not begin,'time':'',
+              'color':color or a.read_setting(db,'calendar_color_'+kind,COLORS[kind]), 'all_day':not begin,'time':'',
               'hidden':False,'automatic_hidden':False}
         override=db.execute('SELECT hidden FROM calendar_visibility WHERE event_kind=? AND event_key=? AND occurrence_date=?',(kind,str(key),day.isoformat())).fetchone()
         item['hidden']=bool(override and override['hidden'])
@@ -116,28 +122,31 @@ def calendar_view(db,args,a):
         schedule={i:row for i,row in enumerate(a.load_openlab_schedule(db))}
         day=start
         while day<end:
-            row=schedule[day.weekday()]
+            from openlab_openings import day_schedule
+            row=day_schedule(db,day,schedule)
+            if row['exception'] and not row['active']:
+                add(row['title'] if row['title']!=__ui_text__('OpenLab') else __ui_text__('Fermeture exceptionnelle OpenLab'),'openlab',day,day,link=url_for('v214.openings'),color='#777f86')
             if row['active'] and row['start'] and row['end']:
-                add('OpenLab','openlab',day,day,datetime.fromisoformat(str(day)+'T'+row['start']),
-                    datetime.fromisoformat(str(day)+'T'+row['end']),url_for('admin_frequency_day',date=day.isoformat()))
-                if datetime.fromisoformat(str(day)+'T'+row['start']).replace(tzinfo=zone) <= current:
+                add(row['title'],'openlab',day,day,datetime.fromisoformat(str(day)+__ui_text__('T')+row['start']),
+                    datetime.fromisoformat(str(day)+__ui_text__('T')+row['end']),url_for('admin_frequency_day',date=day.isoformat()))
+                if datetime.fromisoformat(str(day)+__ui_text__('T')+row['start']).replace(tzinfo=zone) <= current:
                     # Same counters and statistical identities as the existing
                     # attendance page, scoped to the OpenLab interval.
                     attendance = a.load_day_attendance(db, day, row['start'], row['end'])
                     summary = attendance['summary']
-                    daily[day][-1]['attendance'] = str(summary['unique_users'])+' usager'+('s' if summary['unique_users']!=1 else '')+' · '+str(summary['visitors'])+' visiteur'+('s' if summary['visitors']!=1 else '')
+                    daily[day][-1]['attendance'] = str(summary['unique_users'])+__ui_text__(' usager')+('s' if summary['unique_users']!=1 else '')+' · '+str(summary['visitors'])+__ui_text__(' visiteur')+('s' if summary['visitors']!=1 else '')
                     event = daily[day][-1]
-                    ended=datetime.fromisoformat(str(day)+'T'+row['end']).replace(tzinfo=zone)<current
+                    ended=datetime.fromisoformat(str(day)+__ui_text__('T')+row['end']).replace(tzinfo=zone)<current
                     event['automatic_hidden']=bool(ended and summary['unique_users']==0 and summary['visitors']==0)
-                    event['action_label'] = 'Ouvrir la journée'
+                    event['action_label'] = __ui_text__('Ouvrir la journée')
                     event['extra_details'] = []
                     if summary['peak_users']:
-                        event['extra_details'].append('Pic simultané : '+str(summary['peak_users'])+' usager(s) à '+summary['peak_at'])
+                        event['extra_details'].append(__ui_text__('Pic simultané : ')+str(summary['peak_users'])+__ui_text__(' usager(s) à ')+summary['peak_at'])
                     weather = summary['peak_weather']
                     if weather:
-                        event['extra_details'].append('Météo enregistrée au pic : '+weather['description']+' · '+str(round(weather['temperature_c']))+' °C')
+                        event['extra_details'].append(__ui_text__('Météo enregistrée au pic : ')+weather['description']+' · '+str(round(weather['temperature_c']))+__ui_text__(' °C'))
                     event['people'] = [{'name':item['identity'], 'category':item['row']['statistical_category'],
-                        'state':str(item['duration_seconds']//60)+' min' if item['duration_seconds'] is not None else ''}
+                        'state':str(item['duration_seconds']//60)+__ui_text__(' min') if item['duration_seconds'] is not None else ''}
                         for item in attendance['sessions']]
             day+=timedelta(days=1)
     for service in db.execute('''SELECT s.*,b.rental_end_date FROM fablab_services s
@@ -160,18 +169,33 @@ def calendar_view(db,args,a):
                 day+=timedelta(days=1)
             continue
         if service['start_time'] and service['end_time']:
-            begin=datetime.fromisoformat(service['service_date']+'T'+service['start_time'])
-            finish=datetime.fromisoformat(service['service_date']+'T'+service['end_time'])
+            begin=datetime.fromisoformat(service['service_date']+__ui_text__('T')+service['start_time'])
+            finish=datetime.fromisoformat(service['service_date']+__ui_text__('T')+service['end_time'])
         else:begin=finish=None
         add(service['title'],kind,service['id'],date.fromisoformat(service['service_date']),begin,finish,link)
     lower=datetime.combine(start,datetime.min.time(),zone).astimezone(timezone.utc).isoformat()
     upper=datetime.combine(end,datetime.min.time(),zone).astimezone(timezone.utc).isoformat()
     for row in (db.execute("SELECT b.*,r.name,COALESCE(r.color,t.color) AS display_color FROM resource_bookings b JOIN resources r USING(resource_uuid) JOIN resource_types t USING(type_key) WHERE status IN('requested','confirmed','performed') AND b.starts_at<? AND b.ends_at>?",(upper,lower)) if modules['resources'] else []):
-        add_span(row['name']+' · '+{'requested':'demande','confirmed':'confirmée','performed':'effectuée'}[row['status']],
+        add_span(row['name']+' · '+{'requested':'demande','confirmed':__ui_text__('confirmée'),'performed':__ui_text__('effectuée')}[row['status']],
                  'reservation',row['booking_uuid'],datetime.fromisoformat(row['starts_at']),datetime.fromisoformat(row['ends_at']),
                  url_for('evolution.resource_bookings')+'#reservation-'+row['booking_uuid'],row['display_color'])
     for row in (db.execute('SELECT g.*,a.name FROM user_authorizations g JOIN authorizations a USING(authorization_uuid) WHERE performed_on>=? AND performed_on<?',(str(start),str(end))) if modules['authorizations'] else []):
-        add('Formation · '+row['name'],'training',row['grant_uuid'],date.fromisoformat(row['performed_on']),link=url_for('evolution.authorizations')+'#formation-'+row['grant_uuid'])
+        add(__ui_text__('Formation · ')+row['name'],'training',row['grant_uuid'],date.fromisoformat(row['performed_on']),link=url_for('evolution.authorizations')+'#formation-'+row['grant_uuid'])
+    from machine_maintenance import enabled as maintenance_enabled
+    if maintenance_enabled(db) and show_maintenance(args):
+        for row in db.execute('SELECT i.*,r.name FROM machine_interventions i JOIN resources r USING(resource_uuid) WHERE performed_on>=? AND performed_on<?',(str(start),str(end))):
+            add(__ui_text__('Intervention effectuée · ')+row['name'],'maintenance',row['intervention_uuid'],date.fromisoformat(row['performed_on']),link=url_for('v214.machine',key=row['resource_uuid']),color='#3b8a68')
+            daily[date.fromisoformat(row['performed_on'])][-1]['extra_details']=[row['description']]
+        for row in db.execute("SELECT m.*,r.name FROM machine_reminders m JOIN resources r USING(resource_uuid) WHERE state='pending' AND due_on>=? AND due_on<?",(str(start),str(end))):
+            add(__ui_text__('Rappel · ')+row['name'],'maintenance',row['reminder_uuid'],date.fromisoformat(row['due_on']),link=url_for('v214.machine',key=row['resource_uuid']),color='#4478aa')
+            daily[date.fromisoformat(row['due_on'])][-1]['extra_details']=[row['subject']]
+        for row in db.execute("SELECT c.*,r.name,r.archived_at FROM machine_condition c JOIN resources r USING(resource_uuid) WHERE c.status!='operational'"):
+            day=max(start,datetime.fromisoformat(row['status_since']).astimezone(zone).date())
+            # No fabricated ending date is stored for an ongoing maintenance.
+            archived=datetime.fromisoformat(row['archived_at']).astimezone(zone).date() if row['archived_at'] else None
+            while day<end and day<=today and (not archived or day<=archived):
+                add(__ui_text__('Maintenance en cours · ')+row['name'],'maintenance',row['resource_uuid'],day,link=url_for('v214.machine',key=row['resource_uuid']),color='#a76c37')
+                day+=timedelta(days=1)
     configured_start, configured_end = display_window(db, a)
     timed = [event for events in daily.values() for event in events if not event['all_day'] and (show_hidden or not (event['hidden'] or event['automatic_hidden']))]
     # Extend this period only; never hide an exceptional early/late event or
@@ -190,14 +214,14 @@ def calendar_view(db,args,a):
         # Presentation metadata only; interval calculation and counters above
         # remain unchanged. This route is restricted to the existing team roles.
         for event in events:
-            detail = [event['day'].strftime('%d/%m/%Y'), event['time'] or 'Journée entière']
+            detail = [event['day'].strftime('%d/%m/%Y'), event['time'] or __ui_text__('Journée entière')]
             event.setdefault('people', [])
             if event.get('attendance'):
                 detail.append(event['attendance'])
             if event['hidden']:
-                detail.append('Masqué manuellement — données conservées')
+                detail.append(__ui_text__('Masqué manuellement — données conservées'))
             elif event['automatic_hidden']:
-                detail.append('Non tenu automatiquement — aucune présence enregistrée')
+                detail.append(__ui_text__('Non tenu automatiquement — aucune présence enregistrée'))
             detail.extend(event.get('extra_details', []))
             detail.extend(enrich_billing_event(db, event, modules, a))
             if event['kind']=='reservation' and not event.get('description') and (session.get('access_role') or ('admin' if session.get('admin_authenticated') else None))=='admin':
@@ -208,16 +232,16 @@ def calendar_view(db,args,a):
                 row = db.execute('SELECT b.*,u.first_name,u.last_name,r.required_authorization,a.name AS authorization_name FROM resource_bookings b LEFT JOIN users u ON u.id=b.user_id JOIN resources r USING(resource_uuid) LEFT JOIN authorizations a ON a.authorization_uuid=r.required_authorization WHERE booking_uuid=?',(event['key'],)).fetchone()
                 if row:
                     from resource_booking import STATUS_LABELS
-                    detail.extend([((row['first_name'] or 'Usager supprimé') + ' ' + (row['last_name'] or '')).strip(), STATUS_LABELS[row['status']]])
-                    detail.append('Tarif : '+format(row['amount_cents']/100,'.2f').replace('.',',')+' €')
+                    detail.extend([((row['first_name'] or __ui_text__('Usager supprimé')) + ' ' + (row['last_name'] or '')).strip(), STATUS_LABELS[row['status']]])
+                    detail.append(__ui_text__('Tarif : ')+format(row['amount_cents']/100,'.2f').replace('.',',')+' €')
                     if row['required_authorization']:
-                        detail.append('Habilitation requise : '+(row['authorization_name'] or 'Habilitation historique'))
+                        detail.append(__ui_text__('Habilitation requise : ')+(row['authorization_name'] or __ui_text__('Habilitation historique')))
                         from resource_booking import authorization_valid
-                        detail.append('Habilitation valable au créneau' if row['user_id'] and authorization_valid(db,row['user_id'],row['required_authorization'],datetime.fromisoformat(row['starts_at']).astimezone(zone).isoformat(),datetime.fromisoformat(row['ends_at']).astimezone(zone).isoformat()) else 'Habilitation à vérifier')
+                        detail.append(__ui_text__('Habilitation valable au créneau') if row['user_id'] and authorization_valid(db,row['user_id'],row['required_authorization'],datetime.fromisoformat(row['starts_at']).astimezone(zone).isoformat(),datetime.fromisoformat(row['ends_at']).astimezone(zone).isoformat()) else __ui_text__('Habilitation à vérifier'))
             elif event['kind'] == 'training':
                 row = db.execute('SELECT u.first_name,u.last_name FROM user_authorizations g LEFT JOIN users u ON u.id=g.user_id WHERE grant_uuid=?',(event['key'],)).fetchone()
                 if row:
-                    detail.append(((row['first_name'] or 'Usager supprimé') + ' ' + (row['last_name'] or '')).strip())
+                    detail.append(((row['first_name'] or __ui_text__('Usager supprimé')) + ' ' + (row['last_name'] or '')).strip())
             elif event['kind'] == 'animation':
                 description=db.execute('SELECT description FROM fablab_services WHERE id=?',(event['key'],)).fetchone()
                 if description and description[0]:
@@ -227,29 +251,30 @@ def calendar_view(db,args,a):
                     from reservations_sync import booking_counts, booking_reservation_status
                     bookings = db.execute('SELECT b.*,u.category FROM animation_bookings b LEFT JOIN users u ON u.id=b.user_id WHERE service_id=? AND environment=? ORDER BY CASE b.status WHEN \'waitlisted\' THEN 1 ELSE 0 END,b.created_at',(event['key'],config['environment'])).fetchall()
                     counts = booking_counts(bookings)
-                    detail.append(str(counts['confirmed'])+' confirmé(s) / '+str(config['capacity'])+' places')
+                    detail.append(str(counts['confirmed'])+__ui_text__(' confirmé(s) / ')+str(config['capacity'])+__ui_text__(' places'))
                     if counts['offer_pending']:
-                        detail.append(str(counts['offer_pending'])+' place(s) temporairement proposée(s)')
-                    detail.append(str(max(0,config['capacity']-counts['confirmed']-counts['offer_pending']))+' place(s) libre(s)')
+                        detail.append(str(counts['offer_pending'])+__ui_text__(' place(s) temporairement proposée(s)'))
+                    detail.append(str(max(0,config['capacity']-counts['confirmed']-counts['offer_pending']))+__ui_text__(' place(s) libre(s)'))
                     if counts['waitlisted']:
-                        detail.append(str(counts['waitlisted'])+' en liste d’attente')
-                    labels = {'confirmed':'Confirmée','waitlisted':'Liste d’attente','offer_pending':'Place proposée','cancelled':'Annulée','expired':'Expirée'}
+                        detail.append(str(counts['waitlisted'])+__ui_text__(' en liste d’attente'))
+                    labels = {'confirmed':__ui_native__('Confirmée'),'waitlisted':__ui_native__('Liste d’attente'),'offer_pending':__ui_native__('Place proposée'),'cancelled':__ui_native__('Annulée'),'expired':__ui_native__('Expirée')}
                     event['people'] = [{'name':(b['first_name']+' '+b['last_name']).strip(), 'category':b['category'] or '',
-                        'state':labels.get(booking_reservation_status(b),'En cours')}
+                        'state':labels.get(booking_reservation_status(b),__ui_text__('En cours'))}
                         for b in bookings if b['status'] not in ('cancelled','expired','declined')]
                     slots=db.execute('SELECT * FROM animation_slots WHERE service_id=? AND active=1 ORDER BY starts_at',(event['key'],)).fetchall()
                     if slots:
                         from reservations_sync import booking_capacity_used
                         for slot in slots:
                             count=booking_capacity_used(db,int(event['key']),slot['slot_uuid'])
-                            detail.append(datetime.fromisoformat(slot['starts_at']).astimezone(zone).strftime('%H:%M')+'–'+datetime.fromisoformat(slot['ends_at']).astimezone(zone).strftime('%H:%M')+' : '+str(count)+' / '+str(slot['capacity'])+' place(s)')
+                            detail.append(datetime.fromisoformat(slot['starts_at']).astimezone(zone).strftime('%H:%M')+'–'+datetime.fromisoformat(slot['ends_at']).astimezone(zone).strftime('%H:%M')+' : '+str(count)+' / '+str(slot['capacity'])+__ui_text__(' place(s)'))
                 row = db.execute('SELECT actual_participants,expected_participants FROM fablab_services WHERE id=?',(event['key'],)).fetchone()
                 if row:
                     if row['actual_participants'] is not None:
-                        detail.append(str(row['actual_participants']) + ' participant(s) présent(s)')
+                        detail.append(str(row['actual_participants']) + __ui_text__(' participant(s) présent(s)'))
                     if row['expected_participants'] is not None:
-                        detail.append('Capacité : ' + str(row['expected_participants']) + ' place(s)')
-            event['details'] = '\n'.join(detail)
+                        detail.append(__ui_text__('Capacité : ') + str(row['expected_participants']) + __ui_text__(' place(s)'))
+            from i18n import NativeText
+            event['details'] = '\n'.join(__ui_text__(str(part)) if isinstance(part,NativeText) else part for part in detail)
             note=db.execute('SELECT note FROM calendar_notes WHERE event_kind=? AND event_key=? AND occurrence_date=?',
                 (event['kind'],event['key'],event['day'].isoformat())).fetchone()
             event['internal_note']=note['note'] if note else ''
@@ -263,4 +288,4 @@ def calendar_view(db,args,a):
             'has_all_day':any(day['all_day'] for day in days),
             'timeline_height':max(180, window_duration), 'window_extended':(window_start,window_end)!=(configured_start,configured_end),
             'visible_start':f'{window_start//60:02d}:{window_start%60:02d}', 'visible_end':f'{window_end//60:02d}:{window_end%60:02d}',
-            'heading':('Semaine du '+start.strftime('%d/%m/%Y')) if view=='week' else chosen.strftime('%m/%Y')}
+            'heading':(__ui_text__('Semaine du ')+start.strftime('%d/%m/%Y')) if view=='week' else chosen.strftime('%m/%Y')}

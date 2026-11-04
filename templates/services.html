@@ -80,7 +80,7 @@
                             {% if service.service_type == 'animation' %}—{% else %}{{ service.client_name }}{% if admin_access_role == 'admin' %}<br><small>{{ service.invoice_reference }}</small>{% endif %}{% endif %}
                         </td>
                         <td data-label="Participants">
-                            {% if service.service_type == 'animation' %}{% if service.booking_mode == 'slots' %}{{ service.slot_count }} créneau{% if service.slot_count != 1 %}x{% endif %}{% else %}{{ service.expected_participants }} place{% if service.expected_participants != 1 %}s{% endif %}{% endif %} / {{ service.registered_count }} inscrit{% if service.registered_count != 1 %}s{% endif %} / {{ service.actual_participants or 0 }} présent{% if service.actual_participants != 1 %}s{% endif %}{% if service.waiting_count > 0 %}<br><small>{{ service.waiting_count }} en attente</small>{% endif %}
+                            {% if service.service_type == 'animation' %}{% if service.booking_mode == 'slots' %}{{ service.slot_count }} {{ _('créneau' if service.slot_count == 1 else 'créneaux') }}{% else %}{{ service.expected_participants }} {{ _('place' if service.expected_participants == 1 else 'places') }}{% endif %} / {{ _('{0} inscrit' if service.registered_count == 1 else '{0} inscrits', service.registered_count) }} / {{ _('{0} présent' if service.actual_participants == 1 else '{0} présents', service.actual_participants or 0) }}{% if service.waiting_count > 0 %}<br><small>{{ service.waiting_count }} en attente</small>{% endif %}
                             {% elif service.service_type == 'reservation' %}{{ service.participants }}
                             {% else %}—{% endif %}
                         </td>

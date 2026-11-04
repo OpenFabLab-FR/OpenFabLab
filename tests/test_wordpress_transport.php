@@ -1,6 +1,6 @@
 <?php
 // Current distributed plugin only; no historical engine is loaded.
-define('ABSPATH',__DIR__);define('OPENFABLAB_RES_VERSION','2.8.2');
+define('ABSPATH',__DIR__);define('OPENFABLAB_RES_VERSION','2.14.0');
 define('OPENFABLAB_RES_SCHEMA_VERSION','2.8.2-relay3');
 define('OPENFABLAB_RES_PATH',dirname(__DIR__).'/wordpress/openfablab-reservations/');
 define('OPENFABLAB_RES_FILE',OPENFABLAB_RES_PATH.'openfablab-reservations.php');
@@ -17,6 +17,8 @@ function wp_unslash($x){return $x;}
 function current_user_can($x){return true;}
 function wp_nonce_field($x){echo '<input name="_wpnonce" value="fictional-nonce">';}
 function checked($a,$b,$echo=false){return $a===$b?'checked':'';}
+function selected($a,$b,$echo=false){return $a===$b?'selected':'';}
+function add_shortcode(...$args){}
 function admin_url($x){return 'https://example.invalid/wp-admin/'.$x;}
 function plugins_url($x,$file){return 'https://example.invalid/plugin/'.$x;}
 function human_time_diff($a,$b){return (string)max(0,$b-$a).' s';}
@@ -40,7 +42,7 @@ class WPDB {
     function get_row($sql){return (object)['pending'=>0,'processing'=>0,'failed'=>0,'retrying'=>0];}
 }
 $wpdb=new WPDB;
-foreach(['database','relay','api','admin']as$name)require OPENFABLAB_RES_PATH.'includes/class-openfablab-'.$name.'.php';
+foreach(['database','relay','public','api','admin']as$name)require OPENFABLAB_RES_PATH.'includes/class-openfablab-'.$name.'.php';
 OpenFabLab_API::register();
 foreach(['/sync/snapshot','/sync/animations','/sync/directory','/sync/events','/sync/commands','/heartbeat']as$route)check(!isset($routes[$route]),'obsolete route absent '.$route);
 foreach(['Bookings','Slots','Emails','Reconciliation','Legacy_Reset','Test_Maintenance','Family_Gateway']as$name)check(!class_exists('OpenFabLab_'.$name),'obsolete class absent '.$name);

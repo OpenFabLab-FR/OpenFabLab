@@ -2077,7 +2077,7 @@ class OpenFabLabTestCase(unittest.TestCase):
         self.assertEqual(quote_pdf.status_code, 200)
         self.assertTrue(quote_pdf.data.startswith(b"%PDF"))
         expected_quote_name = (
-            f"2408{current_year}_Devis_AssociationTest_FABLAB_1.pdf"
+            f"{current_year}0824_Devis_AssociationTest_FABLAB_1.pdf"
         )
         self.assertIn(
             expected_quote_name,
@@ -2126,7 +2126,7 @@ class OpenFabLabTestCase(unittest.TestCase):
         self.assertTrue(invoice_pdf.data.startswith(b"%PDF"))
         invoice_date = datetime.strptime(
             invoiced_record["invoice_date"], "%Y-%m-%d"
-        ).strftime("%d%m%Y")
+        ).strftime("%Y%m%d")
         expected_invoice_name = (
             f"{invoice_date}_Facture_AssociationTest_FABLAB_1.pdf"
         )

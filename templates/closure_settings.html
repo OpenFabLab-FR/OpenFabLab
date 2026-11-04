@@ -54,7 +54,7 @@
         <h2>Fermer le FabLab maintenant</h2>
         <p>Clôture toutes les sessions actuellement ouvertes à l'heure réelle, sans modifier le planning.</p>
     </div>
-    <form method="post" action="{{ url_for('admin_close_all_now') }}" onsubmit="return confirm('Clôturer maintenant toutes les sessions ouvertes ?');">
+    <form method="post" action="{{ url_for('admin_close_all_now') }}" onsubmit="return confirm({{ _('Clôturer maintenant toutes les sessions ouvertes ?')|tojson|forceescape }});">
         <button class="admin-button danger" type="submit">Éjecter tous les usagers présents</button>
     </form>
 </section>

@@ -1,3 +1,17 @@
+## Version stable 2.14.4 — SQLite 25
+
+Télécharger la [release officielle](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.14.4)
+et vérifier SHA256SUMS avant extraction. Une installation neuve utilise SQLite 25.
+Pour une installation existante, lire [le parcours de mise à jour](upgrade.md) :
+22→25 depuis 2.13.0, 23→25 ou 24→25 selon la source, avec sauvegardes et essai isolé.
+Ne jamais utiliser une ancienne application sur une base migrée. Le plugin
+Reservations 2.14.4 reste facultatif et se remplace séparément sans désinstallation.
+[Utilisation](utilisation.md) · [WordPress](wordpress-2.14.4.md) · [Compatibilité](platform-compatibility.md).
+Les exemples d’anciennes versions conservés ci-dessous sont des références historiques ;
+les opérations générales restent à adapter à votre serveur et à sa configuration.
+
+---
+
 # Installer OpenFabLab sur Raspberry Pi
 
 **Guide de préparation expérimental : aucun Raspberry Pi physique n'a été testé pour cette version.** Les wheels des dépendances sont examinées pour Linux ARM64 ; cela ne prouve ni leur exécution ni la performance sur un Pi.

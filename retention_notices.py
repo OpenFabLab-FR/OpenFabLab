@@ -169,6 +169,7 @@ def summary(db,now=None):
 
 def register(application,a):
     from flask import Blueprint,flash,redirect,request,url_for
+    from i18n import flash
     from evolution_routes import require_team,require_csrf
     bp=Blueprint('retention_notices',__name__)
     @application.context_processor

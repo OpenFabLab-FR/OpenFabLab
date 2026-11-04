@@ -3,6 +3,7 @@
 New requests redirect to the common OpenFabLab family engine. Protocol-2 outbox
 helpers remain for historical reading/tests, but schema 15 never replays them.
 """
+from i18n import native as __ui_native__
 import hashlib
 import hmac
 import json
@@ -19,9 +20,9 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 from evolution_routes import require_csrf, require_team
 from reservations_sync import booking_capacity_used, load_sync_secret, normalize_email, normalize_phone
 
-STATES = {'review':'Demande familiale à traiter par l’équipe', 'pending':'En attente de confirmation', 'sending':'En attente de confirmation',
-          'uncertain':'À vérifier par l’équipe', 'confirmed':'Confirmée',
-          'waitlisted':'Liste d’attente', 'rejected':'Demande refusée', 'cancelled':'Demande annulée'}
+STATES = {'review':__ui_native__('Demande familiale à traiter par l’équipe'), 'pending':__ui_native__('En attente de confirmation'), 'sending':__ui_native__('En attente de confirmation'),
+          'uncertain':__ui_native__('À vérifier par l’équipe'), 'confirmed':__ui_native__('Confirmée'),
+          'waitlisted':__ui_native__('Liste d’attente'), 'rejected':__ui_native__('Demande refusée'), 'cancelled':__ui_native__('Demande annulée')}
 ACTIVE = {'review', 'pending', 'sending', 'uncertain', 'confirmed', 'waitlisted'}
 
 

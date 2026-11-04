@@ -1,0 +1,7 @@
+<div class="resource-public-settings" id="resources-options">
+  <label class="checkbox-field"><input form="resource-display-settings" type="checkbox" name="enabled" value="1" {% if maintenance_enabled %}checked{% endif %}><span><strong>Activer le suivi des ressources</strong><small>Suivez leur état, les entretiens et les indisponibilités, même sans réservation ni connexion WordPress.</small></span></label>
+  <div class="resource-public-controls">
+    <label class="form-field"><span>Nom public des ressources</span><select form="resource-display-settings" name="resource_public_name">{% for key,value in resource_public_choices.items() %}<option value="{{ key }}" {% if settings214.get('resource_public_name','resources')==key %}selected{% endif %}>{{ _(value[0]) }}</option>{% endfor %}</select><small>Sur la borne et dans le catalogue WordPress, sans renommer vos ressources.</small></label>
+    <button form="resource-display-settings" class="admin-button secondary compact" type="submit">Enregistrer le suivi et le nom public</button>
+  </div>
+</div>

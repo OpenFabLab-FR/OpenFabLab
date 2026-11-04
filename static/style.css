@@ -6746,7 +6746,6 @@ tbody tr:last-child td {
 /* Kiosk presence cards: stable two-line identity and a comfortable whole-card target. */
 .home-page .present-list {grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px}
 .home-page .present-list li {min-height:88px}
-.home-page.dialog-open .page-shell {position:relative;z-index:3}
 .home-page .present-person-button {padding:12px 14px;gap:12px}
 .home-page .present-details {display:grid;grid-template-columns:minmax(0,1fr);gap:5px;align-items:start;justify-items:start}
 .home-page .present-name {max-width:100%;font-size:1.05rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

@@ -65,8 +65,8 @@
             <form method="post" action="{{ url_for('admin_billing_toggle_cancellation', record_id=record.id) }}"><button class="admin-button primary" type="submit">Réouvrir le devis</button></form>
         {% elif not record.invoice_number %}
             <form method="post" action="{{ url_for('admin_billing_sign', record_id=record.id) }}"><button class="admin-button {{ 'secondary' if record.quote_signed_at else 'primary' }}" type="submit">{{ 'Retirer « devis signé »' if record.quote_signed_at else 'Marquer le devis comme signé' }}</button></form>
-            {% if record.quote_signed_at %}<form method="post" action="{{ url_for('admin_billing_create_invoice', record_id=record.id) }}" onsubmit="return confirm('Créer la facture liée à ce devis ?');"><button class="admin-button primary" type="submit">Créer la facture</button></form>{% endif %}
-            <form method="post" action="{{ url_for('admin_billing_toggle_cancellation', record_id=record.id) }}" onsubmit="return confirm('Annuler ce devis sans le supprimer ? Il restera consultable et pourra être réouvert.');"><button class="admin-button danger" type="submit">Annuler le devis</button></form>
+            {% if record.quote_signed_at %}<form method="post" action="{{ url_for('admin_billing_create_invoice', record_id=record.id) }}" onsubmit="return confirm({{ _('Créer la facture liée à ce devis ?')|tojson|forceescape }});"><button class="admin-button primary" type="submit">Créer la facture</button></form>{% endif %}
+            <form method="post" action="{{ url_for('admin_billing_toggle_cancellation', record_id=record.id) }}" onsubmit="return confirm({{ _('Annuler ce devis sans le supprimer ? Il restera consultable et pourra être réouvert.')|tojson|forceescape }});"><button class="admin-button danger" type="submit">Annuler le devis</button></form>
         {% elif not record.invoice_sent_at %}
             <form method="post" action="{{ url_for('admin_billing_mark_sent', record_id=record.id) }}"><button class="admin-button primary" type="submit">Marquer la facture comme envoyée</button></form>
         {% else %}

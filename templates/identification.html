@@ -9,7 +9,7 @@
 {% if id_lock_seconds %}<script>window.setTimeout(function () { window.location.reload(); }, {{ id_lock_seconds * 1000 }});</script>{% endif %}
 {% endblock %}
 {% block header_action %}
-<a class="header-link" href="{{ url_for('index') }}">← Accueil</a>
+<a class="header-link identification-home-link" href="{{ url_for('index') }}" aria-label="Retour à l'accueil"><span aria-hidden="true">←</span><span class="identification-home-text">Accueil</span></a>
 {% endblock %}
 
 {% block content %}
@@ -80,7 +80,7 @@
     </article>
 </section>
 
-<p class="manual-fallback">
+<div class="identification-secondary-actions"><p class="manual-fallback">
     <a href="{{ url_for('users') }}">Je n'ai pas mon badge ou mon identifiant</a>
-</p>
+</p>{% if unavailable_machines %}<button type="button" class="admin-button secondary machine-info-trigger" data-machine-dialog aria-haspopup="dialog">🔧 {{ resource_unavailable_count }}</button>{% endif %}</div>
 {% endblock %}

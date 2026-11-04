@@ -3,22 +3,23 @@
 Discord has no idempotency API. An ambiguous send or crashed claim is retained
 as uncertain and is never automatically retransmitted, preventing duplicates.
 """
+from i18n import native as __ui_native__
 import hashlib
 import json
 import re
 from datetime import datetime, timedelta, timezone
 
 LABELS = {
-    'new_booking':'Nouvelle réservation enregistrée',
-    'waitlist_entry':'Nouvelle entrée en liste d’attente',
-    'cancellation':'Réservation annulée',
-    'offer_proposed':'Place proposée',
-    'offer_accepted':'Place acceptée',
-    'link_review':'Rattachement à vérifier',
-    'animation_full':'Animation complète',
-    'waitlist_full':'Liste d’attente complète',
-    'email_error':'Erreur d’envoi d’un e-mail de réservation',
-    'sync_error':'Synchronisation WordPress momentanément indisponible',
+    'new_booking':__ui_native__('Nouvelle réservation enregistrée'),
+    'waitlist_entry':__ui_native__('Nouvelle entrée en liste d’attente'),
+    'cancellation':__ui_native__('Réservation annulée'),
+    'offer_proposed':__ui_native__('Place proposée'),
+    'offer_accepted':__ui_native__('Place acceptée'),
+    'link_review':__ui_native__('Rattachement à vérifier'),
+    'animation_full':__ui_native__('Animation complète'),
+    'waitlist_full':__ui_native__('Liste d’attente complète'),
+    'email_error':__ui_native__('Erreur d’envoi d’un e-mail de réservation'),
+    'sync_error':__ui_native__('Synchronisation WordPress momentanément indisponible'),
 }
 KINDS = {'confirmed':'new_booking','waitlisted':'waitlist_entry','cancelled':'cancellation',
          'offer_pending':'offer_proposed','accepted':'offer_accepted'}

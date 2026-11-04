@@ -1,11 +1,13 @@
+/* OFL native UI marked */
 "use strict";
+  const __oflT_d713c290=text=>window.OFLTranslate?.(text)||text;
 
 function updateParisClock() {
     const clock = document.querySelector("[data-paris-clock]");
     if (!clock) return;
 
     const now = new Date();
-    const formatter = new Intl.DateTimeFormat("fr-FR", {
+    const formatter = new Intl.DateTimeFormat((document.documentElement.lang==='en'?'en-GB':'fr-FR'), {
         timeZone: "Europe/Paris",
         weekday: "long",
         day: "numeric",
@@ -63,7 +65,7 @@ let screenWakeLock = null;
 
 function parisMinutesNow() {
     try {
-        const formatter = new Intl.DateTimeFormat("fr-FR", {
+        const formatter = new Intl.DateTimeFormat((document.documentElement.lang==='en'?'en-GB':'fr-FR'), {
             timeZone: "Europe/Paris",
             hour: "2-digit",
             minute: "2-digit",
@@ -72,7 +74,7 @@ function parisMinutesNow() {
         const parts = formatter.formatToParts(new Date());
         const hourPart = parts.find((part) => part.type === "hour");
         const minutePart = parts.find((part) => part.type === "minute");
-        if (!hourPart || !minutePart) throw new Error("Heure de Paris indisponible");
+        if (!hourPart || !minutePart) throw new Error(__oflT_d713c290("Heure de Paris indisponible"));
         return Number(hourPart.value) * 60 + Number(minutePart.value);
     } catch (_error) {
         // Repli pour un très ancien navigateur. La tablette est configurée sur
@@ -146,12 +148,12 @@ function displayWakeLockCompatibility() {
     const status = document.querySelector("[data-wake-lock-status]");
     if (!status) return;
     if (!("wakeLock" in navigator)) {
-        status.textContent = "Non pris en charge par ce navigateur";
+        status.textContent = __oflT_d713c290("Non pris en charge par ce navigateur");
         return;
     }
     status.textContent = (
         status.dataset.optionEnabled === "1" && wakeLockScheduleIsActive()
-    ) ? "Actif" : "Inactif";
+    ) ? __oflT_d713c290("Actif") : __oflT_d713c290("Inactif");
 }
 
 function configureHomeLiveRefresh() {
@@ -261,6 +263,18 @@ function configureIdentifierAutoSubmit() {
     });
 }
 
+function closeLanguageMenus() {
+    document.querySelectorAll('.ui-language-menu[open]').forEach(menu => { menu.open = false; });
+}
+
+function configureModalLayers() {
+    // Native modal dialogs use the browser top layer, above every header
+    // stacking context. Dynamic resource/calendar/category dialogs share it.
+    new MutationObserver(() => {
+        if (document.querySelector('dialog[open]')) closeLanguageMenus();
+    }).observe(document.body, {subtree:true,childList:true,attributes:true,attributeFilter:['open']});
+}
+
 function configureQuickDeparture() {
     const dialogBackdrop = document.querySelector("[data-departure-dialog]");
     const triggers = document.querySelectorAll("[data-quick-departure]");
@@ -274,6 +288,17 @@ function configureQuickDeparture() {
     let countdownTimer = null;
     let remainingSeconds = 10;
     let deadline = 0;
+    let opener = null;
+    let fallback = false;
+    const background = new Map();
+    const restoreBackground = () => {
+        background.forEach((state,element) => {
+            element.inert = state.inert;
+            if (state.hidden === null) element.removeAttribute('aria-hidden');
+            else element.setAttribute('aria-hidden',state.hidden);
+        });
+        background.clear();
+    };
 
     const startThemeProgress = () => {
         dialogBackdrop.style.setProperty("--departure-progress", "0%");
@@ -289,11 +314,15 @@ function configureQuickDeparture() {
         if (countdownTimer) window.clearInterval(countdownTimer);
         countdownTimer = null;
         window.OFLKiosk?.stopCountdown?.();
+        if (dialogBackdrop.open && !fallback) dialogBackdrop.close();
+        if (fallback) dialogBackdrop.removeAttribute('open');
         dialogBackdrop.hidden = true;
+        restoreBackground();
         dialogBackdrop.style.removeProperty("--departure-progress");
         dialogBackdrop.style.removeProperty("--departure-progress-duration");
         document.body.classList.remove("dialog-open");
         form.dataset.submitting = "0";
+        if (opener?.isConnected) opener.focus();
     };
 
     const submitDeparture = (expired = false) => {
@@ -306,6 +335,9 @@ function configureQuickDeparture() {
     };
 
     const openDialog = (trigger) => {
+        if (!dialogBackdrop.hidden) return;
+        opener = trigger;
+        closeLanguageMenus();
         if (countdownTimer) window.clearInterval(countdownTimer);
         window.OFLKiosk?.stopCountdown?.();
         form.action = trigger.dataset.departureUrl;
@@ -315,6 +347,19 @@ function configureQuickDeparture() {
         deadline = performance.now() + 10000;
         countdown.textContent = remainingSeconds;
         dialogBackdrop.hidden = false;
+        if (typeof dialogBackdrop.showModal === 'function') dialogBackdrop.showModal();
+        else {
+            // Legacy fallback keeps the existing overlay layer, but moves it
+            // outside the page-shell context and isolates the background.
+            fallback = true; document.body.append(dialogBackdrop);
+            dialogBackdrop.dataset.dialogFallback = '1';
+            dialogBackdrop.setAttribute('open','');
+            dialogBackdrop.setAttribute('role','dialog');dialogBackdrop.setAttribute('aria-modal','true');
+            [...document.body.children].filter(node => node !== dialogBackdrop && node instanceof HTMLElement).forEach(element => {
+                background.set(element,{inert:element.inert,hidden:element.getAttribute('aria-hidden')});
+                element.inert = true; element.setAttribute('aria-hidden','true');
+            });
+        }
         document.body.classList.add("dialog-open");
         startThemeProgress();
         cancelButton.focus();
@@ -341,6 +386,18 @@ function configureQuickDeparture() {
     dialogBackdrop.addEventListener("click", (event) => {
         if (event.target === dialogBackdrop) closeDialog();
     });
+    dialogBackdrop.addEventListener('cancel', event => { event.preventDefault(); closeDialog(); });
+    dialogBackdrop.addEventListener('close', () => { if (!dialogBackdrop.hidden) closeDialog(); });
+    document.addEventListener('focusin', event => {
+        if (fallback && !dialogBackdrop.hidden && !dialogBackdrop.contains(event.target)) cancelButton.focus();
+    });
+    document.addEventListener('keydown', event => {
+        // Keep Tab on the two actions, rather than letting a browser's native
+        // dialog cycle temporarily move focus to browser chrome/the body.
+        if (dialogBackdrop.hidden || event.key !== 'Tab') return;
+        event.preventDefault();
+        (document.activeElement === cancelButton ? confirmButton : cancelButton).focus();
+    }, true);
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && !dialogBackdrop.hidden) closeDialog();
     });
@@ -402,12 +459,12 @@ function configureServiceForm() {
             });
         });
         if (titleLabel) {
-            titleLabel.textContent = type === "animation" ? "Titre de l'animation" : (
-                type === "reservation" ? "Titre du créneau réservable" : "Nom de la machine"
+            titleLabel.textContent = type === "animation" ? __oflT_d713c290("Titre de l'animation") : (
+                type === "reservation" ? __oflT_d713c290("Titre du créneau réservable") : __oflT_d713c290("Nom de la machine")
             );
         }
         if (dateLabel) {
-            dateLabel.textContent = type === "rental" ? "Date de prise de location" : "Date effectuée";
+            dateLabel.textContent = type === "rental" ? __oflT_d713c290("Date de prise de location") : __oflT_d713c290("Date effectuée");
         }
     };
     typeSelect.addEventListener("change", updateFields);
@@ -436,18 +493,18 @@ function configureCommuneSuggestions() {
         const currentRequest = ++requestSequence;
         suggestions.replaceChildren();
         if (!/^\d{5}$/.test(postalCode)) {
-            status.textContent = "Saisissez un code postal français à 5 chiffres pour obtenir les communes officielles.";
+            status.textContent = __oflT_d713c290("Saisissez un code postal français à 5 chiffres pour obtenir les communes officielles.");
             return;
         }
 
-        status.textContent = "Recherche des communes…";
+        status.textContent = __oflT_d713c290("Recherche des communes…");
         try {
             const separator = endpoint.includes("?") ? "&" : "?";
             const response = await fetch(
                 `${endpoint}${separator}code_postal=${encodeURIComponent(postalCode)}`,
                 { headers: { Accept: "application/json" } },
             );
-            if (!response.ok) throw new Error("Référentiel indisponible");
+            if (!response.ok) throw new Error(__oflT_d713c290("Référentiel indisponible"));
             const payload = await response.json();
             if (currentRequest !== requestSequence) return;
             const communes = Array.isArray(payload.communes) ? payload.communes : [];
@@ -459,17 +516,17 @@ function configureCommuneSuggestions() {
             if (communes.length === 1 && (!cityInput.value.trim() || cityInput.value === autoFilledCity)) {
                 cityInput.value = communes[0];
                 autoFilledCity = communes[0];
-                status.textContent = `Commune renseignée automatiquement : ${communes[0]}.`;
+                status.textContent = `${__oflT_d713c290("Commune renseignée automatiquement : ")}${communes[0]}.`;
             } else if (communes.length > 1) {
-                status.textContent = `${communes.length} communes trouvées : choisissez la commune proposée dans le champ.`;
+                status.textContent = `${communes.length}${__oflT_d713c290(" communes trouvées : choisissez la commune proposée dans le champ.")}`;
             } else if (payload.available === false) {
-                status.textContent = "Le référentiel est temporairement indisponible ; la saisie manuelle reste possible.";
+                status.textContent = __oflT_d713c290("Le référentiel est temporairement indisponible ; la saisie manuelle reste possible.");
             } else {
-                status.textContent = "Aucune commune française trouvée ; la saisie manuelle reste possible.";
+                status.textContent = __oflT_d713c290("Aucune commune française trouvée ; la saisie manuelle reste possible.");
             }
         } catch (_error) {
             if (currentRequest !== requestSequence) return;
-            status.textContent = "Le référentiel est temporairement indisponible ; la saisie manuelle reste possible.";
+            status.textContent = __oflT_d713c290("Le référentiel est temporairement indisponible ; la saisie manuelle reste possible.");
         }
     };
 
@@ -554,16 +611,16 @@ function configureBillingForm() {
         const endLabel = form.querySelector("[data-billing-end-time-label]");
         if (dateLabel) {
             dateLabel.textContent = isRental
-                ? "Date du début de la location *"
-                : "Date de début ou de l'activité *";
+                ? __oflT_d713c290("Date du début de la location *")
+                : __oflT_d713c290("Date de début ou de l'activité *");
         }
         if (startLabel) {
-            startLabel.textContent = isRental ? "Heure du rdv *" : "Heure de début *";
+            startLabel.textContent = isRental ? __oflT_d713c290("Heure du rdv *") : __oflT_d713c290("Heure de début *");
         }
         if (endLabel) {
             endLabel.textContent = isRental
-                ? "Heure estimée de la fin du rdv *"
-                : "Heure de fin *";
+                ? __oflT_d713c290("Heure estimée de la fin du rdv *")
+                : __oflT_d713c290("Heure de fin *");
         }
     };
     const updateTotal = () => {
@@ -576,7 +633,7 @@ function configureBillingForm() {
             if (field("rental_delivery")?.checked) {
                 amountCents += configuredCents("rentalDelivery", 3000);
             }
-            total.textContent = new Intl.NumberFormat("fr-FR", {
+            total.textContent = new Intl.NumberFormat((document.documentElement.lang==='en'?'en-GB':'fr-FR'), {
                 style: "currency",
                 currency: "EUR",
             }).format(amountCents / 100);
@@ -607,7 +664,7 @@ function configureBillingForm() {
         if (field("consumable_mode")?.value === "billed") {
             amount += configuredCents("consumableUnit", 3000) * numericValue("consumable_quantity");
         }
-        total.textContent = new Intl.NumberFormat("fr-FR", {
+        total.textContent = new Intl.NumberFormat((document.documentElement.lang==='en'?'en-GB':'fr-FR'), {
             style: "currency",
             currency: "EUR",
         }).format(amount / 100);
@@ -695,7 +752,7 @@ function configureDemographicStatisticsFilters() {
     });
     const percentageLabel = (count, total) => {
         const percentage = total ? Math.round((count / total) * 1000) / 10 : 0;
-        return `${count} · ${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(percentage)} %`;
+        return `${count} · ${new Intl.NumberFormat((document.documentElement.lang==='en'?'en-GB':'fr-FR'), { maximumFractionDigits: 1 }).format(percentage)} %`;
     };
 
     const update = () => {
@@ -721,16 +778,16 @@ function configureDemographicStatisticsFilters() {
         if (totalElement) totalElement.textContent = String(filteredUsers.length);
         if (totalLabel) {
             const plural = filteredUsers.length === 1 ? "" : "s";
-            totalLabel.textContent = `usager${plural} affiché${plural}`;
+            totalLabel.textContent = `usager${plural}${__oflT_d713c290(" affiché")}${plural}`;
         }
         if (meanAgeElement) {
             const ages = filteredUsers
                 .map((user) => Number(user.age))
                 .filter((age) => Number.isFinite(age) && age >= 0);
             meanAgeElement.textContent = ages.length
-                ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(
+                ? `${new Intl.NumberFormat((document.documentElement.lang==='en'?'en-GB':'fr-FR'), { maximumFractionDigits: 1 }).format(
                     ages.reduce((sum, age) => sum + age, 0) / ages.length
-                )} ans`
+                )}${__oflT_d713c290(" ans")}`
                 : "—";
         }
         if (resetButton) {
@@ -769,8 +826,8 @@ function configureOpenLabAttendanceScale() {
             );
             if (status) {
                 status.textContent = usesWeeklyScale
-                    ? "Échelle commune à tous les jours"
-                    : "Échelle propre à chaque jour";
+                    ? __oflT_d713c290("Échelle commune à tous les jours")
+                    : __oflT_d713c290("Échelle propre à chaque jour");
             }
         };
 
@@ -788,6 +845,7 @@ registerApplicationMode();
 configureScreenWakeLock();
 displayWakeLockCompatibility();
 configureIdentifierAutoSubmit();
+configureModalLayers();
 configureQuickDeparture();
 configureQrPreviews();
 configureHomeLiveRefresh();

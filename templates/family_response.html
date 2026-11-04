@@ -10,6 +10,7 @@
 {% if group.status=='offer_pending' %}<p>Les places sont temporairement bloquées pour tout votre groupe jusqu’au {{ group.offer_expires_at|paris_datetime }}. Sans acceptation avant cette heure, elles seront libérées.</p>
 {% elif group.status=='waitlisted' %}<p>Aucune place n’est confirmée. Une proposition vous sera envoyée par e-mail si votre groupe peut être accueilli.</p>
 {% elif group.status=='confirmed' %}<p>Votre réservation est confirmée.</p>
+{% if calendar_google %}<div class="button-row"><a class="admin-button secondary" href="{{ url_for('v214.personal_calendar',token=calendar_token) }}">Ajouter à Apple, Outlook ou autre calendrier (.ics)</a><a class="admin-button secondary" href="{{ calendar_google }}" target="_blank" rel="noopener noreferrer">Google Agenda</a></div><p class="field-help">Importez le nouveau fichier en cas de modification. Cet ajout ne synchronise pas automatiquement vos calendriers.</p>{% endif %}
 {% elif group.status=='cancelled' %}<p>Votre réservation est annulée.</p>
 {% else %}<p>Aucune place n’est retenue pour cette demande.</p>{% endif %}
 {% if group.status in ('offer_pending','waitlisted','confirmed') %}

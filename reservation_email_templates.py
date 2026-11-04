@@ -14,6 +14,7 @@ VARIABLES={'structure','animation','date','horaire','participants','places',
            'lien_reservation','lien_information','date_limite'}
 HEADERS={'structure','animation','date','horaire','places'}
 INTRO={
+ 'reminder':('Rappel de votre réservation','Votre animation « {animation} » approche. Votre réservation est confirmée.'),
  'confirmed':('Réservation confirmée','Votre inscription à l’animation « {animation} » est confirmée.'),
  'modified':('Réservation modifiée','Les participants de votre réservation pour « {animation} » ont été mis à jour.'),
  'cancelled':('Réservation annulée','Votre réservation pour « {animation} » est annulée. Aucune place n’est retenue.'),
@@ -133,11 +134,15 @@ def build_message(config,row,base_url,link_url=None,db=None):
         message['Reply-To']=config['reply_to']
     message.set_content(body)
     message.add_alternative(html_body,subtype='html')
+    if db is not None:
+        from reservation_calendar import attach
+        attach(db,message,row,kind)
     return message
 
 
 def register(application,a):
     from flask import Blueprint,request,abort,render_template,flash,redirect,url_for
+    from i18n import flash
     from markupsafe import Markup
     from evolution_routes import require_csrf,require_team
     bp=Blueprint('reservation_emails',__name__)

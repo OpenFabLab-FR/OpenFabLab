@@ -1,3 +1,130 @@
+# Mettre à jour vers OpenFabLab 2.14.4 stable
+
+## Parcours vérifiés
+
+| Source | Schéma source | Cible |
+| --- | --- | --- |
+| Dernière stable publique2.13.0 | 22 | 2.14.4 /25 |
+| Étape2.14.0 | 23 | 2.14.4 /25 |
+| Étapes2.14.1–2.14.3 | 24 | 2.14.4 /25 |
+| Réexécution2.14.4 | 25 | Pas de nouvelle migration |
+
+Le moteur existant applique les évolutions23 (suivi, rappels et exceptions),
+24 (contrainte des types d’intervention) et25 (colonne d’archivage). Il n’est pas
+nécessaire d’installer une release intermédiaire indisponible pour parcourir ces
+schémas. Les passages22→25,23→25 et24→25 ont été exécutés sur bases fictives issues
+des vrais anciens runtimes, avec sauvegarde préalable, conservation des données
+et réglages, intégrité/FK, interruption transactionnelle, réexécution et démarrage HTTP.
+Ces tests locaux ne certifient ni votre NAS, ni une restauration de vos propres fichiers.
+
+Depuis24, seul ajout `resources.archived_at TEXT` nullable, initialement NULL.
+Une ressource n’est pas archivée par la mise à jour. Les historiques de schémas
+plus anciens restent documentés ci-dessous ; une base future/inconnue est refusée.
+
+## Procédure générique, à adapter à votre installation
+
+1. Identifier version, schéma, runtime/image, configuration, volumes et fichiers
+   privés réellement actifs. Conserver leurs empreintes et les chemins persistants.
+2. Télécharger la release officielle et vérifier SHA256SUMS. Ne pas écraser
+   `data/`, les sauvegardes, `.env`, PIN, clés, logos ou fichiers privés avec le ZIP.
+3. Construire le nouveau runtime avant interruption ; vérifier les dépendances
+   et l’espace pour conserver ancienne image, PRE et POST. Une construction réussie
+   ne prouve pas une migration réussie. Sur un constructeur Docker ancien, contrôler
+   aussi le budget de couches ; ne pas accumuler indéfiniment des images dérivées.
+4. Produire une sauvegarde complète cohérente. Tester sa restauration et la migration
+   dans un répertoire/volumes isolés, réseau et workers externes désactivés avant
+   l’import de l’application. Les données de test réelles restent privées.
+5. À l’interruption volontaire, arrêter proprement l’ancien service et sauvegarder
+   à froid tout le persistant, la configuration et l’ancien runtime. Ne pas retirer
+   les fichiers WAL/SHM/journal d’une base ouverte ni copier seulement son fichier.db.
+6. Installer uniquement les fichiers de distribution/runtime. Le moteur de
+   démarrage effectue la migration sous transaction et crée sa sauvegarde SQLite
+   préalable ; cette copie n’est pas une sauvegarde complète de l’installation.
+7. Vérifier version2.14.4, schéma25, intégrité, clés étrangères, données, paramètres,
+   secrets/fichiers privés, droits, volumes et HTTP réel. Vérifier catalogues,
+   relève et résultats Normal/Test si WordPress est actif, pas seulement « Connecté ».
+8. Produire la POST complète cohérente, conserver les preuves et surveiller
+   l’installation selon le [guide de maintenance](maintenance.md).
+
+Les commandes Docker communes sont dans [le guide d’exploitation](installation-common.md).
+Il n’existe pas de script public universel de mise à jour DSM : les chemins et
+contrôles d’un paquet privé d’exploitant ne sont pas une procédure générale.
+
+**Ne jamais redémarrer2.13.0 sur une base23/24/25, ni2.14.0 sur24/25, ni une
+application antérieure à2.14.4 sur25.** Après une tentative de démarrage public,
+ne jamais restaurer automatiquement une PRE qui effacerait de nouvelles écritures.
+Préserver l’état actuel, les journaux et toutes les sauvegardes ; décider humainement
+d’une reprise compatible avec le schéma réel. [Sauvegardes](backup-restore.md).
+
+## Plugin séparé
+
+Remplacer le plugin par le ZIP2.14.4 sans désinstallation ni nouveau secret,
+conserver options/files et vérifier les échanges et shortcodes. La mise à jour
+de l’application ne l’installe jamais. Protocole4/révision3 indépendant des versions.
+[Guide WordPress actuel](wordpress-2.14.4.md).
+
+## Historique des procédures intermédiaires
+
+Les paragraphes suivants documentent les étapes de développement conservées.
+Ils ne remplacent pas le parcours stable ci-dessus et ne doivent pas être relancés
+sur une base déjà migrée.
+
+## Historique : mise à jour vers la candidate 2.14.3
+
+Source 2.14.2, cible 2.14.3 : **SQLite 24 reste 24**, sans migration. Vérifier les
+empreintes, sauvegarder l’installation cohérente et utiliser le contrôle préalable
+du nouveau paquet adapté. Le plugin 2.14.3 s’installe séparément par remplacement,
+sans désinstallation ni nouveau secret. [Corrections 2.14.3](corrections-2.14.3.md).
+
+## Historique : mise à jour vers la candidate 2.14.2
+
+Depuis 2.14.1 : **SQLite 24 → 24**, sans migration. Sauvegarder l’installation
+cohérente, vérifier les empreintes, tester le nouveau runtime sur une copie isolée
+puis suivre le paquet adapté. Préférences et secrets restent conservés.
+Reservations 2.14.2 est séparé, sans désinstallation ni changement des secrets.
+Voir [les corrections 2.14.2](corrections-2.14.2.md). Les procédures de migrations
+ci-dessous sont historiques : ne pas les relancer sur une base déjà en 24.
+
+## Historique : mise à jour vers la candidate 2.14.1
+
+La source 2.14.0 utilise SQLite 23 ; la cible 2.14.1 utilise SQLite 24 pour autoriser
+le type d’intervention Vérification. Sauvegarde complète avant migration, essai
+isolé et contrôles d’intégrité indispensables. Ne jamais redémarrer 2.14.0 sur 24.
+Aucun rollback destructeur après une ouverture publique. Le plugin Reservations
+2.14.1 s’installe séparément, sans désinstallation ni changement de secret.
+Voir [le guide 2.14.1](corrections-2.14.1.md). Les procédures antérieures ci-dessous
+restent historiques et ne remplacent pas le contrôle adapté à l’installation.
+
+# Mettre à jour vers OpenFabLab 2.14.0 candidate
+
+Utiliser uniquement la livraison candidate vérifiée. La stable publique reste 2.13.0.
+Depuis 2.13.0, **SQLite 22 → 23** nécessite une migration additive au premier
+démarrage. Les tables existantes, données, réglages et secrets sont conservés.
+Les nouveaux carnets, rappels et exceptions justifient ce schéma ; aucun état
+de diagnostic ne crée une table supplémentaire.
+
+1. Vérifier version, schéma source et empreintes des deux ZIP. Sauvegarder la base
+   de manière cohérente et tous les fichiers privés ; vérifier la copie et conserver
+   le runtime 2.13. Ne jamais copier seulement un .db actif en oubliant son WAL.
+2. Tester d’abord sur une copie isolée, échanges externes et tâches neutralisés.
+   Vérifier migration, intégrité, données, réglages et démarrage sans nouvelle migration.
+3. Lors d’une installation volontaire, conserver les volumes, secrets, permissions,
+   préfixe d’URL, chemins et intégrations. Ne pas reprendre un ancien lanceur 22 → 22.
+4. Après démarrage, vérifier version 2.14, SQLite 23, rôles, langues, modules,
+   réservations et échanges Normal/Test ; conserver une sauvegarde POST23 cohérente.
+
+Le plugin 2.14 s’installe séparément, sans désinstallation ni nouvelle clé. Il est
+nécessaire aux nouveaux shortcodes et langues ; un plugin 2.13 conserve les anciens
+échanges négociés. La maintenance et les autres fonctions locales restent autonomes.
+
+**Ne jamais ouvrir la base 23 avec le runtime 2.13.** Après une tentative de
+démarrage public, protéger toutes les nouvelles écritures avant toute reprise.
+Aucune restauration automatique d’une PRE22 ne doit les écraser. Une reprise
+humaine doit partir de l’état réel et conserver la base et les fichiers récents.
+Les commandes propres à un NAS appartiennent à sa livraison privée, pas à ce guide.
+
+---
+
 # Mettre à jour vers OpenFabLab 2.13.0 stable
 
 SQLite reste **22 → 22** : aucune nouvelle migration, aucune réécriture des

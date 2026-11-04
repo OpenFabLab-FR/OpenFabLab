@@ -1,4 +1,6 @@
+/* OFL native UI marked */
 "use strict";
+  const __oflT_11800c38=text=>window.OFLTranslate?.(text)||text;
 
 (function enableQrScanner() {
     const scanner = document.querySelector("[data-qr-scanner]");
@@ -54,12 +56,12 @@
         startButton.hidden = !userRequested;
         startButton.disabled = false;
         if (!keepStatus) {
-            setStatus("Caméra fermée. Vous pouvez saisir votre identifiant ou la rouvrir.");
+            setStatus(__oflT_11800c38("Caméra fermée. Vous pouvez saisir votre identifiant ou la rouvrir."));
         }
     }
 
     function submitScannedIdentifier(publicId) {
-        setStatus(`Identifiant ${publicId} reconnu. Enregistrement en cours…`, "success");
+        setStatus(`${__oflT_11800c38("Identifiant ")}${publicId}${__oflT_11800c38(" reconnu. Enregistrement en cours…")}`, "success");
         publicIdInput.value = publicId;
         stopCamera(true);
         if (typeof form.requestSubmit === "function") {
@@ -109,7 +111,7 @@
                         return;
                     }
                     setStatus(
-                        "Ce QR code ne contient pas un identifiant OpenFabLab à 4 chiffres.",
+                        __oflT_11800c38("Ce QR code ne contient pas un identifiant OpenFabLab à 4 chiffres."),
                         "error",
                     );
                 }
@@ -124,7 +126,7 @@
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             startButton.hidden = false;
             setStatus(
-                "La caméra n'est pas disponible. Ouvrez l'adresse HTTPS de votre FabLab ou saisissez votre identifiant.",
+                __oflT_11800c38("La caméra n'est pas disponible. Ouvrez l'adresse HTTPS de votre FabLab ou saisissez votre identifiant."),
                 "error",
             );
             return;
@@ -132,7 +134,7 @@
         if (typeof window.jsQR !== "function") {
             startButton.hidden = false;
             setStatus(
-                "Le lecteur QR n'a pas pu démarrer. Saisissez votre identifiant à 4 chiffres.",
+                __oflT_11800c38("Le lecteur QR n'a pas pu démarrer. Saisissez votre identifiant à 4 chiffres."),
                 "error",
             );
             return;
@@ -142,7 +144,7 @@
         stoppedByUser = false;
         startButton.disabled = true;
         startButton.hidden = true;
-        setStatus("Ouverture de la caméra avant…");
+        setStatus(__oflT_11800c38("Ouverture de la caméra avant…"));
 
         try {
             const videoPreferences = {
@@ -197,17 +199,17 @@
             startButton.hidden = false;
             if (error && error.name === "NotAllowedError") {
                 setStatus(
-                    "Accès à la caméra refusé. Autorisez la caméra dans le navigateur puis réessayez.",
+                    __oflT_11800c38("Accès à la caméra refusé. Autorisez la caméra dans le navigateur puis réessayez."),
                     "error",
                 );
             } else if (error && error.name === "NotFoundError") {
                 setStatus(
-                    "Aucune caméra n'a été trouvée. Saisissez votre identifiant à 4 chiffres.",
+                    __oflT_11800c38("Aucune caméra n'a été trouvée. Saisissez votre identifiant à 4 chiffres."),
                     "error",
                 );
             } else {
                 setStatus(
-                    "La caméra n'a pas pu démarrer. Réessayez ou saisissez votre identifiant.",
+                    __oflT_11800c38("La caméra n'a pas pu démarrer. Réessayez ou saisissez votre identifiant."),
                     "error",
                 );
             }

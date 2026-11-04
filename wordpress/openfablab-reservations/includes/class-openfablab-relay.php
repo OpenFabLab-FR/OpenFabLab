@@ -253,6 +253,7 @@ final class OpenFabLab_Relay {
         global $wpdb;
         try {
             $data=self::body($request,1000000);$env=self::env($data);$items=$data['animations'] ?? null;
+            if (isset($data['public_data']) && !OpenFabLab_Public::valid_snapshot($data['public_data'])) { return self::error('Données publiques invalides.',400); }
             if (($data['protocol_version'] ?? 0)!==4 || ($data['relay_revision'] ?? 0)!==3 || !is_array($items) || count($items)>100) { return self::error('Catalogue invalide.',400); }
             $required=['service_id','title','description','date','hours','minimum_age','booking_mode','slots','available','waitlist_enabled','account_required','phone_required','autonomy_age'];
             $allowed=array_merge($required,['information_url','availability_state','waiting','waiting_limit','publication']);
@@ -297,6 +298,14 @@ final class OpenFabLab_Relay {
             $ok=$wpdb->query($wpdb->prepare("INSERT INTO $table VALUES(%s,%s,%d) ON DUPLICATE KEY UPDATE catalogue_json=VALUES(catalogue_json),received_at=VALUES(received_at)",$env,wp_json_encode($items),time()));
             if ($ok===false) { throw new RuntimeException(); }
             update_option('openfablab_relay_catalogue_'.$env,time(),false);
+            if (isset($data['public_data'])) {
+                $record=['data'=>$data['public_data'],'received_at'=>time()];
+                $option='openfablab_public_snapshot_'.$env;
+                update_option($option,$record,false);
+                // update_option may return false for an unchanged value: verify
+                // what was stored instead of acknowledging a failed write.
+                if (get_option($option,null)!==$record) { throw new RuntimeException(); }
+            }
             return ['ok'=>true,'plugin_version'=>OPENFABLAB_RES_VERSION];
         } catch (Throwable $error) { return self::error('Catalogue non enregistré.'); }
     }

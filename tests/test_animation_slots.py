@@ -105,7 +105,7 @@ class AnimationSlotTests(unittest.TestCase):
         with self.database() as db:
             self.assertEqual(db.execute('SELECT booking_mode FROM animation_reservation_config').fetchone()[0],'whole')
             self.assertIsNone(db.execute('SELECT slot_uuid FROM animation_bookings WHERE external_uuid=?',(booking,)).fetchone()[0])
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],22)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],__import__('family_model').SCHEMA)
             self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
             self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(),[])
 
@@ -135,7 +135,8 @@ class AnimationSlotTests(unittest.TestCase):
         self.assertEqual((summary[0]['occupied'],summary[0]['waiting'],summary[1]['occupied'],summary[2]['occupied']),(2,1,1,0))
         page=self.client.get(f'/admin/animations/{service}/inscriptions').get_data(as_text=True)
         self.assertIn('2/2 réservés',page);self.assertIn('Créneau : 10:00–10:20',page)
-        self.assertIn('4 créneaux / 3 inscrits / 0 présent',self.client.get('/admin/animations').get_data(as_text=True))
+        # The fixture explicitly records presence=1 for the first participant.
+        self.assertIn('4 créneaux / 3 inscrits / 1 présent',self.client.get('/admin/animations').get_data(as_text=True))
 
     def test_modify_regenerates_before_booking(self):
         service,_,values,_=self.create()
@@ -265,7 +266,7 @@ class AnimationSlotTests(unittest.TestCase):
                 before={table:old.execute('SELECT * FROM '+table+' ORDER BY rowid').fetchall() for table in tables}
             fixture.create_app(dict(TESTING=True,SEED_DEMO_USERS=False,DATABASE=str(target),ADMIN_PIN=None,MODERATOR_PIN=None,WEATHER_ENABLED=False,SECRET_KEY='fictional-test'))
             with sqlite3.connect(target) as migrated:
-                self.assertEqual(migrated.execute('PRAGMA user_version').fetchone()[0],22)
+                self.assertEqual(migrated.execute('PRAGMA user_version').fetchone()[0],__import__('family_model').SCHEMA)
                 self.assertEqual(migrated.execute('PRAGMA integrity_check').fetchone()[0],'ok')
                 self.assertEqual(migrated.execute('PRAGMA foreign_key_check').fetchall(),[])
                 for table,rows in before.items():

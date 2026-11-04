@@ -75,6 +75,7 @@ final class OpenFabLab_Admin {
         try { OpenFabLab_Database::assert_transactional(); } catch (Throwable $error) { $storage=false; }
         echo '<div class="wrap ofl-admin"><header class="ofl-admin-header"><img src="'.esc_url(plugins_url('assets/OpenFabLab-logo-horizontal.svg',OPENFABLAB_RES_FILE))
             .'" alt="OpenFabLab"><div><h1>OpenFabLab Reservations</h1><p>Version '.esc_html(OPENFABLAB_RES_VERSION).' · Catalogue public et réservations</p></div></header>';
+        OpenFabLab_Public::settings();
         echo '<section class="ofl-card"><h2>Connexion à OpenFabLab</h2><p class="ofl-help">OpenFabLab décide des places et des inscriptions. WordPress reçoit le catalogue et transmet les demandes.</p>';
         self::environment('production',$secret,$secure,$storage);
         echo '<details class="ofl-details"><summary>Environnement Test</summary>';

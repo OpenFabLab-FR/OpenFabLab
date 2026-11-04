@@ -50,7 +50,7 @@ def negotiate(client, environment):
     value=client.post('/sync/capabilities',{'environment':environment})
     if value.get('protocol_version')!=4 or value.get('relay_revision')!=3 or value.get('outbound_actions_v1') is not True:
         raise ValueError('OpenFabLab et son plugin doivent être compatibles avec le protocole 4, révision 3. Aucune demande n’a été confirmée.')
-    if any(key in value and type(value[key]) is not bool for key in ('waitlist_limits_v1','publication_visibility_v1')):
+    if any(key in value and type(value[key]) is not bool for key in ('waitlist_limits_v1','publication_visibility_v1','public_calendar_v1','public_machines_v1','participant_calendar_v1','public_resources_details_v1','public_display_options_v1','public_calendar_history_v1')):
         raise ValueError('La capacité de liste d’attente annoncée par WordPress est incompatible. Aucun nouveau catalogue n’a été envoyé.')
     if value.get('publication_visibility_v1') is True and value.get('waitlist_limits_v1') is not True:
         raise ValueError('Les capacités de publication annoncées par WordPress sont incohérentes. Aucun catalogue n’a été envoyé.')
@@ -78,8 +78,16 @@ def catalogue(db, database_path, site_url, client=None, environments=actions.ENV
             from runtime_policy import storage_guard
             with storage_guard(database_path):
                 public=actions.public_catalogue(db,env,include_information=capabilities.get('animation_information_v1') is True,include_limits=capabilities.get('waitlist_limits_v1') is True,include_publication=capabilities.get('publication_visibility_v1') is True)
-            result=client.post('/outbound/catalogue',{'environment':env,'animations':public,'protocol_version':4,'relay_revision':3})
+                extended=None
+                if capabilities.get('public_calendar_v1') is True or capabilities.get('public_machines_v1') is True:
+                    from public_snapshot import build
+                    extended=build(db,env,capabilities.get('public_calendar_v1') is True,capabilities.get('public_machines_v1') is True,details=capabilities.get('public_resources_details_v1') is True,display_options=capabilities.get('public_display_options_v1') is True,history=capabilities.get('public_calendar_history_v1') is True)
+            payload={'environment':env,'animations':public,'protocol_version':4,'relay_revision':3}
+            if extended is not None:payload['public_data']=extended
+            result=client.post('/outbound/catalogue',payload)
             if result.get('ok') is not True: raise ValueError('Catalogue refusé.')
+            with actions.transaction(db):
+                db.execute('INSERT INTO app_settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',('reservation_participant_calendar_'+env,'1' if capabilities.get('participant_calendar_v1') is True else '0'))
             with actions.transaction(db):
                 db.execute('INSERT INTO wordpress_relay_state(environment,catalogue_at,catalogue_count,last_error) VALUES(?,?,?,NULL) ON CONFLICT(environment) DO UPDATE SET catalogue_at=excluded.catalogue_at,catalogue_count=excluded.catalogue_count,last_error=NULL',(env,stamp,len(public)))
                 for key,value in [('reservation_protocol_'+env,'4'),('reservation_plugin_'+env,result.get('plugin_version','2.8.2')),('reservation_outbound_ready_'+env,'1')]:

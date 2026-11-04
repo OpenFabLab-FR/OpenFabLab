@@ -1,0 +1,57 @@
+.maintenance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}.maintenance-card{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;border:1px solid var(--border,#dce4e4);border-radius:14px;color:inherit;text-decoration:none}.maintenance-entry{padding:12px 0;border-bottom:1px solid var(--border,#dce4e4)}.maintenance-entry summary{cursor:pointer;min-height:32px}.maintenance-entry form{margin-top:12px}.maintenance-entry pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8rem;max-height:220px;overflow:auto}.machine-dialog{width:min(92vw,620px);border:1px solid var(--border,#dce4e4);border-radius:18px;padding:24px;color:var(--text,#243437);background:var(--surface,#fff)}.machine-dialog::backdrop{background:#071f3188}.dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.machine-info-trigger{font-size:.85rem;white-space:nowrap;min-height:40px}.preserve-lines{white-space:pre-wrap}.compact-form{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.compact-form label{flex:1;min-width:min(100%,180px)}@media(max-width:620px){.machine-info-trigger span{max-width:120px;display:inline-block;vertical-align:middle;white-space:normal}.machine-dialog{padding:16px}.dialog-heading h2{font-size:1.15rem}}
+
+.home-machine-banner{font:inherit;font-size:.86rem;line-height:1.2;min-height:40px;border:1px solid var(--border,#dce4e4);border-radius:10px;padding:8px 12px;color:var(--text,#243437);background:var(--surface-soft,#edf4f4);cursor:pointer}.home-intro:has(.home-machine-banner){flex-wrap:wrap;gap:8px 14px}.home-machine-banner:focus-visible{outline:3px solid var(--primary,#147e98);outline-offset:2px}
+
+.v214-form{gap:16px}.v214-form .form-grid{gap:14px 18px}
+.resource-public-settings{padding:8px 0 12px 30px;border-left:2px solid var(--border);margin:0 0 10px 9px}
+#openlab-public-settings{gap:12px}#openlab-public-settings h3,#openlab-public-settings p{margin:0}#openlab-public-settings .checkbox-field{margin:0;padding:10px 12px}
+.settings-view-borne #options214,.settings-view-borne #home-title,.settings-view-borne #sound-settings{margin-bottom:22px}
+.settings-view-borne #options214 h2{font-size:var(--module-title-size);font-weight:var(--module-title-weight)}
+.resource-public-controls{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px 18px;max-width:860px;margin-top:12px}
+.resource-public-controls .form-field{flex:1 1 260px;min-width:0;margin:0}.resource-public-controls .admin-button{flex:0 1 auto;white-space:normal;min-height:44px}
+.settings-view-borne .admin-form{gap:18px}.settings-view-borne .form-section{margin-top:0}.settings-view-borne .form-section-heading{margin-bottom:14px}
+.settings-view-borne .checkbox-field{align-items:flex-start;gap:10px;padding-block:8px}.settings-view-borne .checkbox-field input[type=checkbox]{flex:none;margin-top:2px}
+.settings-view-borne .form-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-start}
+.identification-secondary-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;justify-items:center;gap:12px 20px;margin-top:16px}
+.identification-secondary-actions .manual-fallback{margin:0;min-width:0;width:100%;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center}.identification-secondary-actions .manual-fallback a{min-height:44px;display:inline-flex;align-items:center;justify-content:center;max-width:100%}.identification-secondary-actions .machine-info-trigger{font-size:.9rem;min-height:44px;max-width:100%;white-space:normal}
+.admin-page :is(.calendar-maintenance-choice,.calendar-hidden-choice) label{display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 6px;font-family:inherit;font-weight:500;font-size:.9rem;line-height:1.35;cursor:pointer;color:var(--text);border-radius:8px}
+.admin-page :is(.calendar-maintenance-choice,.calendar-hidden-choice) label:hover{background:var(--surface-soft)}
+.admin-page :is(.calendar-maintenance-choice,.calendar-hidden-choice) input{width:19px;height:19px;min-width:19px;min-height:19px;margin:0;accent-color:var(--primary)}
+.admin-page :is(.calendar-maintenance-choice,.calendar-hidden-choice) input:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+@media(max-width:600px){.resource-public-settings{padding-left:14px}.resource-public-controls{align-items:stretch}.resource-public-controls .admin-button{width:100%}.identification-secondary-actions{justify-content:center}.identification-secondary-actions .manual-fallback{flex-basis:100%}.settings-view-borne .form-grid{grid-template-columns:minmax(0,1fr)}}
+.v214-field{display:block;min-width:0}.v214-field>span{display:block;margin-bottom:7px;font-size:.9rem;font-weight:650}
+.v214-field input,.v214-field select,.v214-field textarea{min-height:44px;padding:10px 12px;max-width:100%;font:inherit;font-size:.95rem}
+.v214-field textarea{min-height:104px}.v214-form>.admin-button{justify-self:start;width:auto;max-width:100%}
+.v214-checkbox{margin:0;padding:4px 0;min-height:44px;background:none;align-items:center;font-size:.94rem;line-height:1.4}
+.v214-checkbox input[type=checkbox]{width:22px;height:22px;min-width:22px;min-height:22px;margin:0;accent-color:var(--primary)}
+.v214-languages{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:4px 18px}.v214-languages legend{font-size:.9rem;font-weight:650;margin-bottom:5px}
+.v214-panel>.field-help,.v214-form+.field-help{margin-top:10px}.v214-panel .compact-form{max-width:780px}
+.maintenance-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+.maintenance-card{background:var(--surface-soft);min-height:76px}.maintenance-card strong{min-width:0;flex:1;overflow-wrap:anywhere}
+.maintenance-card .status-badge{flex:0 0 auto;max-width:52%;font-size:.77rem;background:var(--primary-soft);color:var(--primary)}
+.maintenance-card:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.v214-panel summary{min-height:44px;align-content:center}.v214-panel details>summary{cursor:pointer}
+.machine-unavailable-fields{display:grid;gap:14px}.machine-unavailable-fields[hidden],[data-opening-hours][hidden],[data-opening-closed][hidden]{display:none!important}
+.maintenance-entry>summary{display:flex;align-items:baseline;gap:9px;list-style:none}.maintenance-entry>summary::-webkit-details-marker{display:none}.maintenance-entry>summary::before{content:'›';flex:none;font-size:1.2rem;transition:transform .15s}.maintenance-entry[open]>summary::before{transform:rotate(90deg)}.machine-state-field{max-width:360px}.machine-unavailable-fields{grid-template-columns:minmax(0,2fr) minmax(180px,1fr)}
+@media(max-width:700px){.machine-unavailable-fields{grid-template-columns:minmax(0,1fr)}.machine-state-field{max-width:none}}
+.machine-entry-heading{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}.machine-entry-heading>span:not(.status-badge){min-width:0;overflow-wrap:anywhere;flex:1 1 200px}
+.machine-add-form{margin:8px 0 12px}.machine-add-form>summary.admin-button{display:inline-flex;align-items:center;cursor:pointer;width:auto;min-height:40px}.machine-add-form>form{margin-top:12px}
+.machine-change-history{margin-top:16px}.machine-change-list{margin:8px 0;display:grid;gap:8px}.machine-change-list>div{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,2fr);gap:12px}.machine-change-list dt{font-weight:600}.machine-change-list dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.v214-reminder-actions{margin:10px 0}.v214-compact-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.v214-compact-settings .v214-panel{margin:0;padding:20px;display:flex;flex-direction:column;gap:10px}.v214-compact-settings h2,.v214-compact-settings p{margin:0}.v214-compact-settings .admin-form{margin-top:auto;gap:10px}
+.calendar-controls{flex-wrap:wrap;gap:8px}.calendar-team-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-left:auto}.calendar-maintenance-choice{margin:0}.calendar-maintenance-choice label{display:flex;align-items:center;gap:8px;min-height:40px;font-size:.9rem;cursor:pointer}.calendar-maintenance-choice input{width:19px;height:19px;margin:0}
+@media(max-width:900px){.v214-compact-settings{grid-template-columns:minmax(0,1fr)}.calendar-team-controls{margin-left:0}}@media(max-width:480px){.machine-change-list>div{grid-template-columns:minmax(0,1fr);gap:3px}.calendar-team-controls{width:100%}}
+@media(max-width:700px){.v214-form .form-grid{grid-template-columns:minmax(0,1fr)}.v214-panel{padding:18px}.v214-form .button-row{flex-wrap:wrap}.v214-form .admin-button{white-space:normal;min-height:44px}}
+
+/* Mirror the existing identification-card grid without altering the scanner. */
+@media(max-width:760px){.identification-secondary-actions{grid-template-columns:minmax(0,1fr);gap:10px}}
+@media(orientation:landscape) and (max-height:1000px) and (min-width:761px){.identification-page .identification-secondary-actions{column-gap:14px}}
+/* Compact the two calendar command rows; retain room before the grid. */
+.calendar-controls{margin-bottom:0}.calendar-controls+.calendar-options{margin-top:8px;margin-bottom:14px;gap:8px 14px}.calendar-options .calendar-hidden-choice{margin:0 0 0 auto;max-width:100%}
+.user-account-form[data-public-enrollment] [aria-invalid=true]{border-color:var(--danger,#ac2828);box-shadow:0 0 0 2px var(--danger-soft,#fbe9e9)}
+.enrollment-field-error{display:block;color:var(--danger,#ac2828);font-weight:600;margin-top:6px;line-height:1.4}.enrollment-field-error[hidden],[data-enrollment-errors][hidden]{display:none!important}
+/* Native top-layer modal, retaining the existing inner window dimensions. */
+dialog.departure-dialog-backdrop{width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;box-sizing:border-box;color:inherit;background:transparent;backdrop-filter:none;z-index:auto}
+dialog.departure-dialog-backdrop::backdrop{background:rgba(20,31,35,.68);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+dialog.departure-dialog-backdrop[data-dialog-fallback]{background:rgba(20,31,35,.68);backdrop-filter:blur(5px);z-index:1000}
+/* Lifecycle actions stay secondary; the archive filter is not a new panel. */
+.resource-archive-filter{margin:4px 0 16px;padding:0;background:none;border:0}.resource-archive-filter .checkbox-field{display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:4px 0;margin:0;background:none;border:0;border-radius:0;font-size:.92rem;font-weight:500}.resource-other-actions{margin-top:8px}.resource-other-actions>summary{font-size:.92rem;font-weight:600;cursor:pointer}.resource-other-actions form{margin:8px 0}.resource-other-actions>details>summary{font-size:.88rem;cursor:pointer}

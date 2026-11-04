@@ -1,5 +1,7 @@
+/* OFL native UI marked */
 (function () {
   'use strict';
+  const __oflT_65ea7041=text=>window.OpenFabLabPublicI18n?.t(text)||text;
   const config = window.OpenFabLabReservations;
   if (!config || !config.api) return;
   function node(tag, className, text) {
@@ -21,7 +23,7 @@
       headers: {'Content-Type': 'application/json', 'X-OpenFabLab-CSRF': csrf.get(body.environment)}, body: JSON.stringify(body)
     } : {credentials: 'same-origin', cache: 'no-store'});
     const value = await response.json();
-    if (!response.ok) throw new Error(response.status === 404 && route === 'status' ? 'Cette demande n’a pas été transmise ou son suivi a expiré. Identifiez-vous à nouveau.' : (value.message || 'La demande n’a pas abouti.'));
+    if (!response.ok) throw new Error(response.status === 404 && route === 'status' ? __oflT_65ea7041("Cette demande n’a pas été transmise ou son suivi a expiré. Identifiez-vous à nouveau.") : (__oflT_65ea7041(value.message) || __oflT_65ea7041("La demande n’a pas abouti.")));
     return value;
   }
   const storageKey = env => 'ofl-pending-v4-' + env;
@@ -31,15 +33,15 @@
     const started = Date.now();
     while (Date.now() - started < 600000) {
       const status = await request('status', {environment: pending.environment, request_key: pending.key});
-      if (status.state === 'expired') {forget(pending.environment);throw new Error(status.message);}
+      if (status.state === 'expired') {forget(pending.environment);throw new Error(__oflT_65ea7041(status.message));}
       if (status.state === 'done') {
         forget(pending.environment);
-        if (!status.result.ok) throw new Error(status.result.message || 'La demande n’a pas pu être confirmée.');
+        if (!status.result.ok) throw new Error(__oflT_65ea7041(status.result.message) || __oflT_65ea7041("La demande n’a pas pu être confirmée."));
         return status.result.value;
       }
       await new Promise(resolve => setTimeout(resolve, 2500));
     }
-    throw new Error('Votre demande est toujours en cours. Vous pouvez actualiser cette page pour reprendre son suivi.');
+    throw new Error(__oflT_65ea7041("Votre demande est toujours en cours. Vous pouvez actualiser cette page pour reprendre son suivi."));
   }
   async function call(route, body) {
     if (!body) return request(route);
@@ -60,8 +62,8 @@
     wrapper.appendChild(input); return wrapper;
   }
   function availability(animation) {
-    if (animation.availability_state==='ended') return {state:'ended',disabled:true,tone:'closed',title:'Animation terminée',button:'Animation terminée'};
-    if (animation.availability_state==='not_open') return {state:'not_open',disabled:true,tone:'closed',title:'Inscriptions à venir',button:'Inscriptions à venir',detail:animation.signup_open_label?'Ouverture le '+animation.signup_open_label:''};
+    if (animation.availability_state==='ended') return {state:'ended',disabled:true,tone:'closed',title:__oflT_65ea7041("Animation terminée"),button:__oflT_65ea7041("Animation terminée")};
+    if (animation.availability_state==='not_open') return {state:'not_open',disabled:true,tone:'closed',title:__oflT_65ea7041("Inscriptions à venir"),button:__oflT_65ea7041("Inscriptions à venir"),detail:animation.signup_open_label?__oflT_65ea7041("Ouverture le ")+animation.signup_open_label:''};
     if (animation.booking_mode === 'slots' && animation.slots?.length) {
       const states=animation.slots.map(slot=>availability({...slot,waitlist_enabled:animation.waitlist_enabled}));
       const available=states.filter(state=>state.state==='available').length;
@@ -69,23 +71,23 @@
       const closed=states.length-available-waiting;
       const seats=animation.slots.reduce((total,slot,index)=>total+(states[index].state==='available'?slot.available:0),0);
       return {state:available?'available':waiting?'waiting':'closed',disabled:!available&&!waiting,
-        tone:available?'available':waiting?'waiting':'closed',button:available?'Réserver':waiting?'Rejoindre la liste d’attente':'Inscriptions closes',
-        title:available?seats+' '+(seats===1?'place disponible':'places disponibles')+' sur '+available+' '+(available===1?'créneau':'créneaux'):waiting?'Liste d’attente ouverte':'Inscriptions closes',
-        detail:[waiting?waiting+' '+(waiting===1?'créneau avec liste d’attente ouverte':'créneaux avec liste d’attente ouverte'):'',closed?closed+' '+(closed===1?'créneau fermé aux inscriptions':'créneaux fermés aux inscriptions'):''].filter(Boolean).join(' · ')};
+        tone:available?'available':waiting?'waiting':'closed',button:available?__oflT_65ea7041("Réserver"):waiting?__oflT_65ea7041("Rejoindre la liste d’attente"):__oflT_65ea7041("Inscriptions closes"),
+        title:available?seats+' '+(seats===1?__oflT_65ea7041("place disponible"):__oflT_65ea7041("places disponibles"))+__oflT_65ea7041(" sur ")+available+' '+(available===1?__oflT_65ea7041("créneau"):__oflT_65ea7041("créneaux")):waiting?__oflT_65ea7041("Liste d’attente ouverte"):__oflT_65ea7041("Inscriptions closes"),
+        detail:[waiting?waiting+' '+__oflT_65ea7041(waiting===1?'créneau avec liste d’attente ouverte':'créneaux avec liste d’attente ouverte'):'',closed?closed+' '+__oflT_65ea7041(closed===1?'créneau fermé aux inscriptions':'créneaux fermés aux inscriptions'):''].filter(Boolean).join(' · ')};
     }
     // New state is an authoritative snapshot from OpenFabLab. Legacy fallback
     // displays the old catalogue only; it does not allocate or promise seats.
     const state = animation.availability_state || (animation.available > 0 ? 'available' : animation.waitlist_enabled ? 'waiting' : 'full');
-    const result = {state, button:'Réserver',disabled:false,tone:'available'};
-    if(state==='available') result.title=animation.available+' '+(animation.available===1?'place disponible':'places disponibles');
+    const result = {state, button:__oflT_65ea7041("Réserver"),disabled:false,tone:'available'};
+    if(state==='available') result.title=animation.available+' '+(animation.available===1?__oflT_65ea7041("place disponible"):__oflT_65ea7041("places disponibles"));
     else if(state==='waiting') {
-      result.title='Animation complète';result.button='Rejoindre la liste d’attente';result.tone='waiting';
-      result.detail=Number.isInteger(animation.waiting_limit)?'Liste d’attente : '+animation.waiting+'/'+animation.waiting_limit+' places':'Liste d’attente ouverte';
+      result.title=__oflT_65ea7041("Animation complète");result.button=__oflT_65ea7041("Rejoindre la liste d’attente");result.tone='waiting';
+      result.detail=Number.isInteger(animation.waiting_limit)?__oflT_65ea7041("Liste d’attente : ")+animation.waiting+'/'+animation.waiting_limit+__oflT_65ea7041(" places"):__oflT_65ea7041("Liste d’attente ouverte");
     } else {
       result.disabled=true;result.tone='closed';
-      result.title=state==='waiting_full'?'Inscriptions closes':state==='full'?'Animation complète':state==='not_open'?'Réservations pas encore ouvertes':'Réservations terminées';
-      result.button=state==='not_open'?'Ouverture à venir':'Inscriptions closes';
-      if(state==='waiting_full' && Number.isInteger(animation.waiting_limit)) result.detail='Liste d’attente complète : '+animation.waiting+'/'+animation.waiting_limit;
+      result.title=state==='waiting_full'?__oflT_65ea7041("Inscriptions closes"):state==='full'?__oflT_65ea7041("Animation complète"):state==='not_open'?__oflT_65ea7041("Réservations pas encore ouvertes"):__oflT_65ea7041("Réservations terminées");
+      result.button=state==='not_open'?__oflT_65ea7041("Ouverture à venir"):__oflT_65ea7041("Inscriptions closes");
+      if(state==='waiting_full' && Number.isInteger(animation.waiting_limit)) result.detail=__oflT_65ea7041("Liste d’attente complète : ")+animation.waiting+'/'+animation.waiting_limit;
     }
     return result;
   }
@@ -93,8 +95,8 @@
     const option=node('option','',slot.label);option.value=slot.slot_uuid;
     const state=availability(slot);option.disabled=state.disabled;
     const counter=Number.isInteger(slot.waiting_limit)?' ('+slot.waiting+'/'+slot.waiting_limit+')':'';
-    const labels={available:slot.available+' '+(slot.available===1?'place disponible':'places disponibles'),waiting:'Liste d’attente ouverte'+counter,
-      waiting_full:'Liste d’attente complète'+counter,full:'Complet',not_open:'Inscriptions pas encore ouvertes',closed:'Inscriptions closes',unpublished:'Fermé aux inscriptions'};
+    const labels={available:slot.available+' '+(slot.available===1?__oflT_65ea7041("place disponible"):__oflT_65ea7041("places disponibles")),waiting:__oflT_65ea7041("Liste d’attente ouverte")+counter,
+      waiting_full:__oflT_65ea7041("Liste d’attente complète")+counter,full:__oflT_65ea7041("Complet"),not_open:__oflT_65ea7041("Inscriptions pas encore ouvertes"),closed:__oflT_65ea7041("Inscriptions closes"),unpublished:__oflT_65ea7041("Fermé aux inscriptions")};
     option.textContent=slot.label+' · '+labels[state.state];
     return option;
   }
@@ -107,8 +109,15 @@
     if(animation.waitlist_enabled && (!Number.isInteger(slot.waiting_limit) || slot.waiting_limit-slot.waiting>=count))return 'waiting';
     return 'closed';
   }
+  const initialized=new WeakSet();
   function init(root) {
+    if(initialized.has(root)||!root.querySelector('.openfablab-animation-list'))return;
+    initialized.add(root);
     const environment = root.dataset.environment;
+    root.lang=window.OpenFabLabPublicI18n?.language||'fr';
+    root.setAttribute('aria-label',__oflT_65ea7041('Réservations des animations'));
+    const testLabel=root.querySelector('.openfablab-test-label');if(testLabel)testLabel.textContent=__oflT_65ea7041('Environnement de test OpenFabLab');
+    window.OpenFabLabPublicI18n?.selector(root,()=>{});
     const list = root.querySelector('.openfablab-animation-list');
     const host = root.querySelector('.openfablab-form-host');
     const status = root.querySelector('.openfablab-status');
@@ -117,7 +126,7 @@
       try {
         const result = await call('animations?environment=' + encodeURIComponent(environment));
         list.replaceChildren();
-        status.textContent = result.animations.length ? '' : 'Aucune animation ouverte à la réservation.';
+        status.textContent = result.animations.length ? '' : __oflT_65ea7041("Aucune animation ouverte à la réservation.");
         result.animations.forEach(animation => {
           const card = node('article', 'openfablab-card');
           card.dataset.serviceId = String(animation.service_id);
@@ -132,7 +141,7 @@
           if(animation.description)card.appendChild(node('p','openfablab-description',animation.description));
           if(animation.information_url){
             try{const url=new URL(animation.information_url);if(['http:','https:'].includes(url.protocol)){
-              const link=node('a','openfablab-information','En savoir plus sur cette animation');link.href=url.href;link.rel='noopener noreferrer';card.append(link);
+              const link=node('a','openfablab-information',__oflT_65ea7041("En savoir plus sur cette animation"));link.href=url.href;link.rel='noopener noreferrer';card.append(link);
             }}catch(_error){}
           }
           const footer=node('div','openfablab-card-footer');
@@ -141,15 +150,20 @@
           footer.appendChild(button);card.appendChild(footer);list.appendChild(card);
         });
         markSelection();
-      } catch (error) {status.textContent = error.message;}
+        const linked=Number(new URLSearchParams(location.search).get('ofl_animation'));
+        if(linked&&!active.has(environment)){
+          const target=result.animations.find(item=>item.service_id===linked);
+          if(target&&!availability(target).disabled){choose(target);host.scrollIntoView({block:'nearest'});}
+        }
+      } catch (error) {status.textContent = __oflT_65ea7041(error.message);}
     }
     function form(title) {
       if (scanner) {scanner.destroy();scanner = null;}
       host.replaceChildren();
       const value = node('form', 'openfablab-booking-form');
       const animation = active.get(environment);
-      if (animation) value.appendChild(node('p', 'openfablab-selected-summary', 'Réservation pour : ' + animation.title + ' · ' + animation.date + ' · ' + animation.hours));
-      const heading = node('h3', '', title); heading.tabIndex = -1;
+      if (animation) value.appendChild(node('p', 'openfablab-selected-summary', __oflT_65ea7041("Réservation pour : ") + animation.title + ' · ' + animation.date + ' · ' + animation.hours));
+      const heading = node('h3', '', __oflT_65ea7041(title)); heading.tabIndex = -1;
       value.appendChild(heading);
       const feedback = node('p', 'openfablab-verification'); feedback.setAttribute('role', 'status');
       value.appendChild(feedback);host.appendChild(value);heading.focus();
@@ -159,11 +173,11 @@
       active.set(environment, animation);
       markSelection();
       if (animation.account_required !== false) {identify(animation);return;}
-      const [value] = form('Comment souhaitez-vous réserver ?');
+      const [value] = form(__oflT_65ea7041("Comment souhaitez-vous réserver ?"));
       const choices = node('div', 'openfablab-entry-choices');
       for (const [title, help, action] of [
-        ['J’ai un compte OpenFabLab', 'Retrouvez votre fiche et vos éventuels liens familiaux.', () => identify(animation)],
-        ['Réserver sans compte', 'Réservez simplement pour vous avec vos coordonnées.', () => guest(animation)]
+        [__oflT_65ea7041("J’ai un compte OpenFabLab"), __oflT_65ea7041("Retrouvez votre fiche et vos éventuels liens familiaux."), () => identify(animation)],
+        [__oflT_65ea7041("Réserver sans compte"), __oflT_65ea7041("Réservez simplement pour vous avec vos coordonnées."), () => guest(animation)]
       ]) {
         const card = node('div', 'openfablab-entry-card');
         const button = node('button', 'openfablab-button', title);button.type = 'button';button.addEventListener('click', action);
@@ -180,16 +194,16 @@
       });
     }
     function slotPicker(value, animation, previous, count) {
-      const label=node('label','openfablab-field');label.append(node('span','','Créneau'));
+      const label=node('label','openfablab-field');label.append(node('span','',__oflT_65ea7041("Créneau")));
       const select=node('select');select.required=true;select.name='slot_uuid';
-      const empty=node('option','','Choisir un créneau');empty.value='';select.append(empty);
+      const empty=node('option','',__oflT_65ea7041("Choisir un créneau"));empty.value='';select.append(empty);
       animation.slots.forEach(slot=>select.append(slotOption({...slot,waitlist_enabled:animation.waitlist_enabled})));
       select.value=previous||'';label.append(select);value.append(label);
       const badge=node('p','openfablab-slot-status');badge.setAttribute('role','status');value.append(badge);
       const update=()=>{
         const mode=requestType(animation,select.value,Math.max(1,count()));
         badge.className='openfablab-slot-status openfablab-availability-badge is-'+(mode==='reservation'?'available':mode==='waiting'?'waiting':'closed');
-        badge.textContent={choose:'Choisissez un créneau.',reservation:'Place disponible',waiting:'Inscription possible en liste d’attente, sans garantie de place.',closed:'Ce créneau ne peut pas accueillir cette demande.'}[mode];
+        badge.textContent={choose:__oflT_65ea7041("Choisissez un créneau."),reservation:__oflT_65ea7041("Place disponible"),waiting:__oflT_65ea7041("Inscription possible en liste d’attente, sans garantie de place."),closed:__oflT_65ea7041("Ce créneau ne peut pas accueillir cette demande.")}[mode];
       };
       select.addEventListener('change',update);value.addEventListener('change',update);update();return select;
     }
@@ -197,18 +211,18 @@
       const mode=requestType(animation,slotId,count);
       const slot=animation.slots?.find(slot=>slot.slot_uuid===slotId);
       const summary=node('div','openfablab-request-summary');
-      for(const text of ['Animation : '+animation.title,'Date : '+animation.date,slot?'Créneau : '+slot.label:'Horaires : '+animation.hours,
-        'Participants : '+count,'Type : '+(mode==='waiting'?'Inscription en liste d’attente':mode==='reservation'?'Réservation':'Demande indisponible')])summary.append(node('p','',text));
-      if(mode==='waiting')summary.append(node('p','','Les places confirmées ne suffisent pas pour cette demande. Elle concerne uniquement la liste d’attente.'));
-      else if(mode==='reservation' && animation.waitlist_enabled)summary.append(node('p','','La disponibilité sera vérifiée par OpenFabLab. Si elle ne suffit plus à la validation, votre demande rejoindra la liste d’attente, sans garantie de place.'));
-      else summary.append(node('p','','OpenFabLab vérifie la disponibilité à la validation.'));
+      for(const text of [__oflT_65ea7041("Animation : ")+animation.title,__oflT_65ea7041("Date : ")+animation.date,slot?__oflT_65ea7041("Créneau : ")+slot.label:__oflT_65ea7041("Horaires : ")+animation.hours,
+        __oflT_65ea7041("Participants : ")+count,__oflT_65ea7041("Type : ")+(mode==='waiting'?__oflT_65ea7041("Inscription en liste d’attente"):mode==='reservation'?__oflT_65ea7041("Réservation"):__oflT_65ea7041("Demande indisponible"))])summary.append(node('p','',text));
+      if(mode==='waiting')summary.append(node('p','',__oflT_65ea7041("Les places confirmées ne suffisent pas pour cette demande. Elle concerne uniquement la liste d’attente.")));
+      else if(mode==='reservation' && animation.waitlist_enabled)summary.append(node('p','',__oflT_65ea7041("La disponibilité sera vérifiée par OpenFabLab. Si elle ne suffit plus à la validation, votre demande rejoindra la liste d’attente, sans garantie de place.")));
+      else summary.append(node('p','',__oflT_65ea7041("OpenFabLab vérifie la disponibilité à la validation.")));
       value.append(summary);return mode;
     }
     function guest(animation, previous = {}) {
-      const [value, feedback] = form('Réserver sans compte');
-      value.appendChild(node('p', '', 'Une place pour vous, sans création de compte. Une personne non autonome réserve avec son responsable depuis le parcours avec compte.'));
+      const [value, feedback] = form(__oflT_65ea7041("Réserver sans compte"));
+      value.appendChild(node('p', '', __oflT_65ea7041("Une place pour vous, sans création de compte. Une personne non autonome réserve avec son responsable depuis le parcours avec compte.")));
       const fields = node('div', 'openfablab-guest-fields');
-      for (const [name, label, type] of [['first_name','Prénom','text'],['last_name','Nom','text'],['birth_date','Date de naissance','date'],['email','E-mail','email'],['phone',animation.phone_required ? 'Téléphone (obligatoire)' : 'Téléphone (facultatif)','tel']]) {
+      for (const [name, label, type] of [['first_name',__oflT_65ea7041("Prénom"),'text'],['last_name',__oflT_65ea7041("Nom"),'text'],['birth_date',__oflT_65ea7041("Date de naissance"),'date'],['email','E-mail','email'],['phone',animation.phone_required ? __oflT_65ea7041("Téléphone (obligatoire)") : __oflT_65ea7041("Téléphone (facultatif)"),'tel']]) {
         const wrapper = field(name,label,type), input = wrapper.querySelector('input');input.value = previous[name] || '';
         input.maxLength = ['first_name','last_name'].includes(name) ? 120 : name === 'phone' ? 40 : 254;
         if (name === 'phone') input.required = animation.phone_required === true;
@@ -216,13 +230,13 @@
         fields.appendChild(wrapper);
       }
       value.appendChild(fields);
-      value.appendChild(node('small', '', 'La date de naissance sert uniquement à vérifier l’âge minimum et l’autonomie à la date de l’animation. Aucune fiche usager n’est créée.'));
+      value.appendChild(node('small', '', __oflT_65ea7041("La date de naissance sert uniquement à vérifier l’âge minimum et l’autonomie à la date de l’animation. Aucune fiche usager n’est créée.")));
       let slots;
       if (animation.booking_mode === 'slots') {
         slots=slotPicker(value,animation,previous.slot_uuid,()=>1);
       }
-      const back = node('button','openfablab-secondary','Changer de parcours');back.type = 'button';back.addEventListener('click',() => choose(animation));value.appendChild(back);
-      value.appendChild(node('button','openfablab-button','Voir le récapitulatif'));
+      const back = node('button','openfablab-secondary',__oflT_65ea7041("Changer de parcours"));back.type = 'button';back.addEventListener('click',() => choose(animation));value.appendChild(back);
+      value.appendChild(node('button','openfablab-button',__oflT_65ea7041("Voir le récapitulatif")));
       value.addEventListener('submit', event => {
         event.preventDefault();if (!value.reportValidity()) return;
         const data = Object.fromEntries(new FormData(value));data.slot_uuid = slots ? slots.value : null;
@@ -230,120 +244,121 @@
       });
     }
     function guestRecap(animation, data) {
-      const [value, feedback] = form('Récapitulatif');
+      const [value, feedback] = form(__oflT_65ea7041("Récapitulatif"));
       const mode=requestSummary(value,animation,data.slot_uuid,1);
-      value.appendChild(node('p','',data.first_name + ' ' + data.last_name + ' · 1 place demandée'));
-      value.appendChild(node('p','','Vous recevrez la décision d’OpenFabLab par e-mail. Aucune place n’est confirmée avant cette décision.'));
+      value.appendChild(node('p','',data.first_name + ' ' + data.last_name + __oflT_65ea7041(" · 1 place demandée")));
+      value.appendChild(node('p','',__oflT_65ea7041("Vous recevrez la décision d’OpenFabLab par e-mail. Aucune place n’est confirmée avant cette décision.")));
       const consent = node('label','openfablab-family-person');const box = node('input');box.type = 'checkbox';box.required = true;
-      consent.appendChild(box);consent.appendChild(node('span','','J’accepte l’utilisation de ces informations pour gérer la réservation.'));value.appendChild(consent);
-      const back = node('button','openfablab-secondary','Modifier');back.type = 'button';back.addEventListener('click',() => guest(animation,data));value.appendChild(back);
-      const submit = node('button','openfablab-button',mode==='waiting'?'Valider l’inscription en liste d’attente':'Valider la réservation');submit.disabled=!['reservation','waiting'].includes(mode);value.appendChild(submit);
+      consent.appendChild(box);consent.appendChild(node('span','',__oflT_65ea7041("J’accepte l’utilisation de ces informations pour gérer la réservation.")));value.appendChild(consent);
+      const back = node('button','openfablab-secondary',__oflT_65ea7041("Modifier"));back.type = 'button';back.addEventListener('click',() => guest(animation,data));value.appendChild(back);
+      const submit = node('button','openfablab-button',mode==='waiting'?__oflT_65ea7041("Valider l’inscription en liste d’attente"):__oflT_65ea7041("Valider la réservation"));submit.disabled=!['reservation','waiting'].includes(mode);value.appendChild(submit);
       const key = randomKey();
       value.addEventListener('submit',async event => {
-        event.preventDefault();if (!value.reportValidity()) return;submit.disabled = true;back.disabled = true;feedback.textContent = 'Votre demande est transmise. Vérification en cours…';
+        event.preventDefault();if (!value.reportValidity()) return;submit.disabled = true;back.disabled = true;feedback.textContent = __oflT_65ea7041("Votre demande est transmise. Vérification en cours…");
         try {receipt(await call('guest',{...data,environment,service_id:animation.service_id,request_key:key,consent:true}));await refresh();}
-        catch (error) {feedback.textContent = error.message;submit.disabled = false;back.disabled = false;}
+        catch (error) {feedback.textContent = __oflT_65ea7041(error.message);submit.disabled = false;back.disabled = false;}
       });
     }
     function identify(animation) {
       active.set(environment, animation);
-      const [value, feedback] = form('Identifier mon compte');
-      value.appendChild(node('p', '', 'Saisissez votre identifiant et une coordonnée déjà renseignée dans votre fiche. Les membres rattachés ne sont affichés qu’après cette vérification.'));
-      value.appendChild(field('public_id', 'Identifiant OpenFabLab'));
-      value.appendChild(field('contact', 'E-mail ou téléphone de votre fiche'));
+      const [value, feedback] = form(__oflT_65ea7041("Identifier mon compte"));
+      value.appendChild(node('p', '', __oflT_65ea7041("Saisissez votre identifiant et une coordonnée déjà renseignée dans votre fiche. Les membres rattachés ne sont affichés qu’après cette vérification.")));
+      value.appendChild(field('public_id', __oflT_65ea7041("Identifiant OpenFabLab")));
+      value.appendChild(field('contact', __oflT_65ea7041("E-mail ou téléphone de votre fiche")));
       const id = value.querySelector('[name=public_id]'), contactInput = value.querySelector('[name=contact]');
       const methods = node('div','openfablab-identification-methods');
-      const scan = node('button','openfablab-button','Scanner mon QR Code');scan.type = 'button';
-      const manual = node('button','openfablab-secondary','Saisir mon identifiant');manual.type = 'button';
+      const scan = node('button','openfablab-button',__oflT_65ea7041("Scanner mon QR Code"));scan.type = 'button';
+      const manual = node('button','openfablab-secondary',__oflT_65ea7041("Saisir mon identifiant"));manual.type = 'button';
       const camera = node('div','openfablab-scanner');camera.hidden = true;
-      if (window.OpenFabLabQR) scanner = window.OpenFabLabQR(camera,id,() => {feedback.textContent = 'QR Code reconnu. Vérifiez votre compte avec votre e-mail ou téléphone.';contactInput.focus();});
-      scan.addEventListener('click',() => {if (scanner) scanner.start();else feedback.textContent = 'Scanner indisponible. Saisissez votre identifiant.';});
+      if (window.OpenFabLabQR) scanner = window.OpenFabLabQR(camera,id,() => {feedback.textContent = __oflT_65ea7041("QR Code reconnu. Vérifiez votre compte avec votre e-mail ou téléphone.");contactInput.focus();});
+      scan.addEventListener('click',() => {if (scanner) scanner.start();else feedback.textContent = __oflT_65ea7041("Scanner indisponible. Saisissez votre identifiant.");});
       manual.addEventListener('click',() => {if (scanner) scanner.stop();id.focus();});
       id.addEventListener('focus',() => {if (scanner) scanner.stop();});
       methods.appendChild(scan);methods.appendChild(manual);value.insertBefore(methods,value.querySelector('label'));value.insertBefore(camera,value.querySelector('label'));
-      const button = node('button', 'openfablab-button', 'Continuer');value.appendChild(button);
+      const button = node('button', 'openfablab-button', __oflT_65ea7041("Continuer"));value.appendChild(button);
       value.addEventListener('submit', async event => {
         event.preventDefault();button.disabled = true;
         if (scanner) scanner.stop();
-        feedback.textContent = 'Vérification en cours…';
+        feedback.textContent = __oflT_65ea7041("Vérification en cours…");
         try {
           const data = new FormData(value);
           const result = await call('verify', {environment, service_id: animation.service_id,
             public_id: data.get('public_id'), contact: data.get('contact')});
           if (result.contact_required) contact(animation, result);
           else select(animation, result);
-        } catch (error) {feedback.textContent = error.message;button.disabled = false;}
+        } catch (error) {feedback.textContent = __oflT_65ea7041(error.message);button.disabled = false;}
       });
     }
     function contact(animation, identity) {
-      const [value, feedback] = form('Compléter mes coordonnées');
-      value.appendChild(node('p', '', 'Un e-mail valide est nécessaire pour recevoir la confirmation et les éventuelles propositions de places.'));
+      const [value, feedback] = form(__oflT_65ea7041("Compléter mes coordonnées"));
+      value.appendChild(node('p', '', __oflT_65ea7041("Un e-mail valide est nécessaire pour recevoir la confirmation et les éventuelles propositions de places.")));
       value.appendChild(field('email', 'E-mail', 'email'));
-      const phone = field('phone', identity.phone_required ? 'Téléphone (obligatoire)' : 'Téléphone (facultatif)', 'tel');
+      const phone = field('phone', identity.phone_required ? __oflT_65ea7041("Téléphone (obligatoire)") : __oflT_65ea7041("Téléphone (facultatif)"), 'tel');
       phone.querySelector('input').required = identity.phone_required;
       phone.querySelector('input').maxLength = 40;value.appendChild(phone);
-      const button = node('button', 'openfablab-button', 'Enregistrer et continuer');value.appendChild(button);
+      const button = node('button', 'openfablab-button', __oflT_65ea7041("Enregistrer et continuer"));value.appendChild(button);
       value.addEventListener('submit', async event => {
         event.preventDefault();button.disabled = true;
-        feedback.textContent = 'Vérification en cours…';
+        feedback.textContent = __oflT_65ea7041("Vérification en cours…");
         try {
           const data = new FormData(value);
           const result = await call('contact', {environment, service_id: animation.service_id, token: identity.token,
             email: data.get('email'), phone: data.get('phone')});
           select(animation, result);
-        } catch (error) {feedback.textContent = error.message;button.disabled = false;}
+        } catch (error) {feedback.textContent = __oflT_65ea7041(error.message);button.disabled = false;}
       });
     }
     function select(animation, identity, previous, previousSlot) {
-      const [value, feedback] = form('Pour qui réservez-vous ?');
-      value.appendChild(node('p', '', 'Une place par personne. Une personne non autonome doit participer avec un responsable rattaché à son compte.'));
+      const [value, feedback] = form(__oflT_65ea7041("Pour qui réservez-vous ?"));
+      value.appendChild(node('p', '', __oflT_65ea7041("Une place par personne. Une personne non autonome doit participer avec un responsable rattaché à son compte.")));
       identity.participants.forEach(person => {
         const label = node('label', 'openfablab-family-person');
         const box = node('input');box.type = 'checkbox';box.name = 'participants';box.value = person.key;
         box.checked = (previous || []).includes(person.key);
-        label.appendChild(box);label.appendChild(node('span', '', person.name + ' · ' + person.label));value.appendChild(label);
+        label.appendChild(box);label.appendChild(node('span', '', person.name + ' · ' + __oflT_65ea7041(person.label)));value.appendChild(label);
       });
       let slots;
       if (animation.booking_mode === 'slots') {
         slots=slotPicker(value,animation,previousSlot,()=>value.querySelectorAll('input[name=participants]:checked').length);
       }
-      const button = node('button', 'openfablab-button', 'Voir le récapitulatif');value.appendChild(button);
+      const button = node('button', 'openfablab-button', __oflT_65ea7041("Voir le récapitulatif"));value.appendChild(button);
       value.addEventListener('submit', event => {
         event.preventDefault();
         const selected = Array.from(value.querySelectorAll('input[name="participants"]:checked')).map(box => box.value);
-        if (!selected.length) {feedback.textContent = 'Sélectionnez au moins une personne.';return;}
+        if (!selected.length) {feedback.textContent = __oflT_65ea7041("Sélectionnez au moins une personne.");return;}
         recap(animation, identity, selected, slots ? slots.value : null);
       });
     }
     function recap(animation, identity, selected, slot) {
-      const [value, feedback] = form('Récapitulatif');
+      const [value, feedback] = form(__oflT_65ea7041("Récapitulatif"));
       const mode=requestSummary(value,animation,slot,selected.length);
       const names = node('ul');
       identity.participants.filter(person => selected.includes(person.key)).forEach(person => names.appendChild(node('li', '', person.name)));
       value.appendChild(names);
-      value.appendChild(node('p', '', selected.length + ' place(s) demandée(s). Tout le groupe sera confirmé ou mis en attente ensemble.'));
+      value.appendChild(node('p', '', selected.length + __oflT_65ea7041(" place(s) demandée(s). Tout le groupe sera confirmé ou mis en attente ensemble.")));
       const consent = node('label', 'openfablab-family-person');
       const checkbox = node('input');checkbox.type = 'checkbox';checkbox.required = true;
-      consent.appendChild(checkbox);consent.appendChild(node('span', '', 'J’accepte l’utilisation de ces informations pour gérer la réservation.'));value.appendChild(consent);
-      const back = node('button', 'openfablab-secondary', 'Modifier');back.type = 'button';back.addEventListener('click', () => select(animation, identity, selected, slot));value.appendChild(back);
-      const submit = node('button', 'openfablab-button', mode==='waiting'?'Valider l’inscription en liste d’attente':'Valider la réservation');submit.disabled=!['reservation','waiting'].includes(mode);value.appendChild(submit);
+      consent.appendChild(checkbox);consent.appendChild(node('span', '', __oflT_65ea7041("J’accepte l’utilisation de ces informations pour gérer la réservation.")));value.appendChild(consent);
+      const back = node('button', 'openfablab-secondary', __oflT_65ea7041("Modifier"));back.type = 'button';back.addEventListener('click', () => select(animation, identity, selected, slot));value.appendChild(back);
+      const submit = node('button', 'openfablab-button', mode==='waiting'?__oflT_65ea7041("Valider l’inscription en liste d’attente"):__oflT_65ea7041("Valider la réservation"));submit.disabled=!['reservation','waiting'].includes(mode);value.appendChild(submit);
       // Reuse this key after timeout. A lost response must never duplicate seats.
       const requestKey = Array.from(crypto.getRandomValues(new Uint8Array(24)), byte => byte.toString(16).padStart(2, '0')).join('');
       value.addEventListener('submit', async event => {
         event.preventDefault();submit.disabled = true;back.disabled = true;
-        feedback.textContent = 'Vérification en cours…';
+        feedback.textContent = __oflT_65ea7041("Vérification en cours…");
         try {
           const result = await call('reserve', {environment, service_id: animation.service_id, token: identity.token,
             participants: selected, slot_uuid: slot, request_key: requestKey, consent: true});
           receipt(result);
           await refresh();
-        } catch (error) {feedback.textContent = error.message;submit.disabled = false;back.disabled = false;}
+        } catch (error) {feedback.textContent = __oflT_65ea7041(error.message);submit.disabled = false;back.disabled = false;}
       });
     }
     function receipt(result) {
       const single = result.count === 1;
-      const [value] = form(result.status === 'confirmed' ? 'Réservation confirmée' : single ? 'Inscription en liste d’attente' : 'Groupe en liste d’attente');
-      value.appendChild(node('p', '', result.count + (single ? ' place demandée. ' : ' participants. ') + (result.status === 'confirmed' ? single ? 'Votre inscription est confirmée.' : 'Tous sont inscrits ensemble.' : single ? 'Vous recevrez une proposition par e-mail lorsqu’une place sera disponible.' : 'Aucune place n’est encore confirmée. Une proposition sera envoyée par e-mail si tout le groupe peut être accueilli.')));
+      const [value] = form(result.status === 'confirmed' ? __oflT_65ea7041("Réservation confirmée") : single ? __oflT_65ea7041("Inscription en liste d’attente") : __oflT_65ea7041("Groupe en liste d’attente"));
+      value.appendChild(node('p', '', result.count + (single ? __oflT_65ea7041(" place demandée. ") : __oflT_65ea7041(" participants. ")) + (result.status === 'confirmed' ? single ? __oflT_65ea7041("Votre inscription est confirmée.") : __oflT_65ea7041("Tous sont inscrits ensemble.") : single ? __oflT_65ea7041("Vous recevrez une proposition par e-mail lorsqu’une place sera disponible.") : __oflT_65ea7041("Aucune place n’est encore confirmée. Une proposition sera envoyée par e-mail si tout le groupe peut être accueilli."))));
+      if(result.status==='confirmed'&&result.calendar)window.OpenFabLabPublicI18n?.calendar(value,result.calendar);
     }
     async function resume() {
       await refresh();
@@ -352,8 +367,8 @@
       if (!pending || pending.until < Date.now() || pending.environment !== environment) {forget(environment);return;}
       active.set(environment, pending.animation);
       markSelection();
-      const [, feedback] = form('Vérification en cours…');
-      feedback.textContent = 'Votre demande est reçue. Cette page se mettra à jour automatiquement.';
+      const [, feedback] = form(__oflT_65ea7041("Vérification en cours…"));
+      feedback.textContent = __oflT_65ea7041("Votre demande est reçue. Cette page se mettra à jour automatiquement.");
       try {
         const result = await awaitResult(pending);
         if (pending.route === 'reserve' || pending.route === 'guest') {receipt(result);await refresh();}
@@ -361,9 +376,11 @@
           if (result.contact_required) contact(pending.animation, result);
           else select(pending.animation, result);
         }
-      } catch (error) {feedback.textContent = error.message;}
+      } catch (error) {feedback.textContent = __oflT_65ea7041(error.message);}
     }
     resume();
   }
-  document.querySelectorAll('.openfablab-reservations').forEach(init);
+  function initializeModules(){document.querySelectorAll('.openfablab-reservations').forEach(init);}
+  new MutationObserver(initializeModules).observe(document.body,{childList:true,subtree:true});
+  initializeModules();
 }());

@@ -1,0 +1,8 @@
+<form method="post" action="{{ url_for('v214.settings') }}" class="admin-form form-section" id="openlab-public-settings">
+  <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="group" value="openlab">
+  <h3>Programme des OpenLab</h3>
+  <label class="checkbox-field"><input type="checkbox" name="public" value="1" {% if settings214.get('openlab_public_enabled')=='1' %}checked{% endif %}><span>Publier le programme des OpenLab</span></label>
+  <label class="checkbox-field"><input type="checkbox" name="public_average" value="1" {% if settings214.get('openlab_public_average_enabled','0')=='1' %}checked{% endif %}><span>Publier une moyenne de fréquentation des OpenLab</span></label>
+  <p class="form-help">Moyennes facultatives sur les 12 derniers mois : au moins six séances comparables avec passages enregistrés et des effectifs suffisants. Aucune donnée individuelle.</p>
+  <div class="form-actions"><button class="admin-button secondary compact">Enregistrer le programme public</button><a class="admin-button secondary compact" href="{{ url_for('v214.openings') }}">Horaires exceptionnels</a></div>
+</form>

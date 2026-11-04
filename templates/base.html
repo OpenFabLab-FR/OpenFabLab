@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="{% block html_class %}{% endblock %}" lang="fr" data-service-worker-url="{{ url_for('service_worker') }}" data-keep-screen-awake="{% if keep_screen_awake|default(false) %}1{% else %}0{% endif %}" data-lock-home-scroll="{% if lock_home_scroll|default(false) %}1{% else %}0{% endif %}" data-wake-lock-start="{{ (wake_lock|default({})).start|default('09:00') }}" data-wake-lock-end="{{ (wake_lock|default({})).end|default('17:00') }}">
+<html class="{% block html_class %}{% endblock %}" lang="{{ ui_language }}" data-service-worker-url="{{ url_for('service_worker') }}" data-keep-screen-awake="{% if keep_screen_awake|default(false) %}1{% else %}0{% endif %}" data-lock-home-scroll="{% if lock_home_scroll|default(false) %}1{% else %}0{% endif %}" data-wake-lock-start="{{ (wake_lock|default({})).start|default('09:00') }}" data-wake-lock-end="{{ (wake_lock|default({})).end|default('17:00') }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -15,11 +15,15 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% if structure.color %}<style>:root { --primary: {{ structure.color }}; }</style>{% endif %}
     {% if category_styles %}<style>{{ category_styles|safe }}</style>{% endif %}
+    <script src="{{ url_for('static',filename='v214.js') }}" defer></script>
     {% block page_scripts %}{% endblock %}
     <script src="{{ url_for('static', filename='app.js') }}" defer></script>
     <script src="{{ url_for('static', filename='evolution.js') }}" defer></script>
     {% if kiosk_audio %}<script type="application/json" id="kiosk-audio">{{ dict(kiosk_audio,token=kiosk_action)|tojson }}</script><script src="{{ url_for('static',filename='kiosk-sound.js') }}" defer></script>{% endif %}
     <link rel="stylesheet" href="{{ url_for('static',filename='memberships.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static',filename='v214.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static',filename='i18n.css') }}">
+    <script type="application/json" id="ui-language-data">{{ dict(language=ui_language,catalog=ui_catalog,admin=ui_admin,idle=ui_idle_minutes,idleEnabled=ui_idle_enabled)|tojson }}</script>
 </head>
 <body class="{% block body_class %}{% endblock %}">
     <header class="site-header">
@@ -28,6 +32,7 @@
             {% else %}<img class="brand-wordmark brand-wordmark--openfablab" src="{{ url_for('static', filename='brand/OpenFabLab-logo-horizontal.svg') }}" alt="OpenFabLab">{% endif %}
         </a>{% endif %}
         <div class="header-tools">
+            {% if ui_language_switch and ui_language_choices|length>1 %}<details class="ui-language-menu"><summary aria-label="Choisir la langue"><span class="ui-language-flag" aria-hidden="true">{{ '🇬🇧' if ui_language=='en' else '🇫🇷' }}</span><span>{{ 'EN' if ui_language=='en' else 'FR' }}</span><svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="m1 1 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></summary><form class="ui-language-form" action="{{ url_for('language.select') }}" method="post"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="scope" value="{{ 'admin' if ui_admin else 'kiosk' }}"><input type="hidden" name="next" value="{{ request.script_root ~ request.full_path }}">{% for lang,label in [('fr','Français'),('en','English')] %}{% if lang in ui_language_choices %}<button type="submit" name="language" value="{{ lang }}" lang="{{ lang }}" {% if lang==ui_language %}aria-current="true"{% endif %}>{{ label }}</button>{% endif %}{% endfor %}</form></details>{% endif %}
             {% if (structure.show_header_institution_logo and structure.logo_status.header_institution) or (structure.show_network_logo and structure.logo_status.network) %}
             <div class="partner-logos" aria-label="Partenaires de {{ structure.name }}">
                 {% if structure.show_header_institution_logo and structure.logo_status.header_institution %}<img src="{{ url_for('structure_logo', kind='header_institution') }}" alt="Logo institutionnel d’en-tête">{% endif %}
@@ -43,6 +48,7 @@
             {% endif %}
         </div>
     </header>
+    {% if unavailable_machines %}<dialog id="machine-information" class="machine-dialog" aria-labelledby="machine-information-title"><div class="dialog-heading"><h2 id="machine-information-title">{{ resource_unavailable_title }}</h2><button type="button" class="admin-button secondary" data-close-dialog>Fermer</button></div>{% for item in unavailable_machines %}<article class="maintenance-entry"><h3>{{ item.name }}</h3><span class="status-badge">{{ {'maintenance':'En maintenance','out_of_service':'Hors service'}[item.status] }}</span>{% if item.reason %}<p>{{ item.reason }}</p>{% endif %}{% if item.return_estimate %}<p>Retour estimé : {{ item.return_estimate|date_fr }}</p>{% endif %}</article>{% endfor %}</dialog>{% endif %}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -57,6 +63,7 @@
     {% endwith %}
 
     {% block decorative_scene %}{% endblock %}
+    {% if ui_idle_enabled %}<form hidden id="ui-idle-form" method="post" action="{{ url_for('language.idle') }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"></form>{% endif %}
 
     <main class="page-shell">
         {% block content %}{% endblock %}

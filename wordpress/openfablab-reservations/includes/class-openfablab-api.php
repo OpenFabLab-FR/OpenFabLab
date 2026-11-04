@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) { exit; }
 final class OpenFabLab_API {
     public static function register() {
         OpenFabLab_Relay::register();
+        OpenFabLab_Public::register();
         register_rest_route('openfablab/v1', '/sync/capabilities', [
             'methods'=>'POST', 'callback'=>[__CLASS__,'capabilities'],
             'permission_callback'=>[__CLASS__,'private_permission'],
@@ -25,7 +26,8 @@ final class OpenFabLab_API {
             'catalog_snapshot_v1'=>false, 'family_gateway_v1'=>false,
             'protocol_version'=>4, 'outbound_actions_v1'=>true, 'transport_only_v1'=>true,
             'relay_revision'=>3, 'plugin_version'=>OPENFABLAB_RES_VERSION,
-            'animation_information_v1'=>true,'waitlist_limits_v1'=>true,'publication_visibility_v1'=>true];
+            'animation_information_v1'=>true,'waitlist_limits_v1'=>true,'publication_visibility_v1'=>true,
+            'public_calendar_v1'=>true,'public_machines_v1'=>true,'participant_calendar_v1'=>true,'public_resources_details_v1'=>true,'public_display_options_v1'=>true,'public_calendar_history_v1'=>true];
         $body=json_decode($request->get_body(),true);
         if (is_array($body) && in_array($body['environment'] ?? '',['production','test'],true)) {
             $value['relay_state']=OpenFabLab_Relay::state($body['environment']);

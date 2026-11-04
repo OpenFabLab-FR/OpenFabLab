@@ -1,6 +1,7 @@
 """Génération des devis, factures et états annuels OpenFabLab."""
 
 from __future__ import annotations
+from i18n import native as __ui_native__
 
 import io
 import zipfile
@@ -387,7 +388,7 @@ def generate_document_docx(
     table = document.add_table(rows=1, cols=4)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.style = "Table Grid"
-    labels = ("Désignation", "Quantité", "Prix unitaire HT", "Total HT")
+    labels = (__ui_native__("Désignation"), __ui_native__("Quantité"), __ui_native__("Prix unitaire HT"), __ui_native__("Total HT"))
     for index, label in enumerate(labels):
         cell = table.rows[0].cells[index]
         _set_cell_fill(cell, BLUE_DARK)

@@ -46,6 +46,7 @@ def selected(db, value, current=None):
 
 def register(application,a):
     from flask import Blueprint,abort,flash,redirect,render_template,request,url_for
+    from i18n import flash
     from evolution_routes import require_csrf,require_team
     bp=Blueprint('client_categories',__name__)
     def guard():
