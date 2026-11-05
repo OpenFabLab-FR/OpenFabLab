@@ -1,7 +1,10 @@
 """Reproducible, allowlisted application distribution (never user data)."""
 
 import argparse
+import hashlib
+import json
 import re
+import shlex
 from openfablab import __version__
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
@@ -10,6 +13,14 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "dist" / f"OpenFabLab-{__version__}.zip"
 FILES = (
+    'v215_schema.py','v215_routes.py','resource_loans.py','user_participation.py','admin_search.py','admin_summary.py',
+    'updater_client.py','update_wire.py','resource_portal.py','resource_documents.py','pdf_guard.py',
+    'localized_formats.py','settings_groups.py','configuration_flow.py','setup_routes.py',
+    'resource_sort.py','resource_editor.py','static/resource-page.js',
+    'static/v215.css','static/admin-search.js','static/updates.js','package.json',
+    'requirements-dev.txt','requirements-dev.lock','package-lock.json','tools/check_candidate_215.py',
+    'tools/check_public_tree.py','tools/run_checks.py',
+    'docs/evolution-2.15.0.md','docs/update-agent.md','docs/upgrade-2.15.0.md','docs/wordpress-2.15.0.md',
     'docs/utilisation.md','docs/resources-maintenance.md','docs/wordpress-2.14.4.md','docs/publication-2.14.4.md',
     'v2144_schema.py','resource_lifecycle.py','public_calendar_history.py','docs/corrections-2.14.4.md',
     'enrollment_feedback.py',
@@ -64,6 +75,9 @@ FILES = (
     "badge_templates/OpenFabLab-template.svg",
 )
 DIRECTORIES = {
+    "updater_agent": {".py"},
+    "tests": {".py", ".php", ".js"},
+    "docs": {".md"},
     "translations": {".json"},
     "openfablab": {".py"},
     "templates": {".html"},
@@ -92,9 +106,29 @@ def included_paths(root=ROOT):
     return sorted(set(paths), key=lambda path: path.relative_to(root).as_posix())
 
 
+def update_manifest(paths,root=ROOT):
+    root=Path(root)
+    hashes={p.relative_to(root).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    runtime={}
+    for line in (root/'Dockerfile').read_text().splitlines():
+        if not line.startswith('COPY '):continue
+        for name in shlex.split(line)[1:-1]:
+            origin=root/name
+            for path in ([origin] if origin.is_file() else origin.rglob('*')):
+                if path.is_file() and not is_macos_metadata(path.relative_to(root)) and '__pycache__' not in path.parts:
+                    relative=path.relative_to(root).as_posix()
+                    if relative not in hashes:raise ValueError('Runtime absent de la distribution : '+relative)
+                    runtime[relative]=hashes[relative]
+    return dict(format=1,version=__version__,agent_protocol=1,schema=26,source_schemas=[26],migration='family_model.migrate',
+        new_tables=[],new_settings={},
+        notes='Import ZIP depuis l’administration, Résumé et recherche clients, calendrier mobile, QR réseau local ou HTTPS.',
+        base_image='python:3.12-slim-bookworm',files=hashes,runtime_files=runtime)
+
+
 def build(output=OUTPUT, root=ROOT):
     root, output = Path(root), Path(output)
     paths = included_paths(root)
+    manifest=update_manifest(paths,root)
     output.parent.mkdir(parents=True, exist_ok=True)
     with ZipFile(output, "w", ZIP_DEFLATED) as archive:
         for path in paths:
@@ -103,6 +137,8 @@ def build(output=OUTPUT, root=ROOT):
             info.compress_type = ZIP_DEFLATED
             info.external_attr = (0o755 if path.name == "AppStart.command" else 0o644) << 16
             archive.writestr(info, path.read_bytes())
+        info=ZipInfo('UPDATE-MANIFEST.json',date_time=(2026,1,1,0,0,0));info.compress_type=ZIP_DEFLATED;info.external_attr=0o644<<16
+        archive.writestr(info,(json.dumps(manifest,ensure_ascii=False,sort_keys=True,indent=2)+'\n').encode())
     with ZipFile(output) as archive:
         if archive.testzip() is not None:
             raise RuntimeError("L'archive OpenFabLab est corrompue.")

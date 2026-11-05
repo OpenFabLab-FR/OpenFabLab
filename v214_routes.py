@@ -16,6 +16,9 @@ def register(application,api):
         from zoneinfo import ZoneInfo
         from i18n import language
         stamp=datetime.fromisoformat(value).astimezone(ZoneInfo(setting(a.get_database(),'structure_timezone','Europe/Paris')))
+        if language() in ('de','es','fi'):
+            from localized_formats import day
+            return day(stamp.date(),language())+f' {stamp:%H:%M}'
         months=('January February March April May June July August September October November December'.split() if language()=='en' else
                 'janvier février mars avril mai juin juillet août septembre octobre novembre décembre'.split())
         return (f'{stamp.day} {months[stamp.month-1]} {stamp.year} at {stamp:%H:%M}' if language()=='en' else
@@ -33,36 +36,19 @@ def register(application,api):
         if request.path.endswith('/admin/maintenance'):
             if request.method=='POST':require_csrf();abort(405)
             return redirect(url_for('v214.directory'),code=308)
-        items=machines.directory(db);db.commit()
-        return render_template('machine_maintenance.html',items=items,machine=None,states=machines.STATES,kinds=machines.KINDS)
+        return redirect(url_for('evolution.resource_directory'),code=308)
 
     @bp.route('/admin/maintenance/<key>',methods=['GET','POST'])
     @bp.route('/admin/ressources/<key>/maintenance',methods=['GET','POST'])
     def machine(key):
         db=database(True)
-        if '/admin/maintenance/' in request.path:
-            if request.method=='POST':require_csrf()
-            return redirect(url_for('v214.machine',key=key),code=308)
-        try:item=machines.machine(db,key)
+        if request.method=='POST':require_csrf()
+        try:machines.machine(db,key)
         except ValueError:abort(404)
-        if request.method=='POST':
-            require_csrf();action=request.form.get('action')
-            try:
-                db.execute('BEGIN IMMEDIATE')
-                if action=='condition':machines.set_condition(db,key,request.form,author(),author())
-                elif action=='intervention':machines.intervention(db,key,request.form,author(),author(),request.form.get('identifier') or None)
-                elif action=='reminder':machines.reminder(db,key,request.form,author(),author(),request.form.get('identifier') or None)
-                elif action in ('reminder_reschedule','reminder_cancel','reminder_close'):machines.reminder_action(db,key,request.form,author(),author())
-                else:abort(400)
-                db.commit();flash('Suivi de la ressource enregistré.','success')
-            except (ValueError,PermissionError) as error:db.rollback();flash(str(error),'error')
-            return redirect(url_for('v214.machine',key=key))
-        return render_template('machine_maintenance.html',machine=item,states=machines.STATES,kinds=machines.KINDS,form_kinds=machines.FORM_KINDS,
-            interventions=db.execute('SELECT * FROM machine_interventions WHERE resource_uuid=? ORDER BY performed_on DESC,created_at DESC',(key,)).fetchall(),
-            reminders=db.execute('SELECT * FROM machine_reminders WHERE resource_uuid=? ORDER BY due_on,created_at',(key,)).fetchall(),
-            history=machines.history_entries(db,key),
-            affected_bookings=db.execute("SELECT starts_at,ends_at FROM resource_bookings WHERE resource_uuid=? AND status IN ('requested','confirmed') AND julianday(ends_at)>julianday(?) ORDER BY starts_at",(key,datetime.now().astimezone().isoformat())).fetchall() if item['status']!='operational' else [],
-            discord_configured=bool(a.read_discord_webhook()) and a.load_modules(db)['discord'] and a.load_discord_settings(db)['enabled'] and setting(db,'maintenance_discord_enabled','0')=='1')
+        # Old forms use exactly the same controller without a second POST or
+        # a cached method-preserving redirect. Successful writes go canonical.
+        if request.method=='POST':return application.view_functions['resource_portal.page'](key)
+        return redirect(url_for('resource_portal.page',key=key),code=308)
 
     @bp.route('/admin/calendrier/ouvertures',methods=['GET','POST'])
     def openings():
@@ -83,24 +69,25 @@ def register(application,api):
         require_team(admin=True);require_csrf();db=a.get_database();group=request.form.get('group')
         if group=='maintenance':
             values={'module_maintenance':str(int(request.form.get('enabled')=='1'))}
-            target='admin_settings_structure'
+            target='resource_portal.settings'
         elif group=='resources':
             from public_resource_labels import CHOICES
             name=request.form.get('resource_public_name','resources')
             if name not in CHOICES:abort(400)
             values=dict(module_maintenance=str(int(request.form.get('enabled')=='1')),resource_public_name=name)
-            target='admin_settings_structure'
+            target='resource_portal.settings'
         elif group=='kiosk-display':
             mode=request.form.get('machine_information')
             if mode not in ('both','home','identification','none'):abort(400)
             values=dict(kiosk_machine_information=mode);target='admin_settings_kiosk'
         elif group=='kiosk':
             mode=request.form.get('machine_information',setting(db,'kiosk_machine_information','both'));language=request.form.get('language','fr')
-            if mode not in ('both','home','identification','none') or language not in ('fr','en'):abort(400)
+            from i18n import LANGUAGES
+            if mode not in ('both','home','identification','none') or language not in LANGUAGES:abort(400)
             try:idle=int(request.form.get('idle','10'))
             except ValueError:abort(400)
             if not 1<=idle<=120:abort(400)
-            additional=[lang for lang in ('fr','en') if request.form.get('allow_'+lang)=='1' or lang==language]
+            additional=[lang for lang in LANGUAGES if request.form.get('allow_'+lang)=='1' or lang==language]
             values=dict(kiosk_machine_information=mode,kiosk_language=language,kiosk_languages=','.join(additional),kiosk_language_idle_minutes=str(idle),
                         kiosk_language_switch_enabled=str(int(request.form.get('language_switch')=='1')))
             target='admin_settings_kiosk'
@@ -116,7 +103,7 @@ def register(application,api):
                 values['v214_reminders_available_since']=datetime.now().astimezone().isoformat(timespec='seconds')
         elif group=='openlab':
             values=dict(openlab_public_enabled=str(int(request.form.get('public')=='1')),
-                        openlab_public_average_enabled=str(int(request.form.get('public_average')=='1')));target='admin_settings_structure'
+                        openlab_public_average_enabled=str(int(request.form.get('public_average')=='1')));target='v215.wordpress_settings'
         else:abort(400)
         for key,value in values.items():a.write_setting(db,key,value)
         db.commit();flash('Réglages enregistrés.','success')

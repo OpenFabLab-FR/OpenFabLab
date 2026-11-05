@@ -13,6 +13,7 @@
     <p>Entrez le code PIN adapté à votre accès.</p>
     <form method="post" class="pin-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        {% if resource_return %}<input type="hidden" name="resource" value="{{ resource_return }}">{% endif %}
         <fieldset class="access-roles"><legend>Accès souhaité</legend>
             <label><input type="radio" name="access_role" value="admin" {% if request.form.get('access_role')!='moderator' %}checked{% endif %}><span>Administrateur</span></label>
             <label><input type="radio" name="access_role" value="moderator" {% if request.form.get('access_role')=='moderator' %}checked{% endif %}><span>Modérateur</span></label>

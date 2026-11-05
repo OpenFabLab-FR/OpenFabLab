@@ -1,5 +1,6 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
+require_once __DIR__.'/class-openfablab-i18n.php';
 
 /** Public allowlists only. No accounts, private calendar, notes or booking tokens. */
 final class OpenFabLab_Public {
@@ -24,7 +25,7 @@ final class OpenFabLab_Public {
                     if (!isset($item[$key]) || !is_string($item[$key]) || strlen($item[$key])>2000) { return false; }
                 }
                 if ($section==='machines') {
-                    if (!in_array($item['status'],['operational','maintenance','out_of_service'],true)) { return false; }
+                    if (!in_array($item['status'],['operational','rental_available','maintenance','out_of_service','loaned','overdue'],true)) { return false; }
                     if (isset($item['return_estimate']) && !self::day($item['return_estimate'])) { return false; }
                     foreach (['category','category_key'] as $key) { if (isset($item[$key]) && (!is_string($item[$key]) || strlen($item[$key])>300)) { return false; } }
                 } else {
@@ -145,7 +146,16 @@ final class OpenFabLab_Public {
     public static function show_machines_title() {
         return get_option('openfablab_public_machines_title','1')==='1';
     }
-    public static function text($fr,$en) { return get_option('openfablab_public_language','fr')==='en'?$en:$fr; }
+    public static function text($fr,$en) {
+        $lang=get_option('openfablab_public_language','fr');
+        if ($lang==='en') { return $en; }
+        static $catalogs=[];
+        if (in_array($lang,['de','es','fi'],true)) {
+            if (!isset($catalogs[$lang])) { $catalogs[$lang]=json_decode(file_get_contents(__DIR__.'/../languages/'.$lang.'.json'),true) ?: []; }
+            return $catalogs[$lang][$fr] ?? $fr;
+        }
+        return $fr;
+    }
     public static function shortcode($kind,$attributes) {
         if (get_option('openfablab_public_'.$kind.'_enabled','0')!=='1') { return ''; }
         $attributes=shortcode_atts(['environment'=>'production','view'=>'week','category'=>''],$attributes,'openfablab_'.$kind);
@@ -157,25 +167,29 @@ final class OpenFabLab_Public {
     }
     public static function settings() {
         if (!current_user_can('manage_options')) { return; }
-        echo '<section class="ofl-card"><h2>Calendrier, machines et langues publiques</h2><form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
+        echo OpenFabLab_I18n::literal('<section class="ofl-card"><h2>Calendrier, machines et langues publiques</h2><form method="post" action="').esc_url(admin_url('admin-post.php')).'">';
         wp_nonce_field('openfablab_public_settings');echo '<input type="hidden" name="action" value="openfablab_public_settings">';
-        foreach (['public_calendar_enabled'=>'Activer le calendrier public','calendar_openlab'=>'Afficher les OpenLab','calendar_animations'=>'Afficher les animations','public_machines_enabled'=>'Activer la liste publique des machines','multilingual_enabled'=>'Permettre aux visiteurs de changer de langue'] as $key=>$label) {
+        foreach (['public_calendar_enabled'=>OpenFabLab_I18n::text('Activer le calendrier public'),'calendar_openlab'=>OpenFabLab_I18n::text('Afficher les OpenLab'),'calendar_animations'=>OpenFabLab_I18n::text('Afficher les animations'),'public_machines_enabled'=>OpenFabLab_I18n::text('Activer la liste publique des machines'),'multilingual_enabled'=>OpenFabLab_I18n::text('Permettre aux visiteurs de changer de langue')] as $key=>$label) {
             $default=in_array($key,['calendar_openlab','calendar_animations'],true)?'1':'0';
             echo '<label class="ofl-checkbox"><input name="'.esc_attr($key).'" value="1" type="checkbox" '.checked(get_option('openfablab_'.$key,$default),'1',false).'> '.esc_html($label).'</label>';
             if ($key==='public_machines_enabled') {
-                echo '<label class="ofl-checkbox"><input name="public_machines_title" value="1" type="checkbox" aria-describedby="ofl-machines-title-help" '.checked(self::show_machines_title(),true,false).'> '.esc_html__('Afficher le titre de la liste des ressources','openfablab-reservations').'</label>';
-                echo '<p class="ofl-help" id="ofl-machines-title-help">'.esc_html__('Utilise le nom public défini dans OpenFabLab (ex. : Machines). Vous pouvez aussi ajouter votre propre titre dans l’éditeur WordPress.','openfablab-reservations').'</p>';
+                echo '<label class="ofl-checkbox"><input name="public_machines_title" value="1" type="checkbox" aria-describedby="ofl-machines-title-help" '.checked(self::show_machines_title(),true,false).'> '.esc_html__(OpenFabLab_I18n::text('Afficher le titre de la liste des ressources'),'openfablab-reservations').'</label>';
+                echo '<p class="ofl-help" id="ofl-machines-title-help">'.esc_html__(OpenFabLab_I18n::text('Utilise le nom public défini dans OpenFabLab (ex. : Machines). Vous pouvez aussi ajouter votre propre titre dans l’éditeur WordPress.'),'openfablab-reservations').'</p>';
             }
         }
-        echo '<label>Langue par défaut<select name="language"><option value="fr" '.selected(get_option('openfablab_public_language','fr'),'fr',false).'>Français</option><option value="en" '.selected(get_option('openfablab_public_language','fr'),'en',false).'>English</option></select></label>';
-        echo '<label>Page de réservation, facultative<input type="url" name="booking_page" value="'.esc_attr(get_option('openfablab_booking_page','')).'" placeholder="https://…"></label>';
-        echo '<p><code>[openfablab_calendar environment="production" view="week"]</code></p><p><code>[openfablab_machines environment="production"]</code></p><p><button class="button button-primary">Enregistrer</button></p></form></section>';
+        echo OpenFabLab_I18n::literal('<label>Langue par défaut<select name="language">');
+        foreach (['fr'=>'Français','en'=>'English','de'=>'Deutsch','es'=>'Español','fi'=>'Suomi'] as $code=>$label) {
+            echo '<option value="'.esc_attr($code).'" '.selected(get_option('openfablab_public_language','fr'),$code,false).'>'.esc_html($label).'</option>';
+        }
+        echo '</select></label>';
+        echo OpenFabLab_I18n::literal('<label>Page de réservation, facultative<input type="url" name="booking_page" value="').esc_attr(get_option('openfablab_booking_page','')).'" placeholder="https://…"></label>';
+        echo OpenFabLab_I18n::literal('<p><code>[openfablab_calendar environment="production" view="week"]</code></p><p><code>[openfablab_machines environment="production"]</code></p><p><button class="button button-primary">Enregistrer</button></p></form></section>');
     }
     public static function save_settings() {
-        if (!current_user_can('manage_options')) { wp_die('Accès refusé.','',['response'=>403]); }
+        if (!current_user_can('manage_options')) { wp_die(OpenFabLab_I18n::text('Accès refusé.'),'',['response'=>403]); }
         check_admin_referer('openfablab_public_settings');
         foreach (['public_calendar_enabled','calendar_openlab','calendar_animations','public_machines_enabled','public_machines_title','multilingual_enabled'] as $key) { update_option('openfablab_'.$key,isset($_POST[$key])?'1':'0',false); }
-        $lang=wp_unslash($_POST['language']??'fr');update_option('openfablab_public_language',in_array($lang,['fr','en'],true)?$lang:'fr',false);
+        $lang=wp_unslash($_POST['language']??'fr');update_option('openfablab_public_language',in_array($lang,['fr','en','de','es','fi'],true)?$lang:'fr',false);
         $url=esc_url_raw(wp_unslash($_POST['booking_page']??''));
         if ($url==='' || self::public_url($url)) { update_option('openfablab_booking_page',$url,false); }
         wp_safe_redirect(admin_url('options-general.php?page=openfablab-reservations'));exit;

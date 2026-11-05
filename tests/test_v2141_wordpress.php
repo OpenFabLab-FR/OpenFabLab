@@ -24,7 +24,7 @@ function wp_add_inline_script(...$x){$GLOBALS['assets'][]=$x;}
 require dirname(__DIR__).'/wordpress/openfablab-reservations/openfablab-reservations.php';
 $before=$options;
 do_action('plugins_loaded');do_action('init');
-check(OPENFABLAB_RES_VERSION==='2.14.4','actual version metadata 2.14.4');
+check(OPENFABLAB_RES_VERSION==='2.15.0','actual version metadata 2.15.0');
 check(count($shortcodes)===4,'three original shortcodes and resource alias present on ordinary frontend');
 check(!$routes,'frontend does not initialize REST routes');
 foreach(['reservations','calendar','machines'] as $kind){

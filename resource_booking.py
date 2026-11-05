@@ -111,6 +111,8 @@ def save_resource(database, values, role, key=None):
     name = str(values.get('name') or '').strip()
     type_key = values.get('type_key')
     existing = database.execute('SELECT * FROM resources WHERE resource_uuid=?', (key,)).fetchone() if key else None
+    mode=values.get('availability_mode',existing['availability_mode'] if existing else 'on_site')
+    if mode not in ('on_site','rental'):raise ValueError('Choisissez une disponibilité habituelle valide.')
     type_row = database.execute('SELECT active FROM resource_types WHERE type_key=?', (type_key,)).fetchone()
     if not name or len(name)>180 or not type_row or (not type_row['active'] and (not existing or existing['type_key']!=type_key)):
         raise ValueError('Nom et catégorie active de ressource requis.')
@@ -132,6 +134,7 @@ def save_resource(database, values, role, key=None):
                      (key,type_key,name,str(values.get('description') or '')[:2000],int(values.get('active') in (True,1,'1')),color,
                       int(values.get('approval_required') in (True,1,'1')),amount,requirement,now(),now()))
     audit(database,'resource',key,'saved',role)
+    database.execute('UPDATE resources SET availability_mode=? WHERE resource_uuid=?',(mode,key))
     if existing:
         updated=dict(database.execute('SELECT * FROM resources WHERE resource_uuid=?',(key,)).fetchone())
         if any(existing[field]!=updated[field] for field in ('name','description','type_key','color','active')):
@@ -223,6 +226,8 @@ def transition(database, key, state, role):
     row = database.execute('SELECT * FROM resource_bookings WHERE booking_uuid=?', (key,)).fetchone()
     if not row or state not in TRANSITIONS[row['status']]:
         raise ValueError('Transition de réservation refusée.')
+    if state in ('cancelled','refused') and row['handed_over_at'] and not row['returned_at']:
+        raise ValueError('Enregistrez le retour du matériel avant d’annuler cette réservation.')
     if state=='confirmed':
         from machine_maintenance import technically_available
         if not technically_available(database,row['resource_uuid']):
@@ -240,5 +245,14 @@ def link_billing(database, key, record_id, role):
     record = database.execute('SELECT * FROM billing_records WHERE id=?', (record_id,)).fetchone()
     if not booking or not record or booking['billing_record_id']:
         raise ValueError('Dossier inconnu ou réservation déjà facturée.')
+    if record['billing_type']=='rental':
+        resource=database.execute('SELECT legacy_machine_key FROM resources WHERE resource_uuid=?',(booking['resource_uuid'],)).fetchone()
+        if not resource or resource['legacy_machine_key']!=record['rental_machine_key']:
+            raise ValueError('Le contrat de location doit concerner la même ressource.')
+        for field in ('handed_over_at','returned_at'):
+            if booking[field] and record[field] and booking[field]!=record[field]:
+                raise ValueError('Les remises ou retours des deux dossiers diffèrent. Aucun rattachement effectué.')
+        database.execute('UPDATE billing_records SET handed_over_at=COALESCE(handed_over_at,?),returned_at=COALESCE(returned_at,?),rental_user_id=COALESCE(rental_user_id,?) WHERE id=?',
+                         (booking['handed_over_at'],booking['returned_at'],booking['user_id'],record_id))
     database.execute('UPDATE resource_bookings SET billing_record_id=?,service_id=?,updated_at=? WHERE booking_uuid=?', (record_id,record['service_id'],now(),key))
     audit(database,'resource_booking',key,'billing_linked',role,{'record_id':record_id})

@@ -13,7 +13,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-SCHEMA = 25
+SCHEMA = 26
 POLICIES = {'none':__ui_native__('Aucun'), 'email':__ui_native__('E-mail'), 'phone':__ui_native__('Téléphone'),
             'either':__ui_native__('E-mail ou téléphone'), 'both':__ui_native__('E-mail et téléphone')}
 DEFAULTS = {'family_autonomy_age':'15', 'family_responsible_age':'18',
@@ -41,17 +41,17 @@ def backup_before(db, path):
     """Coherent offline PRE before *any* initialization writes, not a DB copy."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
     if version==SCHEMA:
-        if 'archived_at' not in {r[1] for r in db.execute('PRAGMA table_info(resources)')}:
-            raise RuntimeError('Structure des ressources incompatible avec le schéma annoncé.')
+        from v215_schema import validate
+        validate(db)
         return
     if version > SCHEMA:
         raise RuntimeError('Base plus récente que ce runtime ; démarrage refusé.')
     extra_needed = (version == 15 and not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_booking_groups'").fetchone())
-    if version not in (14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24) and not extra_needed:
+    if version not in (14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25) and not extra_needed:
         return None
     root = Path(path).parent / 'migration-backups'
     root.mkdir(mode=0o700, exist_ok=True)
-    target = root / (('before-2.14.4-schema-' if version==24 else 'before-2.14.1-schema-' if version==23 else 'before-2.14-schema-' if version==22 else 'before-2.11-schema-' if version==21 else 'before-2.10-schema-' if version==20 else 'before-2.8-schema-') + str(version) + '-' + uuid4().hex + '.db')
+    target = root / (('before-2.15-schema-' if version==25 else 'before-2.14.4-schema-' if version==24 else 'before-2.14.1-schema-' if version==23 else 'before-2.14-schema-' if version==22 else 'before-2.11-schema-' if version==21 else 'before-2.10-schema-' if version==20 else 'before-2.8-schema-') + str(version) + '-' + uuid4().hex + '.db')
     with sqlite3.connect(target) as copy:
         db.backup(copy)
         if copy.execute('PRAGMA integrity_check').fetchone()[0] != 'ok' or copy.execute('PRAGMA foreign_key_check').fetchall():
@@ -61,13 +61,13 @@ def backup_before(db, path):
 
 
 def migrate(db, fail_after=None):
-    """Existing migration engine through schema25; business IDs stay intact."""
+    """Existing migration engine through schema26; business IDs stay intact."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
     if version==SCHEMA:
-        if 'archived_at' not in {r[1] for r in db.execute('PRAGMA table_info(resources)')}:
-            raise RuntimeError('Structure des ressources incompatible avec le schéma annoncé.')
+        from v215_schema import validate
+        validate(db)
         return
-    if version not in (14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, SCHEMA):
+    if version not in (14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, SCHEMA):
         # Earlier schemas must first complete the existing evolution migration.
         # In particular, never stamp an incomplete old database as schema 15.
         if version > SCHEMA:
@@ -76,15 +76,17 @@ def migrate(db, fail_after=None):
     db.commit()
     try:
         db.execute('BEGIN IMMEDIATE')
-        if version==24:
+        if version in (24,25):
             # A current source needs only this additive migration. Do not replay
             # older historical seeding (ages/attendance/defaults) on new rows.
             from v2144_schema import ensure as ensure_2144
             ensure_2144(db)
+            from v215_schema import ensure as ensure_215
+            ensure_215(db)
             if fail_after:fail_after(db)
             if db.execute('PRAGMA foreign_key_check').fetchall() or db.execute('PRAGMA integrity_check').fetchone()[0]!='ok':
                 raise RuntimeError('Migration des ressources refusée : intégrité invalide.')
-            db.execute('PRAGMA user_version=25');db.commit();return
+            db.execute('PRAGMA user_version=26');db.commit();return
         columns={row['name'] for row in db.execute('PRAGMA table_info(users)')}
         if 'birth_date' not in columns:
             db.execute('ALTER TABLE users ADD COLUMN birth_date TEXT')
@@ -155,11 +157,13 @@ def migrate(db, fail_after=None):
         ensure_2141(db)
         from v2144_schema import ensure as ensure_2144
         ensure_2144(db)
+        from v215_schema import ensure as ensure_215
+        ensure_215(db)
         if fail_after:
             fail_after(db)
         if db.execute('PRAGMA foreign_key_check').fetchall() or db.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
             raise RuntimeError('Migration famille refusée : intégrité invalide.')
-        db.execute('PRAGMA user_version=25')
+        db.execute('PRAGMA user_version=26')
         db.commit()
     except Exception:
         db.rollback()

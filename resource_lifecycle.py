@@ -12,6 +12,8 @@ def resource(db,key):
 def pending(db,key,current=None):
     item=resource(db,key);current=current or datetime.now(timezone.utc)
     result={}
+    from resource_loans import outstanding
+    if outstanding(db,key):result['prets_non_restitues']=len(outstanding(db,key))
     count=db.execute("SELECT COUNT(*) FROM resource_bookings WHERE resource_uuid=? AND (status='requested' OR (status='confirmed' AND (julianday(ends_at) IS NULL OR julianday(ends_at)>julianday(?))))",(key,current.isoformat())).fetchone()[0]
     if count:result['reservations']=count
     count=db.execute("SELECT COUNT(*) FROM machine_reminders WHERE resource_uuid=? AND state='pending'",(key,)).fetchone()[0]

@@ -4,9 +4,8 @@
   <a class="admin-subtab{% if request.endpoint=='evolution.resource_bookings' %} active{% endif %}" href="{{ url_for('evolution.resource_bookings') }}">Réserver une ressource</a>
   {% endif %}
   {% if modules.resources or maintenance_enabled %}
-  <a class="admin-subtab{% if request.endpoint=='evolution.resource_directory' %} active{% endif %}" href="{{ url_for('evolution.resource_directory') }}">Gestion des ressources</a>
+  <a class="admin-subtab{% if request.endpoint in ('evolution.resource_directory','resource_portal.page') %} active{% endif %}" href="{{ url_for('evolution.resource_directory') }}">Ressources</a>
   {% endif %}
-  {% if maintenance_enabled %}<a class="admin-subtab{% if request.endpoint in ('v214.directory','v214.machine') %} active{% endif %}" href="{{ url_for('v214.directory') }}">Maintenance</a>{% endif %}
   {% if modules.authorizations %}
   <a class="admin-subtab{% if request.endpoint=='evolution.authorizations' %} active{% endif %}" href="{{ url_for('evolution.authorizations') }}">Formations et habilitations</a>
   {% endif %}

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Système et mises à jour · OpenFabLab{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block content %}
+<section class="content-heading"><h1>Système et mises à jour</h1><p>Préparer, vérifier, puis choisir quand installer.</p></section>
+{% include '_admin_nav.html' %}{% include '_settings_nav.html' %}
+<section class="admin-section v215-updates" data-updates data-url="{{ url_for('v215.updates') }}" data-csrf="{{ evolution_csrf }}">
+<div class="v215-update-heading"><div><p class="eyebrow">Version installée</p><h2>OpenFabLab {{ config.APP_VERSION }}</h2></div><span class="status-badge" data-update-agent>{{ 'Connexion à l’agent…' if configured else 'Mise à jour manuelle' }}</span></div>
+<p data-update-message role="status">{{ 'Vérifiez les nouvelles versions stables avant de préparer une installation.' if configured else 'L’agent doit être installé une fois par l’administrateur du serveur. L’application web ne reçoit pas les droits Docker.' }}</p>
+<p data-update-compatibility hidden class="form-help"></p>
+<div class="document-actions"><button type="button" class="admin-button primary" data-update-mode="local" aria-pressed="true">Importer un ZIP</button><button type="button" class="admin-button secondary" data-update-mode="official" aria-pressed="false">Version officielle GitHub</button><button type="button" class="admin-button secondary" data-update-operation="status" {% if not configured %}disabled{% endif %}>Actualiser l’état de la mise à jour</button></div>
+<section data-update-panel="local">
+<form data-update-upload class="admin-form"><fieldset disabled><legend>Archive OpenFabLab</legend><label class="form-field">Archive ZIP (64 Mio maximum)<input name="candidate" type="file" accept=".zip,application/zip" required></label><p class="form-help">Utilisez uniquement une archive obtenue auprès d’une source de confiance. Importer ne démarre pas l’installation.</p><button class="admin-button primary">Vérifier le ZIP</button></fieldset></form>
+</section>
+<section data-update-panel="official" hidden>
+<div class="document-actions"><button type="button" class="admin-button secondary" data-update-operation="discover" {% if not configured %}disabled{% endif %}>Vérifier les versions</button><button type="button" class="admin-button primary" data-update-operation="prepare" {% if not configured %}disabled{% endif %}>Préparer la mise à jour</button></div>
+<section data-update-release hidden><h3>Dernière version stable : <span data-update-version></span></h3><p data-update-notes class="v215-release-notes"></p><a data-update-release-link rel="noopener" target="_blank">Consulter les notes officielles</a></section>
+</section>
+<section data-update-progress hidden aria-label="Étapes de la mise à jour"><p data-update-phase role="status"></p><p data-update-candidate-notes class="v215-release-notes"></p><details><summary>Détails des contrôles</summary><ol data-update-events class="v215-update-events"></ol></details></section>
+<form data-update-confirmation hidden class="admin-form"><h3>Installation préparée</h3><p data-update-probe hidden>L’essai isolé sera réalisé après confirmation, avant toute interruption.</p><p>L’installation interrompt temporairement le service après les sauvegardes. Aucun retour arrière automatique n’écrasera les données.</p><label class="checkbox-field"><input type="checkbox" name="consent" value="INSTALLER" required> Je confirme l’installation de cette version maintenant.</label><div class="document-actions"><button class="admin-button primary">Installer la version préparée</button><button type="button" class="admin-button secondary" data-update-operation="cancel">Annuler la préparation</button></div></form>
+<details data-update-history hidden><summary>Historique des mises à jour</summary><ul data-update-history-list></ul></details>
+<button type="button" class="admin-button secondary" data-update-cancel-stale data-update-operation="cancel" hidden>Annuler la préparation</button>
+</section>
+<details class="admin-section v215-fold"><summary>Mise à jour manuelle et récupération</summary><div class="v215-fold-content"><p>La procédure manuelle reste disponible pour chaque version. Vérifiez le schéma SQLite, les sauvegardes et les contrôles préalables avant toute installation.</p><p>Si l’application ne démarre plus, l’agent conserve son état et son diagnostic indépendamment de l’interface. Ne redémarrez jamais une ancienne application sur une base déjà migrée.</p><a class="admin-button secondary" href="https://github.com/OpenFabLab-FR/OpenFabLab/releases" rel="noopener" target="_blank">Versions et guides officiels</a></div></details>
+{% endblock %}
+{% block page_scripts %}{{ super() }}<script src="{{ url_for('static',filename='updates.js') }}" defer></script>{% endblock %}

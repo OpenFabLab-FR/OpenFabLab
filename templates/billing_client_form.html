@@ -30,4 +30,11 @@
     </section>
     <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer la fiche</button><a class="admin-button secondary" href="{{ url_for('admin_billing') }}#annuaire-clients">Annuler</a></div>
 </form>
+{% if client %}
+<section class="admin-section"><h2>Dossiers liés au client</h2>
+{% for row in linked_dossiers %}<a class="v215-summary-link" href="{{ url_for('admin_billing_detail',record_id=row.id) }}"><span><strong>{{ row.title }}</strong><small>{{ row.quote_number }}{% if row.invoice_number %} · {{ row.invoice_number }}{% endif %}{% if row.billing_type=='rental' %} · {{ _('Location') }}{% endif %}</small></span><time>{{ row.quote_date|date_fr }}</time></a>
+{% else %}<p>Aucun devis ni facture associé à cette fiche.</p>{% endfor %}
+{% if linked_bookings %}<h3>Créneaux de ressources attribués</h3>
+{% for row in linked_bookings %}<a class="v215-summary-link" href="{{ url_for('evolution.resource_bookings') }}#reservation-{{ row.booking_uuid }}"><span><strong>{{ row.name }}</strong><small>{{ _(booking_status[row.status]) }}</small></span><time>{{ row.starts_at|paris_datetime }} → {{ row.ends_at|paris_datetime }}</time></a>{% endfor %}{% endif %}
+</section>{% endif %}
 {% endblock %}

@@ -1,3 +1,24 @@
+# Utiliser OpenFabLab 2.15.1
+
+- **Résumé** : personnes présentes, visiteurs du jour, créneaux confirmés
+  en cours, matériels remis non rendus, indisponibilités et tâches. Les cinq
+  dernières identifications et activités sont visibles, avec **Voir plus**.
+- **Recherche** : ouvrir la loupe ou utiliser Cmd/Ctrl+K. Les résultats se
+  limitent aux modules et aux droits du compte. Les fiches clients et leurs
+  dossiers réellement liés sont réservés à l’administration habilitée.
+- **Calendrier** : filtrer les événements et ouvrir leur fiche au clic. Les
+  locations multijours ont une bande continue en vue semaine. Sur mobile,
+  faire défiler la grille horizontalement pour consulter les autres jours.
+- **Ressources** : ouvrir [la fiche unifiée](resources-maintenance.md) pour
+  suivre une remise, une restitution, un entretien ou un tutoriel.
+- **Personnalisation** : cinq langues standards locales, sélection publique
+  facultative et langue d’administration indépendante. Les titres, noms,
+  descriptions et e-mails personnalisés ne sont pas traduits automatiquement.
+
+Les chapitres suivants conservent les parcours historiques.
+
+---
+
 # Utiliser OpenFabLab 2.14.4 au quotidien
 
 Les fonctions sont modulaires : une option absente peut simplement être désactivée.

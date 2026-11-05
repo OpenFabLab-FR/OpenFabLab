@@ -54,6 +54,31 @@ def position_overlaps(events):
     if group:assign(group)
     return ordered
 
+def week_rentals(days):
+    """One bar per contiguous visible run; retain day-specific notes/visibility."""
+    by_booking=defaultdict(list)
+    for index,day in enumerate(days):
+        for event in day['all_day']:
+            if event.get('rental_span'):
+                by_booking[event['kind'],event['key']].append((index,event))
+    runs=[]
+    for occurrences in by_booking.values():
+        run=None
+        for index,event in occurrences:
+            if (run and run['end']==index and run['event']['hidden']==event['hidden']
+                and not run['event']['internal_note'] and not event['internal_note']):
+                run['end']=index+1
+            else:
+                run=dict(start=index,end=index+1,event=event)
+                runs.append(run)
+    lanes=[]
+    for run in sorted(runs,key=lambda run:(run['start'],-run['end'],run['event']['key'])):
+        lane=next((i for i,end in enumerate(lanes) if end<=run['start']),len(lanes))
+        if lane==len(lanes):lanes.append(run['end'])
+        else:lanes[lane]=run['end']
+        run['lane']=lane
+    return runs
+
 
 def enrich_billing_event(db, event, modules, a):
     """Billing details are administrator-only, matching the dossier routes.
@@ -112,11 +137,18 @@ def calendar_view(db,args,a):
         daily[day].append(item)
     def add_span(title,kind,key,begin,finish,link,color=None):
         begin,finish=begin.astimezone(zone),finish.astimezone(zone)
+        multi_day = begin.date() != (finish-timedelta(microseconds=1)).date()
         day=max(start,begin.date())
         while day<end and day<=finish.date():
             lo=max(begin,datetime.combine(day,datetime.min.time(),zone))
             hi=min(finish,datetime.combine(day+timedelta(days=1),datetime.min.time(),zone))
-            if hi>lo:add(title,kind,key,day,lo,hi,link,color)
+            if hi>lo:
+                # Render references to the same booking in the upper band;
+                # midnight crossings must not expand the hourly grid to 24h.
+                add(title,kind,key,day,None if multi_day else lo,None if multi_day else hi,link,color)
+                daily[day][-1].update(span_start=begin.isoformat(),span_end=finish.isoformat(),rental_span=multi_day)
+                if multi_day:
+                    daily[day][-1]['time']=begin.strftime('%d/%m %H:%M')+' – '+finish.strftime('%d/%m %H:%M')
             day+=timedelta(days=1)
     if a.load_modules(db)['frequency']:
         schedule={i:row for i,row in enumerate(a.load_openlab_schedule(db))}
@@ -149,8 +181,10 @@ def calendar_view(db,args,a):
                         'state':str(item['duration_seconds']//60)+__ui_text__(' min') if item['duration_seconds'] is not None else ''}
                         for item in attendance['sessions']]
             day+=timedelta(days=1)
-    for service in db.execute('''SELECT s.*,b.rental_end_date FROM fablab_services s
+    for service in db.execute('''SELECT s.*,b.rental_end_date,r.name AS rental_name,b.handed_over_at,b.returned_at,
+        b.quote_signed_at,b.quote_cancelled_at FROM fablab_services s
         LEFT JOIN billing_records b ON b.service_id=s.id
+        LEFT JOIN resources r ON r.legacy_machine_key=b.rental_machine_key
         WHERE s.service_date<? AND COALESCE(NULLIF(b.rental_end_date,''),s.service_date)>=?
         AND NOT EXISTS(SELECT 1 FROM resource_bookings r WHERE r.service_id=s.id)''',(str(end),str(start))):
         kind=service['service_type']
@@ -162,10 +196,20 @@ def calendar_view(db,args,a):
         if kind=='rental' and service['rental_end_date']:
             # A rental remains one business object; display its occupied days
             # even when its starting day is outside the visible period.
-            day=max(start,date.fromisoformat(service['service_date']))
+            first=date.fromisoformat(service['service_date'])
+            day=max(start,first)
             last=date.fromisoformat(service['rental_end_date'])
+            title=__ui_text__('Location · {0}',service['rental_name'] or service['title'])
+            if first==last and service['start_time'] and service['end_time']:
+                add_span(title,kind,service['id'],datetime.fromisoformat(f"{first}T{service['start_time']}").replace(tzinfo=zone),
+                    datetime.fromisoformat(f"{last}T{service['end_time']}").replace(tzinfo=zone),link)
+                if first in daily and daily[first] and daily[first][-1]['key']==str(service['id']):
+                    daily[first][-1]['rental_meta']=dict(service)
+                continue
             while day<end and day<=last:
-                add(service['title'],kind,service['id'],day,link=link)
+                add(title,kind,service['id'],day,link=link)
+                daily[day][-1].update(rental_span=last>first,rental_meta=dict(service),
+                    time=first.strftime('%d/%m/%Y')+' – '+last.strftime('%d/%m/%Y'))
                 day+=timedelta(days=1)
             continue
         if service['start_time'] and service['end_time']:
@@ -176,7 +220,7 @@ def calendar_view(db,args,a):
     lower=datetime.combine(start,datetime.min.time(),zone).astimezone(timezone.utc).isoformat()
     upper=datetime.combine(end,datetime.min.time(),zone).astimezone(timezone.utc).isoformat()
     for row in (db.execute("SELECT b.*,r.name,COALESCE(r.color,t.color) AS display_color FROM resource_bookings b JOIN resources r USING(resource_uuid) JOIN resource_types t USING(type_key) WHERE status IN('requested','confirmed','performed') AND b.starts_at<? AND b.ends_at>?",(upper,lower)) if modules['resources'] else []):
-        add_span(row['name']+' · '+{'requested':'demande','confirmed':__ui_text__('confirmée'),'performed':__ui_text__('effectuée')}[row['status']],
+        add_span(__ui_text__('Location · {0}',row['name']),
                  'reservation',row['booking_uuid'],datetime.fromisoformat(row['starts_at']),datetime.fromisoformat(row['ends_at']),
                  url_for('evolution.resource_bookings')+'#reservation-'+row['booking_uuid'],row['display_color'])
     for row in (db.execute('SELECT g.*,a.name FROM user_authorizations g JOIN authorizations a USING(authorization_uuid) WHERE performed_on>=? AND performed_on<?',(str(start),str(end))) if modules['authorizations'] else []):
@@ -184,17 +228,17 @@ def calendar_view(db,args,a):
     from machine_maintenance import enabled as maintenance_enabled
     if maintenance_enabled(db) and show_maintenance(args):
         for row in db.execute('SELECT i.*,r.name FROM machine_interventions i JOIN resources r USING(resource_uuid) WHERE performed_on>=? AND performed_on<?',(str(start),str(end))):
-            add(__ui_text__('Intervention effectuée · ')+row['name'],'maintenance',row['intervention_uuid'],date.fromisoformat(row['performed_on']),link=url_for('v214.machine',key=row['resource_uuid']),color='#3b8a68')
+            add(__ui_text__('Intervention effectuée · ')+row['name'],'maintenance',row['intervention_uuid'],date.fromisoformat(row['performed_on']),link=url_for('resource_portal.page',key=row['resource_uuid'])+'#intervention-'+row['intervention_uuid'],color='#3b8a68')
             daily[date.fromisoformat(row['performed_on'])][-1]['extra_details']=[row['description']]
         for row in db.execute("SELECT m.*,r.name FROM machine_reminders m JOIN resources r USING(resource_uuid) WHERE state='pending' AND due_on>=? AND due_on<?",(str(start),str(end))):
-            add(__ui_text__('Rappel · ')+row['name'],'maintenance',row['reminder_uuid'],date.fromisoformat(row['due_on']),link=url_for('v214.machine',key=row['resource_uuid']),color='#4478aa')
+            add(__ui_text__('Rappel · ')+row['name'],'maintenance',row['reminder_uuid'],date.fromisoformat(row['due_on']),link=url_for('resource_portal.page',key=row['resource_uuid'])+'#reminder-'+row['reminder_uuid'],color='#4478aa')
             daily[date.fromisoformat(row['due_on'])][-1]['extra_details']=[row['subject']]
         for row in db.execute("SELECT c.*,r.name,r.archived_at FROM machine_condition c JOIN resources r USING(resource_uuid) WHERE c.status!='operational'"):
             day=max(start,datetime.fromisoformat(row['status_since']).astimezone(zone).date())
             # No fabricated ending date is stored for an ongoing maintenance.
             archived=datetime.fromisoformat(row['archived_at']).astimezone(zone).date() if row['archived_at'] else None
             while day<end and day<=today and (not archived or day<=archived):
-                add(__ui_text__('Maintenance en cours · ')+row['name'],'maintenance',row['resource_uuid'],day,link=url_for('v214.machine',key=row['resource_uuid']),color='#a76c37')
+                add(__ui_text__('Maintenance en cours · ')+row['name'],'maintenance',row['resource_uuid'],day,link=url_for('resource_portal.page',key=row['resource_uuid'])+'#availability',color='#a76c37')
                 day+=timedelta(days=1)
     configured_start, configured_end = display_window(db, a)
     timed = [event for events in daily.values() for event in events if not event['all_day'] and (show_hidden or not (event['hidden'] or event['automatic_hidden']))]
@@ -224,6 +268,17 @@ def calendar_view(db,args,a):
                 detail.append(__ui_text__('Non tenu automatiquement — aucune présence enregistrée'))
             detail.extend(event.get('extra_details', []))
             detail.extend(enrich_billing_event(db, event, modules, a))
+            def rental_details(row,begin=None,finish=None):
+                def format_stamp(value):
+                    return datetime.fromisoformat(value).astimezone(zone).strftime('%d/%m/%Y %H:%M')
+                if begin and finish:
+                    detail.append(__ui_text__('Créneau : {0} – {1}',format_stamp(begin),format_stamp(finish)))
+                detail.append(__ui_text__('Remise : {0}',format_stamp(row['handed_over_at'])) if row['handed_over_at'] else __ui_text__('Remise non enregistrée'))
+                detail.append(__ui_text__('Retour : {0}',format_stamp(row['returned_at'])) if row['returned_at'] else __ui_text__('Retour non enregistré'))
+            if event.get('rental_meta'):
+                rental=event['rental_meta']
+                detail.append(__ui_text__('Annulée') if rental['quote_cancelled_at'] else __ui_text__('Confirmée') if rental['quote_signed_at'] else __ui_text__('En attente'))
+                rental_details(rental,event.get('span_start'),event.get('span_end'))
             if event['kind']=='reservation' and not event.get('description') and (session.get('access_role') or ('admin' if session.get('admin_authenticated') else None))=='admin':
                 row=db.execute("SELECT description FROM fablab_services WHERE id=? AND service_type='reservation'",(event['key'],)).fetchone()
                 if row and row['description']:
@@ -233,6 +288,7 @@ def calendar_view(db,args,a):
                 if row:
                     from resource_booking import STATUS_LABELS
                     detail.extend([((row['first_name'] or __ui_text__('Usager supprimé')) + ' ' + (row['last_name'] or '')).strip(), STATUS_LABELS[row['status']]])
+                    rental_details(row,row['starts_at'],row['ends_at'])
                     detail.append(__ui_text__('Tarif : ')+format(row['amount_cents']/100,'.2f').replace('.',',')+' €')
                     if row['required_authorization']:
                         detail.append(__ui_text__('Habilitation requise : ')+(row['authorization_name'] or __ui_text__('Habilitation historique')))
@@ -285,7 +341,8 @@ def calendar_view(db,args,a):
         days.append({'date':day,'today':day==today,'timed':position_overlaps([e for e in events if not e['all_day']]),'all_day':[e for e in events if e['all_day']],'events':events})
         day+=timedelta(days=1)
     return {'view':view,'chosen':chosen,'days':days,'previous':previous,'following':following,'today':today,'hours':hours,'show_hidden':show_hidden,
-            'has_all_day':any(day['all_day'] for day in days),
+            'week_rentals':week_rentals(days) if view=='week' else [],
+            'has_all_day':any(not event.get('rental_span') for day in days for event in day['all_day']),
             'timeline_height':max(180, window_duration), 'window_extended':(window_start,window_end)!=(configured_start,configured_end),
             'visible_start':f'{window_start//60:02d}:{window_start%60:02d}', 'visible_end':f'{window_end//60:02d}:{window_end%60:02d}',
             'heading':(__ui_text__('Semaine du ')+start.strftime('%d/%m/%Y')) if view=='week' else chosen.strftime('%m/%Y')}

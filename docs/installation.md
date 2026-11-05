@@ -1,18 +1,28 @@
-## Version stable 2.14.4 — SQLite 25
+# Installer OpenFabLab 2.15.1
 
-Télécharger la [release officielle](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.14.4)
-et vérifier SHA256SUMS avant extraction. Une installation neuve utilise SQLite 25.
-Pour une installation existante, lire [le parcours de mise à jour](upgrade.md) :
-22→25 depuis 2.13.0, 23→25 ou 24→25 selon la source, avec sauvegardes et essai isolé.
-Ne jamais utiliser une ancienne application sur une base migrée. Le plugin
-Reservations 2.14.4 reste facultatif et se remplace séparément sans désinstallation.
-[Utilisation](utilisation.md) · [WordPress](wordpress-2.14.4.md) · [Compatibilité](platform-compatibility.md).
-Les exemples d’anciennes versions conservés ci-dessous sont des références historiques ;
-les opérations générales restent à adapter à votre serveur et à sa configuration.
+Télécharger [la distribution et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.1). Le fichier applicatif
+est `OpenFabLab-2.15.1.zip` : ne pas utiliser le ZIP WordPress, un paquet privé
+DSM ou l’archive de sources automatique GitHub à sa place.
+
+1. Vérifier le SHA-256, extraire dans un dossier neuf et réserver un stockage
+   persistant pour les données et les sauvegardes.
+2. Démarrer l’application selon la plateforme ci-dessous. Une nouvelle base
+   SQLite 26 est créée. Garder l’accès initial privé.
+3. Créer le PIN administrateur par la commande d’initialisation locale ; suivre
+   l’assistant pour choisir les modules, l’identité et les langues.
+4. Pour les mises à jour intégrées, l’agent séparé est facultatif et nécessite
+   Docker/Compose et l’autorisation de l’administrateur du serveur. Lire
+   [le guide de l’agent](update-agent.md) avant toute activation.
+5. Installer [Reservations 2.15.0](wordpress-2.15.0.md) séparément, uniquement
+   si vous souhaitez publier des réservations, un calendrier ou un catalogue.
+
+Guides : [Linux](installation-linux.md), [Raspberry Pi](installation-raspberry-pi.md),
+[Windows](installation-windows.md), [Synology](installation-synology.md).
+Pour des données existantes, suivre [la mise à jour](upgrade.md), pas une installation neuve.
 
 ---
 
-# Installer une nouvelle instance
+## Références historiques et procédures communes
 
 ## Référence historique : installation 2.13.0
 
@@ -37,7 +47,7 @@ est harmonisée avec la stable, sans changement des fichiers exécutables valid�
 
 ## Référence historique : installation 2.9.0
 
-## OpenFabLab 2.9.0 stable
+### OpenFabLab 2.9.0 stable
 
 L’application utilise **SQLite 20**, avec le plugin facultatif **Reservations
 2.9.0 / protocole 4, révision 3**. Elle fonctionne entièrement sans WordPress.
@@ -59,8 +69,7 @@ Lire aussi [les limites réellement vérifiées](platform-compatibility.md) et
 [les opérations communes](installation-common.md). Aucun essai matériel non
 réalisé n’est présenté comme validé. Les ZIP approuvés restent inchangés ; leurs
 guides peuvent conserver des mentions de préparation. La documentation du tag
-`v2.9.0` reste la référence pour cette ancienne version ; la stable courante
-est 2.13.0, présentée ci-dessus.
+`v2.9.0` reste la référence pour cette ancienne version ; les instructions courantes sont en tête de ce guide.
 
 Prérequis : Python 3.10+ (3.12 dans Docker), navigateur moderne, disque persistant. Le plugin demande WordPress avec PHP 8.1+, OpenSSL AES-GCM, InnoDB, JavaScript et HTTPS ; seul OpenFabLab doit pouvoir joindre WordPress en HTTPS sortant. La borne et l'application fonctionnent sans plugin. Voir [le guide WordPress](wordpress.md) et [les vérifications isolées](candidate-2.8-guide.md).
 
@@ -80,9 +89,9 @@ docker compose up -d application
 
 Le compose fourni publie `5080:8000`, préfixe `/stat`, `restart: unless-stopped` et healthcheck `/stat/sante`. Il monte **`./data:/data`** et **`${OPENFABLAB_BACKUP_HOST_ROOT:-./backups}:/nas-backups`**. Le sous-dossier de sauvegarde initial est `OpenFabLab`, modifiable dans les réglages. Une racine différente peut être définie dans un `.env` privé à partir de `.env.example`, sans y mettre de secret.
 
-L'exemple Compose de la candidate nomme l'image `openfablab:v2.14.0`.
-L'étiquette nomme l'image construite depuis ce dossier ; elle ne suffit pas à
-prouver sa version réelle. Le runtime de l'archive candidate courante est **2.14.0**.
+L’archive approuvée conserve l’étiquette Compose `openfablab:v2.15.0`.
+Cette étiquette est un nom local d’image : après construction, le runtime doit
+afficher **V2.15.1** et une nouvelle base doit indiquer SQLite 26.
 Une installation existante peut conserver un ancien alias : vérifier la version
 dans l'interface après construction, sans remplacer son Compose personnalisé.
 

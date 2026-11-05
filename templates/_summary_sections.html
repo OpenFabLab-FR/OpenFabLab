@@ -1,0 +1,8 @@
+<div class="v215-summary-columns">
+<section class="admin-section" id="summary-tasks"><div class="section-heading"><h2>À traiter</h2></div>{% for item in summary.actions %}<a class="v215-summary-link" href="{{ item.url }}"><span><strong>{{ item.title }}</strong>{% if item.detail %}<small>{{ item.detail }}</small>{% endif %}</span>{% if item.count is not none %}<b class="v215-summary-number">{{ item.count }}</b>{% endif %}</a>{% else %}<div class="v215-empty"><strong>Rien à traiter pour le moment</strong><p>Les éléments nécessitant une action apparaîtront ici.</p></div>{% endfor %}</section>
+<section class="admin-section"><div class="section-heading"><h2>Prochainement</h2></div>{% for item in summary.upcoming %}<a class="v215-summary-link" href="{{ item.url }}"><span><strong>{{ item.title }}</strong><small>{{ item.detail }}</small></span><time>{{ item.date|date_fr if item.date|length==10 else item.date|paris_datetime }}</time></a>{% else %}<div class="v215-empty"><strong>Pas d’échéance dans les prochains jours</strong><p>Animations, remises de matériel et rappels à venir.</p></div>{% endfor %}</section>
+</div>
+{% macro recent_items(items) %}{% for item in items %}<a class="v215-summary-link" href="{{ item.url }}"><span><strong>{{ item.title }}</strong><small>{{ item.detail }}</small></span><time>{{ item.date|paris_datetime }}</time></a>{% endfor %}{% endmacro %}
+<section class="admin-section"><div class="section-heading"><h2>Activité récente</h2></div>
+{% if summary.recent %}{{ recent_items(summary.recent[:5]) }}{% if summary.recent|length>5 %}<details class="v215-fold"><summary>Voir plus</summary>{{ recent_items(summary.recent[5:]) }}</details>{% endif %}
+{% else %}<div class="v215-empty">Aucune activité enregistrée.</div>{% endif %}</section>

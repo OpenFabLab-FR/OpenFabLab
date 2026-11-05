@@ -17,7 +17,7 @@
 <section class="content-heading"><p class="eyebrow">Ressources</p><h1>{{ machine.name if machine else 'Suivi des ressources' }}</h1></section>
 {% if machine and machine.archived_at %}<p class="notice">Ressource archivée. Son historique reste consultable.</p>{% endif %}
 {% if not machine %}
-<section class="admin-section v214-panel"><div class="maintenance-grid">{% for item in items %}<a class="maintenance-card" href="{{ url_for('v214.machine',key=item.resource_uuid) }}"><strong>{{ item.name }}</strong><span class="status-badge">{{ states[item.status] }}</span></a>{% else %}<p>Aucune ressource enregistrée.</p>{% endfor %}</div></section>
+<section class="admin-section v214-panel"><div class="maintenance-grid">{% for item in items %}<a class="maintenance-card" href="{{ url_for('v214.machine',key=item.resource_uuid) }}"><strong>{{ item.name }}</strong><span class="status-badge">{{ _(item.availability.label) }}</span></a>{% else %}<p>Aucune ressource enregistrée.</p>{% endfor %}</div></section>
 <p><a class="admin-button secondary compact" href="{{ url_for('evolution.resource_directory') }}">Gérer les ressources</a></p>
 {% else %}
 <div class="button-row"><a class="admin-button secondary compact" href="{{ url_for('v214.directory') }}"><span aria-hidden="true">←</span> Retour aux ressources</a><a class="admin-button secondary compact" href="{{ url_for('evolution.resource_directory') }}#resource-{{ machine.resource_uuid }}">Fiche de la ressource</a></div>

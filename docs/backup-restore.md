@@ -1,3 +1,14 @@
+# Sauvegarde et restauration — 2.15.1
+
+Les sauvegardes PRE et POST de l’agent couvrent SQLite, tutoriels PDF et autres
+données persistantes, configuration et image. Elles sont vérifiées par
+restauration isolée. Garder les archives privées : elles ne sont pas chiffrées.
+Sans agent, effectuer la sauvegarde complète manuellement et vérifier sa
+restauration sur une copie isolée avant toute mise à jour. Après réouverture,
+ne jamais restaurer automatiquement une ancienne base. [Procédure et secours](update-agent.md).
+
+---
+
 # Sauvegarde et restauration
 
 ## Référence actuelle : 2.14.4 / SQLite25

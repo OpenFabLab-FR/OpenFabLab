@@ -14,20 +14,25 @@
   'Cette période n’est pas couverte par le dernier échange.':'This period is not covered by the latest update.',
   'Les informations saisies seront effacées. Changer de langue ?':'Entered information will be cleared. Change language?',
  };
- let language=cfg.language==='en'?'en':'fr';
+ const languages={fr:['Français','🇫🇷','fr-FR'],en:['English','🇬🇧','en-GB'],de:['Deutsch','🇩🇪','de-DE'],es:['Español','🇪🇸','es-ES'],fi:['Suomi','🇫🇮','fi-FI']};
+ let language=Object.hasOwn(languages,cfg.language)?cfg.language:'fr';
  const languageKey='ofl.public.language:'+location.pathname+location.search;
- if(cfg.multilingual){try{const saved=sessionStorage.getItem(languageKey)||localStorage.getItem('ofl.public.language');if(['fr','en'].includes(saved))language=saved;}catch(_){}}
- Object.assign(translations,window.OpenFabLabEnglish||{});
+ if(cfg.multilingual){try{const saved=sessionStorage.getItem(languageKey)||localStorage.getItem('ofl.public.language');if(Object.hasOwn(languages,saved))language=saved;}catch(_){}}
+ const catalogs=window.OpenFabLabCatalogs||{};
+ if(language==='en')Object.assign(translations,window.OpenFabLabEnglish||{},catalogs.en||{});
+ else {for(const key of Object.keys(translations))delete translations[key];Object.assign(translations,catalogs[language]||{});}
  const patterns=Object.entries(translations).filter(([key])=>/\{\d+\}/.test(key)).map(([key,value])=>{
   const fields=[...key.matchAll(/\{(\d+)\}/g)].map(match=>match[1]);
   const source=key.split(/\{\d+\}/).map(piece=>piece.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('([\\s\\S]*?)');
   return [new RegExp('^'+source+'$'),fields,value];
  });
- const t=text=>{
-  if(language!=='en'||typeof text!=='string')return text;
-  if(translations[text])return translations[text];
+ const t=(text,...args)=>{
+  if(typeof text!=='string')return text;
+  const format=value=>args.length?value.replace(/\{(\d+)\}/g,(match,key)=>args[key]??match):value;
+  if(language==='fr')return format(text);
+  if(translations[text])return format(translations[text]);
   for(const [pattern,fields,value]of patterns){const found=pattern.exec(text);if(found){const values=Object.fromEntries(fields.map((key,index)=>[key,found[index+1]]));return value.replace(/\{(\d+)\}/g,(match,key)=>values[key]??match);}}
-  return text;
+  return format(text);
  };
  function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
  function button(label,action){const b=node('button',t(label));b.type='button';b.addEventListener('click',action);return b;}
@@ -35,12 +40,12 @@
  function closeMenu(focus=false){if(!menu)return;const trigger=menu.querySelector('.ofl-language-trigger');trigger.setAttribute('aria-expanded','false');const options=menu.querySelector('.ofl-language-options');if(!options.hidden)options.hidden=true;if(focus)trigger.focus();}
  function languageMenu(){
   const group=node('div',undefined,'ofl-lang');group.setAttribute('aria-label','Language / Langue');
-  const summary=node('button',undefined,'ofl-language-trigger');summary.type='button';summary.setAttribute('aria-haspopup','menu');summary.setAttribute('aria-expanded','false');summary.setAttribute('aria-label','Language / Langue');summary.append(node('span',language==='en'?'🇬🇧':'🇫🇷'),node('span',language.toUpperCase()),node('span','⌄'));group.append(summary);
+  const summary=node('button',undefined,'ofl-language-trigger');summary.type='button';summary.setAttribute('aria-haspopup','menu');summary.setAttribute('aria-expanded','false');summary.setAttribute('aria-label','Language / Langue');summary.append(node('span',languages[language][1]),node('span',language.toUpperCase()),node('span','⌄'));group.append(summary);
   const options=node('div',undefined,'ofl-language-options');options.setAttribute('role','menu');options.hidden=true;group.append(options);
   function open(){options.hidden=false;summary.setAttribute('aria-expanded','true');}
   summary.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(options.hidden)open();else closeMenu();});
   summary.addEventListener('keydown',event=>{if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();open();const list=options.querySelectorAll('button');list[event.key==='ArrowDown'?0:list.length-1].focus();}});
-  for(const [lang,label] of [['fr','Français'],['en','English']]){
+  for(const [lang,[label]] of Object.entries(languages)){
    const b=button(label,()=>{
     closeMenu();if(language===lang)return;
     const forms=[...document.querySelectorAll('.openfablab-booking-form')];
@@ -50,6 +55,7 @@
     // recovery. Changing language never submits a booking or changes the NAS.
     location.reload();
    });
+   b.textContent=label; // Language names stay in their own language.
    b.setAttribute('role','menuitemradio');b.setAttribute('aria-checked',String(language===lang));b.setAttribute('aria-pressed',String(language===lang));b.lang=lang;options.append(b);
   }
   group.addEventListener('keydown',event=>{
@@ -74,7 +80,7 @@
  const advance=(day,count)=>{const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+count);return d.toISOString().slice(0,10);};
  const monthBefore=day=>{const [year,month,date]=day.split('-').map(Number),last=new Date(Date.UTC(year,month-1,0)).getUTCDate();return new Date(Date.UTC(year,month-2,Math.min(date,last),12)).toISOString().slice(0,10);};
  const monday=day=>{const d=new Date(day+'T12:00:00Z');return advance(day,-((d.getUTCDay()+6)%7));};
- const locale=()=>language==='en'?'en-GB':'fr-FR';
+ const locale=()=>languages[language][2];
  const dayLabel=day=>new Intl.DateTimeFormat(locale(),{timeZone:'UTC',year:'numeric',month:language==='fr'?'2-digit':'short',day:'2-digit'}).format(new Date(day+'T12:00:00Z'));
  const time=(value,zone)=>new Intl.DateTimeFormat(locale(),{timeZone:zone,hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(value));
  const dateTime=(value,zone)=>new Intl.DateTimeFormat(locale(),{timeZone:zone,year:'numeric',month:'long',day:'numeric'}).format(new Date(value));
@@ -93,8 +99,8 @@
    if(average){
     const weekday=new Intl.DateTimeFormat(locale(),{timeZone:zone,weekday:'long'}).format(new Date(item.start));
     const day=weekday.charAt(0).toLocaleUpperCase(locale())+weekday.slice(1);
-    dialog.append(node('p',language==='en'?`${day}: ${average.users} ${average.users===1?'user':'users'} · ${average.visitors} ${average.visitors===1?'visitor':'visitors'} on average`:`${day} : ${average.users} ${average.users===1?'usager':'usagers'} · ${average.visitors} ${average.visitors===1?'visiteur':'visiteurs'} en moyenne`,'ofl-public-average'));
-    const period=average.method==='observed_same_weekday_hours_12m_v1'?(language==='en'?'Average calculated over the last 12 months.':'Moyenne calculée sur les 12 derniers mois.'):(language==='en'?'Average calculated over the last 26 weeks.':'Moyenne calculée sur les 26 dernières semaines.');
+    dialog.append(node('p',t('{0} : {1} {2} · {3} {4} en moyenne',day,average.users,t(average.users===1?'usager':'usagers'),average.visitors,t(average.visitors===1?'visiteur':'visiteurs')),'ofl-public-average'));
+    const period=t(average.method==='observed_same_weekday_hours_12m_v1'?'Moyenne calculée sur les 12 derniers mois.':'Moyenne calculée sur les 26 dernières semaines.');
     dialog.append(node('small',period));
    }
   }
@@ -113,17 +119,18 @@
   let week=monday(localDate(new Date(),data.timezone));
   function render(){root.replaceChildren();root.lang=language;root.hidden=false;
    if(kind==='machines'){
-    const items=data.items.filter(item=>!root.dataset.category||item.category_key===root.dataset.category);
+    const collator=new Intl.Collator('fr',{numeric:true,sensitivity:'base'});
+    const items=data.items.filter(item=>!root.dataset.category||item.category_key===root.dataset.category).sort((a,b)=>collator.compare(a.name,b.name)||String(a.id).localeCompare(String(b.id)));
     if(!items.length&&!data.stale){root.hidden=true;ready(root,null,false);return;}
-    const titles={resources:['Ressources','Resources'],machines:['Machines','Machines'],equipment:['Équipements','Equipment'],rooms:['Salles','Rooms']};
-    const title=(titles[data.resource_label]||titles.resources)[language==='en'?1:0];
+    const titles={resources:'Ressources',machines:'Machines',equipment:'Équipements',rooms:'Salles'};
+    const title=t(titles[data.resource_label]||titles.resources);
     const header=node('div',undefined,'ofl-module-toolbar ofl-resource-toolbar');let host=null;
     if(cfg.showMachinesTitle!==false){header.append(node('h2',title));root.append(header);host=header;}
     if(data.stale)root.append(node('p',t('Les informations ne sont pas récentes. Vérifiez auprès de votre FabLab.'),'ofl-public-warning'));
     for(const item of items){
      const card=node('article',undefined,'ofl-public-machine'),heading=node('div',undefined,'ofl-public-machine-heading');
      if(item.category)heading.append(node('span',item.category,'ofl-public-category'));
-     heading.append(node('strong',item.name),node('span',t({operational:'Disponible',maintenance:'En maintenance',out_of_service:'Hors service'}[item.status]),'ofl-public-badge'));
+     heading.append(node('strong',item.name),node('span',t({operational:'Disponible',rental_available:'Disponible à la location',maintenance:'En maintenance',out_of_service:'Hors service',loaned:'En prêt',overdue:'Retour en retard'}[item.status]),'ofl-public-badge'));
      const line=node('div',undefined,'ofl-public-machine-line');line.append(heading);card.append(line);if(!host)host=line;
      if(item.reason)card.append(node('p',item.reason));if(item.return_estimate)card.append(node('p',t('Retour estimé')+' : '+dayLabel(item.return_estimate)));root.append(card);
     }
@@ -148,12 +155,12 @@
   }
   render();
  }
- window.OpenFabLabPublicI18n={t,get language(){return language;},extend:map=>Object.assign(translations,map),ready,
+ window.OpenFabLabPublicI18n={t,get language(){return language;},extend:map=>{if(language==='en')Object.assign(translations,map);},ready,
   selector:(root)=>{const header=node('div',undefined,'ofl-module-toolbar');header.append(node('h2',t('Réservations des animations')));root.prepend(header);ready(root,header);return header;}};
  window.OpenFabLabPublicI18n.calendar=(root,value)=>{
   if(!value?.ics||typeof value.ics!=='string'||value.ics.length>100000||!value.ics.startsWith('BEGIN:VCALENDAR'))return;
   const group=node('div',undefined,'openfablab-link-buttons');
-  const download=node('a',language==='en'?'Add to Apple, Outlook or another calendar (.ics)':'Ajouter à Apple, Outlook ou autre calendrier (.ics)');
+  const download=node('a',t('Ajouter à Apple, Outlook ou autre calendrier (.ics)'));
   const url=URL.createObjectURL(new Blob([value.ics],{type:'text/calendar;charset=utf-8'}));download.href=url;download.download='animation.ics';group.append(download);
   try{const target=new URL(value.google);if(target.protocol==='https:'&&target.hostname==='calendar.google.com'){
    const google=node('a',t('Google Agenda'));google.href=target.href;google.target='_blank';google.rel='noopener noreferrer';group.append(google);

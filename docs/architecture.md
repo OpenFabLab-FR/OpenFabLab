@@ -1,3 +1,9 @@
+# Architecture de la candidate 2.15.0
+
+SQLite26 additif dans le moteur existant ; agent privilégié séparé du web et canal Unix restreint, [architecture et sécurité](update-agent.md). Les paragraphes suivants décrivent aussi la base historique2.14.4.
+
+---
+
 ## Architecture actuelle : stable 2.14.4
 
 SQLite25, moteur de migration existant, dernier ajout `resources.archived_at`.

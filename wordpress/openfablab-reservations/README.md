@@ -1,6 +1,7 @@
-# OpenFabLab Reservations 2.14.4 — version stable
+# OpenFabLab Reservations 2.15.0 — candidate à valider
 
-[Guide complet : installation, Gutenberg et trois shortcodes](https://github.com/OpenFabLab-FR/OpenFabLab/blob/main/docs/wordpress-2.14.4.md).
+Le guide de la candidate accompagne la livraison locale : `docs/wordpress-2.15.0.md`.
+[Documentation de la stable publique précédente](https://github.com/OpenFabLab-FR/OpenFabLab/blob/main/docs/wordpress-2.14.4.md).
 Le plugin est facultatif, libre sous licence MIT et se met à jour séparément.
 Dans Gutenberg, utiliser des blocs Code court :
 
@@ -27,8 +28,16 @@ du menu fonctionnent, mais l’historique reste limité aux données déjà sync
 par celle-ci. Avec l’application 2.14.4, les anciennes versions du plugin continuent
 à recevoir leur format habituel. Ne pas imposer l’égalité des versions pour communiquer.
 
-Mettre à jour depuis 2.14.3 en remplaçant l’extension avec son ZIP, sans
+Mettre à jour depuis 2.14.4 en remplaçant l’extension avec son ZIP, sans
 désinstallation ni changement de secret. Conserver les options et files de demandes.
+
+La candidate ajoute DE/ES/FI aux catalogues locaux FR/EN, sans traduire les
+contenus personnalisés. Le protocole 4/révision 3 reste indépendant des versions
+publiques. `resource_availability_v1` distingue Disponible à la location, En prêt
+et Retour en retard, sans nom d’emprunteur. Les ressources sont triées par nom
+en ordre naturel. La dépublication prend effet au prochain catalogue acquitté ;
+actualiser ensuite la page. L’ancien format reste négocié pour les applications
+sans cette capacité ; aucune location n’est décidée par WordPress.
 
 ## Titre facultatif du catalogue public
 
@@ -197,3 +206,18 @@ reste compatible avec le plugin officiel 2.8.2 (sans ce lien de catalogue) ; le
 plugin 2.8.5 accepte aussi le catalogue 2.8.4. Le stockage WordPress est inchangé.
 Annuler passe par une deuxième étape et une confirmation explicite. Aucun GET ne
 déclenche d’annulation et WordPress attend la décision du moteur.
+# Candidate 2.15.0 — installation séparée
+
+Cinq catalogues locaux FR/EN/DE/ES/FI et disponibilité effective En prêt/Retour
+en retard négociée par `resource_availability_v1`. Aucun nom de bénéficiaire.
+Protocole4/révision3 inchangé ; versions publiques indépendantes des capacités.
+Les nouvelles étiquettes d’administration suivent la langue du compte WordPress,
+sans traduire les options ou contenus personnalisés. Aucun traducteur distant.
+
+Remplacer le ZIP du plugin existant, sans désinstallation ni changement du secret.
+Préserver options, titres facultatifs, shortcodes, files Normal/Test et demandes.
+Un seul sélecteur pour tous les composants d’une page. La mise à jour NAS n’installe
+pas le plugin. Cette candidate n’est pas encore une release publique.
+Le guide complet accompagne l’application : `docs/wordpress-2.15.0.md`.
+Les indications2.14.4 ci-dessous restent la référence des comportements conservés.
+

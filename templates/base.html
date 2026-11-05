@@ -22,17 +22,21 @@
     {% if kiosk_audio %}<script type="application/json" id="kiosk-audio">{{ dict(kiosk_audio,token=kiosk_action)|tojson }}</script><script src="{{ url_for('static',filename='kiosk-sound.js') }}" defer></script>{% endif %}
     <link rel="stylesheet" href="{{ url_for('static',filename='memberships.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='v214.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static',filename='v215.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='i18n.css') }}">
     <script type="application/json" id="ui-language-data">{{ dict(language=ui_language,catalog=ui_catalog,admin=ui_admin,idle=ui_idle_minutes,idleEnabled=ui_idle_enabled)|tojson }}</script>
 </head>
 <body class="{% block body_class %}{% endblock %}">
+    {% set admin_search_available = admin_access_role in ('admin','moderator') and request.path.startswith('/admin') %}
     <header class="site-header">
+        {% if admin_search_available %}<div class="v215-header-identity">{% endif %}
         {% if structure.show_wordmark_logo %}<a class="brand" href="{{ url_for('index') }}" aria-label="Retour à l'accueil">
             {% if structure.wordmark_logo == 'wordmark.png' %}<img class="brand-wordmark" src="{{ url_for('structure_logo', kind='wordmark') }}" alt="{{ structure.name }}">
             {% else %}<img class="brand-wordmark brand-wordmark--openfablab" src="{{ url_for('static', filename='brand/OpenFabLab-logo-horizontal.svg') }}" alt="OpenFabLab">{% endif %}
         </a>{% endif %}
+            {% if admin_search_available %}<button type="button" class="header-link header-button v215-search-trigger" data-admin-search-open aria-label="Rechercher dans l’administration" aria-keyshortcuts="Control+k Meta+k"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button></div>{% endif %}
         <div class="header-tools">
-            {% if ui_language_switch and ui_language_choices|length>1 %}<details class="ui-language-menu"><summary aria-label="Choisir la langue"><span class="ui-language-flag" aria-hidden="true">{{ '🇬🇧' if ui_language=='en' else '🇫🇷' }}</span><span>{{ 'EN' if ui_language=='en' else 'FR' }}</span><svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="m1 1 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></summary><form class="ui-language-form" action="{{ url_for('language.select') }}" method="post"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="scope" value="{{ 'admin' if ui_admin else 'kiosk' }}"><input type="hidden" name="next" value="{{ request.script_root ~ request.full_path }}">{% for lang,label in [('fr','Français'),('en','English')] %}{% if lang in ui_language_choices %}<button type="submit" name="language" value="{{ lang }}" lang="{{ lang }}" {% if lang==ui_language %}aria-current="true"{% endif %}>{{ label }}</button>{% endif %}{% endfor %}</form></details>{% endif %}
+            {% if ui_language_switch and ui_language_choices|length>1 %}<details class="ui-language-menu"><summary aria-label="Choisir la langue"><span class="ui-language-flag" aria-hidden="true">{{ ui_language_registry[ui_language][1] }}</span><span>{{ ui_language|upper }}</span><svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="m1 1 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></summary><form class="ui-language-form" action="{{ url_for('language.select') }}" method="post"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="scope" value="{{ 'admin' if ui_admin else 'kiosk' }}"><input type="hidden" name="next" value="{{ request.script_root ~ request.full_path }}">{% for lang,label in ui_language_names %}{% if lang in ui_language_choices %}<button type="submit" name="language" value="{{ lang }}" lang="{{ lang }}" {% if lang==ui_language %}aria-current="true"{% endif %}>{{ label }}</button>{% endif %}{% endfor %}</form></details>{% endif %}
             {% if (structure.show_header_institution_logo and structure.logo_status.header_institution) or (structure.show_network_logo and structure.logo_status.network) %}
             <div class="partner-logos" aria-label="Partenaires de {{ structure.name }}">
                 {% if structure.show_header_institution_logo and structure.logo_status.header_institution %}<img src="{{ url_for('structure_logo', kind='header_institution') }}" alt="Logo institutionnel d’en-tête">{% endif %}
@@ -48,7 +52,7 @@
             {% endif %}
         </div>
     </header>
-    {% if unavailable_machines %}<dialog id="machine-information" class="machine-dialog" aria-labelledby="machine-information-title"><div class="dialog-heading"><h2 id="machine-information-title">{{ resource_unavailable_title }}</h2><button type="button" class="admin-button secondary" data-close-dialog>Fermer</button></div>{% for item in unavailable_machines %}<article class="maintenance-entry"><h3>{{ item.name }}</h3><span class="status-badge">{{ {'maintenance':'En maintenance','out_of_service':'Hors service'}[item.status] }}</span>{% if item.reason %}<p>{{ item.reason }}</p>{% endif %}{% if item.return_estimate %}<p>Retour estimé : {{ item.return_estimate|date_fr }}</p>{% endif %}</article>{% endfor %}</dialog>{% endif %}
+    {% if unavailable_machines %}<dialog id="machine-information" class="machine-dialog" aria-labelledby="machine-information-title"><div class="dialog-heading"><h2 id="machine-information-title">{{ resource_unavailable_title }}</h2><button type="button" class="admin-button secondary" data-close-dialog>Fermer</button></div>{% for item in unavailable_machines %}<article class="maintenance-entry"><h3>{{ item.name }}</h3><span class="status-badge">{{ _({'maintenance':'En maintenance','out_of_service':'Hors service','loaned':'En prêt','overdue':'Retour en retard'}.get(item.status,'Indisponible')) }}</span>{% if item.reason %}<p>{{ item.reason }}</p>{% endif %}{% if item.return_estimate %}<p>Retour estimé : {{ item.return_estimate|date_fr }}</p>{% endif %}</article>{% endfor %}</dialog>{% endif %}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -63,6 +67,7 @@
     {% endwith %}
 
     {% block decorative_scene %}{% endblock %}
+    {% if admin_access_role in ('admin','moderator') and request.path.startswith('/admin') %}<dialog class="v215-search-dialog" data-admin-search data-url="{{ url_for('v215.search') }}" data-csrf="{{ evolution_csrf }}" aria-labelledby="v215-search-title"><div class="dialog-heading"><h2 id="v215-search-title">Rechercher</h2><button type="button" class="admin-button secondary compact" data-admin-search-close>Fermer</button></div><label class="form-field"><span>Usager, ressource, animation ou dossier</span><input type="search" autocomplete="off" maxlength="80" data-admin-search-input></label><div data-admin-search-results role="region" aria-label="Résultats de recherche"></div><p data-admin-search-message role="status">Saisissez au moins deux caractères.</p></dialog><script src="{{ url_for('static',filename='admin-search.js') }}" defer></script>{% endif %}
     {% if ui_idle_enabled %}<form hidden id="ui-idle-form" method="post" action="{{ url_for('language.idle') }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"></form>{% endif %}
 
     <main class="page-shell">

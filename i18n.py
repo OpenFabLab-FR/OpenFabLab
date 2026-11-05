@@ -15,22 +15,27 @@ from jinja2.visitor import NodeTransformer
 from markupsafe import Markup,escape
 
 ROOT=Path(__file__).resolve().parent
-CATALOG={}
-for path in sorted((ROOT/'translations/en').glob('*.json')):
-    CATALOG.update(json.loads(path.read_text()))
-PATTERNS=[]
-for source,translated in CATALOG.items():
-    fields=re.findall(r'\{(\d+)\}',source)
-    if not fields:continue
-    pieces=re.split(r'\{\d+\}',source)
-    # The compiled expressions contain native literals only, no cached user data.
-    PATTERNS.append((re.compile('([\\s\\S]*?)'.join(re.escape(p) for p in pieces)),fields,translated))
+LANGUAGES={'fr':('Français','🇫🇷'),'en':('English','🇬🇧'),'de':('Deutsch','🇩🇪'),'es':('Español','🇪🇸'),'fi':('Suomi','🇫🇮')}
+CATALOGS={code:{} for code in LANGUAGES}
+PATTERNS_BY_LANGUAGE={code:[] for code in LANGUAGES}
+for code,catalog in CATALOGS.items():
+    if code=='fr':continue
+    for path in sorted((ROOT/('translations/'+code)).glob('*.json')):
+        catalog.update(json.loads(path.read_text()))
+    for source,translated in catalog.items():
+        fields=re.findall(r'\{(\d+)\}',source)
+        if not fields:continue
+        pieces=re.split(r'\{\d+\}',source)
+        PATTERNS_BY_LANGUAGE[code].append((re.compile('([\\s\\S]*?)'.join(re.escape(p) for p in pieces)),fields,translated))
+# Backward-compatible names for existing catalog tooling/tests.
+CATALOG=CATALOGS['en'];PATTERNS=PATTERNS_BY_LANGUAGE['en']
 
 def language():return getattr(g,'ui_language','fr') if has_request_context() else 'fr'
 def t(message,*args,**kwargs):
-    text=CATALOG.get(str(message),str(message)) if language()=='en' else str(message)
-    if language()=='en' and text==str(message):
-        for pattern,fields,translated in PATTERNS:
+    code=language()
+    text=CATALOGS.get(code,{}).get(str(message),str(message))
+    if code!='fr' and text==str(message):
+        for pattern,fields,translated in PATTERNS_BY_LANGUAGE.get(code,[]):
             matched=pattern.fullmatch(str(message))
             if matched:
                 values={index:value for index,value in zip(fields,matched.groups())}
@@ -156,16 +161,16 @@ def register(application,a):
         read=lambda k,d='':a['read_setting'](db,k,d)
         is_admin=request.path.startswith('/admin')
         key='admin_language' if is_admin else 'kiosk_language_selected'
-        primary=read('kiosk_language','fr');primary=primary if primary in ('fr','en') else 'fr'
+        primary=read('kiosk_language','fr');primary=primary if primary in LANGUAGES else 'fr'
         available=read('kiosk_languages','fr,en').split(',')
         if primary not in available:available.append(primary)
-        switch=read('kiosk_language_switch_enabled','1')=='1' and len(set(available)&{'fr','en'})>1
+        switch=read('kiosk_language_switch_enabled','1')=='1' and len(set(available)&set(LANGUAGES))>1
         if not is_admin and not switch:
             session.pop('kiosk_language_selected',None);available=[primary]
         selected=session.get(key,'fr' if is_admin else primary)
-        if selected not in ('fr','en') or (not is_admin and selected not in available):selected=primary
+        if selected not in LANGUAGES or (not is_admin and selected not in available):selected=primary
         g.ui_language=selected;g.ui_admin=is_admin
-        g.ui_available=('fr','en') if is_admin else tuple(x for x in ('fr','en') if x in available)
+        g.ui_available=tuple(LANGUAGES) if is_admin else tuple(x for x in LANGUAGES if x in available)
         g.ui_language_switch=is_admin or switch
     @bp.post('/langue')
     def select():
@@ -175,7 +180,7 @@ def register(application,a):
         if admin:
             from evolution_routes import require_team
             require_team()
-        if value not in ('fr','en') or (not admin and (not g.ui_language_switch or value not in g.ui_available)):abort(400)
+        if value not in LANGUAGES or (not admin and (not g.ui_language_switch or value not in g.ui_available)):abort(400)
         session['admin_language' if admin else 'kiosk_language_selected']=value
         target=request.form.get('next','/')
         if not target.startswith('/') or target.startswith('//') or '\\' in target:target=url_for('index')
@@ -202,6 +207,7 @@ def register(application,a):
         endpoint=request.endpoint or ''
         kiosk_idle=not g.ui_admin and (endpoint in ('index','users','identification','visitors') or endpoint.startswith(('evolution.enroll','tablet.','family_gateway.receipt')) or request.path.startswith('/animations/') and not request.path.startswith('/animations/demande/'))
         return dict(ui_language=language(),ui_language_choices=g.ui_available,ui_admin=g.ui_admin,ui_language_switch=g.ui_language_switch,
+            ui_language_registry=LANGUAGES,ui_language_names=[(k,v[0]) for k,v in LANGUAGES.items()],
             ui_primary_language=read(db,'kiosk_language','fr'),ui_idle_minutes=idle,ui_idle_enabled=kiosk_idle,
-            ui_catalog=CATALOG if language()=='en' else {})
+            ui_catalog=CATALOGS.get(language(),{}))
     application.register_blueprint(bp)

@@ -43,23 +43,12 @@
         <div class="form-section-heading"><h2>Modules</h2><p>Un module désactivé masque ses fonctions sans effacer les données. Les réservations publiques nécessitent Activités ; les créneaux et locations nécessitent Facturation.</p></div>
         {% for key, label in module_labels.items() %}
         <label class="checkbox-field"><input name="module_{{ key }}" type="checkbox" value="1" {% if module_settings[key] %}checked{% endif %}><span><strong>{{ label }}</strong></span></label>
-        {% if key=='resources' %}{% include '_resource_public_settings.html' %}{% endif %}
+        {% if key=='resources' %}<p id="resources-options"><a href="{{ url_for('resource_portal.settings') }}">Suivi, nom public et fiches QR des ressources</a></p>{% endif %}
         {% endfor %}
         <div class="form-actions structure-save-actions"><button class="admin-button primary" type="submit">Enregistrer la structure et les modules</button></div>
     </section>
 </form>
-<form id="resource-display-settings" method="post" action="{{ url_for('v214.settings') }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="group" value="resources"></form>
-{% if module_settings.activities %}<form id="presences-animations" method="post" action="{{ url_for('v211.settings') }}" class="admin-form form-section">
-<input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
-<h2>Présences aux animations</h2>
-<label class="checkbox-field"><input type="checkbox" name="enabled" value="1" {% if v210.animation_auto_presence_enabled=='1' %}checked{% endif %}><span><strong>Validation automatique des présences aux animations</strong><small>Un usager déjà inscrit et confirmé est déclaré présent lorsqu’il est détecté à la borne pendant son animation.</small></span></label>
-<div class="form-actions"><button class="admin-button secondary compact">Enregistrer la validation des présences</button></div>
-</form>{% endif %}
 {% for kind in ('wordmark', 'header_institution', 'network', 'institution', 'main', 'signature', 'badge') %}<form id="remove-{{ kind }}" method="post" action="{{ url_for('admin_remove_branding', kind=kind) }}"><input type="hidden" name="csrf_token" value="{{ pin_csrf_token }}"><input type="hidden" name="confirmation" value="SUPPRIMER"></form>{% endfor %}
-{% set wp_state=namespace(error=false) %}{% for state in reservation_relay_states %}{% if state.last_error or state.retrying %}{% set wp_state.error=true %}{% endif %}{% endfor %}
-{% if wp_state.error %}<p class="settings-status-warning" role="status">Synchronisation WordPress à vérifier : consultez les états Normal et Test ci-dessous.</p>{% endif %}
-<details class="settings-disclosure" id="wordpress-settings"{% if wp_state.error %} open{% endif %}><summary>Connexion WordPress{% if wp_state.error %} · à vérifier{% elif reservation_secret_set %} · configurée{% else %} · facultative{% endif %}</summary>{% include '_reservation_settings.html' %}{% include '_openlab_public_settings.html' %}</details>
-<details class="settings-disclosure" id="smtp-settings"><summary>Configuration SMTP · e-mails{% if smtp.host|default('') %} · paramètres enregistrés{% endif %}</summary>{% include '_smtp_settings.html' %}</details>
 <details class="settings-disclosure" id="profile-settings"{% if profile_preview %} open{% endif %}><summary>Profil privé de configuration</summary><section class="admin-section profile-section">
     <h2>Profil privé de configuration</h2>
     <p>Un seul format <code>.openfablab-profile.zip</code> sauvegarde l'identité, les logos, les modules, les tarifs, les machines et les règles de réservation, sans usagers, factures, réservations ni secrets. Il peut contenir des données administratives et bancaires : conservez-le dans un emplacement protégé.</p>
@@ -77,6 +66,8 @@
     </form>
 </section>
 </details>
+{% elif settings_view == 'wordpress' %}
+{% include '_wordpress_settings_panel.html' %}
 {% elif settings_view == 'affichage' %}
 <form id="display-options" method="post" action="{{ url_for('admin_update_options', settings_view='affichage') }}" class="admin-form options-main-form settings-save-form">
     <section class="form-section options-section" id="affichage">
@@ -92,8 +83,7 @@
 <label class="form-field" id="attendance-reference"><span>Seuil de fréquentation de référence (personnes)</span><input form="display-options" type="number" name="attendance_reference" min="1" max="10000" value="{{ attendance_reference }}" required><small>Un indicateur visuel, sans limitation des entrées.</small></label>
 </div><label class="checkbox-field compact-checkbox"><input form="display-options" name="openlab_attendance_show_decimals" type="checkbox" value="1" {% if show_attendance_decimals %}checked{% endif %}><span>Afficher les décimales dans les graphiques d’affluence</span></label>
 </section>
-<section class="form-section options-section"><h2>Plage horaire visible du Calendrier</h2><p class="form-help">Affichage uniquement ; la plage s’étend si un événement déborde.</p>
-<div class="form-grid two-columns"><label class="form-field"><span>Heure de début affichée</span><input form="display-options" type="time" name="calendar_display_start" value="{{ calendar_display_start }}" required></label><label class="form-field"><span>Heure de fin affichée</span><input form="display-options" type="time" name="calendar_display_end" value="{{ calendar_display_end }}" required></label></div></section>
+<p><a class="admin-button secondary compact" href="{{ url_for('v215.calendar_settings') }}">Plage visible et horaires du calendrier</a></p>
 <div class="form-actions display-options-actions"><button form="display-options" class="admin-button primary" type="submit">Enregistrer l’affichage</button></div>
 {% elif settings_view == 'borne' %}
 {% include '_home_title.html' %}
@@ -108,11 +98,7 @@
         <label class="checkbox-field home-scroll-option"><input name="lock_home_scroll" type="checkbox" value="1" {% if lock_home_scroll %}checked{% endif %}><span><strong>Verrouiller le défilement de la page d’accueil</strong><small>Maintient la page fixe sur la borne en paysage.</small></span></label>
         <div class="resource-public-controls" id="kiosk-display"><label class="form-field"><span>Indisponibilité des ressources</span><select form="kiosk-display-settings" name="machine_information">{% for key,label in [('both','Accueil et identification'),('home','Accueil uniquement'),('identification','Identification uniquement'),('none','Ne pas afficher')] %}<option value="{{ key }}" {% if settings214.get('kiosk_machine_information','both')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><button form="kiosk-display-settings" type="submit" class="admin-button secondary compact">Enregistrer la visibilité</button></div>
     </section>
-    <section class="form-section attendance-options-section">
-        <div class="form-section-heading"><p class="eyebrow">Statistiques des OpenLabs</p><h2>Horaires habituels des OpenLabs</h2><p>Définit les créneaux utilisés par les calculs de fréquentation par quarts d’heure.</p></div>
-        <div class="openlab-schedule-grid">{% for day in openlab_schedule %}<div class="openlab-schedule-row"><strong>{{ day.label }}</strong><label><span>Début</span><input name="openlab_attendance_{{ day.key }}_start" type="time" step="900" value="{{ day.start }}"></label><label><span>Fin</span><input name="openlab_attendance_{{ day.key }}_end" type="time" step="900" value="{{ day.end }}"></label></div>{% endfor %}</div>
-        <p class="form-help">Pour un jour sans OpenLab, laissez ses deux heures vides. Ces horaires ne modifient pas la clôture des sessions.</p>
-    </section>
+    <p><a class="admin-button secondary compact" href="{{ url_for('v215.calendar_settings') }}">Configurer les horaires habituels des OpenLab</a></p>
     <section class="form-section" id="securite-identification">
         <div class="form-section-heading"><p class="eyebrow">Sécurité de l’identification</p><h2>Identification par code</h2><p>Seule la saisie manuelle de l’ID à quatre chiffres est concernée. QR code, liste et visiteurs restent disponibles.</p></div>
         <div class="form-grid">

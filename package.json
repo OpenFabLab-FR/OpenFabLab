@@ -1,7 +1,7 @@
 {
   "name": "openfablab-development",
   "private": true,
-  "version": "2.14.4",
+  "version": "2.15.0",
   "description": "Local browser and optional PHP test tools; never runtime dependencies",
   "license": "MIT",
   "engines": {
@@ -13,6 +13,7 @@
     "playwright": "1.62.1"
   },
   "scripts": {
-    "test": "python3 tools/run_checks.py"
+    "test": "python3 tools/check_candidate_215.py",
+    "test:historical": "python3 tools/run_checks.py"
   }
 }

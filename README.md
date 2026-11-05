@@ -1,4 +1,4 @@
-# OpenFabLab 2.14.4
+# OpenFabLab 2.15.1
 
 **Le quotidien du FabLab, plus simple.**
 
@@ -10,10 +10,10 @@ Chaque structure choisit ses outils : la borne fonctionne sans WordPress,
 sans Discord et sans gestion d’abonnement. Activez seulement les modules utiles
 à votre équipe, qu’elle soit composée de FabManagers, de bénévoles ou des deux.
 
-**Version stable 2.14.4 · SQLite 25 · Français / anglais · Licence MIT**
+**Version 2.15.1 · SQLite 26 · FR / EN / DE / ES / FI · Licence MIT**
 
-[Télécharger l’application](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.14.4/OpenFabLab-2.14.4.zip) ·
-[Release et empreintes SHA-256](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.14.4) ·
+[Release et empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.1) ·
+[Mettre à jour](docs/upgrade-2.15.1.md) ·
 [Installer OpenFabLab](docs/installation.md) · [Site officiel](https://openfablab.fr)
 
 ## Des outils qui s’adaptent à votre FabLab
@@ -35,7 +35,7 @@ sans Discord et sans gestion d’abonnement. Activez seulement les modules utile
 - **Compléter votre site WordPress** : réservations, calendrier et catalogue
   public des ressources avec un plugin facultatif, sans exposer l’administration.
 
-Les textes standards disposent de catalogues locaux français/anglais. Les noms,
+Les textes standards disposent de cinq catalogues locaux. Les noms,
 descriptions et e-mails personnalisés restent dans leur langue d’origine : aucun
 service de traduction automatique n’est utilisé.
 
@@ -44,17 +44,38 @@ propose ni paiement bancaire en ligne, ni Stripe/PayPal, ni prélèvement ou
 renouvellement payant automatique. La gestion des droits reste indépendante
 d’un système bancaire.
 
-## Ce qu’apporte la version 2.14.4 depuis la 2.13.0
+## Ce qu’apporte OpenFabLab 2.15.1
 
-Cette stable réunit la grande évolution 2.14 et ses finitions validées : interface
-FR/EN, suivi des ressources, rappels liés aux interventions, horaires exceptionnels,
-publication WordPress choisie, calendrier public et ressources, interfaces plus
-compactes et protection des parcours d’inscription et de départ.
+L’administration accepte un ZIP OpenFabLab fourni par l’administrateur ou
+une version stable officielle de GitHub. Les deux parcours partagent le moteur
+de sauvegarde, de vérification et d’installation. Aucun ne démarre seul.
 
-Les ressources peuvent être archivées puis restaurées sans perdre leur historique.
-Une suppression définitive reste réservée aux administrateurs, avec confirmation
-et refus en présence de données associées. Le calendrier public permet de consulter
-un mois d’historique admissible, sans rouvrir les réservations passées.
+Le Résumé distingue les créneaux confirmés en cours des matériels effectivement
+remis. Les prêts gratuits comptent, les retours à traiter sont accessibles
+directement et les cinq dernières identifications sont visibles d’emblée.
+La recherche retrouve les clients et leurs dossiers liés. Le calendrier affiche
+une bande par location multijour et reste défilable sur mobile. Les étiquettes
+QR peuvent utiliser une adresse de réseau privé ou une adresse HTTPS.
+
+## Les bases posées en 2.15.0
+
+Un nouveau **Résumé** rassemble les informations utiles à l’équipe. La recherche
+locale retrouve les fiches autorisées. Les réglages sont rangés par usage et les
+installations neuves disposent d’un assistant, sans réinitialiser les anciennes.
+
+Les remises et retours explicites rendent les prêts visibles jusqu’à restitution,
+y compris en retard. Les fiches usagers réunissent locations et participations,
+sans confondre annulation et absence. Les locations multijours quittent la grille
+horaire. Chaque ressource possède une adresse QR permanente et peut recevoir des
+tutoriels PDF partagés, publics ou réservés à l’équipe. Une fiche unique réunit
+configuration et entretien. Le mode Disponible à la location reste distinct d’un
+prêt réel ; le tri des ressources est alphabétique naturel. La visibilité publique
+est cohérente avec la case affichée, sans élargir les anciennes permissions.
+
+Un **agent local séparé et facultatif** prépare les futures mises à jour officielles
+depuis l’administration. Son installation initiale demande l’autorisation du
+responsable du serveur ; le web ne reçoit jamais le socket Docker. La procédure
+manuelle reste disponible. [Installation, sécurité et secours](docs/update-agent.md).
 
 [Nouveautés détaillées](CHANGELOG.md) · [Guide d’utilisation](docs/utilisation.md) ·
 [Ressources et maintenance](docs/resources-maintenance.md) · [Roadmap](ROADMAP.md)
@@ -70,19 +91,19 @@ n’est promis. Les guides décrivent les prérequis et leurs limites.
 [Raspberry Pi](docs/installation-raspberry-pi.md) · [Windows](docs/installation-windows.md) ·
 [Compatibilité](docs/platform-compatibility.md)
 
-**Mise à jour depuis 2.13.0 : SQLite 22 → 25.** Le moteur existant applique les
-évolutions intermédiaires ; les parcours 22→25, 23→25 et 24→25 ont été vérifiés
-sur des bases fictives issues des anciens runtimes. Cela ne remplace pas un essai
-sur une copie isolée de votre installation ni les sauvegardes complètes PRE/POST.
-Ne jamais redémarrer une ancienne application sur une base migrée au schéma25.
+**Depuis 2.15.0 : SQLite 26 → 26, sans migration de schéma.**
+Aucune migration de schéma. L’agent 2.15.0 ne reçoit pas de ZIP : une
+transition unique est nécessaire. Suivre le [guide de mise à jour](docs/upgrade-2.15.1.md).
+Pour une version plus ancienne, vérifier le [parcours manuel par version et schéma](docs/upgrade.md). Ne jamais redémarrer
+la 2.14.4 sur un schéma 26.
 
 [Procédure de mise à jour](docs/upgrade.md) · [Sauvegarde et restauration](docs/backup-restore.md) ·
 [Maintenance](docs/maintenance.md) · [Sécurité](SECURITY.md)
 
 ## Plugin WordPress facultatif
 
-[OpenFabLab Reservations 2.14.4](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.14.4/openfablab-reservations-2.14.4.zip)
-s’installe séparément. La mise à jour du serveur OpenFabLab ne met pas à jour
+**[OpenFabLab Reservations 2.15.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.15.1/openfablab-reservations-2.15.0.zip)** s’installe
+séparément. La mise à jour du serveur OpenFabLab ne met pas à jour
 WordPress. Conservez les options et la clé partagée lors du remplacement du ZIP.
 
 Trois shortcodes principaux, à insérer dans des blocs **Code court** Gutenberg :
@@ -94,7 +115,7 @@ Trois shortcodes principaux, à insérer dans des blocs **Code court** Gutenberg
 ```
 
 Les fonctionnalités publiques et le choix de langue s’activent dans les réglages
-du plugin. Un seul sélecteur FR/EN pilote les composants d’une même page.
+du plugin. Un seul sélecteur à cinq langues pilote les composants d’une même page.
 OpenFabLab garde le contrôle des places ; WordPress reste responsable des titres
 et de la mise en page éditoriale.
 

@@ -520,6 +520,10 @@ def create_app(test_config=None):
     register_211(application, globals())
     from v214_routes import register as register_214
     register_214(application, globals())
+    from v215_routes import register as register_215
+    register_215(application, globals())
+    from resource_portal import register as register_resource_portal
+    register_resource_portal(application, globals())
     register_error_handlers(application)
 
     from runtime_policy import storage_guard
@@ -943,6 +947,10 @@ def initialize_database():
     database.commit()
     from family_model import migrate as migrate_family
     migrate_family(database)
+    if not existing_users_table:
+        write_setting(database,'setup_completed','0')
+        write_setting(database,'setup_progress','{}')
+        write_setting(database,'kiosk_languages','fr,en,de,es,fi')
 
 
 def default_application_settings(_legacy_installation=False):
@@ -1735,7 +1743,8 @@ def load_rental_catalog(database, include_inactive=False):
     rows = database.execute(
         "SELECT * FROM rental_catalog " + condition + " ORDER BY sort_order, name"
     ).fetchall()
-    return {row["machine_key"]: dict(row) for row in rows}
+    from resource_sort import ordered
+    return {row["machine_key"]: dict(row) for row in ordered(rows,identity='machine_key')}
 
 
 def available_rental_catalog(database, record=None):
@@ -1759,7 +1768,8 @@ def available_rental_catalog(database, record=None):
         for source,target in (('rental_machine_name','name'),('rental_monthly_cents','monthly_cents'),('rental_deposit_cents','deposit_cents')):
             if record.get(source) is not None:historical[target]=record[source]
         catalog[previous_key]=historical
-    return catalog
+    from resource_sort import ordered
+    return dict(ordered(catalog.items(),name=lambda item:item[1]['name'],identity=lambda item:item[0]))
 
 
 def load_custom_tariffs(database, include_inactive=False):
@@ -5907,9 +5917,9 @@ def register_template_helpers(application):
     def paris_datetime(value):
         if not value:
             return "—"
-        return parse_timestamp(value).astimezone(PARIS_TIMEZONE).strftime(
-            "%d/%m/%Y at %H:%M" if __import__("i18n").language()=="en" else "%d/%m/%Y à %H:%M"
-        )
+        from localized_formats import timestamp
+        zone=ZoneInfo(read_setting(get_database(),'structure_timezone','Europe/Paris'))
+        return timestamp(parse_timestamp(value).astimezone(zone))
 
     @application.template_filter("duration")
     def duration(check_in, check_out=None):
@@ -5953,7 +5963,8 @@ def register_template_helpers(application):
         if not value:
             return "—"
         try:
-            return datetime.strptime(value, "%Y-%m-%d").strftime("%d/%m/%Y")
+            from localized_formats import day
+            return day(value)
         except (TypeError, ValueError):
             return value
 
@@ -5992,6 +6003,8 @@ def register_admin_protection(application):
         "admin_animation_booking_action", "admin_animation_booking_walkin",
         'v211.walkins',
         'v214.directory','v214.machine','v214.openings',
+        'v215.user_history','v215.loan_action','v215.search',
+        'resource_portal.page','resource_portal.internal_pdf','resource_portal.qr',
         'participant_search.search',
         'attendance_analysis.page', 'attendance_analysis.search', 'attendance_analysis.data',
         'booking_account_links.link',
@@ -6005,7 +6018,7 @@ def register_admin_protection(application):
         'authorizations': {'evolution.authorizations'},
         "frequency": {
             'attendance_analysis.page', 'attendance_analysis.search', 'attendance_analysis.data',
-            "admin", "admin_frequency_day", "admin_statistics", "admin_statistics_legacy",
+            "admin_frequency_day", "admin_statistics", "admin_statistics_legacy",
             "admin_frequency_exports", "admin_add_historical_session",
             "admin_add_historical_visitor", "admin_edit_historical_session",
             "admin_delete_historical_session", "admin_delete_historical_visitor",
@@ -6501,10 +6514,14 @@ def register_routes(application):
 
     @application.route("/admin/connexion", methods=["GET", "POST"])
     def admin_login():
+        resource_return=''
+        try:resource_return=str(__import__('uuid').UUID(request.values.get('resource','')))
+        except (ValueError,TypeError,AttributeError):pass
+        login_target=url_for('resource_portal.page',key=resource_return) if resource_return else url_for('admin')
         if not has_pin(application.config["DATABASE"], "admin"):
             return redirect(url_for("admin_pin_setup"))
         if session.get("access_role") or session.get("admin_authenticated"):
-            return redirect(url_for("admin"))
+            return redirect(login_target)
         if request.method == "POST":
             if not pin_csrf_valid():
                 abort(400)
@@ -6519,7 +6536,7 @@ def register_routes(application):
                 session.clear()
                 session["admin_authenticated"] = True
                 session["access_role"] = "admin"
-                return redirect(url_for("admin"))
+                return redirect(login_target)
             if check_pin(application.config["DATABASE"], "moderator", submitted_pin):
                 log_security_event(database, "moderator_login_success")
                 database.commit()
@@ -6527,11 +6544,11 @@ def register_routes(application):
                 session["admin_authenticated"] = True
                 session["access_role"] = "moderator"
                 flash("Accès modérateur activé.", "success")
-                return redirect(url_for("admin"))
+                return redirect(login_target)
             log_security_event(database, f"{requested_role}_login_failed")
             database.commit()
-            return render_template("admin_login.html", csrf_token=pin_csrf_token(), login_error=__ui_native__("Le code PIN est incorrect."))
-        return render_template("admin_login.html", csrf_token=pin_csrf_token())
+            return render_template("admin_login.html", csrf_token=pin_csrf_token(), resource_return=resource_return,login_error=__ui_native__("Le code PIN est incorrect."))
+        return render_template("admin_login.html", csrf_token=pin_csrf_token(),resource_return=resource_return)
 
     @application.post("/admin/deconnexion")
     def admin_logout():
@@ -6541,8 +6558,12 @@ def register_routes(application):
 
     @application.get("/admin")
     def admin():
-        """Affiche l'aperçu compact de la fréquentation."""
+        """Résumé multi-modules ; les données détaillées gardent leurs routes."""
         database = get_database()
+        from admin_summary import build as build_summary
+        modules=load_modules(database)
+        role=session.get('access_role') or ('admin' if session.get('admin_authenticated') else None)
+        summary=build_summary(database,modules,role)
         present_count, visitor_count, sessions_today = get_dashboard_counts(database)
         recent_session_rows = database.execute(
             """
@@ -6576,6 +6597,7 @@ def register_routes(application):
         recent_identifications = recent_identifications[:30]
         return render_template(
             "admin.html",
+            summary=summary,
             present_count=present_count,
             visitor_count=visitor_count,
             sessions_today=sessions_today,
@@ -7116,6 +7138,8 @@ def register_routes(application):
             security_events=security_events,
         )
 
+    application.extensions['render_settings_page']=render_settings_page
+
     def restore_uploaded_database():
         database_path = Path(current_database_path())
         uploaded_file = request.files.get("database_file")
@@ -7154,7 +7178,7 @@ def register_routes(application):
     def admin_database_backup():
         if request.method == "POST":
             return restore_uploaded_database()
-        return redirect(url_for("admin_settings_display"))
+        return redirect(url_for('v215.settings_home'))
 
     @application.get("/admin/reglages/affichage")
     def admin_settings_display():
@@ -7162,7 +7186,7 @@ def register_routes(application):
 
     @application.route("/admin/reglages/reservations", methods=["GET", "POST"])
     def admin_settings_reservations():
-        return redirect(url_for("admin_settings_structure") + "#reservations")
+        return redirect(url_for('v215.wordpress_settings') + "#reservations")
 
     @application.post("/admin/reglages/structure/reservations")
     def admin_save_reservation_settings():
@@ -7249,7 +7273,7 @@ def register_routes(application):
                 observe_service(database,row['service_id'])
             database.commit()
             flash("Réglages de réservation enregistrés.", "success")
-        return redirect(url_for("admin_settings_structure") + "#reservations")
+        return redirect(url_for("v215.wordpress_settings") + "#reservations")
 
     @application.post("/admin/reglages/structure/synchroniser")
     def admin_sync_reservations_now():
@@ -7289,7 +7313,7 @@ def register_routes(application):
                         )
                     database.commit()
                     flash(f"Synchronisation impossible : {reason}.", "error")
-        return redirect(url_for("admin_settings_structure") + "#reservations")
+        return redirect(url_for("v215.wordpress_settings") + "#reservations")
 
     @application.post("/admin/reglages/structure/logo-openfablab")
     def admin_reset_structure_wordmark():
@@ -7356,15 +7380,7 @@ def register_routes(application):
         privacy_only = request.form.get('privacy_only') == '1'
         selected = load_modules(database) if privacy_only else {
             key: request.form.get(f"module_{key}") == "1" for key in MODULE_LABELS}
-        if not selected['authorizations']:
-            dependent = database.execute('SELECT name FROM resources WHERE active=1 AND required_authorization IS NOT NULL').fetchall()
-            if dependent:
-                errors.append('Impossible de désactiver Formations et habilitations : ressources actives dépendantes : '
-                              + ', '.join(row['name'] for row in dependent) + '. Retirez explicitement leurs exigences ou désactivez ces ressources.')
-        if selected["public_reservations"] and not selected["activities"]:
-            errors.append("Les réservations publiques nécessitent le module Activités.")
-        if (selected["booking_slots"] or selected["rentals"]) and not selected["billing"]:
-            errors.append("Les créneaux réservables et locations nécessitent le module Facturation.")
+        errors.extend(__import__('configuration_flow').module_errors(database,selected))
         logo_files = {}
         for kind in LOGO_KINDS:
             uploaded = request.files.get(f"logo_{kind}")
@@ -9428,6 +9444,8 @@ def register_routes(application):
     )
     def admin_billing_client_form(client_id):
         """Permet de corriger la fiche de référence d'un client."""
+        from evolution_routes import require_team
+        require_team(admin=True)
         database = get_database()
         row = database.execute(
             "SELECT * FROM billing_clients WHERE id = ?", (client_id,)
@@ -9435,6 +9453,17 @@ def register_routes(application):
         if row is None:
             abort(404)
         client = dict(row)
+        def render_client(values):
+            modules=load_modules(database)
+            dossiers=database.execute("""SELECT id,title,billing_type,quote_number,invoice_number,quote_date
+                FROM billing_records WHERE client_id=? ORDER BY quote_date DESC,id DESC""",(client_id,)).fetchall()
+            bookings=database.execute("""SELECT r.name,b.booking_uuid,b.starts_at,b.ends_at,b.status
+                FROM resource_bookings b JOIN billing_records f ON f.id=b.billing_record_id
+                JOIN resources r USING(resource_uuid) WHERE f.client_id=?
+                ORDER BY b.starts_at DESC,b.booking_uuid""",(client_id,)).fetchall() if modules['resources'] else []
+            from resource_booking import STATUS_LABELS
+            return render_template("billing_client_form.html",client=client,values=values,
+                linked_dossiers=dossiers,linked_bookings=bookings,booking_status=STATUS_LABELS)
         if request.method == "GET":
             values = {
                 "client_contact": client["contact_name"],
@@ -9446,9 +9475,7 @@ def register_routes(application):
                 "email": client["email"] or "",
                 "client_category": client['category_key'] or '',
             }
-            return render_template(
-                "billing_client_form.html", client=client, values=values
-            )
+            return render_client(values)
 
         from evolution_routes import require_csrf
         require_csrf()
@@ -9473,9 +9500,7 @@ def register_routes(application):
         if errors:
             for error in errors:
                 flash(error, "error")
-            return render_template(
-                "billing_client_form.html", client=client, values=values
-            ), 400
+            return render_client(values), 400
         try:
             upsert_billing_client(
                 database,
@@ -9489,9 +9514,7 @@ def register_routes(application):
                 "Un autre client utilise déjà ce nom de contact. Modifiez sa fiche existante.",
                 "error",
             )
-            return render_template(
-                "billing_client_form.html", client=client, values=values
-            ), 409
+            return render_client(values), 409
         flash("La fiche client a été mise à jour.", "success")
         return redirect(url_for("admin_billing") + "#annuaire-clients")
 
@@ -10021,7 +10044,7 @@ def register_routes(application):
             flash("Les notifications ont été configurées.", "success")
             return redirect(url_for("admin_notifications"))
         return render_template(
-            "notifications.html", discord=load_discord_settings(database),
+            "notifications.html", discord=load_discord_settings(database),smtp=__import__('welcome_mail').load_public_config(current_database_path()),
             creation_discord={key:read_setting(database,'discord_new_user_'+key,'0')=='1'
                              for key in ('enabled','first_name','last_name','last_initial','age','category','source','time')}
         )

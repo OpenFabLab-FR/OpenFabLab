@@ -1,5 +1,2 @@
-<nav class="admin-subtabs settings-subtabs" aria-label="Navigation des réglages">
-{% for endpoint,label in [('admin_settings_display','Affichage'),('evolution.users_settings','Usagers'),('admin_settings_kiosk','Borne'),('admin_notifications','Notifications'),('admin_settings_tariffs','Tarifs'),('admin_settings_data','Données'),('admin_settings_structure','Structure')] %}
-<a class="admin-subtab{% if request.endpoint==endpoint or (endpoint=='admin_settings_structure' and request.endpoint in ('admin_settings_reservations','evolution.integrations')) %} active{% endif %}" href="{{ url_for(endpoint) }}" {% if request.endpoint==endpoint %}aria-current="page"{% endif %}>{{ label }}</a>
-{% endfor %}
-</nav>
+<nav class="admin-subtabs settings-subtabs v215-settings-tabs" aria-label="Navigation des réglages">{% for item in settings_navigation %}<a class="admin-subtab{% if item.active %} active{% endif %}" href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>{{ _(item.label) }}</a>{% endfor %}</nav>
+{% if settings_secondary %}<nav class="v215-settings-secondary" aria-label="Sections du réglage">{% for item in settings_secondary %}<a class="admin-button {{ 'primary' if item.active else 'secondary' }} compact" href="{{ item.url }}">{{ _(item.label) }}</a>{% endfor %}</nav>{% endif %}

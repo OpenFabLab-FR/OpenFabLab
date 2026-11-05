@@ -120,8 +120,9 @@ def register(application, api):
 
     @application.template_filter('money')
     def money(value):
-        cents = int(value)
-        return str(cents // 100) + ',' + str(cents % 100).zfill(2)
+        from localized_formats import decimal
+        from decimal import Decimal
+        return decimal(Decimal(int(value))/100)
 
     @application.before_request
     def protect_user_forms():
@@ -275,8 +276,8 @@ def register(application, api):
                 flash('Réglages/envoi validés.', 'success')
             except (OSError,ValueError,welcome_mail.smtplib.SMTPException):
                 flash('Échec : vérifiez les paramètres ou la connexion SMTP. Aucun secret affiché.', 'error')
-            return redirect(url_for('admin_notifications')+'#new-user-notifications' if action=='discord' else url_for('admin_settings_structure')+'#smtp')
-        return redirect(url_for('admin_settings_structure')+'#smtp')
+            return redirect(url_for('admin_notifications')+'#new-user-notifications' if action=='discord' else url_for('admin_notifications')+'#smtp-settings')
+        return redirect(url_for('admin_notifications')+'#smtp-settings')
 
     @bp.post('/admin/reglages/ordre/<kind>')
     def save_order(kind):
@@ -441,7 +442,7 @@ def register(application, api):
 
     @bp.route('/admin/ressources', methods=['GET','POST'])
     def resource_directory():
-        role=require_team();db=a.get_database()
+        role=require_team();db=a.get_database();resource_error=False;new_resource={}
         sync_legacy_machines(db);db.commit()
         if request.method=='POST':
             require_csrf()
@@ -462,25 +463,31 @@ def register(application, api):
                         if request.form.get('required_authorization') and not a.load_modules(db)['authorizations']:
                             raise ValueError('Activez Formations et habilitations avant d’exiger une habilitation.')
                         values = {k:request.form.get(k) for k in ('name','description','type_key','color','active','approval_required','price_cents','required_authorization')}
+                        if 'availability_mode' in request.form:values['availability_mode']=request.form['availability_mode']
                         if 'price_euros' in request.form:
                             values['price_cents'] = resources.euros_to_cents(request.form['price_euros'])
-                        resources.save_resource(db,values,role,request.form.get('key') or None)
+                        saved_resource_key=resources.save_resource(db,values,role,request.form.get('key') or None)
                     else:
                         raise ValueError('Action inconnue.')
                 if request.headers.get('X-OpenFabLab-Autosave') == '1':
                     return {'ok': True}
                 flash({'archive':'Ressource archivée. Son historique est conservé.','restore':'Ressource restaurée.','delete':'Ressource supprimée définitivement.'}.get(action,'Ressource enregistrée.'), 'success')
+                if action=='resource':return redirect(url_for('resource_portal.page',key=saved_resource_key)+'#general')
             except (ValueError,sqlite3.IntegrityError) as error:
                 if request.headers.get('X-OpenFabLab-Autosave') == '1':
                     db.rollback()
                     return {'ok':False, 'message':str(error) if isinstance(error,ValueError) else 'Référence incompatible.'},400
                 db.rollback();flash(str(error) if isinstance(error,ValueError) else 'Nom déjà utilisé ou référence invalide.','error')
-            return redirect(url_for('evolution.resource_directory',archived='1' if request.form.get('show_archived')=='1' else None))
+                if action=='resource' and not request.form.get('key'):
+                    resource_error=True;new_resource=dict(request.form)
+                    new_resource['color']=None if request.form.get('color_default')=='1' else request.form.get('color')
+                    for flag in ('active','approval_required'):new_resource[flag]=request.form.get(flag)=='1'
+            if not resource_error:return redirect(url_for('evolution.resource_directory',archived='1' if request.form.get('show_archived')=='1' else None))
         return render_template('resources.html',resource_types=db.execute('SELECT * FROM resource_types ORDER BY sort_order,name').fetchall(),
-            resources=db.execute("SELECT r.*,t.name AS type_name,COALESCE(r.color,t.color) AS display_color,a.name AS authorization_name,COALESCE(c.status,'operational') AS condition_status FROM resources r JOIN resource_types t USING(type_key) LEFT JOIN authorizations a ON a.authorization_uuid=r.required_authorization LEFT JOIN machine_condition c USING(resource_uuid) WHERE (?=1 OR r.archived_at IS NULL) ORDER BY (r.archived_at IS NOT NULL),r.name,r.resource_uuid",(int(request.args.get('archived')=='1'),)).fetchall(),
+            resources=__import__('resource_sort').ordered(db.execute("SELECT r.*,t.name AS type_name,COALESCE(r.color,t.color) AS display_color,a.name AS authorization_name,COALESCE(c.status,'operational') AS condition_status FROM resources r JOIN resource_types t USING(type_key) LEFT JOIN authorizations a ON a.authorization_uuid=r.required_authorization LEFT JOIN machine_condition c USING(resource_uuid) WHERE (?=1 OR r.archived_at IS NULL)",(int(request.args.get('archived')=='1'),)).fetchall()),
             show_archived=request.args.get('archived')=='1',
-            resource_states=__import__('machine_maintenance').STATES,
-            authorizations=resources.definitions(db,True))
+            resource_states=__import__('machine_maintenance').STATES,resource_error=resource_error,new_resource=new_resource,
+            authorizations=resources.definitions(db,True)),400 if resource_error else 200
 
     @bp.route('/admin/ressources/reservations', methods=['GET','POST'])
     def resource_bookings():
@@ -514,11 +521,12 @@ def register(application, api):
                 db.rollback();flash(str(error) if isinstance(error,ValueError) else 'Référence incompatible ou dossier déjà utilisé.','error')
             return redirect(url_for('evolution.resource_bookings'))
         return render_template('resource_bookings.html',
-            resources=db.execute('SELECT * FROM resources WHERE active=1 AND archived_at IS NULL ORDER BY name').fetchall(),
+            resources=__import__('resource_sort').ordered(db.execute('SELECT * FROM resources WHERE active=1 AND archived_at IS NULL').fetchall()),
             users=db.execute('SELECT id,first_name,last_name FROM users WHERE active=1 ORDER BY first_name').fetchall(),
             bookings=db.execute('SELECT b.*,r.name,u.first_name,u.last_name FROM resource_bookings b JOIN resources r USING(resource_uuid) LEFT JOIN users u ON u.id=b.user_id ORDER BY b.starts_at DESC').fetchall(),
             records=db.execute('SELECT id,quote_number,client_contact FROM billing_records WHERE id NOT IN(SELECT billing_record_id FROM resource_bookings WHERE billing_record_id IS NOT NULL) ORDER BY id DESC').fetchall(),
-            statuses=resources.STATUS_LABELS,transitions=resources.TRANSITIONS)
+            statuses=resources.STATUS_LABELS,transitions=resources.TRANSITIONS,
+            loans={r['key']:r|dict(late=__import__('resource_loans').overdue(db,r)) for r in __import__('resource_loans').operations(db) if r['kind']=='booking'})
 
     @bp.route('/admin/habilitations', methods=['GET','POST'])
     def authorizations():

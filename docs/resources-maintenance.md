@@ -1,3 +1,19 @@
+# Ressources et maintenance — 2.15.1
+
+La fiche unifiée regroupe configuration, état, visibilité, réservations,
+locations, interventions, rappels, documents et actions d’archivage selon les
+droits. Le tri est alphabétique naturel. Une réservation confirmée n’est pas
+une remise effective : enregistrer séparément la remise et le retour.
+Les prêts gratuits apparaissent dans le Résumé comme les prêts payants.
+
+Les QR permanents peuvent viser une fiche publique OpenFabLab sur le réseau
+local ou via HTTPS. Choisir la visibilité des ressources et des tutoriels
+séparément ; ne publier ni notes internes ni identité d’un emprunteur.
+[QR et accès](upgrade-2.15.1.md#qr-des-ressources) · [Prêts, documents et rôles](evolution-2.15.0.md).
+La suite conserve les références historiques de la 2.14.4.
+
+---
+
 # Ressources, état et maintenance — OpenFabLab 2.14.4
 
 | Notion | Signification |

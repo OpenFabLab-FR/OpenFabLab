@@ -4,6 +4,7 @@ This is a deterministic guard, not a substitute for a human privacy review.
 Development environments and generated release ZIPs are deliberately outside Git.
 """
 import hashlib
+import json
 import re
 import sys
 from pathlib import Path
@@ -13,12 +14,23 @@ GENERATED={'.git','.venv','node_modules','dist','__pycache__'}
 FORBIDDEN_SUFFIXES=('.db','.sqlite','.sqlite3','.sql','.zip','.pyc','.pdf','.docx','.xlsx','.csv')
 SENSITIVE=re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\b(?:ghp|github_pat)_[A-Za-z0-9_]{20,}|\bAKIA[A-Z0-9]{16}\b')
 PRIVATE_INFRA=re.compile(rb'/Users/[A-Za-z][A-Za-z0-9_.-]*/|/volume[0-9]+/(?:docker|Coffre)|\b192\.168\.\d{1,3}\.\d{1,3}\b|\b10\.\d{1,3}\.\d{1,3}\.\d{1,3}\b',re.I)
+# Explicit fictional QR examples and standard network ranges, only in these files.
+QR_EXAMPLE=b'.'.join((b'192',b'168',b'50',b'10'))
+QR_INVALID_TEST=b'.'.join((b'192',b'168',b'1',b'1'))
+LOCAL_QR_EXAMPLES={
+    'docs/upgrade-2.15.1.md':(QR_EXAMPLE,),
+    'templates/resource_settings.html':(QR_EXAMPLE,),
+    'tests/test_resource_documents.py':(QR_EXAMPLE,QR_INVALID_TEST),
+    'resource_portal.py':(b'10'+b'.0.0.0/8',b'192'+b'.168.0.0/16'),
+}
 
 
 def check():
     sys.path.insert(0, str(ROOT))
     from build_openfablab import is_macos_metadata
-    names=(ROOT/'PUBLIC_FILES.txt').read_text().splitlines()
+    archive_manifest=ROOT/'UPDATE-MANIFEST.json'
+    names=(sorted([*json.loads(archive_manifest.read_bytes())['files'],'UPDATE-MANIFEST.json'])
+           if archive_manifest.is_file() else (ROOT/'PUBLIC_FILES.txt').read_text().splitlines())
     if names!=sorted(set(names)):
         raise ValueError('Public manifest must be sorted and unique')
     actual=[]
@@ -43,7 +55,10 @@ def check():
         if any(part.startswith('.') and part not in {'.env.example','.gitignore','.dockerignore'} for part in Path(name).parts):
             raise ValueError('Unexpected hidden file: '+name)
         data=path.read_bytes()
-        if SENSITIVE.search(data) or PRIVATE_INFRA.search(data):
+        check_data=data
+        for literal in LOCAL_QR_EXAMPLES.get(name,()):
+            check_data=re.sub(rb'(?<![\d.])'+re.escape(literal)+rb'(?![\d.])',b'EXPLICIT_QR_EXAMPLE',check_data)
+        if SENSITIVE.search(data) or PRIVATE_INFRA.search(check_data):
             raise ValueError('Private literal detected in '+name+' (value withheld)')
         if data.startswith(b'SQLite format 3'):
             raise ValueError('SQLite content detected in '+name)

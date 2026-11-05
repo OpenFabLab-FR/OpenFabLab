@@ -15,7 +15,7 @@ def register(application,a):
         require_team(admin=True);require_csrf()
         attendance.configure(a.get_database(),request.form.get('enabled')=='1')
         flash('Validation des présences configurée.','success')
-        return redirect(url_for('admin_settings_structure')+'#presences-animations')
+        return redirect(url_for('v215.calendar_settings')+'#presences-animations')
 
     @bp.post('/admin/animations/<int:service_id>/non-inscrits')
     def walkins(service_id):

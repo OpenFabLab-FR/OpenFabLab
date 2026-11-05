@@ -1,0 +1,3 @@
+{% set wp_state=namespace(error=false) %}{% for state in reservation_relay_states %}{% if state.last_error or state.retrying %}{% set wp_state.error=true %}{% endif %}{% endfor %}
+{% if wp_state.error %}<p class="settings-status-warning" role="status">Synchronisation WordPress à vérifier : consultez les états Normal et Test ci-dessous.</p>{% endif %}
+<details class="settings-disclosure" id="wordpress-settings"{% if wp_state.error %} open{% endif %}><summary>Connexion WordPress{% if wp_state.error %} · à vérifier{% elif reservation_secret_set %} · configurée{% else %} · facultative{% endif %}</summary>{% include '_reservation_settings.html' %}{% include '_openlab_public_settings.html' %}</details>

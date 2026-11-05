@@ -195,6 +195,7 @@
 </form>
 
 {% if form_mode == 'edit' %}
+    {% if not kiosk %}{% set followup=user_followup(user.id) %}{% include '_user_followup.html' %}{% endif %}
     <section class="admin-section family-panel"><h2>Liens familiaux</h2>
     {% for responsible in family_responsibles %}<div class="family-link-row"><a href="{{ url_for('admin_edit_user',user_id=responsible.id) }}">{{ responsible.first_name }} {{ responsible.last_name }}</a><form method="post" action="{{ url_for('family.unlink',user_id=user.id,key=responsible.link_uuid) }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><button class="admin-button secondary compact">Terminer le rattachement</button></form></div>{% endfor %}
     <h3>Membres rattachés</h3>{% for member in family_members %}<div class="family-link-row"><a href="{{ url_for('admin_edit_user',user_id=member.id) }}">{{ member.first_name }} {{ member.last_name }}<small>{{ member|family_state }}</small></a><form method="post" action="{{ url_for('family.unlink',user_id=user.id,key=member.link_uuid) }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><button class="admin-button secondary compact">Terminer le rattachement</button></form></div>{% else %}<p class="form-help">Aucun membre rattaché.</p>{% endfor %}</section>

@@ -6,12 +6,13 @@
 
 {% block content %}
 <section class="content-heading">
-    <h1>Notifications</h1>
-    <p>Recevez dans le salon Discord privé une information courte lors d'un passage.</p>
+    <h1>Communication et notifications</h1>
+    <p>E-mails, Discord et rappels facultatifs, selon les besoins de votre FabLab.</p>
 </section>
 {% include "_admin_nav.html" %}
 {% include "_settings_nav.html" %}
 {% include '_v214_settings.html' %}
+<details class="settings-disclosure" id="smtp-settings"><summary>E-mails SMTP{% if smtp.host|default('') %} · paramètres enregistrés{% else %} · facultatif{% endif %}</summary>{% include '_smtp_settings.html' %}</details>
 
 <form method="post" class="admin-form">
     <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">

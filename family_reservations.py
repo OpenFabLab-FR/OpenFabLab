@@ -277,6 +277,8 @@ def reserve(db, owner_id, ids, service_id, slot_uuid, request_key, environment='
             return value
         service=effective_service(db,service_id,slot_uuid,environment,check_open=not staff)
         people=participants(db,owner_id,selected,service,staff)
+        from user_participation import check_new_booking
+        check_new_booking(db, selected)
         details=waiting.require_contact(db,owner_id,people)
         for person in people:
             duplicate=db.execute("SELECT 1 FROM animation_bookings WHERE service_id=? AND environment=? AND COALESCE(slot_uuid,'')=? AND (user_id=? OR public_id=?) AND status NOT IN('cancelled','expired','declined')",(service_id,environment,slot_uuid or '',person['id'],person['public_id'])).fetchone()
@@ -361,6 +363,8 @@ def team_action(db, service_id, booking_uuid, action, role, person_id=None):
         group=db.execute("SELECT * FROM animation_bookings WHERE group_uuid=? AND status NOT IN('cancelled','expired','declined')",(booking['group_uuid'],)).fetchall()
         now=family.timestamp()
         if action=='add':
+            from user_participation import check_new_booking
+            check_new_booking(db, [person_id])
             if booking['source']==GUEST_SOURCE:
                 raise ValueError('Cette réservation sans compte concerne une seule personne. Créez une demande distincte pour un autre participant.')
             if not group or len({b['status'] for b in group})!=1 or group[0]['status'] not in ('confirmed','waitlisted'):

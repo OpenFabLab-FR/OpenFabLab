@@ -1,3 +1,22 @@
+# OpenFabLab — Roadmap
+
+## Série 2.15
+
+Résumé, recherche transversale, fiche ressource unifiée, suivi des prêts, QR
+et tutoriels, cinq langues et mises à jour par agent. La transition DSM vers
+2.15.1 est confirmée au FougèresLab. L’installation complète par ZIP depuis
+l’administration reste à vérifier sur un véritable Synology.
+
+## Pistes pour une prochaine corrective
+
+- En portrait sur iPhone, compacter l’en-tête d’administration et de modération
+  sur deux lignes bien alignées, ou une seule si les commandes restent lisibles
+  et faciles à toucher. Étudier le masquage des logos institutionnels dans ces
+  vues uniquement, sans changer la borne ni les formats plus larges.
+- Donner au Résumé une présentation plus chaleureuse : hiérarchie plus claire,
+  couleurs, icônes et interactions mieux dosées. Conserver les règles de calcul
+  et la lisibilité. Rien de ces deux chantiers ne change en 2.15.1.
+
 ## Disponible en 2.14.4 stable — consolidation de l’évolution 2.14
 
 FR/EN natif, suivi des ressources, interventions/rappels liés, indisponibilités,

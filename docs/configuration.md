@@ -1,3 +1,9 @@
+# Configuration de la candidate 2.15.0
+
+Les huit groupes de réglages, l’assistant et les cinq langues sont décrits dans le [guide actuel](evolution-2.15.0.md). Les préférences existantes ne sont pas réinitialisées.
+
+---
+
 ## Configuration de la stable 2.14.4
 
 Les réglages de ressources se trouvent sous Structure → Modules ; le programme

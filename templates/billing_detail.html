@@ -14,6 +14,7 @@
 </section>
 
 {% include "_admin_nav.html" %}
+{% if record.billing_type=='rental' and module_enabled %}{% set loan=rental_followup(record) %}{% if loan %}{% include '_loan_controls.html' %}{% endif %}{% endif %}
 
 <ol class="billing-steps{% if record.quote_cancelled_at %} is-cancelled{% endif %}" aria-label="Avancement du dossier">
     <li class="complete">Devis</li><li class="{% if record.quote_signed_at %}complete{% endif %}">Devis signé</li><li class="{% if record.invoice_sent_at %}complete{% elif record.invoice_number %}current{% endif %}">Facture envoyée</li><li class="{% if record.paid_at %}complete{% endif %}">Facture payée</li>

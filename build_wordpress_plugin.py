@@ -1,13 +1,16 @@
 """Build the distributable WordPress plugin without local data or secrets."""
 
 from pathlib import Path
+import re
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 
 ROOT = Path(__file__).resolve().parent
 PLUGIN = ROOT / "wordpress" / "openfablab-reservations"
-OUTPUT = ROOT / "dist" / "openfablab-reservations-2.14.1.zip"
+VERSION=re.search(r'^ \* Version: ([0-9]+\.[0-9]+\.[0-9]+)$',(PLUGIN/'openfablab-reservations.php').read_text(),re.M).group(1)
+OUTPUT = ROOT / "dist" / f"openfablab-reservations-{VERSION}.zip"
 INCLUDED = (
+    'includes/class-openfablab-i18n.php','languages/en.json','languages/de.json','languages/es.json','languages/fi.json',
     'includes/class-openfablab-public.php','assets/public.js','assets/public.css','assets/translations.js',
     "openfablab-reservations.php",
     "uninstall.php",

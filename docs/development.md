@@ -1,4 +1,25 @@
-## Recette actuelle : stable 2.14.4
+## Recette de la candidate 2.15.0
+
+Installer les dépendances de `requirements-dev.txt` dans un environnement isolé,
+puis exécuter `python tools/check_candidate_215.py` ou `npm test`. Ce runner utilise
+des bases fictives temporaires, coupe les communications externes avant import et
+exerce les suites ciblées2.15 ainsi que les régressions compatibles retenues.
+Gunicorn est nécessaire au vrai probe HTTP local. Docker est modélisé : ce test
+ne certifie pas Synology. Les reçus privés DSM sont vérifiés séparément, hors ZIP public.
+
+La fixture25 est synthétique par défaut. Pour tester le vrai ancien runtime,
+définir `OPENFABLAB_TEST_SOURCE_2144` vers les sources2.14.4 extraites et approuvées,
+jamais vers des données de production. Elle génère toujours ses propres identités
+fictives, aucun envoi ni sauvegarde réelle n’est lu. Le bilan de livraison distingue
+les essais réellement faits avec la référence publiée de ceux utilisant une fixture.
+
+`tools/check_public_tree.py` audite l’inventaire public, les exclusions et les
+licences. Dans l’archive, il lit UPDATE-MANIFEST ; dans les sources, PUBLIC_FILES.
+Les anciennes suites gardent leurs assertions de schéma/version historiques :
+ne pas présenter `test:historical` ou la découverte globale comme une recette
+actuelle automatiquement réussie. Les instructions suivantes restent historiques.
+
+## Référence : recette stable 2.14.4
 
 [Contrôles de publication, périmètre et limites](publication-2.14.4.md).
 Les assertions de version courantes sont dans `tests/test_publication.py` ;

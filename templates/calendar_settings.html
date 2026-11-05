@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Calendrier et activités · OpenFabLab{% endblock %}
+{% block body_class %}admin-page settings-page{% endblock %}
+{% block content %}
+<section class="content-heading"><h1>Calendrier et activités</h1><p>Horaires habituels, affichage du calendrier et présences aux animations.</p></section>
+{% include '_admin_nav.html' %}{% include '_settings_nav.html' %}
+<section class="admin-section"><h2>Horaires habituels des OpenLab</h2>
+<form method="post" class="admin-form"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="group" value="hours">
+<p class="form-help">Laissez les deux horaires vides pour un jour fermé. Les exceptions ponctuelles restent dans le calendrier.</p>
+<div class="v215-hours">{% for day in openlab_schedule %}<div class="v215-hours-row"><strong>{{ _(day.label) }}</strong><label class="form-field"><span>Début</span><input type="time" name="{{ day.key }}_start" value="{{ day.start or '' }}" step="900"></label><label class="form-field"><span>Fin</span><input type="time" name="{{ day.key }}_end" value="{{ day.end or '' }}" step="900"></label></div>{% endfor %}</div>
+<div class="form-actions"><button class="admin-button primary">Enregistrer les horaires</button><a class="admin-button secondary" href="{{ url_for('v214.openings') }}">Horaires exceptionnels</a></div></form></section>
+<section class="admin-section"><h2>Plage affichée dans le calendrier</h2><form method="post" class="admin-form"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="group" value="display"><div class="form-grid"><label class="form-field"><span>Début</span><input type="time" name="start" value="{{ calendar_start }}" required step="900"></label><label class="form-field"><span>Fin</span><input type="time" name="end" value="{{ calendar_end }}" required step="900"></label></div><button class="admin-button secondary">Enregistrer la plage affichée</button></form></section>
+{% include '_animation_presence_settings.html' %}
+{% endblock %}

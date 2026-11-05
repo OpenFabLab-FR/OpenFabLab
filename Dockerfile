@@ -27,6 +27,8 @@ COPY v2141_schema.py ./
 COPY v2144_schema.py resource_lifecycle.py public_calendar_history.py ./
 COPY public_resource_labels.py ./
 COPY enrollment_feedback.py ./
+COPY v215_schema.py v215_routes.py resource_loans.py user_participation.py admin_search.py admin_summary.py updater_client.py resource_portal.py resource_documents.py pdf_guard.py ./
+COPY localized_formats.py settings_groups.py configuration_flow.py setup_routes.py update_wire.py resource_sort.py resource_editor.py ./
 COPY translations ./translations
 COPY tablet_reservations.py ./
 COPY family_model.py family_routes.py family_reservations.py family_reservation_routes.py family_waitlist.py ./

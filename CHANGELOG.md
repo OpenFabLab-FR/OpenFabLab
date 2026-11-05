@@ -1,5 +1,31 @@
 # Historique des versions
 
+## 2.15.1
+
+- Import d’un ZIP OpenFabLab dans l’administration, réservé à l’administrateur. Contrôle avant confirmation ; essai isolé, sauvegardes et contrôles après redémarrage via le même agent que les versions stables officielles GitHub.
+- Suivi de la connexion et de la mise à jour, contrôles détaillés repliés et historique des dernières opérations. Actualiser le suivi ne déclenche aucune installation.
+- Résumé : créneaux confirmés et matériels remis distingués, prêts gratuits inclus, liens de traitement et cinq dernières identifications visibles.
+- Calendrier : une bande par location continue visible en semaine, horaires exacts et remise/restitution au clic, grille défilable et commandes regroupées.
+- Recherche client et structure avec les seules relations déjà enregistrées ; réservée à l’administrateur pour les dossiers de facturation.
+- Alignement des couleurs et des options de catégories ; choix d’adresse QR privée ou publique sans modification réseau.
+- SQLite 26 inchangé. Plugin WordPress 2.15.0 inchangé ; protocole 4, révision 3.
+
+## 2.15.0 — étape de la série 2.15, sans release publique distincte
+
+- Agent de mise à jour séparé et facultatif : préparation, construction et migration isolées avant arrêt ; confirmation distincte ; PRE/POST vérifiées par restauration ; reprise indépendante sans ancienne base réinjectée automatiquement.
+- Remise et restitution explicites sur les réservations et contrats existants ; disponibilité dérivée En prêt/Retour en retard, priorité des pannes et aucune restitution automatique.
+- Une seule fiche Ressources pour configuration, disponibilité, interventions, rappels, prêts, QR et PDF ; anciennes adresses conservées, droits et saisies en erreur préservés.
+- Visibilité publique cohérente avec la case affichée, y compris pour les anciennes permissions asymétriques ; aucune publication implicite lors d’une panne ou d’un rappel.
+- Mode habituel Disponible à la location, indépendant des réservations, prix et publication ; conservé après le retour du matériel. Tri naturel alphabétique commun à la borne, l’administration et WordPress.
+- Suivi usager repliable : locations, réservations et participations ; annulations distinctes des absences constatées ; restriction temporaire uniquement sur décision administrateur, jamais sur le pointage.
+- Locations traversant plusieurs dates dans la bande supérieure du calendrier, heures réelles inchangées.
+- Tableau de bord Résumé, recherche locale bornée selon rôles/modules, réglages regroupés et assistant uniquement pour nouvelles installations.
+- Adresse QR UUID stable par ressource, étiquette PNG/SVG/PDF, fiche publique facultative filtrée ; tutoriels PDF partagés, dédupliqués, remplaçables et sauvegardés dans le stockage persistant.
+- Catalogues locaux FR/EN/DE/ES/FI, formats adaptés, choix compact et contenus personnalisés inchangés. Traductions préparées hors ligne et termes critiques relus ; validation par locuteurs natifs encore souhaitable.
+- SQLite 25 → 26 additif dans le moteur existant : remise/retour et lien usager d’un contrat, restrictions, documents liés et mode de disponibilité. Données historiques non réécrites ; anciennes ressources sur site par défaut.
+- Plugin réellement modifié en 2.15.0 ; disponibilité effective négociée par `resource_availability_v1`, protocole 4/révision 3 inchangé, shortcodes et environnements préservés.
+- [Guide de la candidate et limites](docs/evolution-2.15.0.md).
+
 ## 2.14.4 — version stable — 4 novembre 2026
 
 Stable publique réunissant les étapes2.14.0 à2.14.4 validées sur le terrain.
