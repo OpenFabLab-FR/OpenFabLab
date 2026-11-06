@@ -21,6 +21,20 @@ def timestamp(value,code=None):
     join={'fr':' à ','en':' at ','de':' um ','es':' a las ','fi':' klo '}.get(code,' ')
     return day(value.date(),code)+join+value.strftime('%H:%M')
 
+def calendar_moment(value, zone):
+    """Local schedule values are wall time; aware booking instants are converted once."""
+    if not value:return None
+    try:parsed=datetime.fromisoformat(value)
+    except (ValueError,TypeError):return None
+    return parsed.replace(tzinfo=zone) if parsed.tzinfo is None else parsed.astimezone(zone)
+
+def event_display(value, zone):
+    """A calendar date is not an instant; do not turn it into a UTC midnight."""
+    if not value:return ''
+    if len(value)==10:return day(value)
+    parsed=calendar_moment(value,zone)
+    return timestamp(parsed) if parsed else value
+
 def decimal(value,places=2,code=None):
     code=code or language()
     result=format(Decimal(value),'.'+str(places)+'f')

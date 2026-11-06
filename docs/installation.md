@@ -1,21 +1,19 @@
-# Installer OpenFabLab 2.15.2
+# Installer OpenFabLab 2.15.5
 
-Télécharger [la distribution et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.2). Le fichier applicatif
-est `OpenFabLab-2.15.2.zip` : ne pas utiliser le ZIP WordPress, un paquet privé
+Télécharger [la distribution et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.5). Le fichier applicatif
+est `OpenFabLab-2.15.5.zip` : ne pas utiliser le ZIP WordPress, un paquet privé
 DSM ou l’archive de sources automatique GitHub à sa place.
 
 1. Vérifier le SHA-256, extraire dans un dossier neuf et réserver un stockage
    persistant pour les données et les sauvegardes.
 2. Démarrer l’application selon la plateforme ci-dessous. Une nouvelle base
-   SQLite 26 est créée. Garder l’accès initial privé.
+   SQLite 28 est créée. Garder l’accès initial privé.
 3. Créer le PIN administrateur par la commande d’initialisation locale ; suivre
    l’assistant pour choisir les modules, l’identité et les langues.
-4. Pour les mises à jour intégrées, l’agent séparé est facultatif et nécessite
-   Docker/Compose et l’autorisation de l’administrateur du serveur. Lire
-   [le guide de l’agent](update-agent.md), puis utiliser le
-   [kit d’activation 2.15.2](../tools/agent-setup-2.15.2/README.md) sur
-   l’application déjà fonctionnelle.
-5. Installer [Reservations 2.15.2](wordpress-2.15.2.md) séparément, uniquement
+4. L’agent séparé est facultatif. Une installation neuve 2.15.5 fonctionne
+   sans agent, avec les mises à jour manuelles. Ne pas utiliser un ancien
+   kit d’activation sur 2.15.5 ; voir [le guide de l’agent](update-agent.md).
+5. Installer [Reservations 2.15.3](wordpress-2.15.3.md) séparément, uniquement
    si vous souhaitez publier des réservations, un calendrier ou un catalogue.
 
 Guides : [Linux](installation-linux.md), [Raspberry Pi](installation-raspberry-pi.md),
@@ -91,9 +89,9 @@ docker compose up -d application
 
 Le compose fourni publie `5080:8000`, préfixe `/stat`, `restart: unless-stopped` et healthcheck `/stat/sante`. Il monte **`./data:/data`** et **`${OPENFABLAB_BACKUP_HOST_ROOT:-./backups}:/nas-backups`**. Le sous-dossier de sauvegarde initial est `OpenFabLab`, modifiable dans les réglages. Une racine différente peut être définie dans un `.env` privé à partir de `.env.example`, sans y mettre de secret.
 
-L’archive 2.15.2 utilise l’étiquette Compose `openfablab:v2.15.2`.
+L’archive 2.15.5 validée conserve l’étiquette Compose locale `openfablab:v2.15.3`.
 Cette étiquette est un nom local d’image : après construction, le runtime doit
-afficher **V2.15.2** et une nouvelle base doit indiquer SQLite 26.
+afficher **V2.15.5** et une nouvelle base doit indiquer SQLite 28.
 Une installation existante peut conserver un ancien alias : vérifier la version
 dans l'interface après construction, sans remplacer son Compose personnalisé.
 

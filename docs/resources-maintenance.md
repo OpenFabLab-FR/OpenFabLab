@@ -1,4 +1,11 @@
-# Ressources et maintenance — 2.15.1
+# Ressources et maintenance — 2.15.5
+
+L’état d’une ressource, les créneaux de maintenance planifiés et les rappels
+sont distincts. Les maintenances multijours apparaissent sur une bande
+continue par semaine dans le calendrier interne. Une date de retour
+estimée ne crée pas de journée supplémentaire et ne remet pas la ressource
+en service automatiquement. Un signalement via le QR reste facultatif et
+ne change pas l’état de la machine.
 
 La fiche unifiée regroupe configuration, état, visibilité, réservations,
 locations, interventions, rappels, documents et actions d’archivage selon les

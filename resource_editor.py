@@ -1,5 +1,6 @@
 """Unified presentation reuses the resource, maintenance and lifecycle engines."""
 from datetime import datetime,timezone
+from family_model import local_day
 import resource_booking as bookings
 import machine_maintenance as machines
 import resource_loans as loans
@@ -39,10 +40,16 @@ def context(db,key,role,modules,api):
         (r['kind']=='booking' and modules['resources']) or (r['kind']=='contract' and role=='admin' and modules['billing'] and modules['rentals'])]
     for operation in operations:
         if operation['kind']=='contract':operation['people']=db.execute('SELECT id,first_name,last_name FROM users WHERE active=1 ORDER BY first_name,last_name LIMIT 2000').fetchall() if modules['users'] else []
+    today=local_day(db)
+    reminders=[]
+    for row in db.execute('SELECT * FROM machine_reminders WHERE resource_uuid=? ORDER BY due_on,created_at',(key,)):
+        state=machines.reminder_state(row,today)
+        reminders.append(dict(row)|dict(due_state=state,due_label=machines.REMINDER_LABELS[state]))
     return dict(resource=item,machine=item,states=machines.STATES,kinds=machines.KINDS,form_kinds=machines.FORM_KINDS,
         resource_types=db.execute('SELECT * FROM resource_types ORDER BY sort_order,name').fetchall(),authorizations=bookings.definitions(db,True),
         interventions=db.execute('SELECT * FROM machine_interventions WHERE resource_uuid=? ORDER BY performed_on DESC,created_at DESC',(key,)).fetchall(),
-        reminders=db.execute('SELECT * FROM machine_reminders WHERE resource_uuid=? ORDER BY due_on,created_at',(key,)).fetchall(),
+        reminders=reminders,
+        maintenance_slots=db.execute('SELECT * FROM machine_maintenance_slots WHERE resource_uuid=? ORDER BY starts_on DESC,starts_time DESC,slot_uuid',(key,)).fetchall() if machines.enabled(db) else [],
         history=machines.history_entries(db,key),operations=sorted(operations,key=lambda r:r['begin'],reverse=True),
         legacy_catalog=db.execute('SELECT c.* FROM rental_catalog c JOIN resources r ON r.legacy_machine_key=c.machine_key WHERE r.resource_uuid=?',(key,)).fetchone()
             if role=='admin' and modules['billing'] and modules['rentals'] else None,

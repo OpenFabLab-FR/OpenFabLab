@@ -1,24 +1,25 @@
 # Mettre à jour OpenFabLab
 
-## Choisir le bon parcours vers 2.15.2
+## Choisir le bon parcours vers 2.15.5
 
 | Point de départ | Parcours |
 | --- | --- |
-| Nouvelle instance, sans données | [Installation neuve](installation.md), SQLite 26, puis [activation facultative de l’agent](update-agent.md). |
-| 2.15.1, agent compatible et SQLite 26 | [Mises à jour](upgrade-2.15.2.md) : rechercher la version officielle ou importer le ZIP vérifié ; confirmer après contrôle. |
-| 2.15.0 avec l’agent d’origine | Transition opérateur pour rendre le canal compatible ZIP, sans recréer la base ni écraser l’état de l’agent. |
-| 2.14.4 / SQLite 25 | Mise à jour **manuelle** après test d’une copie isolée ; sauvegarde complète PRE25, migration du runtime vers 26 et sauvegarde POST26. |
+| Nouvelle instance, sans données | [Installation neuve](installation.md), SQLite 28 ; l’agent n’est pas requis. |
+| 2.15.4, agent compatible et SQLite 28 | [Mises à jour](upgrade-2.15.5.md) : rechercher la version officielle ou importer le ZIP vérifié ; confirmer après contrôle. |
+| 2.15.4 / SQLite 28, sans agent | Mise à jour manuelle, avec sauvegardes et contrôle de la configuration. |
+| 2.15.2 / SQLite 26 ou 2.15.3 / SQLite 27 | Mise à jour **manuelle** après essai de migration vers 28 sur une copie isolée ; sauvegardes PRE et POST complètes. Le ZIP 2.15.5 n’accepte pas ces schémas via l’agent. |
+| 2.14.4 / SQLite 25 ou plus ancien | Identifier le parcours de migration et le tester sur une copie isolée avant intervention ; ne pas utiliser l’import intégré de la 2.15.5. |
 | Version plus ancienne | Relever version et schéma ; valider d’abord le parcours historique approprié vers 2.14.4. |
 
-Le manifeste OTA de 2.15.2 accepte uniquement SQLite 26. Le test local du
-moteur 25 → 26 sur données fictives ne transforme pas cette opération en
-mise à jour OTA. Pour le parcours manuel, conserver le stockage, les volumes,
+Le manifeste OTA de 2.15.5 accepte uniquement SQLite 28. Ne modifiez pas
+le manifeste et ne contournez pas un refus de compatibilité. Pour le
+parcours manuel, conserver le stockage, les volumes,
 la configuration et les secrets. Construire et tester la cible sur une copie
 isolée ; vérifier intégrité et clés étrangères, version, santé, historiques
 et intégrations avant réouverture. Conserver les deux sauvegardes et l’image
 précédente, et ne jamais redémarrer l’ancien runtime sur la base migrée.
 
-[ZIP et empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.2) · [Sauvegarde et restauration](backup-restore.md).
+[ZIP et empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.5) · [Sauvegarde et restauration](backup-restore.md).
 Les procédures ci-dessous sont historiques ; aucun paquet DSM propre à un
 FabLab ne constitue un installateur public.
 

@@ -173,7 +173,10 @@ def register(application, namespace):
                     if len(files)!=1:
                         raise Refused('LOCAL_ZIP_REQUIRED')
                     return jsonify(ok=True,value=upload(files[0].stream))
-                return jsonify(ok=True,value=agent_request(operation,arguments))
+                value=agent_request(operation,arguments)
+                if operation=='status':
+                    value=value|{'web_version':application.config['APP_VERSION']}
+                return jsonify(ok=True,value=value)
             except Refused as error:
                 messages={
                     'AGENT_ZIP_UPGRADE_REQUIRED':'Une transition initiale de l’agent est nécessaire pour importer un ZIP.',

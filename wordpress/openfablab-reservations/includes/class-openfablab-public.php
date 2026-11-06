@@ -25,7 +25,7 @@ final class OpenFabLab_Public {
                     if (!isset($item[$key]) || !is_string($item[$key]) || strlen($item[$key])>2000) { return false; }
                 }
                 if ($section==='machines') {
-                    if (!in_array($item['status'],['operational','rental_available','maintenance','out_of_service','loaned','overdue'],true)) { return false; }
+                    if (!in_array($item['status'],['operational','rental_available','maintenance','unavailable','out_of_service','loaned','overdue'],true)) { return false; }
                     if (isset($item['return_estimate']) && !self::day($item['return_estimate'])) { return false; }
                     foreach (['category','category_key'] as $key) { if (isset($item[$key]) && (!is_string($item[$key]) || strlen($item[$key])>300)) { return false; } }
                 } else {

@@ -26,20 +26,14 @@ transition DSM vers 2.15.1 a été suivie d’une mise à jour 2.15.1 → 2.15.2
 import ZIP depuis l’administration, sans passer par DSM. La 2.15.2 compacte
 aussi l’en-tête sur smartphone et clarifie la présentation du Résumé.
 
-## Pistes pour la 2.15.3 — non commencée
+## Suite de la série 2.15 — livrée en 2.15.5
 
-- Compacter le bandeau du Résumé : retirer le libellé du FabLab et le
-  sous-titre ; conserver le titre et « Voir la journée d’aujourd’hui ».
-  Vérifier qu’aucun libellé propre au FougèresLab n’est codé en dur.
-- Afficher la progression des mises à jour : étapes réussies en vert, étape
-  active bien visible, étapes futures neutres, échecs en rouge et compteur.
-  À `UPDATE_SUCCESS`, afficher une confirmation finale, actualiser la version
-  installée et effacer les erreurs réseau transitoires après reconnexion.
-- Mieux distinguer les entrées d’Activité récente : icônes, couleurs discrètes,
-  séparations et modifications de comptes lorsqu’elles sont historisées.
-- Poursuivre les demandes de suivi des ressources : statut **Indisponible**,
-  regroupement des actions par ressource, calendrier administratif enrichi,
-  signalement de problèmes via QR Code et améliorations ergonomiques.
+- Résumé plus compact, liste des échéances adaptative et activité récente
+  plus lisible ; huit identifications visibles, jusqu’à quarante au total.
+- Progression détaillée et confirmation des mises à jour par l’agent.
+- Statut **Indisponible**, signalement facultatif via QR et maintenance
+  planifiée dans le calendrier interne. Horaires locaux et bandes multijours
+  consolidés. [Détails par version](CHANGELOG.md).
 
 ## Disponible en 2.14.4 stable — consolidation de l’évolution 2.14
 

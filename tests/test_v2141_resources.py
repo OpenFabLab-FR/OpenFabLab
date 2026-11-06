@@ -38,10 +38,10 @@ class Resources(unittest.TestCase):
         m.set_condition(self.db,self.key,dict(status='operational',announce='0',public_listed='1'),'admin','admin')
         self.assertEqual(m.public_machines(self.db)[0]['id'],self.key)
         self.assertFalse(m.public_machines(self.db,True))
-    def test_all_three_public_states_keep_same_historical_identifier(self):
+    def test_all_public_states_keep_same_historical_identifier(self):
         for state in m.STATES:
             m.set_condition(self.db,self.key,dict(status=state,visibility_controls='1',public_visible='1'),'admin','admin')
-            items=public_snapshot.build(self.db,'production',machines=True,details=True)['machines']
+            items=public_snapshot.build(self.db,'production',machines=True,details=True,unavailable=True)['machines']
             self.assertEqual([(x['id'],x['status']) for x in items],[(self.key,state)])
     def test_private_resource_and_internal_notes_never_projected(self):
         m.intervention(self.db,self.key,dict(performed_on='2026-01-01',kind='care',description='FICTIONAL_PRIVATE_NOTE'),'admin','admin')

@@ -13,6 +13,8 @@ class Migration(unittest.TestCase):
     setUp = core.NewVersion.setUp
 
     def source25(self):
+        from tests.schema_fixtures import remove_27
+        remove_27(self.db)
         for table in ('resource_document_links', 'resource_documents', 'user_booking_restrictions'):
             self.db.execute('DROP TABLE '+table)
         for table, columns in {'resources':['availability_mode'],'resource_bookings': ['handed_over_at','returned_at'],
@@ -29,7 +31,7 @@ class Migration(unittest.TestCase):
                    for r in self.db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")}
         previous = {t: list(map(tuple, self.db.execute('SELECT * FROM '+t))) for t in columns}
         family_model.migrate(self.db)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0], 26)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0], family_model.SCHEMA)
         for table, names in columns.items():
             query = 'SELECT '+','.join('"'+n+'"' for n in names)+' FROM '+table
             actual = list(map(tuple, self.db.execute(query)))
@@ -50,13 +52,13 @@ class Migration(unittest.TestCase):
             family_model.migrate(self.db, fail)
         self.assertEqual(before, list(self.db.iterdump()))
         family_model.migrate(self.db)
-        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0], 26)
+        self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0], family_model.SCHEMA)
 
     def test_idempotence_and_future_schema_refusal(self):
         before = list(self.db.iterdump())
         family_model.migrate(self.db)
         self.assertEqual(before, list(self.db.iterdump()))
-        self.db.execute('PRAGMA user_version=27')
+        self.db.execute('PRAGMA user_version='+str(family_model.SCHEMA+1))
         self.db.commit()
         with self.assertRaises(RuntimeError):
             family_model.migrate(self.db)

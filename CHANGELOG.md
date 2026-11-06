@@ -1,5 +1,43 @@
 # Historique des versions
 
+## 2.15.5 — version stable — 7 novembre 2026
+
+- Un seul événement par état continu de maintenance ou d’indisponibilité.
+  La date de retour estimée reste visible, sans générer de nouvelle journée.
+- « Prochainement » s’adapte à la hauteur des cartes « À traiter » et
+  « Activité récente » sur ordinateur ; six événements au plus sur mobile.
+- Huit identifications visibles, jusqu’à quarante après dépliage, avec un
+  seul en-tête de tableau. Bandeau du Résumé rapproché de l’en-tête sur Mac.
+- SQLite 28 conservé. Agent et plugin Reservations 2.15.3 inchangés.
+  Installation par import ZIP depuis la 2.15.4 validée sur Synology :
+  `UPDATE_SUCCESS`, 20 étapes et sauvegardes PRE/POST validées.
+  [Guide d’import](docs/upgrade-2.15.5.md).
+
+## 2.15.4 — étape validée, sans release publique distincte
+
+- Résumé et Mises à jour utilisent le thème commun de l’administration.
+- Échéances du Résumé affichées à l’heure du FabLab, avec une liste qui
+  s’adapte aux actions visibles ; noms autorisés dans l’activité récente.
+- Maintenances planifiées privées, bandes multijours et retours estimés
+  distincts ; rappels qualifiés selon la date locale sans changer leur état.
+- Les refus sont distingués des échecs dans le suivi. Le moteur de l’agent
+  et le plugin Reservations 2.15.3 restent inchangés.
+- SQLite 27 → 28 : une seule table ajoutée pour les créneaux planifiés.
+  [Mise à jour candidate](docs/upgrade-2.15.4.md).
+
+## 2.15.3 — étape validée, sans release publique distincte
+
+- Statut Indisponible distinct d’une panne ou d’un entretien ; palette
+  cohérente et état du prêt réel conservé dans la disponibilité.
+- Signalements facultatifs depuis les fiches QR, historique privé,
+  modération, intervention liée et notification Discord facultative.
+- Résumé compact, actions groupées par ressource, échéances et activité
+  réelles ; prestations et devis datés dans le calendrier interne.
+- Suivi graphique des étapes et confirmation fondée sur `UPDATE_SUCCESS`.
+  Agent inchangé ; migration SQLite 26 → 27.
+- Plugin Reservations 2.15.3 : nouveau badge négocié sans changement de
+  protocole ni de révision. [Mise à jour candidate](docs/upgrade-2.15.3.md).
+
 ## 2.15.2
 
 - Sur smartphone en portrait, l’en-tête d’administration et de modération

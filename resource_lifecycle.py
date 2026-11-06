@@ -18,8 +18,12 @@ def pending(db,key,current=None):
     if count:result['reservations']=count
     count=db.execute("SELECT COUNT(*) FROM machine_reminders WHERE resource_uuid=? AND state='pending'",(key,)).fetchone()[0]
     if count:result['rappels']=count
+    day=current.astimezone(ZoneInfo(setting(db,'structure_timezone','Europe/Paris'))).date().isoformat()
+    count=db.execute('SELECT COUNT(*) FROM machine_maintenance_slots WHERE resource_uuid=? AND cancelled_at IS NULL AND ends_on>=?',(key,day)).fetchone()[0]
+    if count:result['maintenances_planifiees']=count
+    count=db.execute("SELECT COUNT(*) FROM resource_problem_reports WHERE resource_uuid=? AND state IN('new','assigned')",(key,)).fetchone()[0]
+    if count:result['signalements']=count
     if item['legacy_machine_key']:
-        day=current.astimezone(ZoneInfo(setting(db,'structure_timezone','Europe/Paris'))).date().isoformat()
         count=db.execute("SELECT COUNT(*) FROM billing_records WHERE rental_machine_key=? AND quote_cancelled_at IS NULL AND COALESCE(rental_end_date,activity_date)>=?",(item['legacy_machine_key'],day)).fetchone()[0]
         if count:result['locations']=count
     return result
@@ -48,7 +52,7 @@ def change(db,key,action,role,confirmation='',current=None):
     if action=='archive':
         if item['archived_at']:raise ValueError('Cette ressource est déjà archivée.')
         remaining=pending(db,key,current)
-        if remaining:raise ValueError('Archivage impossible : réservations, locations ou rappels à traiter. Consultez les opérations en attente avant de réessayer.')
+        if remaining:raise ValueError('Archivage impossible : des opérations ou des signalements restent à traiter.')
         db.execute('UPDATE resources SET archived_at=?,updated_at=? WHERE resource_uuid=?',(now(),now(),key))
     elif action=='restore':
         if not item['archived_at']:raise ValueError('Cette ressource n’est pas archivée.')

@@ -1,0 +1,40 @@
+{% from '_evolution_fields.html' import csrf %}
+{% macro slot_form(item=none) %}
+{% set key=item.slot_uuid if item else '' %}
+<form method="post" class="admin-form v214-form">
+  {{ csrf(evolution_csrf,'maintenance_slot') }}
+  {% if item %}<input type="hidden" name="identifier" value="{{ key }}"><input type="hidden" name="revision" value="{{ item.revision }}">{% endif %}
+  <label class="form-field">Titre de la maintenance<input name="title" required maxlength="200" value="{{ submitted('maintenance_slot','title',item.title if item else '',key) }}"></label>
+  <div class="form-grid">
+    <label class="form-field">Date de début<input name="starts_on" type="date" required value="{{ submitted('maintenance_slot','starts_on',item.starts_on if item else '',key) }}"></label>
+    <label class="form-field">Date de fin<input name="ends_on" type="date" required value="{{ submitted('maintenance_slot','ends_on',item.ends_on if item else '',key) }}"></label>
+    <label class="form-field">Heure de début (facultative)<input name="starts_time" type="time" value="{{ submitted('maintenance_slot','starts_time',item.starts_time or '' if item else '',key) }}"></label>
+    <label class="form-field">Heure de fin (facultative)<input name="ends_time" type="time" value="{{ submitted('maintenance_slot','ends_time',item.ends_time or '' if item else '',key) }}"></label>
+  </div>
+  <p class="field-help">Sans heures, le créneau couvre des journées entières, date de fin comprise.</p>
+  <label class="checkbox-field"><input name="tentative" type="checkbox" value="1" {% if submitted('maintenance_slot','tentative','1' if not item or item.tentative else '',key)=='1' %}checked{% endif %}> Dates prévisionnelles</label>
+  <button class="admin-button secondary">Enregistrer le créneau</button>
+</form>
+{% endmacro %}
+<section class="admin-section v214-panel" id="maintenance-planning">
+  <h2>Maintenance planifiée</h2>
+  <p class="field-help">Visible dans le calendrier interne. Ne change pas l’état de la ressource ni les réservations.</p>
+  {% if not machine.archived_at %}
+  <details class="machine-add-form" {% if form_failed('maintenance_slot') %}open{% endif %}>
+    <summary class="admin-button secondary compact">Planifier une maintenance</summary>{{ slot_form() }}
+  </details>
+  {% endif %}
+  {% for item in maintenance_slots %}
+  <article class="maintenance-entry" id="maintenance-{{ item.slot_uuid }}">
+    <div class="machine-entry-heading"><strong>{{ item.title }}</strong>
+      <span>{{ item.starts_on|date_fr }} {{ item.starts_time or '' }}{% if item.ends_on!=item.starts_on or item.ends_time %} → {% if item.ends_on!=item.starts_on %}{{ item.ends_on|date_fr }} {% endif %}{{ item.ends_time or '' }}{% endif %}</span>
+      <span class="status-badge">{{ _('Annulé' if item.cancelled_at else 'Prévisionnel' if item.tentative else 'Confirmé') }}</span>
+    </div>
+    {% if not item.cancelled_at and not machine.archived_at %}
+    <details {% if form_failed('maintenance_slot',item.slot_uuid) %}open{% endif %}><summary>Modifier le créneau</summary>{{ slot_form(item) }}
+      <form method="post" class="button-row">{{ csrf(evolution_csrf,'maintenance_slot_cancel') }}<input type="hidden" name="identifier" value="{{ item.slot_uuid }}"><input type="hidden" name="revision" value="{{ item.revision }}"><button class="admin-button secondary compact">Annuler le créneau</button></form>
+    </details>
+    {% endif %}
+  </article>
+  {% else %}<p class="field-help">Aucune maintenance planifiée.</p>{% endfor %}
+</section>

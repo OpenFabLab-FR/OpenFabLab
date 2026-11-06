@@ -11,6 +11,8 @@ README.md
 ROADMAP.md
 SECURITY.md
 THIRD_PARTY_NOTICES.md
+admin_activity.py
+admin_planning.py
 admin_search.py
 admin_summary.py
 animation_attendance.py
@@ -81,6 +83,9 @@ docs/update-agent.md
 docs/upgrade-2.15.0.md
 docs/upgrade-2.15.1.md
 docs/upgrade-2.15.2.md
+docs/upgrade-2.15.3.md
+docs/upgrade-2.15.4.md
+docs/upgrade-2.15.5.md
 docs/upgrade.md
 docs/usability-2.8.3.md
 docs/utilisation.md
@@ -88,6 +93,7 @@ docs/wordpress-2.14.0.md
 docs/wordpress-2.14.4.md
 docs/wordpress-2.15.0.md
 docs/wordpress-2.15.2.md
+docs/wordpress-2.15.3.md
 docs/wordpress.md
 enrollment_feedback.py
 enrollment_privacy.py
@@ -105,6 +111,7 @@ installation_health.py
 kiosk_feedback.py
 localized_formats.py
 machine_maintenance.py
+maintenance_planning.py
 membership_notices.py
 memberships.py
 openfablab/__init__.py
@@ -136,6 +143,7 @@ resource_editor.py
 resource_lifecycle.py
 resource_loans.py
 resource_portal.py
+resource_reports.py
 resource_sort.py
 retention_notices.py
 runtime_policy.py
@@ -161,6 +169,7 @@ static/icons/OpenFabLab-icon-512.png
 static/icons/OpenFabLab-icon.svg
 static/kiosk-sound.js
 static/memberships.css
+static/overview.js
 static/participant-picker.js
 static/public-enrollment.js
 static/qr-scanner.js
@@ -203,7 +212,9 @@ templates/_resource_change_history.html
 templates/_resource_documents.html
 templates/_resource_fields.html
 templates/_resource_maintenance.html
+templates/_resource_maintenance_slots.html
 templates/_resource_public_settings.html
+templates/_resource_reports.html
 templates/_settings_nav.html
 templates/_smtp_settings.html
 templates/_sound_settings.html
@@ -295,6 +306,7 @@ tests/logo_fixture.py
 tests/participants_fixture.py
 tests/privacy_resources_fixture.py
 tests/schema12_fixture.py
+tests/schema_fixtures.py
 tests/slots_artifact_fixture.py
 tests/source25_fixture.py
 tests/test_analysis_290.py
@@ -370,6 +382,9 @@ tests/test_v214_languages.py
 tests/test_v214_migration.py
 tests/test_v214_reminders.py
 tests/test_v214_wordpress.php
+tests/test_v2153.py
+tests/test_v2154.py
+tests/test_v2155.py
 tests/test_v215_core.py
 tests/test_v215_distribution.py
 tests/test_v215_resources.py
@@ -407,6 +422,9 @@ tools/run_checks.py
 translations/de/v215.json
 translations/de/v2151.json
 translations/de/v2152.json
+translations/de/v2153.json
+translations/de/v2154.json
+translations/de/v2155.json
 translations/en/common.json
 translations/en/consolidation-2141.json
 translations/en/domain.json
@@ -419,13 +437,22 @@ translations/en/v2144.json
 translations/en/v215.json
 translations/en/v2151.json
 translations/en/v2152.json
+translations/en/v2153.json
+translations/en/v2154.json
+translations/en/v2155.json
 translations/en/zz-resources-2141.json
 translations/es/v215.json
 translations/es/v2151.json
 translations/es/v2152.json
+translations/es/v2153.json
+translations/es/v2154.json
+translations/es/v2155.json
 translations/fi/v215.json
 translations/fi/v2151.json
 translations/fi/v2152.json
+translations/fi/v2153.json
+translations/fi/v2154.json
+translations/fi/v2155.json
 update_wire.py
 updater_agent/__init__.py
 updater_agent/__main__.py
@@ -458,6 +485,7 @@ v2141_schema.py
 v2144_schema.py
 v214_routes.py
 v214_schema.py
+v2153_schema.py
 v215_routes.py
 v215_schema.py
 v290_schema.py

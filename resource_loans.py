@@ -6,14 +6,14 @@ from evolution_schema import audit,now
 from family_model import setting
 
 LABELS={'operational':'Disponible','rental_available':'Disponible à la location','reserved':'Réservée','loaned':'En prêt',
-        'overdue':'Retour en retard','maintenance':'En maintenance','out_of_service':'Hors service','archived':'Archivée'}
+        'overdue':'Retour en retard','maintenance':'En maintenance','unavailable':'Indisponible','out_of_service':'Hors service','archived':'Archivée'}
 
 def local_day(db,current=None):
     return (current or datetime.now(timezone.utc)).astimezone(ZoneInfo(setting(db,'structure_timezone','Europe/Paris'))).date()
 
 def operations(db,key=None,user_id=None):
     result=[]
-    for row in db.execute('''SELECT b.*,r.name,r.archived_at FROM resource_bookings b
+    for row in db.execute('''SELECT b.*,r.name,r.archived_at,r.availability_mode FROM resource_bookings b
         JOIN resources r USING(resource_uuid) WHERE (? IS NULL OR b.resource_uuid=?)
         AND (? IS NULL OR b.user_id=?) AND NOT EXISTS(SELECT 1 FROM billing_records c
         WHERE c.id=b.billing_record_id AND c.billing_type='rental')''',(key,key,user_id,user_id)):
@@ -48,7 +48,8 @@ def availability(db,key,current=None):
     elif row['status'] in ('maintenance','out_of_service'):state=row['status']
     else:
         active=outstanding(db,key)
-        state='overdue' if any(overdue(db,r,current) for r in active) else 'loaned' if active else 'rental_available' if row['availability_mode']=='rental' else 'operational'
+        state=('overdue' if any(overdue(db,r,current) for r in active) else 'loaned' if active else
+               'unavailable' if row['status']=='unavailable' else 'rental_available' if row['availability_mode']=='rental' else 'operational')
     return dict(status=state,label=LABELS[state],available=state in ('operational','rental_available'))
 
 def transition(db,kind,key,action,role,user_id=None,current=None):

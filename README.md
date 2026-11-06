@@ -1,4 +1,4 @@
-# OpenFabLab 2.15.2
+# OpenFabLab 2.15.5
 
 **Le quotidien du FabLab, plus simple.**
 
@@ -10,10 +10,13 @@ Chaque structure choisit ses outils : la borne fonctionne sans WordPress,
 sans Discord et sans gestion d’abonnement. Activez seulement les modules utiles
 à votre équipe, qu’elle soit composée de FabManagers, de bénévoles ou des deux.
 
-**Version stable 2.15.2 · SQLite 26 · FR / EN / DE / ES / FI · Licence MIT**
+**Version stable 2.15.5 · SQLite 28 · FR / EN / DE / ES / FI · Licence MIT**
 
-[Téléchargements et empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.2) ·
-[Mettre à jour depuis l’administration](docs/upgrade-2.15.2.md) ·
+La V2.15.5 a été installée et vérifiée sur Synology via l’import du ZIP
+depuis l’administration. Elle conserve SQLite 28 sans migration.
+
+[Téléchargements et empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.5) ·
+[Choisir le bon parcours de mise à jour](docs/upgrade.md) ·
 [Installer OpenFabLab](docs/installation.md) · [Site officiel](https://openfablab.fr)
 
 ## Des outils qui s’adaptent à votre FabLab
@@ -44,7 +47,16 @@ propose ni paiement bancaire en ligne, ni Stripe/PayPal, ni prélèvement ou
 renouvellement payant automatique. La gestion des droits reste indépendante
 d’un système bancaire.
 
-## Ce qu’apporte OpenFabLab 2.15.2
+## Ce qu’apporte OpenFabLab 2.15.5
+
+Le calendrier affiche les maintenances multijours d’un seul tenant, sans
+ajouter de journée au retour estimé. Le Résumé affiche jusqu’à quinze
+événements si l’espace le permet, ainsi que huit identifications
+d’emblée (jusqu’à quarante au total). La série 2.15 améliore aussi la
+lisibilité des horaires locaux, le suivi des mises à jour et les
+signalements facultatifs depuis les fiches QR des ressources.
+
+## Ce qu’a apporté OpenFabLab 2.15.2
 
 L’en-tête de gestion tient sur deux rangées en portrait sur smartphone.
 Le Résumé modernise la présentation des indicateurs, listes et alertes
@@ -99,21 +111,20 @@ n’est promis. Les guides décrivent les prérequis et leurs limites.
 [Raspberry Pi](docs/installation-raspberry-pi.md) · [Windows](docs/installation-windows.md) ·
 [Compatibilité](docs/platform-compatibility.md)
 
-**Depuis 2.15.1 : SQLite 26 → 26, sans migration de schéma.**
-Avec un agent compatible et connecté, rechercher une version officielle ou
-importer le ZIP vérifié. Pour une nouvelle installation, suivre d’abord le
-[guide d’installation](docs/installation.md), puis, si souhaité, activer le
-[kit agent 2.15.2](tools/agent-setup-2.15.2/README.md). L’agent d’origine de
-la 2.15.0 ne prend pas en charge l’import ZIP.
-Pour une version plus ancienne, vérifier le [parcours manuel par version et schéma](docs/upgrade.md). Ne jamais redémarrer
-la 2.14.4 sur un schéma 26.
+**Depuis la 2.15.4 : SQLite 28 conservé.** Avec un agent compatible et
+connecté, rechercher la version officielle ou [importer le ZIP vérifié](docs/upgrade-2.15.5.md).
+Depuis la stable publique précédente 2.15.2 (SQLite 26) ou un autre schéma
+antérieur, suivre le [parcours manuel par version et schéma](docs/upgrade.md).
+Pour une installation neuve, suivre le [guide d’installation](docs/installation.md) :
+l’application fonctionne sans agent. Les anciens kits d’activation sont
+propres à leur version et ne doivent pas être utilisés sur la 2.15.5.
 
 [Procédure de mise à jour](docs/upgrade.md) · [Sauvegarde et restauration](docs/backup-restore.md) ·
 [Maintenance](docs/maintenance.md) · [Sécurité](SECURITY.md)
 
 ## Plugin WordPress facultatif
 
-**[OpenFabLab Reservations 2.15.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.15.2/openfablab-reservations-2.15.2.zip)** s’installe
+**[OpenFabLab Reservations 2.15.3](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.15.5/openfablab-reservations-2.15.3.zip)** s’installe
 séparément. La mise à jour du serveur OpenFabLab ne met pas à jour
 WordPress. Conservez les options et la clé partagée lors du remplacement du ZIP.
 Le catalogue affiche le badge de disponibilité devant chaque nom ; l’affichage

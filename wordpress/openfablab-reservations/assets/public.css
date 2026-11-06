@@ -31,12 +31,17 @@
 .openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--rental-available{
  --ofl-badge-bg:#e7f6f4;--ofl-badge-text:#15564e;--ofl-badge-border:#94bdb7
 }
-.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--loaned,
-.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--overdue{
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--loaned{
  --ofl-badge-bg:#eeedf9;--ofl-badge-text:#493977;--ofl-badge-border:#b4abcf
 }
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--overdue{
+ --ofl-badge-bg:#fae9f4;--ofl-badge-text:#762953;--ofl-badge-border:#ad5783
+}
 .openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--maintenance{
- --ofl-badge-bg:#fff3df;--ofl-badge-text:#73430f;--ofl-badge-border:#d1ad76
+ --ofl-badge-bg:#fff7d8;--ofl-badge-text:#664c0c;--ofl-badge-border:#c9ae59
+}
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--unavailable{
+ --ofl-badge-bg:#ffeddc;--ofl-badge-text:#823b17;--ofl-badge-border:#d49b73
 }
 .openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--out-of-service{
  --ofl-badge-bg:#fbecee;--ofl-badge-text:#782e3b;--ofl-badge-border:#cc9ca4

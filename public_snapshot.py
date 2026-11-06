@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 from family_model import setting
 from machine_maintenance import public_machines
 
-def build(db,environment,calendar=False,machines=False,now=None,details=False,display_options=False,history=False,availability=False):
+def build(db,environment,calendar=False,machines=False,now=None,details=False,display_options=False,history=False,availability=False,unavailable=False):
     if environment not in ('production','test'):raise ValueError('Environnement invalide.')
     zone=ZoneInfo(setting(db,'structure_timezone','Europe/Paris'));now=now or datetime.now(zone)
     if now.tzinfo is None:raise ValueError('Date explicite requise.')
@@ -52,7 +52,7 @@ def build(db,environment,calendar=False,machines=False,now=None,details=False,di
             for event in events:event.setdefault('history_eligible',False)
         result['calendar']=events
     if machines:
-        result['machines']=public_machines(db,details=details,effective=availability)
+        result['machines']=public_machines(db,details=details,effective=availability,unavailable_supported=unavailable)
         if display_options:
             from public_resource_labels import choice
             result['resource_label']=choice(db)

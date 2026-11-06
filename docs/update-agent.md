@@ -13,7 +13,15 @@ préparation, importer un ZIP et installer après confirmation. Aucun terminal, 
 montage ou secret fourni par le navigateur. Les opérations de récupération et
 d’installation de l’agent ne sont pas accessibles à cette API.
 
-## Installation initiale sur 2.15.2
+## OpenFabLab 2.15.5 et l’agent
+
+Un agent compatible déjà installé et connecté peut mettre à jour une
+instance au schéma 28 vers la V2.15.5. La V2.15.5 n’ajoute pas de kit
+d’activation initiale : pour une installation neuve, l’application
+fonctionne sans agent. Ne pas réutiliser un kit ciblant un autre runtime.
+L’agent d’origine de la 2.15.0 n’accepte pas l’import ZIP.
+
+## Référence historique : installation initiale sur 2.15.2
 
 Le ZIP applicatif validé conserve son installateur historique 2.15.0.
 Sur une installation 2.15.2 sans agent, utiliser le kit séparé
@@ -85,7 +93,7 @@ Le téléchargement exige le dépôt officiel public identifié, HTTPS, une stab
 son tag/commit, l’URL exacte de l’asset, son digest SHA-256 fourni par GitHub et
 un manifeste complet. Ce n’est pas une signature indépendante du compte GitHub :
 la confiance repose sur le dépôt officiel et le transport TLS. Une ancienne
-release sans ces métadonnées reste manuelle. L’[import ZIP local](upgrade-2.15.2.md)
+release sans ces métadonnées reste manuelle. L’[import ZIP local](upgrade-2.15.5.md)
 est un mode séparé : manifeste obligatoire et provenance à vérifier par
 l’administrateur, sans exiger une release GitHub.
 

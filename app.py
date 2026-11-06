@@ -6563,38 +6563,33 @@ def register_routes(application):
         from admin_summary import build as build_summary
         modules=load_modules(database)
         role=session.get('access_role') or ('admin' if session.get('admin_authenticated') else None)
-        summary=build_summary(database,modules,role)
+        summary=build_summary(database,modules,role,schedule=load_openlab_schedule(database) if modules['frequency'] else None)
         present_count, visitor_count, sessions_today = get_dashboard_counts(database)
-        recent_session_rows = database.execute(
-            """
-            SELECT sessions.check_in, sessions.check_out,
-                   sessions.entry_method, sessions.exit_method,
-                   COALESCE(users.first_name, 'Ancien') AS first_name,
-                   COALESCE(users.last_name, 'usager') AS last_name,
-                   sessions.statistical_category AS category
-            FROM sessions
-            LEFT JOIN users ON users.id = sessions.user_id
-            ORDER BY sessions.check_in DESC
-            LIMIT 30
-            """
-        ).fetchall()
-        recent_visitor_rows = database.execute(
-            "SELECT id, created_at FROM visitors ORDER BY created_at DESC LIMIT 30"
-        ).fetchall()
-        recent_identifications = [
-            {"kind": "session", "at": parse_timestamp(row["check_in"]), "row": row}
-            for row in recent_session_rows
-        ]
-        recent_identifications.extend(
-            {
-                "kind": "visitor",
-                "at": parse_timestamp(row["created_at"]),
-                "row": row,
-            }
-            for row in recent_visitor_rows
-        )
-        recent_identifications.sort(key=lambda item: item["at"], reverse=True)
-        recent_identifications = recent_identifications[:30]
+        recent_identifications = []
+        if modules['frequency']:
+            # Read the indexed tails only, then merge them before loading
+            # the user labels. The mixed list never returns more than 40.
+            recent_identifications = database.execute("""
+                WITH recent_sessions AS (
+                    SELECT id, check_in, check_out, entry_method, exit_method,
+                           user_id, statistical_category AS category
+                    FROM sessions ORDER BY check_in DESC, id DESC LIMIT 40
+                ), recent_visitors AS (
+                    SELECT id, created_at FROM visitors
+                    ORDER BY created_at DESC, id DESC LIMIT 40
+                ), recent AS (
+                    SELECT 'session' AS kind, * FROM recent_sessions
+                    UNION ALL
+                    SELECT 'visitor', id, created_at, NULL, NULL, NULL, NULL, NULL
+                    FROM recent_visitors
+                ), latest AS (
+                    SELECT * FROM recent ORDER BY julianday(check_in) DESC, kind, id DESC LIMIT 40
+                )
+                SELECT latest.*, COALESCE(users.first_name, 'Ancien') AS first_name,
+                       COALESCE(users.last_name, 'usager') AS last_name
+                FROM latest LEFT JOIN users ON users.id = latest.user_id
+                ORDER BY julianday(latest.check_in) DESC, latest.kind, latest.id DESC
+            """).fetchall()
         return render_template(
             "admin.html",
             summary=summary,
@@ -10582,6 +10577,10 @@ def register_routes(application):
             ), 400
 
         try:
+            database.execute("BEGIN IMMEDIATE")
+            before_profile = database.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+            if before_profile is None:
+                abort(404)
             database.execute(
                 """
                 UPDATE users
@@ -10616,6 +10615,8 @@ def register_routes(application):
             apply_details(database,user_id,user_data)
             from usability import save_affiliation
             save_affiliation(database, user_id, user_data)
+            from admin_activity import record_user_change
+            record_user_change(database, before_profile, user_id, utc_now_iso())
             database.commit()
             if user['public_id'] != user_data['public_id']:
                 flash('Identifiant modifié : rééditez le badge et le QR Code. Les liens familiaux et l’historique sont conservés.', 'success')

@@ -13,6 +13,7 @@ from i18n import t
 import machine_maintenance as machines
 import resource_documents as documents
 import resource_loans as loans
+import resource_reports as reports
 
 
 PRIVATE_NETWORKS=tuple(map(ip_network,('10.0.0.0/8','172.16.0.0/12','192.168.0.0/16','fc00::/7')))
@@ -135,6 +136,21 @@ def register(application,namespace):
                             if not modules['billing'] or not modules['rentals']:abort(404)
                             resource_editor.save_legacy_prices(db,key,request.form,role,a)
                         else:resource_editor.save_fields(db,key,request.form,role,action,modules)
+                elif action=='report':
+                    report_id=request.form.get('report_id','')
+                    with __import__('memberships').atomic(db):
+                        intervention=reports.decide(db,key,report_id,request.form.get('decision'),role,request.form.get('reason'))
+                    flash('Décision enregistrée.','success')
+                    if request.form.get('decision')=='intervention':
+                        return redirect(url_for('resource_portal.page',key=key)+'#intervention-'+intervention)
+                    return redirect(url_for('resource_portal.page',key=key,report=report_id)+'#signalement-'+report_id)
+                elif action in ('maintenance_slot','maintenance_slot_cancel'):
+                    if not machines.enabled(db):abort(404)
+                    from maintenance_planning import save
+                    with __import__('memberships').atomic(db):
+                        slot=save(db,key,request.form,role,cancel=action=='maintenance_slot_cancel')
+                    flash('Planning de maintenance enregistré.','success')
+                    return redirect(url_for('resource_portal.page',key=key,_anchor='maintenance-'+slot))
                 elif action in ('condition','intervention','reminder','reminder_reschedule','reminder_cancel','reminder_close'):
                     if not machines.enabled(db):abort(404)
                     with __import__('memberships').atomic(db):
@@ -174,20 +190,70 @@ def register(application,namespace):
         except ValueError:pass
         category=db.execute('SELECT name FROM resource_types WHERE type_key=?',(item['type_key'],)).fetchone()
         context=__import__('resource_editor').context(db,key,role,modules,a)
+        report_rows,report_page,report_more=reports.list_reports(db,key,max(1,min(100000,request.args.get('reports',1,type=int))),
+            request.args.get('report') or retained.get('report_id'))
         edit_resource=dict(context['resource'])
         if error_action=='general':edit_resource.update({k:retained.get(k,'') for k in ('name','type_key','description','color')});edit_resource['color']=None if retained.get('color_default')=='1' else retained.get('color')
         return render_template('resource_page.html',**context,edit_resource=edit_resource,error_action=error_action,submitted=submitted,form_failed=form_failed,category=category[0] if category else '',
             availability=loans.availability(db,key),documents=documents.items(db,key),
             library=db.execute('SELECT document_uuid,title,language FROM resource_documents WHERE archived_at IS NULL AND document_uuid NOT IN(SELECT document_uuid FROM resource_document_links WHERE resource_uuid=?) ORDER BY title LIMIT 500',(key,)).fetchall(),
             public_url=url,public_pages_enabled=setting(db,'resource_public_pages_enabled','0')=='1',
-            public_visible=context['resource']['public_visible'],evolution_csrf=csrf_token()),400 if error_action else 200
+            public_visible=context['resource']['public_visible'],evolution_csrf=csrf_token(),
+            reports=report_rows,report_page=report_page,report_more=report_more,report_states=reports.STATES,
+            report_actions=reports.ACTIONS,report_retained=retained),400 if error_action else 200
 
-    @bp.get('/r/<key>')
+    @bp.route('/r/<key>',methods=['GET','POST'])
     def public_page(key):
         db=a.get_database();item=public_resource(db,key)
-        response=Response(render_template('resource_public.html',resource=item,documents=documents.items(db,key,True)))
+        report_enabled=reports.enabled(db)
+        error='';description='';status=200
+        if request.method=='POST':
+            if not report_enabled:abort(404)
+            request.max_content_length=8192
+            require_csrf()
+            description=request.form.get('description','')
+            try:
+                with __import__('memberships').atomic(db):
+                    item=public_resource(db,key)
+                    if not reports.enabled(db):abort(404)
+                    result=None if request.form.get('website') else reports.submit(
+                        db,key,description,request.remote_addr,current_app.secret_key)
+            except reports.Throttled as problem:
+                error=t(str(problem));status=429
+            except ValueError as problem:
+                error=t(str(problem));status=400
+            else:
+                if result:
+                    try:notify_report(db,key,item['name'],*result)
+                    except (OSError,ValueError):pass  # notification cannot undo the report
+                flash(t('Merci, votre signalement a été transmis à l’équipe.'),'success')
+                return redirect(url_for('resource_portal.public_page',key=key)+'#signalement',code=303)
+        response=Response(render_template('resource_public.html',resource=item,documents=documents.items(db,key,True),
+            status_label=loans.LABELS.get(item['status'],'Indisponible'),report_enabled=report_enabled,
+            report_error=error,report_description=description[:500],evolution_csrf=csrf_token() if report_enabled else None),status=status)
         response.headers['Cache-Control']='private, no-store'
         return response
+
+    def notify_report(db,key,name,report_id,description,received):
+        if setting(db,'resource_reports_discord','0')!='1' or not a.load_modules(db)['discord']:
+            return
+        settings=a.load_discord_settings(db)
+        webhook=a.read_discord_webhook()
+        if not settings['enabled'] or not webhook:
+            return
+        from zoneinfo import ZoneInfo
+        from localized_formats import day
+        import re
+        local=received.astimezone(ZoneInfo(setting(db,'structure_timezone','Europe/Paris')))
+        base=resource_url(db,key).rsplit('/r/',1)[0]
+        path=url_for('resource_portal.page',key=key,report=report_id,_anchor='signalement-'+report_id)
+        link=base+path.removeprefix(request.script_root)
+        def plain(value):
+            return re.sub(r'([\\\x60*_~|<>\[\]])',r'\\\1',value)
+        message=t('Nouveau signalement')+' · '+plain(name)+'\n'+day(local.date())+' · '+local.strftime('%H:%M')
+        message+='\n'+plain(description)+'\n<'+link+'>'
+        # Persisted before this best-effort dispatch. No duplicate on retry.
+        a.send_discord_plain(webhook,message,settings['bot_name'])
 
     @bp.get('/admin/ressources/<key>/documents/<document>.pdf')
     def internal_pdf(key,document):
@@ -232,12 +298,16 @@ def register(application,namespace):
         remote=setting(db,'resource_public_base_url')
         local=setting(db,'resource_local_base_url')
         enabled=setting(db,'resource_public_pages_enabled','0')=='1'
+        report_enabled=reports.enabled(db)
+        report_discord=setting(db,'resource_reports_discord','0')=='1'
         if request.method=='POST':
             require_csrf()
             mode=request.form.get('access','public')
             remote=request.form.get('base_url',remote)
             local=request.form.get('local_url',local)
             enabled=request.form.get('enabled')=='1'
+            report_enabled=request.form.get('reports_enabled')=='1'
+            report_discord=request.form.get('reports_discord')=='1'
             try:
                 if mode not in ('public','local'):raise ValueError('Choisissez un accès local ou public.')
                 remote,local=public_base(remote),local_base(local)
@@ -246,10 +316,13 @@ def register(application,namespace):
                 a.write_setting(db,'resource_local_base_url',local)
                 a.write_setting(db,'resource_qr_access',mode)
                 a.write_setting(db,'resource_public_pages_enabled',str(int(enabled)))
+                a.write_setting(db,'resource_reports_enabled',str(int(report_enabled)))
+                a.write_setting(db,'resource_reports_discord',str(int(report_discord)))
                 db.commit();flash('Réglages des fiches ressources enregistrés.','success')
             except ValueError as error:flash(str(error),'error')
             else:return redirect(url_for('resource_portal.settings'))
         return render_template('resource_settings.html',public_base=remote,local_base=local,access=mode,
-            pages_enabled=enabled,evolution_csrf=csrf_token()),400 if request.method=='POST' else 200
+            pages_enabled=enabled,reports_enabled=report_enabled,reports_discord=report_discord,
+            evolution_csrf=csrf_token()),400 if request.method=='POST' else 200
 
     application.register_blueprint(bp)

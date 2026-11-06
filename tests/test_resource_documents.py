@@ -135,7 +135,7 @@ class Documents(unittest.TestCase):
             original=documents.blob_path(self.path,documents.items(self.db,self.key)[0])
             self.assertEqual((restored/original.name).read_bytes(),original.read_bytes())
             with __import__('sqlite3').connect(root/'restored/openfablab.db') as db:
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],26)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],__import__('family_model').SCHEMA)
                 self.assertTrue(db.execute('SELECT 1 FROM resource_document_links WHERE document_uuid=?',(document,)).fetchone())
 
     def test_https_qr_stable_uuid_formats_and_no_secret(self):

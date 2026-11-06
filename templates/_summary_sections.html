@@ -1,27 +1,43 @@
 {% from "_summary_icons.html" import icon %}
-{% macro entry(item, kind) -%}
-<a class="v215-summary-link overview-entry" href="{{ item.url }}">
-    <span><strong>{{ item.title }}</strong>{% if item.detail %}<small>{{ item.detail }}</small>{% endif %}</span>
+{% macro entry(item, kind, extra=false) -%}
+<a class="v215-summary-link overview-entry" data-summary-kind="{{ item.kind }}" href="{{ item.url }}"{% if extra %} data-overview-extra hidden{% endif %}>
+    <i class="summary-entry-icon">{{ icon(item.kind) }}</i>
+    <span class="summary-entry-copy"><strong>{{ item.title }}</strong>{% if item.detail %}<small>{{ item.detail }}</small>{% endif %}{% if item.hint %}<small>{{ item.hint }}</small>{% endif %}
+    {% if item.person %}<small class="summary-identity">{{ item.person }}</small>{% endif %}
+    {% if item.late %}<small class="summary-due">En retard</small>{% elif item.tentative %}<small class="summary-tentative">Prévisionnel</small>{% endif %}</span>
     {% if kind == 'task' %}{% if item.count is not none %}<b class="v215-summary-number">{{ item.count }}</b>{% endif %}
-    {% else %}<time>{{ item.date|date_fr if kind == 'upcoming' and item.date|length==10 else item.date|paris_datetime }}</time>{% endif %}
+    {% elif kind != 'grouped' %}<time datetime="{{ item.date }}">{{ item.display if item.display else (item.date|date_fr if item.date|length==10 else item.date|paris_datetime) }}</time>{% endif %}
     <i class="overview-entry-arrow">{{ icon('chevron') }}</i>
 </a>
 {%- endmacro %}
-<div class="v215-summary-columns">
+<div class="v215-summary-columns" data-overview-columns>
+  <div class="overview-stack" data-overview-stack>
     <section class="admin-section overview-panel{% if summary.actions %} overview-attention{% endif %}" id="summary-tasks" aria-labelledby="overview-tasks-title">
         <div class="section-heading"><h2 id="overview-tasks-title"><i class="overview-icon">{{ icon('tasks') }}</i> À traiter</h2></div>
-        {% for item in summary.actions %}{{ entry(item, 'task') }}
+        {% for item in summary.actions %}
+          {% if 'tasks' in item %}
+          <details class="summary-resource-group">
+            <summary data-summary-kind="resource"><i class="summary-entry-icon">{{ icon('resource') }}</i><strong>{{ item.title }}</strong>
+              {% if item.late %}<small class="summary-due">En retard</small>{% endif %}
+              <span class="v215-summary-number">{{ _('{0} action' if item.count==1 else '{0} actions',item.count) }}</span></summary>
+            <ul>{% for task in item.tasks %}
+              <li>{{ entry(dict(task,title=task.detail,detail=''), 'grouped') }}</li>
+            {% endfor %}</ul>
+          </details>
+          {% else %}{{ entry(item, 'task') }}{% endif %}
         {% else %}<div class="overview-empty">{{ icon('empty') }}<div><strong>Rien à traiter pour le moment</strong><p>Les éléments nécessitant une action apparaîtront ici.</p></div></div>{% endfor %}
     </section>
-    <section class="admin-section overview-panel" aria-labelledby="overview-upcoming-title">
-        <div class="section-heading"><h2 id="overview-upcoming-title"><i class="overview-icon">{{ icon('calendar') }}</i> Prochainement</h2></div>
-        {% for item in summary.upcoming %}{{ entry(item, 'upcoming') }}
-        {% else %}<div class="overview-empty">{{ icon('empty') }}<div><strong>Pas d’échéance dans les prochains jours</strong><p>Animations, remises de matériel et rappels à venir.</p></div></div>{% endfor %}
-    </section>
-</div>
 <section class="admin-section overview-panel" aria-labelledby="overview-recent-title">
     <div class="section-heading"><h2 id="overview-recent-title"><i class="overview-icon">{{ icon('activity') }}</i> Activité récente</h2></div>
     {% for item in summary.recent[:5] %}{{ entry(item, 'recent') }}
     {% else %}<div class="overview-empty">{{ icon('empty') }}<p>Aucune activité enregistrée.</p></div>{% endfor %}
     {% if summary.recent|length > 5 %}<details class="v215-fold overview-fold"><summary>Voir plus</summary>{% for item in summary.recent[5:] %}{{ entry(item, 'recent') }}{% endfor %}</details>{% endif %}
 </section>
+  </div>
+  <section class="admin-section overview-panel" aria-labelledby="overview-upcoming-title" data-overview-upcoming>
+    <div class="section-heading"><h2 id="overview-upcoming-title"><i class="overview-icon">{{ icon('calendar') }}</i> Prochainement</h2></div>
+    {% for item in summary.upcoming %}{{ entry(item, 'upcoming', loop.index > 6) }}
+    {% else %}<div class="overview-empty">{{ icon('empty') }}<div><strong>Pas d’échéance dans les prochains jours</strong><p>Animations, remises de matériel et rappels à venir.</p></div></div>{% endfor %}
+    <p class="overview-calendar-link"><a class="admin-button secondary compact" href="{{ url_for('evolution.calendar') }}">Voir tous les événements</a></p>
+  </section>
+</div>

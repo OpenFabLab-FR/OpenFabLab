@@ -1,8 +1,8 @@
-# OpenFabLab Reservations 2.15.2 — candidate
+# OpenFabLab Reservations 2.15.3 — candidate
 
 [Documentation de la version publique précédente](https://github.com/OpenFabLab-FR/OpenFabLab/blob/v2.15.1/docs/wordpress-2.15.0.md).
 Le plugin est facultatif, libre sous licence MIT et se met à jour séparément.
-Compatible avec OpenFabLab 2.15.1 et 2.15.2, sans changement de protocole,
+Compatible avec OpenFabLab 2.15.2 et 2.15.3, sans changement de protocole,
 de révision du relais ni de données.
 
 ## Affichage de la liste des ressources
@@ -10,7 +10,9 @@ de révision du relais ni de données.
 Le badge de disponibilité précède le nom de la ressource. Le texte accompagne
 toujours sa couleur : vert pour Disponible, turquoise pour Disponible à la
 location, indigo pour En prêt ou Retour en retard, ambre pour En maintenance
-et rouge pour Hors service. Le motif et la date estimée restent visibles
+et rouge pour Hors service. Indisponible (orange) est distinct d’une panne ;
+le protocole 4/révision 3 ne l’envoie qu’aux plugins qui annoncent la capacité
+`resource_unavailable_v1`. Le motif et la date estimée restent visibles
 lorsqu’OpenFabLab les publie.
 
 Dans **Réglages → OpenFabLab Reservations → Calendrier, machines et langues

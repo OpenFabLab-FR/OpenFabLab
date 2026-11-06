@@ -107,15 +107,18 @@ class Lifecycle(unittest.TestCase):
 class Migration(unittest.TestCase):
     setUp=core.NewVersion.setUp
     def old(self):
+        from tests.schema_fixtures import remove_27
+        remove_27(self.db)
         self.db.execute('ALTER TABLE resources DROP COLUMN archived_at');self.db.execute('PRAGMA user_version=24');self.db.commit()
     def test_additive_24_to25_preserves_all_existing_columns_and_settings(self):
         self.old();tables=[r[0] for r in self.db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
         before={n:list(map(tuple,self.db.execute('SELECT * FROM '+n))) for n in tables};settings=dict(self.db.execute('SELECT * FROM app_settings'))
-        family_model.migrate(self.db);self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],25)
+        family_model.migrate(self.db);self.assertEqual(self.db.execute('PRAGMA user_version').fetchone()[0],family_model.SCHEMA)
         for n,rows in before.items():
+            if n=='app_settings':continue  # existing values are compared below
             columns=[r[1] for r in self.db.execute('PRAGMA table_info('+n+')') if r[1]!='archived_at']
             self.assertEqual(rows,list(map(tuple,self.db.execute('SELECT '+','.join('"'+c+'"' for c in columns)+' FROM '+n))),n)
-        self.assertEqual(settings,dict(self.db.execute('SELECT * FROM app_settings')));self.assertFalse(self.db.execute('SELECT 1 FROM resources WHERE archived_at IS NOT NULL').fetchone())
+        self.assertLessEqual(settings.items(),dict(self.db.execute('SELECT * FROM app_settings')).items());self.assertFalse(self.db.execute('SELECT 1 FROM resources WHERE archived_at IS NOT NULL').fetchone())
         self.assertFalse(self.db.execute('PRAGMA foreign_key_check').fetchall());self.assertEqual(self.db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
     def test_interruption_rolls_back_column_and_schema(self):
         self.old()
@@ -125,14 +128,14 @@ class Migration(unittest.TestCase):
     def test_rerun_no_duplicates_or_mutation(self):
         before=list(self.db.iterdump());family_model.migrate(self.db);self.assertEqual(before,list(self.db.iterdump()))
     def test_incompatible_schema_refused(self):
-        self.db.execute('PRAGMA user_version=26');self.db.commit()
+        self.db.execute('PRAGMA user_version='+str(family_model.SCHEMA+1));self.db.commit()
         with self.assertRaises(RuntimeError):family_model.migrate(self.db)
     def test_normal_application_startup_can_migrate24_without_dsm_helper(self):
         self.old();before=[tuple(r) for r in self.db.execute('SELECT * FROM users')];self.db.close()
         application=app.create_app(dict(DATABASE=str(self.path),SECRET_KEY_FILE=str(Path(self.path).parent/'.secret_key'),ADMIN_PIN=None,MODERATOR_PIN=None,SEED_DEMO_USERS=False,TESTING=True,WEATHER_ENABLED=False,AUTO_CLOSURE_WORKER=False))
         self.assertEqual(application.test_client().get('/sante').status_code,200)
         with sqlite3.connect(self.path) as db:
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],25);self.assertEqual(before,db.execute('SELECT * FROM users').fetchall());self.assertFalse(db.execute('PRAGMA foreign_key_check').fetchall())
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],family_model.SCHEMA);self.assertEqual(before,db.execute('SELECT * FROM users').fetchall());self.assertFalse(db.execute('PRAGMA foreign_key_check').fetchall())
 
 class History(unittest.TestCase):
     setUp=core.NewVersion.setUp

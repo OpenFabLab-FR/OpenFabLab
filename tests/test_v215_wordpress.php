@@ -6,6 +6,7 @@ function admin_url($path){return 'https://example.invalid/wp-admin/'.$path;}
 function get_user_locale(){return $GLOBALS['fictional_admin_locale']??'fr_FR';}
 function esc_url($text){return htmlspecialchars($text,ENT_QUOTES);}
 function esc_html($text){return htmlspecialchars((string)$text,ENT_QUOTES);}
+function esc_html__($text,$domain=''){return esc_html($text);}
 function checked($actual,$expected,$echo=true){$result=$actual===$expected?'checked="checked"':'';if($echo)echo $result;return $result;}
 function selected($actual,$expected,$echo=true){$result=$actual===$expected?'selected="selected"':'';if($echo)echo $result;return $result;}
 require __DIR__.'/test_v2144_wordpress.php';
@@ -30,7 +31,7 @@ foreach (['fr','en','de','es','fi'] as $language) {
  foreach (['fr','en','de','es','fi'] as $code) {check(str_contains($html,'value="'.$code.'"'),'language setting '.$code.' in '.$language);}
  check(str_contains($html,'name="public_machines_title"'),'optional title retained');
 }
-foreach (['loaned','overdue','rental_available'] as $status) {
+foreach (['loaned','overdue','rental_available','unavailable'] as $status) {
  $value=['version'=>1,'timezone'=>'Europe/Paris','coverage_start'=>'2026-11-01','coverage_end'=>'2026-12-01','calendar'=>[],
    'machines'=>[['id'=>'fictional','name'=>'Ressource fictive','status'=>$status,'reason'=>'','return_estimate'=>null]]];
  check(OpenFabLab_Public::valid_snapshot($value),'effective availability '.$status);

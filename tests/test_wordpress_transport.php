@@ -10,6 +10,7 @@ function get_option($key,$default=''){global $options;return $options[$key]??$de
 function update_option($key,$value,$autoload=false){global $options;$options[$key]=$value;return true;}
 function is_ssl(){return true;}
 function esc_html($x){return htmlspecialchars((string)$x,ENT_QUOTES);}
+function esc_html__($text,$domain=''){return esc_html($text);}
 function esc_attr($x){return esc_html($x);}
 function esc_url($x){return esc_html($x);}
 function esc_url_raw($x){return $x;}

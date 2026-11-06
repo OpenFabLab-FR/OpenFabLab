@@ -5,9 +5,9 @@
 {% block content %}
 {% if error_action %}<span hidden data-resource-error="{{ error_action }}"></span>{% endif %}
 {% include '_admin_nav.html' %}{% include '_evolution_nav.html' %}
-<section class="content-heading v215-resource-heading"><div><p class="eyebrow">{{ category }}</p><h1>{{ resource.name }}</h1><span class="status-badge">{{ _(availability.label) }}</span></div><a class="admin-button secondary compact" href="{{ url_for('evolution.resource_directory',archived=1 if resource.archived_at else 0) }}">← Ressources</a></section>
+<section class="content-heading v215-resource-heading"><div><a class="resource-return" href="{{ url_for('evolution.resource_directory',archived=1 if resource.archived_at else 0) }}">← Retour aux ressources</a><p class="eyebrow">{{ category }}</p><h1>{{ resource.name }}</h1><span class="status-badge" data-resource-status="{{ availability.status }}">{{ _(availability.label) }}</span></div></section>
 {% if resource.archived_at %}<p class="notice">Ressource archivée. Son historique reste consultable.</p>{% endif %}
-<nav class="v215-resource-sections" aria-label="Sections de la ressource"><a href="#general">Informations</a>{% if maintenance_enabled %}<a href="#availability">Disponibilité</a><a href="#interventions">Interventions</a><a href="#reminders">Rappels</a>{% endif %}<a href="#bookings">Réservations et locations</a><a href="#qr">QR Code</a><a href="#documents">Documents</a><a href="#advanced">Autres actions</a></nav>
+<nav class="v215-resource-sections" aria-label="Sections de la ressource"><a href="#general">Informations</a>{% if maintenance_enabled %}<a href="#availability">Disponibilité</a><a href="#interventions">Interventions</a><a href="#reminders">Rappels</a>{% endif %}<a href="#reports">Signalements</a><a href="#bookings">Réservations et locations</a><a href="#qr">QR Code</a><a href="#documents">Documents</a><a href="#advanced">Autres actions</a></nav>
 <details class="admin-section v215-fold" id="general" {% if error_action=='general' %}open{% endif %}><summary>Informations générales</summary><div class="v215-fold-content">
 {% if admin_access_role=='admin' and not resource.archived_at %}
 <form method="post" class="admin-form">{{ csrf(evolution_csrf,'general') }}{% set saved_resource=resource %}{% set resource=edit_resource %}
@@ -16,6 +16,7 @@
 <label class="form-field">Description<textarea name="description" maxlength="2000" rows="3">{{ resource.description or '' }}</textarea></label><button class="admin-button secondary">Enregistrer les informations</button>{% set resource=saved_resource %}</form>
 {% else %}<p>{{ resource.description or 'Aucune description renseignée.' }}</p>{% endif %}</div></details>
 {% if maintenance_enabled %}{% include '_resource_maintenance.html' %}{% else %}<section class="admin-section" id="availability"><h2>Disponibilité</h2><p>{{ _(availability.label) }}</p></section>{% endif %}
+{% include '_resource_reports.html' %}
 <details class="admin-section v215-fold" id="bookings" {% if error_action in ('booking_settings','legacy_prices') %}open{% endif %}><summary>Réservations et locations</summary><div class="v215-fold-content">
 {% if admin_access_role=='admin' and modules.resources and not resource.archived_at %}
 <form method="post" class="admin-form">{{ csrf(evolution_csrf,'booking_settings') }}<div class="resource-options"><label class="checkbox-field"><input type="checkbox" name="active" value="1" {% if submitted('booking_settings','active','1' if resource.active else '')=='1' %}checked{% endif %}> Activer la réservation de cette ressource</label><label class="checkbox-field"><input type="checkbox" name="approval_required" value="1" {% if submitted('booking_settings','approval_required','1' if resource.approval_required else '')=='1' %}checked{% endif %}> Confirmation obligatoire</label></div>

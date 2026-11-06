@@ -1,3 +1,30 @@
 {% extends 'base.html' %}{% block title %}{{ resource.name }} · OpenFabLab{% endblock %}
 {% block body_class %}resource-public-page{% endblock %}
-{% block content %}<section class="admin-section v215-public-resource"><p class="eyebrow">{{ resource.category }}</p><h1>{{ resource.name }}</h1><p><strong class="status-badge">{{ _({'operational':'Disponible','maintenance':'En maintenance','out_of_service':'Hors service','loaned':'En prêt','overdue':'Retour en retard'}.get(resource.status,'Indisponible')) }}</strong></p>{% if resource.reason %}<p>{{ resource.reason }}</p>{% endif %}{% if resource.return_estimate %}<p>Retour estimé : {{ resource.return_estimate|date_fr }}</p>{% endif %}<h2>Documents et tutoriels</h2>{% for document in documents %}<article class="maintenance-entry"><h3>{{ document.title }}</h3><p>{{ {'fr':'Français','en':'English','de':'Deutsch','es':'Español','fi':'Suomi','other':'Autre'}.get(document.language,document.language) }}</p><div class="document-actions"><a class="admin-button primary" href="{{ url_for('resource_portal.public_pdf',key=resource.id,document=document.document_uuid) }}" target="_blank" rel="noopener">Consulter le PDF</a><a class="admin-button secondary" href="{{ url_for('resource_portal.public_pdf',key=resource.id,document=document.document_uuid,download=1) }}">Télécharger</a></div></article>{% else %}<p>Aucun tutoriel public disponible.</p>{% endfor %}<p class="form-help">Un tutoriel ne remplace pas la formation ni l’habilitation. Contactez l’équipe en cas de problème.</p><a class="admin-button secondary" href="{{ url_for('admin_login',resource=resource.id) }}">Accès équipe</a></section>{% endblock %}
+{% block content %}
+<section class="admin-section v215-public-resource">
+    <p class="eyebrow">{{ resource.category }}</p><h1>{{ resource.name }}</h1>
+    <p><strong class="status-badge" data-resource-status="{{ resource.status }}">{{ _(status_label) }}</strong></p>
+    {% if resource.reason %}<p>{{ resource.reason }}</p>{% endif %}
+    {% if resource.return_estimate %}<p>Retour estimé : {{ resource.return_estimate|date_fr }}</p>{% endif %}
+    <h2>Documents et tutoriels</h2>
+    {% for document in documents %}
+    <article class="maintenance-entry"><h3>{{ document.title }}</h3><p>{{ {'fr':'Français','en':'English','de':'Deutsch','es':'Español','fi':'Suomi','other':'Autre'}.get(document.language,document.language) }}</p>
+      <div class="document-actions"><a class="admin-button primary" href="{{ url_for('resource_portal.public_pdf',key=resource.id,document=document.document_uuid) }}" target="_blank" rel="noopener">Consulter le PDF</a><a class="admin-button secondary" href="{{ url_for('resource_portal.public_pdf',key=resource.id,document=document.document_uuid,download=1) }}">Télécharger</a></div>
+    </article>
+    {% else %}<p>Aucun tutoriel public disponible.</p>{% endfor %}
+    {% if report_enabled %}
+    <details class="v215-fold qr-report" id="signalement" {% if report_error %}open{% endif %}>
+        <summary>Signaler un problème</summary>
+        <form method="post" class="admin-form" action="{{ url_for('resource_portal.public_page',key=resource.id,_anchor='signalement') }}">
+            <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+            <div hidden><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
+            {% if report_error %}<p class="status-message warning" role="alert">{{ report_error }}</p>{% endif %}
+            <label class="form-field">Description du problème<textarea name="description" rows="4" maxlength="500" required aria-describedby="report-help">{{ report_description }}</textarea></label>
+            <p id="report-help" class="form-help">500 caractères maximum. N’indiquez ni nom ni coordonnées.</p>
+            <button class="admin-button primary">Envoyer le signalement</button>
+        </form>
+    </details>
+    {% endif %}
+    <a class="admin-button secondary" href="{{ url_for('admin_login',resource=resource.id) }}">Accès équipe</a>
+</section>
+{% endblock %}

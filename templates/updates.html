@@ -1,11 +1,17 @@
 {% extends 'base.html' %}
 {% block title %}Système et mises à jour · OpenFabLab{% endblock %}
-{% block body_class %}admin-page{% endblock %}
+{% block body_class %}admin-page update-page{% endblock %}
 {% block content %}
 <section class="content-heading"><h1>Système et mises à jour</h1><p>Préparer, vérifier, puis choisir quand installer.</p></section>
 {% include '_admin_nav.html' %}{% include '_settings_nav.html' %}
 <section class="admin-section v215-updates" data-updates data-url="{{ url_for('v215.updates') }}" data-csrf="{{ evolution_csrf }}">
-<div class="v215-update-heading"><div><p class="eyebrow">Version installée</p><h2>OpenFabLab {{ config.APP_VERSION }}</h2></div><span class="status-badge" data-update-agent>{{ 'Connexion à l’agent…' if configured else 'Mise à jour manuelle' }}</span></div>
+<div class="v215-update-heading"><div><p class="eyebrow">Version installée</p><h2>OpenFabLab <span data-update-installed>{{ config.APP_VERSION }}</span></h2></div><span class="status-badge" data-update-agent>{{ 'Connexion à l’agent…' if configured else 'Mise à jour manuelle' }}</span></div>
+<section class="update-success" data-update-success hidden role="status">
+  <h3>✓ {{ _('Mise à jour réussie') }}</h3>
+  <p data-update-success-version></p>
+  <ul data-update-backups></ul>
+  <a class="admin-button secondary compact" href="{{ url_for('admin') }}">Retour au Résumé</a>
+</section>
 <p data-update-message role="status">{{ 'Vérifiez les nouvelles versions stables avant de préparer une installation.' if configured else 'L’agent doit être installé une fois par l’administrateur du serveur. L’application web ne reçoit pas les droits Docker.' }}</p>
 <p data-update-compatibility hidden class="form-help"></p>
 <div class="document-actions"><button type="button" class="admin-button primary" data-update-mode="local" aria-pressed="true">Importer un ZIP</button><button type="button" class="admin-button secondary" data-update-mode="official" aria-pressed="false">Version officielle GitHub</button><button type="button" class="admin-button secondary" data-update-operation="status" {% if not configured %}disabled{% endif %}>Actualiser l’état de la mise à jour</button></div>
@@ -16,7 +22,7 @@
 <div class="document-actions"><button type="button" class="admin-button secondary" data-update-operation="discover" {% if not configured %}disabled{% endif %}>Vérifier les versions</button><button type="button" class="admin-button primary" data-update-operation="prepare" {% if not configured %}disabled{% endif %}>Préparer la mise à jour</button></div>
 <section data-update-release hidden><h3>Dernière version stable : <span data-update-version></span></h3><p data-update-notes class="v215-release-notes"></p><a data-update-release-link rel="noopener" target="_blank">Consulter les notes officielles</a></section>
 </section>
-<section data-update-progress hidden aria-label="Étapes de la mise à jour"><p data-update-phase role="status"></p><p data-update-candidate-notes class="v215-release-notes"></p><details><summary>Détails des contrôles</summary><ol data-update-events class="v215-update-events"></ol></details></section>
+<section data-update-progress hidden aria-label="Étapes de la mise à jour"><p data-update-phase role="status"></p><p data-update-count class="form-help"></p><p data-update-candidate-notes class="v215-release-notes"></p><details open><summary>Détails des contrôles</summary><ol data-update-events class="v215-update-events"></ol></details></section>
 <form data-update-confirmation hidden class="admin-form"><h3>Installation préparée</h3><p data-update-probe hidden>L’essai isolé sera réalisé après confirmation, avant toute interruption.</p><p>L’installation interrompt temporairement le service après les sauvegardes. Aucun retour arrière automatique n’écrasera les données.</p><label class="checkbox-field"><input type="checkbox" name="consent" value="INSTALLER" required> Je confirme l’installation de cette version maintenant.</label><div class="document-actions"><button class="admin-button primary">Installer la version préparée</button><button type="button" class="admin-button secondary" data-update-operation="cancel">Annuler la préparation</button></div></form>
 <details data-update-history hidden><summary>Historique des mises à jour</summary><ul data-update-history-list></ul></details>
 <button type="button" class="admin-button secondary" data-update-cancel-stale data-update-operation="cancel" hidden>Annuler la préparation</button>

@@ -13,11 +13,12 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "dist" / f"OpenFabLab-{__version__}.zip"
 FILES = (
+    'v2153_schema.py','resource_reports.py','admin_activity.py','admin_planning.py','maintenance_planning.py',
     'v215_schema.py','v215_routes.py','resource_loans.py','user_participation.py','admin_search.py','admin_summary.py',
     'updater_client.py','update_wire.py','resource_portal.py','resource_documents.py','pdf_guard.py',
     'localized_formats.py','settings_groups.py','configuration_flow.py','setup_routes.py',
     'resource_sort.py','resource_editor.py','static/resource-page.js',
-    'static/v215.css','static/admin-search.js','static/updates.js','package.json',
+    'static/v215.css','static/admin-search.js','static/updates.js','static/overview.js','package.json',
     'requirements-dev.txt','requirements-dev.lock','package-lock.json','tools/check_candidate_215.py',
     'tools/check_public_tree.py','tools/run_checks.py',
     'docs/evolution-2.15.0.md','docs/update-agent.md','docs/upgrade-2.15.0.md','docs/wordpress-2.15.0.md',
@@ -119,9 +120,9 @@ def update_manifest(paths,root=ROOT):
                     relative=path.relative_to(root).as_posix()
                     if relative not in hashes:raise ValueError('Runtime absent de la distribution : '+relative)
                     runtime[relative]=hashes[relative]
-    return dict(format=1,version=__version__,agent_protocol=1,schema=26,source_schemas=[26],migration='family_model.migrate',
+    return dict(format=1,version=__version__,agent_protocol=1,schema=28,source_schemas=[28],migration='family_model.migrate',
         new_tables=[],new_settings={},
-        notes='En-tête d’administration compact sur smartphone en portrait et nouveau style du Résumé. SQLite 26, sans migration.',
+        notes='Calendrier de maintenance, Résumé adaptatif et historique des identifications. SQLite 28 conservé.',
         base_image='python:3.12-slim-bookworm',files=hashes,runtime_files=runtime)
 
 

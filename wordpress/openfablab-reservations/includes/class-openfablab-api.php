@@ -27,7 +27,7 @@ final class OpenFabLab_API {
             'protocol_version'=>4, 'outbound_actions_v1'=>true, 'transport_only_v1'=>true,
             'relay_revision'=>3, 'plugin_version'=>OPENFABLAB_RES_VERSION,
             'animation_information_v1'=>true,'waitlist_limits_v1'=>true,'publication_visibility_v1'=>true,
-            'public_calendar_v1'=>true,'public_machines_v1'=>true,'participant_calendar_v1'=>true,'public_resources_details_v1'=>true,'public_display_options_v1'=>true,'public_calendar_history_v1'=>true,'resource_availability_v1'=>true];
+            'public_calendar_v1'=>true,'public_machines_v1'=>true,'participant_calendar_v1'=>true,'public_resources_details_v1'=>true,'public_display_options_v1'=>true,'public_calendar_history_v1'=>true,'resource_availability_v1'=>true,'resource_unavailable_v1'=>true];
         $body=json_decode($request->get_body(),true);
         if (is_array($body) && in_array($body['environment'] ?? '',['production','test'],true)) {
             $value['relay_state']=OpenFabLab_Relay::state($body['environment']);

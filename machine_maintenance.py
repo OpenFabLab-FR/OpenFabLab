@@ -7,7 +7,15 @@ from family_model import setting
 from evolution_schema import sync_legacy_machines
 from resource_sort import ordered
 
-STATES={'operational':__ui_native__('Disponible'),'maintenance':__ui_native__('En maintenance'),'out_of_service':__ui_native__('Hors service')}
+STATES={'operational':__ui_native__('Disponible'),'maintenance':__ui_native__('En maintenance'),
+        'unavailable':__ui_native__('Indisponible'),'out_of_service':__ui_native__('Hors service')}
+REMINDER_LABELS={'upcoming':'À venir','today':'À effectuer aujourd’hui','overdue':'En retard',
+                 'done':'Traité','cancelled':'Annulé'}
+
+def reminder_state(row,today):
+    if row['state']!='pending':return row['state']
+    due=date.fromisoformat(row['due_on'])
+    return 'overdue' if due<today else 'today' if due==today else 'upcoming'
 KINDS={'care':__ui_native__('Entretien / prévention'),'preventive':__ui_native__('Maintenance préventive (historique)'),'repair':__ui_native__('Réparation'),'inspection':__ui_native__('Vérification'),'other':__ui_native__('Autre')}
 FORM_KINDS={k:v for k,v in KINDS.items() if k!='preventive'}
 
@@ -163,7 +171,7 @@ def history_entries(db,key):
         elif item['action']=='intervention' and not before:label='Intervention ajoutée'
         item.update(label=__ui_native__(label),changes=changes);result.append(item)
     return result
-def public_machines(db,unavailable_only=False,details=False,effective=True):
+def public_machines(db,unavailable_only=False,details=False,effective=True,unavailable_supported=True):
     if not enabled(db):return []
     # One checkbox, one public authorization; old asymmetric rows remain private
     # until the team explicitly confirms the shared publication choice.
@@ -179,7 +187,11 @@ def public_machines(db,unavailable_only=False,details=False,effective=True):
         # Older plugins receive their known generic unavailable state, with an
         # honest public reason. New peers negotiate the specific loan statuses.
         public_state=(state if effective else 'operational') if state=='rental_available' else state if effective or not loan else 'out_of_service'
-        item=dict(id=r['resource_uuid'],name=r['name'],status=public_state,reason=('En prêt' if state=='loaned' else 'Retour en retard') if loan else r['public_reason'] if r['status']!='operational' else '',
+        reason=('En prêt' if state=='loaned' else 'Retour en retard') if loan else r['public_reason'] if r['status']!='operational' else ''
+        if state=='unavailable' and not unavailable_supported:
+            public_state='out_of_service'
+            reason='Indisponible' + (' · '+reason if reason else '')
+        item=dict(id=r['resource_uuid'],name=r['name'],status=public_state,reason=reason[:500],
                  return_estimate=r['return_estimate'] if r['publish_return'] and r['status']!='operational' else None)
         if details:item.update(category=r['category'],category_key=r['type_key'])
         result.append(item)

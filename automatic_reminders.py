@@ -1,6 +1,6 @@
 """At-most-once claims; never replay an uncertain external delivery."""
 import json
-from datetime import date,datetime,timedelta,timezone
+from datetime import datetime,timedelta,timezone
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 from family_model import setting
@@ -11,11 +11,8 @@ def maintenance_due_label(db,value):
     Use the installation's configured primary language, never a visitor/session
     language. Scheduling continues to use the structure timezone in process().
     """
-    day=date.fromisoformat(value)
-    if setting(db,'kiosk_language','fr')=='en':
-        months=('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
-        return f'{day.day} {months[day.month-1]} {day.year}'
-    return day.strftime('%d/%m/%Y')
+    from localized_formats import day
+    return day(value,setting(db,'kiosk_language','fr'))
 
 def claim(db,key,kind,now):
     db.commit();db.execute('BEGIN IMMEDIATE')
@@ -36,8 +33,10 @@ def process(db,database_path,now=None,mail_sender=None,discord_sender=None):
         from app import read_discord_webhook,send_discord_plain,load_discord_settings
         config=load_discord_settings(db);webhook=read_discord_webhook() if discord_sender is None else 'simulated'
         if webhook and (config['enabled'] or discord_sender is not None):
+            from machine_maintenance import reminder_state
             rows=db.execute("SELECT m.*,r.name FROM machine_reminders m JOIN resources r USING(resource_uuid) WHERE state='pending' AND due_on=? AND r.archived_at IS NULL",(local.date().isoformat(),)).fetchall()
             for row in rows:
+                if reminder_state(row,local.date())!='today':continue
                 key='maintenance/'+row['reminder_uuid']
                 if not claim(db,key,'maintenance',now):continue
                 # Only the explicitly public-safe reminder subject, never the

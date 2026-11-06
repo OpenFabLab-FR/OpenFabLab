@@ -1,0 +1,32 @@
+<section class="admin-section v214-panel" id="reports">
+  <div class="section-heading"><h2>Signalements</h2>{% if maintenance_enabled and not resource.archived_at %}<a class="admin-button secondary compact" href="#availability">Modifier l’état de la ressource</a>{% endif %}</div>
+  <p class="form-help">Un signalement ne change jamais l’état de la ressource.</p>
+  {% for report in reports %}
+    <article class="maintenance-entry" id="signalement-{{ report.report_id }}">
+      <div class="machine-entry-heading"><strong>{{ _(report_states[report.state]) }}</strong><time datetime="{{ report.received_at }}">{{ report.received_at|paris_datetime }}</time></div>
+      <p class="preserve-lines">{{ report.description }}</p>
+      {% if report.intervention_uuid %}<a href="#intervention-{{ report.intervention_uuid }}">Voir l’intervention</a>{% endif %}
+      {% if report.decisions %}
+      <details><summary>Historique des décisions</summary><ul>{% for decision in report.decisions %}
+        <li>{{ decision.created_at|paris_datetime }} · {{ _(report_actions[decision.action]) }} · {{ _('Administrateur' if decision.role=='admin' else 'Modérateur') }}{% if decision.reason %} — {{ decision.reason }}{% endif %}</li>
+      {% endfor %}</ul></details>
+      {% endif %}
+      {% if report.state in ('new','assigned') %}
+      <form method="post" class="admin-form" action="{{ url_for('resource_portal.page',key=resource.resource_uuid,report=report.report_id,_anchor='signalement-' ~ report.report_id) }}">
+        <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="action" value="report">
+        <input type="hidden" name="report_id" value="{{ report.report_id }}">
+        <label class="form-field">Motif ou note (facultatif)<textarea name="reason" maxlength="500" rows="2">{{ report_retained.reason if error_action=='report' and report_retained.report_id==report.report_id else '' }}</textarea></label>
+        <div class="document-actions">
+          {% for action,label in report_actions.items() if (action!='assign' or report.state=='new') and (action!='intervention' or (maintenance_enabled and not resource.archived_at and not report.intervention_uuid)) %}
+            <button type="submit" name="decision" value="{{ action }}" class="admin-button secondary compact">{{ _(label) }}</button>
+          {% endfor %}
+        </div>
+      </form>
+      {% endif %}
+    </article>
+  {% else %}<p>Aucun signalement enregistré.</p>{% endfor %}
+  {% if report_page>1 or report_more %}<nav class="document-actions" aria-label="Pages des signalements">
+    {% if report_page>1 %}<a href="{{ url_for('resource_portal.page',key=resource.resource_uuid,reports=report_page-1,_anchor='reports') }}">Page précédente</a>{% endif %}
+    {% if report_more %}<a href="{{ url_for('resource_portal.page',key=resource.resource_uuid,reports=report_page+1,_anchor='reports') }}">Page suivante</a>{% endif %}
+  </nav>{% endif %}
+</section>

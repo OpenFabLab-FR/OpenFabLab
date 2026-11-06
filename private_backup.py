@@ -63,8 +63,9 @@ def sqlite_check(path, expected=None):
         tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         if not {'users', 'sessions', 'visitors', 'app_settings'} <= tables:
             raise ValueError('Ce fichier n’est pas une base OpenFabLab.')
-        if schema not in (13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26) or (expected is not None and schema != expected):
-            raise ValueError('Schéma SQLite incompatible (13 à 26 requis).')
+        from family_model import SCHEMA
+        if schema not in range(13, SCHEMA+1) or (expected is not None and schema != expected):
+            raise ValueError(f'Schéma SQLite incompatible (13 à {SCHEMA} requis).')
         if db.execute('PRAGMA integrity_check').fetchall() != [('ok',)]:
             raise ValueError('Intégrité SQLite invalide.')
         if db.execute('PRAGMA foreign_key_check').fetchall():

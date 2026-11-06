@@ -20,15 +20,16 @@ class Distribution(unittest.TestCase):
                 self.assertTrue(all(hashlib.sha256(archive.read(n)).hexdigest()==v for n,v in manifest['files'].items()))
             policy={key:str(root) for key in ('state','project','data','backups','database')}
             executor=DockerExecutor(policy,'sha256:'+'1'*64)
-            extracted=executor.unpack(first,root/'unpacked','2.15.2')
-            self.assertEqual(extracted['schema'],26);self.assertEqual(extracted['source_schemas'],[26])
+            extracted=executor.unpack(first,root/'unpacked','2.15.5')
+            self.assertEqual(extracted['schema'],28);self.assertEqual(extracted['source_schemas'],[28])
+            self.assertEqual((extracted['new_tables'],extracted['new_settings']),([],{}))
             self.assertFalse(any(n.startswith('updater_agent/') for n in extracted['runtime_files']))
             self.assertTrue((root/'unpacked/.env.example').is_file())
     def test_protocol_and_plugin_metadata_are_independent_of_public_version(self):
         # This suite must also run from the application-only ZIP. The separate
         # plugin distribution suite validates its own archive and metadata.
         from openfablab import __version__
-        self.assertEqual(__version__,'2.15.2')
+        self.assertEqual(__version__,'2.15.5')
         from outbound_sync import negotiate
         class Client:
             def post(self,route,payload):return dict(protocol_version=4,relay_revision=3,outbound_actions_v1=True)

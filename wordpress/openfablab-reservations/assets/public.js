@@ -16,7 +16,7 @@
  };
  const languages={fr:['Français','🇫🇷','fr-FR'],en:['English','🇬🇧','en-GB'],de:['Deutsch','🇩🇪','de-DE'],es:['Español','🇪🇸','es-ES'],fi:['Suomi','🇫🇮','fi-FI']};
  const resourceStatus={operational:'Disponible',rental_available:'Disponible à la location',maintenance:'En maintenance',
-  out_of_service:'Hors service',loaned:'En prêt',overdue:'Retour en retard'};
+  unavailable:'Indisponible',out_of_service:'Hors service',loaned:'En prêt',overdue:'Retour en retard'};
  let language=Object.hasOwn(languages,cfg.language)?cfg.language:'fr';
  const languageKey='ofl.public.language:'+location.pathname+location.search;
  if(cfg.multilingual){try{const saved=sessionStorage.getItem(languageKey)||localStorage.getItem('ofl.public.language');if(Object.hasOwn(languages,saved))language=saved;}catch(_){}}
