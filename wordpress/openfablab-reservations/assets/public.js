@@ -15,6 +15,8 @@
   'Les informations saisies seront effacées. Changer de langue ?':'Entered information will be cleared. Change language?',
  };
  const languages={fr:['Français','🇫🇷','fr-FR'],en:['English','🇬🇧','en-GB'],de:['Deutsch','🇩🇪','de-DE'],es:['Español','🇪🇸','es-ES'],fi:['Suomi','🇫🇮','fi-FI']};
+ const resourceStatus={operational:'Disponible',rental_available:'Disponible à la location',maintenance:'En maintenance',
+  out_of_service:'Hors service',loaned:'En prêt',overdue:'Retour en retard'};
  let language=Object.hasOwn(languages,cfg.language)?cfg.language:'fr';
  const languageKey='ofl.public.language:'+location.pathname+location.search;
  if(cfg.multilingual){try{const saved=sessionStorage.getItem(languageKey)||localStorage.getItem('ofl.public.language');if(Object.hasOwn(languages,saved))language=saved;}catch(_){}}
@@ -129,8 +131,11 @@
     if(data.stale)root.append(node('p',t('Les informations ne sont pas récentes. Vérifiez auprès de votre FabLab.'),'ofl-public-warning'));
     for(const item of items){
      const card=node('article',undefined,'ofl-public-machine'),heading=node('div',undefined,'ofl-public-machine-heading');
-     if(item.category)heading.append(node('span',item.category,'ofl-public-category'));
-     heading.append(node('strong',item.name),node('span',t({operational:'Disponible',rental_available:'Disponible à la location',maintenance:'En maintenance',out_of_service:'Hors service',loaned:'En prêt',overdue:'Retour en retard'}[item.status]),'ofl-public-badge'));
+     if(Object.hasOwn(resourceStatus,item.status)){
+      heading.append(node('span',t(resourceStatus[item.status]),'ofl-public-badge ofl-public-badge--'+item.status.replaceAll('_','-')));
+     }
+     if(cfg.showMachinesCategory!==false&&item.category)heading.append(node('span',item.category,'ofl-public-category'));
+     heading.append(node('strong',item.name));
      const line=node('div',undefined,'ofl-public-machine-line');line.append(heading);card.append(line);if(!host)host=line;
      if(item.reason)card.append(node('p',item.reason));if(item.return_estimate)card.append(node('p',t('Retour estimé')+' : '+dayLabel(item.return_estimate)));root.append(card);
     }

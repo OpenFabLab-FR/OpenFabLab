@@ -1,5 +1,23 @@
 # Historique des versions
 
+## 2.15.2
+
+- Sur smartphone en portrait, l’en-tête d’administration et de modération
+  organise logo, recherche, langue et commandes sur deux rangées. Les logos
+  partenaires restent visibles sur la borne et sur les formats plus larges.
+- Le Résumé distingue plus clairement les indicateurs et tâches à traiter :
+  icônes cohérentes, liens identifiables, sections plus compactes et états vides
+  harmonisés. Les cinq dernières identifications restent visibles d’emblée.
+- Aucun changement métier ni migration : SQLite 26 et moteur de l’agent
+  inchangés. La mise à jour 2.15.1 → 2.15.2 par import du ZIP a été validée
+  sur le Synology du FougèresLab (`UPDATE_SUCCESS`).
+- Plugin Reservations 2.15.2 : statuts colorés et libellés devant les noms des
+  ressources, catégories facultatives indépendamment du titre du catalogue.
+  Remplacement testé au FougèresLab. Protocole 4, révision 3, inchangé.
+- Kit séparé pour l’activation initiale de l’agent sur une 2.15.2 déjà
+  fonctionnelle. Voir [l’installation](docs/installation.md) et
+  [le guide de mise à jour](docs/upgrade-2.15.2.md).
+
 ## 2.15.1
 
 - Import d’un ZIP OpenFabLab dans l’administration, réservé à l’administrateur. Contrôle avant confirmation ; essai isolé, sauvegardes et contrôles après redémarrage via le même agent que les versions stables officielles GitHub.

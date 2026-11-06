@@ -1,4 +1,4 @@
-# Sauvegarde et restauration — 2.15.1
+# Sauvegarde et restauration — 2.15.2
 
 Les sauvegardes PRE et POST de l’agent couvrent SQLite, tutoriels PDF et autres
 données persistantes, configuration et image. Elles sont vérifiées par
@@ -11,7 +11,7 @@ ne jamais restaurer automatiquement une ancienne base. [Procédure et secours](u
 
 # Sauvegarde et restauration
 
-## Référence actuelle : 2.14.4 / SQLite25
+## Référence historique : 2.14.4 / SQLite 25
 
 Une sauvegarde complète cohérente est nécessaire avant la migration, puis après
 contrôle du nouveau runtime. La copie SQLite seule n’inclut pas tous les secrets,

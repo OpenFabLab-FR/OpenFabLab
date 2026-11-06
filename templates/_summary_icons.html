@@ -1,0 +1,15 @@
+{% macro icon(name) -%}
+<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    {% if name == 'people' %}<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2m2-15a3 3 0 0 1 0 6m4 9v-2a4 4 0 0 0-3-3.9"/>
+    {% elif name == 'visitor' %}<path d="M10 5h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-8m2-7H3m5-4 4 4-4 4"/>
+    {% elif name == 'loan' %}<path d="M4 7h15m-4-4 4 4-4 4m5 6H5m4-4-4 4 4 4"/>
+    {% elif name == 'resource' %}<path d="M10.3 4.8 3.2 17a2 2 0 0 0 1.7 3h14.2a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 3h.01"/>
+    {% elif name == 'calendar' %}<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 10h18m-14 5h2m4 0h3"/>
+    {% elif name == 'tasks' %}<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1m-6 9 2 2 4-5"/>
+    {% elif name == 'activity' %}<path d="M3 12h4l3-6 4 12 3-6h4"/>
+    {% elif name == 'history' %}<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>
+    {% elif name == 'empty' %}<circle cx="12" cy="12" r="8" stroke-dasharray="2 3"/><path d="M9 12h6"/>
+    {% elif name == 'link' %}<path d="M7 17 17 7M7 7h10v10"/>
+    {% else %}<path d="m9 6 6 6-6 6"/>{% endif %}
+</svg>
+{%- endmacro %}

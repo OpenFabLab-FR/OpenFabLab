@@ -1,9 +1,10 @@
-## OpenFabLab 2.15.1 — procédure commune
+## OpenFabLab 2.15.2 — procédure commune
 
 Utiliser le ZIP applicatif vérifié et suivre [les étapes initiales](installation.md).
 Une installation neuve crée SQLite 26. L’agent est séparé et facultatif ;
 consulter [ses prérequis et limites](update-agent.md). Sans agent compatible,
-utiliser le [parcours manuel](upgrade.md). Le plugin WordPress reste en 2.15.0.
+utiliser le [parcours manuel](upgrade.md). [Reservations 2.15.2](wordpress-2.15.2.md)
+est facultatif et s’installe séparément.
 Les références numérotées ci-dessous décrivent les versions historiques.
 
 ---

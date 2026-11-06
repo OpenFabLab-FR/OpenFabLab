@@ -1,4 +1,4 @@
-# OpenFabLab 2.15.1
+# OpenFabLab 2.15.2
 
 **Le quotidien du FabLab, plus simple.**
 
@@ -10,10 +10,10 @@ Chaque structure choisit ses outils : la borne fonctionne sans WordPress,
 sans Discord et sans gestion d’abonnement. Activez seulement les modules utiles
 à votre équipe, qu’elle soit composée de FabManagers, de bénévoles ou des deux.
 
-**Version 2.15.1 · SQLite 26 · FR / EN / DE / ES / FI · Licence MIT**
+**Version stable 2.15.2 · SQLite 26 · FR / EN / DE / ES / FI · Licence MIT**
 
-[Release et empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.1) ·
-[Mettre à jour](docs/upgrade-2.15.1.md) ·
+[Téléchargements et empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.2) ·
+[Mettre à jour depuis l’administration](docs/upgrade-2.15.2.md) ·
 [Installer OpenFabLab](docs/installation.md) · [Site officiel](https://openfablab.fr)
 
 ## Des outils qui s’adaptent à votre FabLab
@@ -44,7 +44,15 @@ propose ni paiement bancaire en ligne, ni Stripe/PayPal, ni prélèvement ou
 renouvellement payant automatique. La gestion des droits reste indépendante
 d’un système bancaire.
 
-## Ce qu’apporte OpenFabLab 2.15.1
+## Ce qu’apporte OpenFabLab 2.15.2
+
+L’en-tête de gestion tient sur deux rangées en portrait sur smartphone.
+Le Résumé modernise la présentation des indicateurs, listes et alertes
+sans changer les chiffres, les droits ou les données. Au FougèresLab, la mise
+à jour depuis la 2.15.1 a réussi sur Synology par import du ZIP dans
+l’administration, sans passer par DSM. SQLite reste au schéma 26.
+
+## Ce qu’a apporté OpenFabLab 2.15.1
 
 L’administration accepte un ZIP OpenFabLab fourni par l’administrateur ou
 une version stable officielle de GitHub. Les deux parcours partagent le moteur
@@ -91,9 +99,12 @@ n’est promis. Les guides décrivent les prérequis et leurs limites.
 [Raspberry Pi](docs/installation-raspberry-pi.md) · [Windows](docs/installation-windows.md) ·
 [Compatibilité](docs/platform-compatibility.md)
 
-**Depuis 2.15.0 : SQLite 26 → 26, sans migration de schéma.**
-Aucune migration de schéma. L’agent 2.15.0 ne reçoit pas de ZIP : une
-transition unique est nécessaire. Suivre le [guide de mise à jour](docs/upgrade-2.15.1.md).
+**Depuis 2.15.1 : SQLite 26 → 26, sans migration de schéma.**
+Avec un agent compatible et connecté, rechercher une version officielle ou
+importer le ZIP vérifié. Pour une nouvelle installation, suivre d’abord le
+[guide d’installation](docs/installation.md), puis, si souhaité, activer le
+[kit agent 2.15.2](tools/agent-setup-2.15.2/README.md). L’agent d’origine de
+la 2.15.0 ne prend pas en charge l’import ZIP.
 Pour une version plus ancienne, vérifier le [parcours manuel par version et schéma](docs/upgrade.md). Ne jamais redémarrer
 la 2.14.4 sur un schéma 26.
 
@@ -102,9 +113,11 @@ la 2.14.4 sur un schéma 26.
 
 ## Plugin WordPress facultatif
 
-**[OpenFabLab Reservations 2.15.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.15.1/openfablab-reservations-2.15.0.zip)** s’installe
+**[OpenFabLab Reservations 2.15.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.15.2/openfablab-reservations-2.15.2.zip)** s’installe
 séparément. La mise à jour du serveur OpenFabLab ne met pas à jour
 WordPress. Conservez les options et la clé partagée lors du remplacement du ZIP.
+Le catalogue affiche le badge de disponibilité devant chaque nom ; l’affichage
+des catégories se règle indépendamment du titre de la liste.
 
 Trois shortcodes principaux, à insérer dans des blocs **Code court** Gutenberg :
 

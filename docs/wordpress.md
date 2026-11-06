@@ -1,8 +1,8 @@
-# WordPress avec OpenFabLab 2.15.1
+# WordPress avec OpenFabLab 2.15.2
 
-Le plugin facultatif reste **OpenFabLab Reservations 2.15.0**. Si cette
-version fonctionne déjà, ne rien réinstaller. [ZIP exact](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.15.1/openfablab-reservations-2.15.0.zip)
-· [installation, Gutenberg, Normal/Test et cinq langues](wordpress-2.15.0.md).
+Le plugin facultatif **OpenFabLab Reservations 2.15.2** s’installe
+séparément. [ZIP officiel](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.15.2/openfablab-reservations-2.15.2.zip)
+· [mise à jour, catalogue, Gutenberg et langues](wordpress-2.15.2.md).
 Le protocole reste 4, révision 3. Les tutoriels et QR sont servis par
 OpenFabLab, pas par WordPress. Les guides anciens restent accessibles ci-dessous.
 

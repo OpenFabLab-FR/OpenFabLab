@@ -133,18 +133,23 @@ final class OpenFabLab_Public {
         wp_add_inline_script('openfablab-public','window.OpenFabLabPublic='.wp_json_encode([
             'api'=>rest_url('openfablab/v1/public/'),'multilingual'=>get_option('openfablab_multilingual_enabled','0')==='1',
             'language'=>get_option('openfablab_public_language','fr'),'bookingPage'=>get_option('openfablab_booking_page',''),
-            'showMachinesTitle'=>self::show_machines_title()]).';','before');
+            'showMachinesTitle'=>self::show_machines_title(),
+            'showMachinesCategory'=>self::show_machines_category()]).';','before');
     }
     public static function initialize_display_settings() {
         // A regular upgrade with the existing schema does not reinstall. Its
-        // absent option deliberately keeps the old visible title. A new install
-        // records the hidden default before the schema marker is written.
+        // absent display options keep the old visible title and categories.
+        // A new install records hidden defaults before writing its schema marker.
         $existing=get_option('openfablab_res_schema_version',false)!==false
             || get_option('openfablab_public_machines_enabled',false)!==false;
         add_option('openfablab_public_machines_title',$existing?'1':'0','','no');
+        add_option('openfablab_public_machines_category',$existing?'1':'0','','no');
     }
     public static function show_machines_title() {
         return get_option('openfablab_public_machines_title','1')==='1';
+    }
+    public static function show_machines_category() {
+        return get_option('openfablab_public_machines_category','1')==='1';
     }
     public static function text($fr,$en) {
         $lang=get_option('openfablab_public_language','fr');
@@ -175,6 +180,8 @@ final class OpenFabLab_Public {
             if ($key==='public_machines_enabled') {
                 echo '<label class="ofl-checkbox"><input name="public_machines_title" value="1" type="checkbox" aria-describedby="ofl-machines-title-help" '.checked(self::show_machines_title(),true,false).'> '.esc_html__(OpenFabLab_I18n::text('Afficher le titre de la liste des ressources'),'openfablab-reservations').'</label>';
                 echo '<p class="ofl-help" id="ofl-machines-title-help">'.esc_html__(OpenFabLab_I18n::text('Utilise le nom public défini dans OpenFabLab (ex. : Machines). Vous pouvez aussi ajouter votre propre titre dans l’éditeur WordPress.'),'openfablab-reservations').'</p>';
+                echo '<label class="ofl-checkbox"><input name="public_machines_category" value="1" type="checkbox" aria-describedby="ofl-machines-category-help" '.checked(self::show_machines_category(),true,false).'> '.esc_html(OpenFabLab_I18n::text('Afficher la catégorie des ressources')).'</label>';
+                echo '<p class="ofl-help" id="ofl-machines-category-help">'.esc_html(OpenFabLab_I18n::text('Affiche les catégories (Machine, Équipement, etc.) devant chaque ressource dans la liste publique.')).'</p>';
             }
         }
         echo OpenFabLab_I18n::literal('<label>Langue par défaut<select name="language">');
@@ -188,7 +195,7 @@ final class OpenFabLab_Public {
     public static function save_settings() {
         if (!current_user_can('manage_options')) { wp_die(OpenFabLab_I18n::text('Accès refusé.'),'',['response'=>403]); }
         check_admin_referer('openfablab_public_settings');
-        foreach (['public_calendar_enabled','calendar_openlab','calendar_animations','public_machines_enabled','public_machines_title','multilingual_enabled'] as $key) { update_option('openfablab_'.$key,isset($_POST[$key])?'1':'0',false); }
+        foreach (['public_calendar_enabled','calendar_openlab','calendar_animations','public_machines_enabled','public_machines_title','public_machines_category','multilingual_enabled'] as $key) { update_option('openfablab_'.$key,isset($_POST[$key])?'1':'0',false); }
         $lang=wp_unslash($_POST['language']??'fr');update_option('openfablab_public_language',in_array($lang,['fr','en','de','es','fi'],true)?$lang:'fr',false);
         $url=esc_url_raw(wp_unslash($_POST['booking_page']??''));
         if ($url==='' || self::public_url($url)) { update_option('openfablab_booking_page',$url,false); }

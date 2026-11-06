@@ -13,19 +13,20 @@ préparation, importer un ZIP et installer après confirmation. Aucun terminal, 
 montage ou secret fourni par le navigateur. Les opérations de récupération et
 d’installation de l’agent ne sont pas accessibles à cette API.
 
-## Installation initiale sur 2.15.1
+## Installation initiale sur 2.15.2
 
 Le ZIP applicatif validé conserve son installateur historique 2.15.0.
-Sur une installation 2.15.1 sans agent, utiliser le kit séparé
-`OpenFabLab-Agent-Setup-2.15.1.zip`, avec le ZIP applicatif officiel de la
-[release 2.15.1](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.1).
-Suivre [le guide du kit](../tools/agent-setup-2.15.1/README.md) :
+Sur une installation 2.15.2 sans agent, utiliser le kit séparé
+`OpenFabLab-Agent-Setup-2.15.2.zip`, avec le ZIP applicatif officiel de la
+[release 2.15.2](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.2).
+Suivre [le guide du kit](../tools/agent-setup-2.15.2/README.md) :
 vérifier, préparer, puis activer avec confirmation explicite. Le kit ne
 migre pas la base et ne remplace pas l’image web. Un agent déjà connecté
 n’a pas besoin d’être réinstallé. Une installation sans agent peut
 continuer à fonctionner et être mise à jour manuellement.
 
-### Référence historique
+Pour un runtime 2.15.1, utiliser uniquement son
+[kit historique](../tools/agent-setup-2.15.1/README.md).
 
 ### Procédure historique sur 2.15.0 uniquement
 
@@ -84,7 +85,7 @@ Le téléchargement exige le dépôt officiel public identifié, HTTPS, une stab
 son tag/commit, l’URL exacte de l’asset, son digest SHA-256 fourni par GitHub et
 un manifeste complet. Ce n’est pas une signature indépendante du compte GitHub :
 la confiance repose sur le dépôt officiel et le transport TLS. Une ancienne
-release sans ces métadonnées reste manuelle. L’[import ZIP local](upgrade-2.15.1.md)
+release sans ces métadonnées reste manuelle. L’[import ZIP local](upgrade-2.15.2.md)
 est un mode séparé : manifeste obligatoire et provenance à vérifier par
 l’administrateur, sans exiger une release GitHub.
 
@@ -119,11 +120,11 @@ examiner le diagnostic. Aucun retour arrière destructeur automatique n’existe
 
 ## Références et limites
 
-Au FougèresLab, l’exploitant confirme l’installation DSM de la 2.15.1,
-SQLite 26, un agent connecté et `UPDATE_SUCCESS` avec contrôles PRE/POST.
-L’import ZIP et l’installation depuis l’administration sont couverts par des
-essais locaux avec données fictives. Ce parcours complet n’a pas encore été
-réalisé sur le vrai Synology.
+Au FougèresLab, l’exploitant confirme la mise à jour 2.15.1 → 2.15.2
+par import du ZIP depuis l’administration sur Synology, sans passer par DSM :
+`UPDATE_SUCCESS`, SQLite 26 inchangé. L’agent était déjà installé et connecté.
+Cela ne valide pas une première activation du kit 2.15.2 sur ce NAS, ni une
+installation réelle de la 2.15.2 par téléchargement depuis GitHub.
 
 Le contrôle réel sur votre serveur demeure indispensable. Les essais Mac avec
 Docker modélisé ne certifient pas Container Manager, une architecture CPU ou

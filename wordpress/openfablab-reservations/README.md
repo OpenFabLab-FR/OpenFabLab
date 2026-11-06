@@ -1,8 +1,31 @@
-# OpenFabLab Reservations 2.15.0 — candidate à valider
+# OpenFabLab Reservations 2.15.2 — candidate
 
-Le guide de la candidate accompagne la livraison locale : `docs/wordpress-2.15.0.md`.
-[Documentation de la stable publique précédente](https://github.com/OpenFabLab-FR/OpenFabLab/blob/main/docs/wordpress-2.14.4.md).
+[Documentation de la version publique précédente](https://github.com/OpenFabLab-FR/OpenFabLab/blob/v2.15.1/docs/wordpress-2.15.0.md).
 Le plugin est facultatif, libre sous licence MIT et se met à jour séparément.
+Compatible avec OpenFabLab 2.15.1 et 2.15.2, sans changement de protocole,
+de révision du relais ni de données.
+
+## Affichage de la liste des ressources
+
+Le badge de disponibilité précède le nom de la ressource. Le texte accompagne
+toujours sa couleur : vert pour Disponible, turquoise pour Disponible à la
+location, indigo pour En prêt ou Retour en retard, ambre pour En maintenance
+et rouge pour Hors service. Le motif et la date estimée restent visibles
+lorsqu’OpenFabLab les publie.
+
+Dans **Réglages → OpenFabLab Reservations → Calendrier, machines et langues
+publiques**, « Afficher la catégorie des ressources » ajoute la catégorie
+entre le badge de disponibilité et le nom. Une nouvelle installation masque
+les catégories par défaut. Une mise à jour conserve leur affichage tant que
+l’administrateur ne change pas ce réglage. Cette case est indépendante de
+« Afficher le titre de la liste des ressources » et ne désactive pas le filtre
+`category` des shortcodes.
+
+Depuis la 2.15.0, téléverser le ZIP via **Extensions → Ajouter une extension →
+Téléverser une extension**, puis choisir de remplacer l’extension existante.
+Ne pas la désinstaller et ne pas modifier le secret de synchronisation.
+
+## Shortcodes et compatibilité
 Dans Gutenberg, utiliser des blocs Code court :
 
 ```text
@@ -43,7 +66,7 @@ sans cette capacité ; aucune location n’est décidée par WordPress.
 
 Dans « Calendrier, machines et langues publiques », sous l’activation de la liste,
 « Afficher le titre de la liste des ressources » utilise le nom public reçu
-d’OpenFabLab (Ressources, Machines, Équipements ou Salles), en français/anglais.
+d’OpenFabLab (Ressources, Machines, Équipements ou Salles), dans les cinq langues.
 Décochée, cette option n’ajoute ni titre automatique ni espace vide. Un titre
 personnalisé peut être ajouté avec un bloc Titre de l’éditeur WordPress.
 
@@ -52,9 +75,8 @@ commence sans titre automatique. Le choix explicite est conservé lors d’une
 réactivation. Cette préférence ne modifie ni la borne, ni les catégories,
 ni la visibilité, ni les trois shortcodes, ni les échanges Normal/Test.
 La commande de langue unique reste disponible, même si seul le catalogue est utilisé.
-Le nouveau réglage et son aide sont préparés pour gettext WordPress ; le plugin
-ne possède pas actuellement de catalogue PHP d’administration FR/EN livré.
-Les titres publics prédéfinis utilisent les traductions locales existantes.
+Le titre et la catégorie sont des options distinctes. Les libellés publics
+et les réglages de la catégorie utilisent les catalogues locaux FR/EN/DE/ES/FI.
 
 ## Fonctions conservées depuis 2.14.2
 

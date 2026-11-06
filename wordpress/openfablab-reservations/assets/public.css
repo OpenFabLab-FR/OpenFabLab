@@ -19,6 +19,29 @@
 :is(.openfablab-public,.openfablab-reservations,[data-openfablab-link]) .ofl-lang button:focus-visible{outline:3px solid #246c9b;outline-offset:2px}
 .openfablab-public .ofl-public-machine-line{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;min-width:0}
 .openfablab-public .ofl-public-machine-line>.ofl-public-machine-heading{flex:1 1 220px}
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge{
+ --ofl-badge-bg:#eef1f3;--ofl-badge-text:#34424a;--ofl-badge-border:#adb8bf;
+ box-sizing:border-box;padding:.16em .55em;border:1px solid var(--ofl-badge-border);border-radius:.55em;
+ background:var(--ofl-badge-bg);color:var(--ofl-badge-text);font-size:.8em;font-weight:600;
+ line-height:1.4;white-space:normal;overflow-wrap:anywhere
+}
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--operational{
+ --ofl-badge-bg:#edf7ee;--ofl-badge-text:#235534;--ofl-badge-border:#9fbfa6
+}
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--rental-available{
+ --ofl-badge-bg:#e7f6f4;--ofl-badge-text:#15564e;--ofl-badge-border:#94bdb7
+}
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--loaned,
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--overdue{
+ --ofl-badge-bg:#eeedf9;--ofl-badge-text:#493977;--ofl-badge-border:#b4abcf
+}
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--maintenance{
+ --ofl-badge-bg:#fff3df;--ofl-badge-text:#73430f;--ofl-badge-border:#d1ad76
+}
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine-heading>.ofl-public-badge--out-of-service{
+ --ofl-badge-bg:#fbecee;--ofl-badge-text:#782e3b;--ofl-badge-border:#cc9ca4
+}
+.openfablab-public[data-ofl-public="machines"] .ofl-public-machine>p{overflow-wrap:anywhere}
 .openfablab-public .ofl-module-toolbar{position:relative;z-index:2}
 .openfablab-public .ofl-week{position:relative;z-index:0}
 .openfablab-public .ofl-public-event{transition:background-color .14s ease,border-color .14s ease,box-shadow .14s ease;cursor:pointer}

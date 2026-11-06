@@ -121,7 +121,7 @@ def update_manifest(paths,root=ROOT):
                     runtime[relative]=hashes[relative]
     return dict(format=1,version=__version__,agent_protocol=1,schema=26,source_schemas=[26],migration='family_model.migrate',
         new_tables=[],new_settings={},
-        notes='Import ZIP depuis l’administration, Résumé et recherche clients, calendrier mobile, QR réseau local ou HTTPS.',
+        notes='En-tête d’administration compact sur smartphone en portrait et nouveau style du Résumé. SQLite 26, sans migration.',
         base_image='python:3.12-slim-bookworm',files=hashes,runtime_files=runtime)
 
 

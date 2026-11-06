@@ -3,19 +3,25 @@
 ## Série 2.15
 
 Résumé, recherche transversale, fiche ressource unifiée, suivi des prêts, QR
-et tutoriels, cinq langues et mises à jour par agent. La transition DSM vers
-2.15.1 est confirmée au FougèresLab. L’installation complète par ZIP depuis
-l’administration reste à vérifier sur un véritable Synology.
+et tutoriels, cinq langues et mises à jour par agent. Au FougèresLab, la
+transition DSM vers 2.15.1 a été suivie d’une mise à jour 2.15.1 → 2.15.2 par
+import ZIP depuis l’administration, sans passer par DSM. La 2.15.2 compacte
+aussi l’en-tête sur smartphone et clarifie la présentation du Résumé.
 
-## Pistes pour une prochaine corrective
+## Pistes pour la 2.15.3 — non commencée
 
-- En portrait sur iPhone, compacter l’en-tête d’administration et de modération
-  sur deux lignes bien alignées, ou une seule si les commandes restent lisibles
-  et faciles à toucher. Étudier le masquage des logos institutionnels dans ces
-  vues uniquement, sans changer la borne ni les formats plus larges.
-- Donner au Résumé une présentation plus chaleureuse : hiérarchie plus claire,
-  couleurs, icônes et interactions mieux dosées. Conserver les règles de calcul
-  et la lisibilité. Rien de ces deux chantiers ne change en 2.15.1.
+- Compacter le bandeau du Résumé : retirer le libellé du FabLab et le
+  sous-titre ; conserver le titre et « Voir la journée d’aujourd’hui ».
+  Vérifier qu’aucun libellé propre au FougèresLab n’est codé en dur.
+- Afficher la progression des mises à jour : étapes réussies en vert, étape
+  active bien visible, étapes futures neutres, échecs en rouge et compteur.
+  À `UPDATE_SUCCESS`, afficher une confirmation finale, actualiser la version
+  installée et effacer les erreurs réseau transitoires après reconnexion.
+- Mieux distinguer les entrées d’Activité récente : icônes, couleurs discrètes,
+  séparations et modifications de comptes lorsqu’elles sont historisées.
+- Poursuivre les demandes de suivi des ressources : statut **Indisponible**,
+  regroupement des actions par ressource, calendrier administratif enrichi,
+  signalement de problèmes via QR Code et améliorations ergonomiques.
 
 ## Disponible en 2.14.4 stable — consolidation de l’évolution 2.14
 
