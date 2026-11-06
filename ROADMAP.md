@@ -1,5 +1,23 @@
 # OpenFabLab — Roadmap
 
+## Intégrations et paiements externes (à l’étude)
+
+OpenFabLab envisage des connecteurs facultatifs vers des plateformes de
+paiement et de gestion des adhésions, notamment HelloAsso. L’objectif est que
+les FabLabs associatifs puissent garder leurs outils d’encaissement tout en
+synchronisant les adhésions, les abonnements et les droits d’accès dans OpenFabLab.
+
+Les pistes incluent le choix des campagnes et des formules, l’activation ou le
+renouvellement après paiement confirmé, la distinction entre payeur et adhérent,
+la prévention des doublons et le traitement des remboursements. Une
+synchronisation initiale contrôlée et un historique des opérations sont également
+à étudier, ainsi qu’un fonctionnement sur NAS local via des connexions HTTPS
+sortantes, sans ouverture publique obligatoire. D’autres plateformes pourront
+être étudiées ultérieurement.
+
+Fonction non disponible actuellement. Les possibilités de l’API restent à
+vérifier. Aucune date de livraison ni aucun partenariat n’est annoncé.
+
 ## Série 2.15
 
 Résumé, recherche transversale, fiche ressource unifiée, suivi des prêts, QR
