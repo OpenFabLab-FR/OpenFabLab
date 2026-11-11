@@ -1,5 +1,24 @@
 # Historique des versions
 
+## 2.16.0 — version stable
+
+- Transitions directes des états et remise en service explicite, sans réutiliser
+  le motif ni la date du précédent incident.
+- Fiche ressource regroupée en trois espaces, historiques et rappels conservés.
+- Tarifs permanents ou exceptionnels depuis le devis, avec prix enregistrés
+  et protection des montants des dossiers signés ou facturés.
+- Annonces vocales locales facultatives à la borne, désactivées par défaut.
+- Kit d’activation générique pour une nouvelle installation. Protocole de
+  l’agent et intégration WordPress inchangés. SQLite 28 conservé.
+- Enregistrement des préférences initiales pour que l’assistant s’ouvre
+  bien après création du premier accès administrateur.
+- Trois libellés du Résumé simplifiés ; périodes et compteurs inchangés.
+- Pieds de page : affichage V2.16 ; version technique 2.16.0 inchangée.
+- Import du ZIP depuis la 2.15.5 validé sur le Synology du FougèresLab :
+  20 étapes, sauvegardes PRE/POST et SQLite 28 sans migration. Le plugin
+  Reservations 2.15.3 et l’agent déjà connecté restent en place.
+  [Guide 2.16.0](docs/upgrade-2.16.0.md).
+
 ## 2.15.5 — version stable — 7 novembre 2026
 
 - Un seul événement par état continu de maintenance ou d’indisponibilité.

@@ -56,6 +56,7 @@ from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from billing import (
     RENTAL_CATALOG as DEFAULT_RENTAL_CATALOG,
     compute_total_cents,
+    line_items as billing_line_items,
     generate_client_directory_pdf,
     generate_client_directory_xlsx,
     generate_document_docx,
@@ -944,13 +945,13 @@ def initialize_database():
             (INITIAL_DEMO_SETTING,),
         )
 
-    database.commit()
-    from family_model import migrate as migrate_family
-    migrate_family(database)
     if not existing_users_table:
         write_setting(database,'setup_completed','0')
         write_setting(database,'setup_progress','{}')
         write_setting(database,'kiosk_languages','fr,en,de,es,fi')
+    database.commit()
+    from family_model import migrate as migrate_family
+    migrate_family(database)
 
 
 def default_application_settings(_legacy_installation=False):
@@ -4610,6 +4611,9 @@ def next_billing_number(database, field_name, year, rental=False):
     return f"{prefix}{sequence + 1}"
 
 
+BILLING_INLINE_TARIFFS = frozenset(("@exception", "@catalogue"))
+
+
 def parse_billing_form(form, database, existing_record=None):
     """Valide un devis de réservation ou de location et calcule son total."""
     values = {
@@ -4804,7 +4808,18 @@ def parse_billing_form(form, database, existing_record=None):
         )
         custom_key = values["custom_tariff_key"]
         values["custom_tariff_name"] = None
-        if custom_key:
+        if custom_key in BILLING_INLINE_TARIFFS:
+            name = form.get("inline_tariff_name", "").strip()
+            cents, error = parse_money_cents(form.get("inline_tariff_amount"), "Tarif")
+            if not 1 <= len(name) <= 180 or values["rate_unit"] not in {"hourly", "half_day"}:
+                errors.append("Nom ou unité de tarif invalide.")
+            if error:
+                errors.append(error)
+            values.update(rate_category="normal", rate_is_agglo=0, custom_tariff_name=name,
+                          rate_unit_cents=cents)
+            if values["rate_unit"] not in {"hourly", "half_day"}:
+                values["rate_unit"] = "hourly"
+        elif custom_key:
             custom = load_custom_tariffs(database, include_inactive=True).get(custom_key)
             same_previous = bool(existing_record and existing_record.get("custom_tariff_key") == custom_key)
             if not custom or ((not custom["active"] or custom["archived"]) and not same_previous):
@@ -4816,6 +4831,7 @@ def parse_billing_form(form, database, existing_record=None):
                 values["rate_unit_cents"] = custom["cents"]
                 values["custom_tariff_name"] = custom["name"]
                 if same_previous:
+                    values["rate_unit"] = existing_record["rate_unit"]
                     values["rate_unit_cents"] = existing_record["rate_unit_cents"]
                     values["custom_tariff_name"] = existing_record.get("custom_tariff_name") or custom["name"]
         values["travel_unit_cents"] = tariffs["travel"]
@@ -4840,6 +4856,7 @@ def parse_billing_form(form, database, existing_record=None):
             if (
                 previous_category == selected_rate_category
                 and existing_record.get("custom_tariff_key") == values["custom_tariff_key"]
+                and custom_key not in BILLING_INLINE_TARIFFS
                 and existing_record.get("rate_unit") == values["rate_unit"]
                 and existing_record.get("rate_unit_cents") is not None
             ):
@@ -5764,7 +5781,7 @@ def record_user_presence(database, user_id, presence_method="manual"):
 
     # Le verrou évite deux actions simultanées créant deux sessions ouvertes.
     database.execute("BEGIN IMMEDIATE")
-    from kiosk_feedback import Feedback,replay,receipt
+    from kiosk_feedback import Feedback,replay,receipt,committed
     import memberships
     payload=dict(action='presence',user=user_id,method=presence_method)
     previous=replay(database,payload)
@@ -5835,6 +5852,7 @@ def record_user_presence(database, user_id, presence_method="manual"):
 
     receipt(database,payload,result)
     database.commit()
+    committed(result,user['first_name'])
     refresh_animation_attendance(database,user_id)
     return result
 
@@ -5863,7 +5881,7 @@ def user_presence_notification_context(database, user_id):
 def record_quick_departure(database, user_id):
     """Ferme uniquement une présence déjà ouverte depuis l'accueil."""
     database.execute("BEGIN IMMEDIATE")
-    from kiosk_feedback import Feedback,replay,receipt
+    from kiosk_feedback import Feedback,replay,receipt,committed
     import memberships
     payload=dict(action='departure',user=user_id)
     previous=replay(database,payload)
@@ -5896,6 +5914,7 @@ def record_quick_departure(database, user_id):
     memberships.safe_exit(database,open_session['id'])
     result=receipt(database,payload,Feedback(f"À bientôt {user['first_name']}, votre départ a bien été enregistré.",'departure'))
     database.commit()
+    committed(result,user['first_name'])
     refresh_animation_attendance(database,user_id)
     return result
 
@@ -6419,7 +6438,7 @@ def register_routes(application):
     def add_visitor():
         database = get_database()
         try:
-            from kiosk_feedback import Feedback,replay,receipt
+            from kiosk_feedback import Feedback,replay,receipt,committed
             database.execute('BEGIN IMMEDIATE')
             previous=replay(database,dict(action='visitor'))
             if previous:
@@ -6429,8 +6448,9 @@ def register_routes(application):
             database.execute(
                 "INSERT INTO visitors (created_at) VALUES (?)", (utc_now_iso(),)
             )
-            receipt(database,dict(action='visitor'),Feedback('Visite enregistrée.','visitor'))
+            result=receipt(database,dict(action='visitor'),Feedback('Visite enregistrée.','visitor'))
             database.commit()
+            committed(result)
             send_discord_notification(database, "visitor")
             flash(
                 f"Bienvenue à {load_structure_settings(database)['name']} ! Votre visite a été comptabilisée.",
@@ -9095,6 +9115,7 @@ def register_routes(application):
                 )
             return render_template(
                 "billing_form.html", values=values, record=record,
+                inline_tariff_csrf=pin_csrf_token(),
                 rental_catalog=available_rental_catalog(database, record),
                 billing_tariffs=load_billing_tariffs(database),
                 custom_tariffs=load_custom_tariffs(database, include_inactive=bool(record)),
@@ -9103,6 +9124,13 @@ def register_routes(application):
         values, errors = parse_billing_form(
             request.form, database, existing_record=record
         )
+        inline_tariff = values["custom_tariff_key"] in BILLING_INLINE_TARIFFS
+        if inline_tariff and not pin_csrf_valid():
+            abort(400)
+        if inline_tariff and (resource_context or (record and database.execute(
+            'SELECT 1 FROM resource_bookings WHERE billing_record_id=? LIMIT 1', (record['id'],)
+        ).fetchone())):
+            errors.append("Le tarif convenu de la réservation ne peut pas être remplacé.")
         if resource_context:
             # Reuse the existing dossier and client registry; snapshot price is
             # not recomputed from an unrelated generic booking tariff.
@@ -9172,6 +9200,11 @@ def register_routes(application):
                     errors.append("Une facture réglée doit avoir une date d’envoi.")
                 if (reminder_one_at or reminder_two_at) and not invoice_sent_at:
                     errors.append("Une relance nécessite une date d’envoi de la facture.")
+        if not errors and record and (record.get("quote_signed_at") or record.get("invoice_number")):
+            if (values["amount_cents"] != record["amount_cents"]
+                    or billing_line_items(values) != billing_line_items(record)
+                    or values["custom_tariff_key"] == "@catalogue"):
+                errors.append("Les tarifs d’un dossier signé ou facturé ne peuvent pas être modifiés.")
         if errors:
             for error in errors:
                 flash(error, "error")
@@ -9179,6 +9212,7 @@ def register_routes(application):
             display_values["amount_cents"] = values["amount_cents"]
             return render_template(
                 "billing_form.html", values=display_values, record=record,
+                inline_tariff_csrf=pin_csrf_token(),
                 rental_catalog=available_rental_catalog(database, record),
                 billing_tariffs=load_billing_tariffs(database),
                 custom_tariffs=load_custom_tariffs(database, include_inactive=bool(record)),
@@ -9186,8 +9220,21 @@ def register_routes(application):
 
         timestamp = utc_now_iso()
         try:
-            if resource_context:
+            if record or resource_context or values["custom_tariff_key"] == "@catalogue":
                 database.execute('BEGIN IMMEDIATE')
+            if record and load_billing_record(database, record_id) != record:
+                database.rollback()
+                abort(409, "Ce dossier a changé. Rechargez la page.")
+            if values["custom_tariff_key"] == "@catalogue":
+                key = "tarif_" + uuid4().hex
+                order = database.execute("SELECT COALESCE(MAX(sort_order),0)+1 FROM billing_tariff_catalog").fetchone()[0]
+                database.execute(
+                    """INSERT INTO billing_tariff_catalog
+                    (tariff_key,name,unit,cents,active,archived,sort_order,created_at,updated_at)
+                    VALUES (?,?,?,?,1,0,?,?,?)""",
+                    (key, values["custom_tariff_name"], values["rate_unit"], values["rate_unit_cents"], order, timestamp, timestamp),
+                )
+                values["custom_tariff_key"] = key
             client_id = upsert_billing_client(
                 database,
                 values,
@@ -9346,6 +9393,7 @@ def register_routes(application):
             flash("Ce nom de devis ou de facture est déjà utilisé.", "error")
             return render_template(
                 "billing_form.html", values=dict(request.form), record=record,
+                inline_tariff_csrf=pin_csrf_token(),
                 rental_catalog=available_rental_catalog(database, record),
                 billing_tariffs=load_billing_tariffs(database),
                 custom_tariffs=load_custom_tariffs(database, include_inactive=bool(record)),

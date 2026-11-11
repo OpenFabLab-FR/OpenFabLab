@@ -46,7 +46,7 @@ def build(db,modules,role,current=None,schedule=None):
         late=[r for r in active if loans.overdue(db,r,current)]
         booked=[r for r in operations if r['status']=='confirmed' and not r['handed_over_at'] and not r['returned_at']
                 and (start:=moment(r['begin'])) and (end:=moment(r['due'],True)) and start<=current<end]
-        cards.append(dict(title='Locations et réservations en cours',icon='↔',count=len(active)+len(booked),
+        cards.append(dict(title='Locations et réservations',icon='↔',count=len(active)+len(booked),
             detail=t('{0} avec remise · {1} sur créneau confirmé',len(active),len(booked)),
             url=url_for('evolution.resource_bookings') if modules['resources'] else url_for('admin_billing')))
         for row in sorted(active,key=lambda r:r['due'] or ''):
@@ -127,7 +127,7 @@ def build(db,modules,role,current=None,schedule=None):
             else:
                 schedule_item(row['title'],row['service_date']+('T'+row['start_time'] if row['start_time'] else ''),'Animation',link)
             animation_count+=int(len(upcoming)>before)
-        cards.append(dict(title='Animations à venir · 14 jours',icon='▤',count=animation_count,url=url_for('admin_services')))
+        cards.append(dict(title='Animations à venir',icon='▤',count=animation_count,url=url_for('admin_services')))
     if modules['frequency'] and schedule:
         from openlab_openings import day_schedule
         week={i:row for i,row in enumerate(schedule)}

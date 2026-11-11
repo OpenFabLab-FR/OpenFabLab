@@ -1,4 +1,4 @@
-# Ressources et maintenance — 2.15.5
+# Ressources et maintenance — 2.16.0
 
 L’état d’une ressource, les créneaux de maintenance planifiés et les rappels
 sont distincts. Les maintenances multijours apparaissent sur une bande
@@ -12,6 +12,10 @@ locations, interventions, rappels, documents et actions d’archivage selon les
 droits. Le tri est alphabétique naturel. Une réservation confirmée n’est pas
 une remise effective : enregistrer séparément la remise et le retour.
 Les prêts gratuits apparaissent dans le Résumé comme les prêts payants.
+En 2.16.0, la fiche s’organise en trois espaces. Les transitions directes
+et la remise en service ne réutilisent pas le motif ou l’estimation d’un
+incident précédent. Le retour d’un prêt effectif reste à enregistrer.
+Voir [les parcours détaillés](upgrade-2.16.0.md#ressources).
 
 Les QR permanents peuvent viser une fiche publique OpenFabLab sur le réseau
 local ou via HTTPS. Choisir la visibilité des ressources et des tutoriels

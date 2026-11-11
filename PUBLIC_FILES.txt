@@ -63,16 +63,19 @@ docs/evolution-2.7.md
 docs/evolution-2.9.0.md
 docs/families-2.8.md
 docs/i18n.md
+docs/index.md
 docs/installation-common.md
 docs/installation-linux.md
 docs/installation-raspberry-pi.md
 docs/installation-synology.md
 docs/installation-windows.md
 docs/installation.md
+docs/integrations.md
 docs/legacy-migration.md
 docs/maintenance.md
 docs/outbound-2.8.1.md
 docs/platform-compatibility.md
+docs/prise-en-main-2.16.md
 docs/private-backup.md
 docs/publication-2.14.4.md
 docs/reservations-2.8.2.md
@@ -86,6 +89,7 @@ docs/upgrade-2.15.2.md
 docs/upgrade-2.15.3.md
 docs/upgrade-2.15.4.md
 docs/upgrade-2.15.5.md
+docs/upgrade-2.16.0.md
 docs/upgrade.md
 docs/usability-2.8.3.md
 docs/utilisation.md
@@ -168,6 +172,7 @@ static/icons/OpenFabLab-icon-192.png
 static/icons/OpenFabLab-icon-512.png
 static/icons/OpenFabLab-icon.svg
 static/kiosk-sound.js
+static/kiosk-voice.js
 static/memberships.css
 static/overview.js
 static/participant-picker.js
@@ -392,6 +397,7 @@ tests/test_v215_search.py
 tests/test_v215_settings.py
 tests/test_v215_views.py
 tests/test_v215_wordpress.php
+tests/test_v2160.py
 tests/test_visual_report_internal.py
 tests/test_waiting_cards_290.js
 tests/test_waitlist_limits_290.py
@@ -416,6 +422,10 @@ tools/agent-setup-2.15.1/activate.sh
 tools/agent-setup-2.15.2/README.md
 tools/agent-setup-2.15.2/activate.py
 tools/agent-setup-2.15.2/activate.sh
+tools/agent-setup/README.md
+tools/agent-setup/activate.py
+tools/agent-setup/activate.sh
+tools/agent-setup/build_kit.py
 tools/check_candidate_215.py
 tools/check_public_tree.py
 tools/run_checks.py
@@ -425,6 +435,7 @@ translations/de/v2152.json
 translations/de/v2153.json
 translations/de/v2154.json
 translations/de/v2155.json
+translations/de/v216.json
 translations/en/common.json
 translations/en/consolidation-2141.json
 translations/en/domain.json
@@ -440,6 +451,7 @@ translations/en/v2152.json
 translations/en/v2153.json
 translations/en/v2154.json
 translations/en/v2155.json
+translations/en/v216.json
 translations/en/zz-resources-2141.json
 translations/es/v215.json
 translations/es/v2151.json
@@ -447,12 +459,14 @@ translations/es/v2152.json
 translations/es/v2153.json
 translations/es/v2154.json
 translations/es/v2155.json
+translations/es/v216.json
 translations/fi/v215.json
 translations/fi/v2151.json
 translations/fi/v2152.json
 translations/fi/v2153.json
 translations/fi/v2154.json
 translations/fi/v2155.json
+translations/fi/v216.json
 update_wire.py
 updater_agent/__init__.py
 updater_agent/__main__.py

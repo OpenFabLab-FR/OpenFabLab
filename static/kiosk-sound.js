@@ -82,7 +82,8 @@
     const status = document.getElementById('sound-test-status');
     if (status) status.textContent = okay ? __oflT_6afb2b90("Test demandé. Si aucun son n’est audible, vérifiez le volume de l’appareil.") : __oflT_6afb2b90("Son indisponible ou volume nul. La borne reste utilisable.");
   }));
-  if (!config.enabled) return; // No context, listeners, fetch or sound engine when off.
+  const confirmByFetch = !!(config.enabled && Audio || config.voice?.enabled && window.OFLVoice?.available);
+  if (!confirmByFetch) return; // Neither sounds nor speech require interception.
   document.addEventListener('pointerdown', unlock, {capture: true});
   document.addEventListener('keydown', unlock, {capture: true});
   document.addEventListener('click', event => {
@@ -95,7 +96,7 @@
   const pending = new WeakSet();
   const matches = form => form.method.toLowerCase() === 'post' && /^\/(identification|visiteurs|usagers\/\d+\/(presence|depart-rapide))$/.test(pathOf(form.action));
   async function submit(form) {
-    if (!matches(form) || !Audio) { HTMLFormElement.prototype.submit.call(form); return; }
+    if (!matches(form)) { HTMLFormElement.prototype.submit.call(form); return; }
     if (pending.has(form)) return;
     pending.add(form); unlock();
     const data = new FormData(form); data.set('kiosk_action', config.token);
@@ -107,6 +108,7 @@
       const target = new URL(result.location, location.origin);
       if (target.origin !== location.origin) throw new Error(__oflT_6afb2b90("Destination incorrecte"));
       if (result.event) play(result.event);
+      if (result.voice) window.OFLVoice?.handoff(result.voice, target);
       // No timer and no audio wait: navigation and attendance never wait on sound.
       location.assign(target.href);
     } catch (_) {
@@ -126,7 +128,7 @@
     play(seconds === 0 ? 'finish' : seconds % 2 ? 'tock' : 'tick', false, true);
   }};
   document.addEventListener('submit', event => {
-    if (matches(event.target) && Audio) { event.preventDefault(); submit(event.target); }
+    if (matches(event.target)) { event.preventDefault(); submit(event.target); }
   }, {capture: true});
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopCountdown(); });
   window.addEventListener('pagehide', () => { stopCountdown(); if (context) context.close().catch(() => {}); });

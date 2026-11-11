@@ -260,7 +260,7 @@ def validate_backup(archive_path, destination=None):
                 or manifest.get('kind') not in ('complete', 'test')):
             raise ValueError('Format de sauvegarde inconnu.')
         version = manifest.get('openfablab_version', '')
-        if not re.fullmatch(r'2\.(?:6\.[0-9]+|7\.[0-9]+|8\.[0-9]+|9\.[0-9]+|10\.[0-9]+|11\.[0-9]+|12\.[0-9]+|13\.[0-9]+|14\.[0-9]+|15\.[0-9]+)', version):
+        if not isinstance(version,str) or not re.fullmatch(r'2\.(?:[6-9]|1[0-6])\.[0-9]+', version):
             raise ValueError('Version OpenFabLab incompatible avec cette restauration.')
         if tuple(map(int,version.split('.')))>tuple(map(int,__version__.split('.'))):
             raise ValueError('Sauvegarde plus récente que ce runtime : restauration refusée.')

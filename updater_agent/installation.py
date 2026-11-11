@@ -1,7 +1,7 @@
 """One-time operator-authorized agent installation; never reachable from the web.
 
 The operator provides a reviewed local policy and exact application manifest.
-No migration is performed here: the application must already be 2.15/schema26.
+No migration is performed here: the application must already match the approved manifest.
 """
 import copy
 import hashlib
@@ -18,6 +18,14 @@ from .filesystem import sha,write_probe
 AGENT_NAME='openfablab-updater-agent'
 CHANNEL_TARGET='/run/openfablab-updater'
 REPOSITORY_ID=1399693198
+SETUP_COMPATIBILITY={'2.15.0':26, '2.16.0':28}
+
+def setup_target(manifest):
+    version=manifest.get('version') if isinstance(manifest,dict) else None
+    schema=SETUP_COMPATIBILITY.get(version) if isinstance(version,str) else None
+    if schema is None or manifest.get('schema')!=schema or manifest.get('agent_protocol')!=1:
+        raise Refused('AGENT_INSTALL_REQUIRES_SUPPORTED_VERSION_SCHEMA_AND_PROTOCOL')
+    return version,schema
 
 def validate_layout(policy):
     project=checked_path(policy['project']);data=checked_path(policy['data']);backups=checked_path(policy['backups'])
@@ -69,8 +77,7 @@ def agent_command(policy,image):
 def check(policy,manifest,executor,report_root):
     """All production/backups mounts must be read-only in the check launcher."""
     validate_layout(policy)
-    if manifest.get('version')!='2.15.0' or manifest.get('schema')!=26 or manifest.get('agent_protocol')!=1:
-        raise Refused('AGENT_INSTALL_REQUIRES_APPROVED_2_15_SCHEMA26')
+    version,schema=setup_target(manifest)
     if policy.get('repository_id')!=REPOSITORY_ID:raise Refused('AGENT_OFFICIAL_REPOSITORY_ID_MISMATCH')
     root=Path(report_root)
     if not root.is_dir() or root.is_symlink():raise Refused('AGENT_REPORT_DIRECTORY_REQUIRED')
@@ -85,7 +92,7 @@ def check(policy,manifest,executor,report_root):
         if not path.is_file() or sha(path)!=expected:raise Refused('AGENT_INSTALL_STORAGE_RUNTIME_MISMATCH')
     executor.runtime_hashes(item['Id'],manifest['runtime_files'],active=True)
     executor.runtime_hashes(item['Image'],manifest['runtime_files'])
-    executor.helper('snapshot',root/'database-before-agent.json',extra=['--schema',26])
+    executor.helper('snapshot',root/'database-before-agent.json',extra=['--schema',schema])
     executor.preflight(dict(id=root.name,source=dict(image=item['Image']),result='preparing'))
     # Confirm that the actual CLI/Compose combination can render the existing
     # project; never infer compatibility just from a file being executable.
@@ -97,7 +104,7 @@ def check(policy,manifest,executor,report_root):
     from .relay_check import check as relay_check
     relay_check(executor.database,executor.data,report=root/'wordpress-stages.json')
     if len(os.fsencode(policy['socket']))>=100:raise Refused('AGENT_UNIX_SOCKET_PATH_TOO_LONG')
-    return dict(success=True,version='2.15.0',schema=26,production_modified=False,image=item['Image'],container=item['Id'])
+    return dict(success=True,version=version,schema=schema,production_modified=False,image=item['Image'],container=item['Id'])
 
 def build_image(executor,folder,web_image,docker_cli,compose_cli):
     """Use approved web dependencies plus fixed agent code and host CLI tools."""
@@ -130,7 +137,9 @@ def build_image(executor,folder,web_image,docker_cli,compose_cli):
 
 def install(policy,manifest,executor,folder,agent_image,confirmation):
     """Independent explicit confirmation; preserves state rather than restoring."""
-    if confirmation!='AUTHORIZE-LOCAL-AGENT-2.15.0':raise Refused('AGENT_INSTALL_EXPLICIT_CONFIRMATION_REQUIRED')
+    version=manifest.get('version') if isinstance(manifest,dict) else None
+    if not isinstance(version,str) or not version or confirmation!='AUTHORIZE-LOCAL-AGENT-'+version:raise Refused('AGENT_INSTALL_EXPLICIT_CONFIRMATION_REQUIRED')
+    version,schema=setup_target(manifest)
     state=Path(policy['state']);shared=Path(policy['socket']).parent;folder=Path(folder)
     if (state/'current.json').exists() or (state/'agent-installation.json').exists() or Path(policy['token_file']).exists():raise Refused('AGENT_INSTALL_ALREADY_STARTED_NO_OVERWRITE')
     prepared=state/'prepared-agent.json'
@@ -159,12 +168,12 @@ def install(policy,manifest,executor,folder,agent_image,confirmation):
     load_policy(state/'policy.json')
     backup=executor.backups/('PRE-AGENT-'+str(int(time.time())))
     executor.helper('backup',folder/'pre-agent-backup.json',access='rw',extra=['--destination',backup,'--project',executor.project,
-        '--compose',compose,'--version','2.15.0','--schema',26])
+        '--compose',compose,'--version',version,'--schema',schema])
     executor.run(['image','save','--output',str(backup/'source-image.tar'),before['Image']],timeout=1800)
     if not (backup/'source-image.tar').is_file() or (backup/'source-image.tar').stat().st_size<=0:raise Refused('AGENT_PRE_IMAGE_BACKUP_FAILED')
     (backup/'source-image.tar').chmod(0o600)
     (folder/'compose-before-agent.private').write_bytes(original);(folder/'compose-before-agent.private').chmod(0o600)
-    receipt=dict(phase='before_channel_installation',schema=26,version='2.15.0',image=before['Image'],agent_image=agent_image,
+    receipt=dict(phase='before_channel_installation',schema=schema,version=version,image=before['Image'],agent_image=agent_image,
         configuration_before_sha256=executor.configuration_hash(),production_stop_attempted=True,public_restart_attempted=False,
         backup=backup.name,automatic_restore=False)
     private_json(state/'agent-installation.json',receipt)
@@ -201,10 +210,10 @@ def install(policy,manifest,executor,folder,agent_image,confirmation):
                 if time.monotonic()>=deadline:raise Refused('AGENT_SERVICE_CHANNEL_UNVERIFIED')
                 time.sleep(1)
         executor.helper('backup',folder/'post-agent-backup.json',access='rw',extra=['--destination',executor.backups/('POST-AGENT-'+folder.name),
-            '--project',executor.project,'--compose',compose,'--version','2.15.0','--schema',26])
+            '--project',executor.project,'--compose',compose,'--version',version,'--schema',schema])
         receipt.update(phase='success',result='AGENT_INSTALLATION_SUCCESS',automatic_update=False)
         private_json(state/'agent-installation.json',receipt)
-        return dict(success=True,agent_installed=True,automatic_update=False,schema=26)
+        return dict(success=True,agent_installed=True,automatic_update=False,schema=schema)
     except Exception as error:
         receipt.update(phase='failed_preserved',result='HUMAN_REVIEW_REQUIRED',code=error.code if isinstance(error,Refused) else 'AGENT_INSTALLATION_FAILED')
         private_json(state/'agent-installation.json',receipt)

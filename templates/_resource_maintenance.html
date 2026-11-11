@@ -11,7 +11,8 @@
 <label class="form-field v214-field"><span>Intervention réalisée</span><textarea name="description" rows="3" maxlength="8000" required>{{ submitted('intervention','description',item.description if item else '',target) }}</textarea></label>
 <button class="admin-button secondary">{{ 'Enregistrer la correction' if item else 'Enregistrer l’intervention' }}</button></form>
 {% endmacro %}
-<section class="admin-section v214-panel" id="availability"><h2>Disponibilité et publication</h2>
+{% if condition_only %}
+<section class="admin-section v214-panel" id="availability"><h3>Disponibilité et publication</h3>
 {% if affected_bookings %}<p class="status-message warning" role="status">{{ _('{0} réservation à vérifier : la ressource est indisponible.' if affected_bookings|length==1 else '{0} réservations à vérifier : la ressource est indisponible.',affected_bookings|length) }} <a href="{{ url_for('evolution.resource_bookings') }}">Consulter les réservations</a></p>{% endif %}
 {% if machine.archived_at %}<p>{{ _(availability.label) }}</p>{% else %}
 <form method="post" class="admin-form v214-form" data-machine-condition>{{ identity('condition') }}<input type="hidden" name="visibility_controls" value="1">
@@ -24,11 +25,21 @@
 <label class="form-field v214-field"><span>Date de retour estimée (facultatif)</span><input name="return_estimate" type="date" value="{{ submitted('condition','return_estimate',(machine.return_estimate or '') if machine.status!='operational' and machine.publish_return else '') }}"></label></div>
 <label class="checkbox-field reservation-checkbox v214-checkbox"><input type="checkbox" name="public_visible" value="1" {% if submitted('condition','public_visible','1' if machine.public_visible else '')=='1' %}checked{% endif %}> Afficher cette ressource aux usagers</label>
 <button class="admin-button primary">Enregistrer l’état</button></form>{% endif %}</section>
-<section class="admin-section v214-panel" id="interventions"><h2>Historique des interventions</h2>
+{% else %}
+{% if machine.status=='maintenance' and not machine.archived_at %}<details class="admin-section v215-fold" id="finish-maintenance" {% if form_failed('finish_maintenance') %}open{% endif %}><summary>Terminer la maintenance</summary>
+<form method="post" class="admin-form v215-fold-content">{{ identity('finish_maintenance') }}
+<div class="form-grid"><label class="form-field">Date de l’intervention<input name="performed_on" type="date" max="{{ today214 }}" value="{{ submitted('finish_maintenance','performed_on',today214) }}" required></label>
+<label class="form-field">Type d’intervention<select name="kind">{% for key,label in form_kinds.items() %}<option value="{{ key }}" {% if submitted('finish_maintenance','kind','care')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label></div>
+<label class="form-field">Intervention réalisée<textarea name="description" rows="3" maxlength="8000" required>{{ submitted('finish_maintenance','description') }}</textarea></label>
+{% if reminders|selectattr('state','equalto','pending')|list %}<label class="form-field">Rappel à traiter (facultatif)<select name="linked_reminder"><option value="">Aucun</option>{% for item in reminders if item.state=='pending' %}{% set value=item.reminder_uuid ~ ':' ~ item.revision %}<option value="{{ value }}" {% if submitted('finish_maintenance','linked_reminder')==value %}selected{% endif %}>{{ item.subject }}</option>{% endfor %}</select></label>{% endif %}
+<label class="checkbox-field"><input name="confirm_operational" type="checkbox" value="1" required> Je confirme la remise en service de la ressource.</label>
+<button class="admin-button primary">Enregistrer et remettre en service</button>
+</form></details>{% endif %}
+<details class="admin-section v215-fold" id="interventions" {% if error_action=='intervention' %}open{% endif %}><summary>Historique des interventions{% if interventions %} <span class="status-badge">{{ interventions|length }}</span>{% endif %}</summary><div class="v215-fold-content">
 {% if not machine.archived_at %}<details class="machine-add-form" {% if form_failed('intervention') %}open{% endif %}><summary class="admin-button secondary compact">Ajouter une intervention</summary>{{ intervention_form() }}</details>{% endif %}
 {% for item in interventions %}<details class="maintenance-entry" id="intervention-{{ item.intervention_uuid }}" {% if form_failed('intervention',item.intervention_uuid) %}open{% endif %}><summary><span class="machine-entry-heading"><strong>{{ item.performed_on|date_fr }}</strong><span class="status-badge">{{ kinds[item.kind] }}</span><span>{{ item.description|truncate(100) }}</span><small>{{ {'admin':'Administrateur','moderator':'Modérateur','unknown':'Non renseigné'}.get(item.actor,item.actor) }}</small></span></summary>
 <p class="field-help">{{ {'admin':'Administrateur','moderator':'Modérateur'}.get(item.actor,item.actor) }}</p><p class="preserve-lines">{{ item.description }}</p><details {% if form_failed('intervention',item.intervention_uuid) %}open{% endif %}><summary>Corriger avec traçabilité</summary>{{ intervention_form(item) }}</details></details>{% else %}<p class="field-help">Aucune intervention enregistrée.</p>{% endfor %}
-</section>
+</div></details>
 {% include '_resource_maintenance_slots.html' %}
 <section class="admin-section v214-panel" id="reminders"><h2>Rappels de maintenance</h2>
 {% if not machine.archived_at %}<details class="machine-add-form" {% if form_failed('reminder') %}open{% endif %}><summary class="admin-button secondary compact">Ajouter un rappel</summary><form method="post" class="admin-form v214-form">{{ identity('reminder') }}<div class="form-grid"><label class="form-field v214-field"><span>Date du rappel</span><input name="due_on" type="date" value="{{ submitted('reminder','due_on') }}" required></label><label class="form-field v214-field"><span>Objet du rappel</span><input name="subject" value="{{ submitted('reminder','subject') }}" maxlength="200" required></label></div><p class="field-help">Visible dans le calendrier. Notification Discord selon les réglages.</p><button class="admin-button secondary">Enregistrer le rappel</button></form></details>{% endif %}
@@ -39,3 +50,4 @@
 <form method="post" class="button-row v214-reminder-actions">{{ identity('reminder_close',item) }}<button class="admin-button secondary compact">Classer sans intervention</button></form></details></article>{% else %}<p class="field-help">Aucun rappel non traité.</p>{% endfor %}
 <details class="machine-change-history"><summary>Rappels traités et annulés</summary>{% for item in reminders if item.state!='pending' %}<div class="maintenance-entry" id="reminder-{{ item.reminder_uuid }}"><div class="machine-entry-heading"><strong>{{ item.due_on|date_fr }}</strong><span>{{ item.subject }}</span><span class="status-badge" data-reminder-state="{{ item.due_state }}">{{ _(item.due_label) }}</span></div>{% if item.intervention_uuid %}<a href="#intervention-{{ item.intervention_uuid }}">Voir l’intervention</a>{% elif item.state=='done' %}<span class="field-help">Classé sans intervention.</span>{% endif %}</div>{% else %}<p class="field-help">Aucun rappel traité ou annulé.</p>{% endfor %}</details>
 </section>
+{% endif %}

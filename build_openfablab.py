@@ -38,7 +38,7 @@ FILES = (
     'animation_attendance.py', 'v211_routes.py', 'docs/evolution-2.11.0.md',
     'docs/corrections-2.10.1.md',
     'v210_schema.py','v210_config.py','v210_routes.py','memberships.py','membership_notices.py','sync_incidents.py','kiosk_feedback.py',
-    'static/kiosk-sound.js','static/memberships.css','docs/evolution-2.10.0.md',
+    'static/kiosk-sound.js','static/kiosk-voice.js','static/memberships.css','docs/evolution-2.10.0.md',
     'retention_notices.py',
     'v290_schema.py', 'waitlist_limits.py', 'attendance_analysis.py', 'client_categories.py',
     'static/attendance-analysis.js', 'static/attendance-analysis.css', 'docs/evolution-2.9.0.md',
@@ -58,6 +58,8 @@ FILES = (
     "requirements.txt", "requirements-nas.txt", "LICENSE", "README.md",
     ".env.example",
     "CONTRIBUTING.md", "SECURITY.md", "THIRD_PARTY_NOTICES.md", "CHANGELOG.md", "ROADMAP.md",
+    "tools/agent-setup/README.md", "tools/agent-setup/activate.sh", "tools/agent-setup/activate.py",
+    "tools/agent-setup/build_kit.py",
     "docs/installation.md", "docs/architecture.md", "docs/configuration.md",
     "docs/wordpress.md", "docs/animation-slots.md", "docs/email-templates.md",
     "docs/backup-restore.md", "docs/upgrade.md", "docs/legacy-migration.md", "docs/development.md", "docs/branding.md",
@@ -122,7 +124,7 @@ def update_manifest(paths,root=ROOT):
                     runtime[relative]=hashes[relative]
     return dict(format=1,version=__version__,agent_protocol=1,schema=28,source_schemas=[28],migration='family_model.migrate',
         new_tables=[],new_settings={},
-        notes='Calendrier de maintenance, Résumé adaptatif et historique des identifications. SQLite 28 conservé.',
+        notes='Transitions des ressources, tarifs depuis le devis, annonces vocales facultatives et préparation de l’agent. SQLite 28 conservé.',
         base_image='python:3.12-slim-bookworm',files=hashes,runtime_files=runtime)
 
 

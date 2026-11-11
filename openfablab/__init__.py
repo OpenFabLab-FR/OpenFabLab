@@ -1,3 +1,3 @@
 """Local administration commands for OpenFabLab."""
 
-__version__ = "2.15.5"
+__version__ = "2.16.0"

@@ -1,17 +1,16 @@
 # Mettre à jour OpenFabLab
 
-## Choisir le bon parcours vers 2.15.5
+## Choisir le bon parcours vers 2.16.0
 
 | Point de départ | Parcours |
 | --- | --- |
 | Nouvelle instance, sans données | [Installation neuve](installation.md), SQLite 28 ; l’agent n’est pas requis. |
-| 2.15.4, agent compatible et SQLite 28 | [Mises à jour](upgrade-2.15.5.md) : rechercher la version officielle ou importer le ZIP vérifié ; confirmer après contrôle. |
-| 2.15.4 / SQLite 28, sans agent | Mise à jour manuelle, avec sauvegardes et contrôle de la configuration. |
-| 2.15.2 / SQLite 26 ou 2.15.3 / SQLite 27 | Mise à jour **manuelle** après essai de migration vers 28 sur une copie isolée ; sauvegardes PRE et POST complètes. Le ZIP 2.15.5 n’accepte pas ces schémas via l’agent. |
-| 2.14.4 / SQLite 25 ou plus ancien | Identifier le parcours de migration et le tester sur une copie isolée avant intervention ; ne pas utiliser l’import intégré de la 2.15.5. |
-| Version plus ancienne | Relever version et schéma ; valider d’abord le parcours historique approprié vers 2.14.4. |
+| 2.15.5, agent compatible et SQLite 28 | [Mises à jour 2.16.0](upgrade-2.16.0.md) : rechercher la stable officielle ou importer le ZIP vérifié ; confirmer après contrôle. |
+| 2.15.5 / SQLite 28, sans agent | Mise à jour manuelle avec sauvegardes et contrôle du stockage. L’agent peut être ajouté après vérification du runtime 2.16.0. |
+| 2.15.4 / SQLite 28 | Le trajet testé vers 2.16.0 part de la 2.15.5 ; suivre d’abord [le parcours 2.15.5](upgrade-2.15.5.md). |
+| SQLite 27 ou antérieur | Le ZIP 2.16.0 n’accepte pas ces schémas via l’agent. Relever la version et suivre les étapes historiques appropriées ci-dessous, après essais isolés ; aucun saut universel n’est validé. |
 
-Le manifeste OTA de 2.15.5 accepte uniquement SQLite 28. Ne modifiez pas
+Le manifeste OTA de 2.16.0 accepte uniquement SQLite 28. Ne modifiez pas
 le manifeste et ne contournez pas un refus de compatibilité. Pour le
 parcours manuel, conserver le stockage, les volumes,
 la configuration et les secrets. Construire et tester la cible sur une copie
@@ -19,7 +18,27 @@ isolée ; vérifier intégrité et clés étrangères, version, santé, historiq
 et intégrations avant réouverture. Conserver les deux sauvegardes et l’image
 précédente, et ne jamais redémarrer l’ancien runtime sur la base migrée.
 
-[ZIP et empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.15.5) · [Sauvegarde et restauration](backup-restore.md).
+[ZIP et empreintes](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.16.0) · [Sauvegarde et restauration](backup-restore.md).
+
+### Mise à jour manuelle depuis 2.15.5 (SQLite 28)
+
+1. Vérifier le ZIP 2.16.0. Garder le runtime, l’image, le Compose et la
+   configuration 2.15.5, ainsi qu’une sauvegarde privée complète. Extraire
+   la cible dans un nouveau dossier, jamais par-dessus le projet actif.
+2. Essayer la cible sur une restauration isolée, sans sorties SMTP, Discord
+   ou WordPress. Vérifier notamment que le nouveau runtime et les réglages
+   du serveur sont compatibles. Pour Docker, construire une image distincte
+   et ne pas écraser l’étiquette de l’image de secours.
+3. En créneau de maintenance, arrêter le service et conserver une copie
+   froide finale. Pointer le service vers le nouveau runtime en conservant
+   les montages, l’identité et le réseau existants. Ne pas utiliser le
+   Compose vierge comme remplacement direct. Aucun second service ne
+   doit ouvrir la même base active.
+4. Avant réouverture, contrôler version 2.16.0, schéma 28, santé, intégrité
+   et fonctions utiles. Une fois les contrôles terminés, faire une
+   sauvegarde POST. En cas de doute, conserver les preuves et appliquer
+   [la procédure de récupération](backup-restore.md), sans retour à l’aveugle.
+
 Les procédures ci-dessous sont historiques ; aucun paquet DSM propre à un
 FabLab ne constitue un installateur public.
 

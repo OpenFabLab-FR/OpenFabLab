@@ -1,4 +1,4 @@
-## OpenFabLab 2.15.5 — Synology DSM
+## OpenFabLab 2.16.0 — Synology DSM
 
 Utiliser le ZIP applicatif vérifié et suivre [les étapes initiales](installation.md).
 Une installation neuve crée SQLite 28. L’agent est séparé et facultatif ;

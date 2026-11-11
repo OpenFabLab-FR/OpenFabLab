@@ -5,10 +5,11 @@ from v210_schema import DEFAULTS
 TEMPLATE_SUBJECT='{structure_name} : information sur votre formule'
 TEMPLATE_BODY='Bonjour,\n\n{evenement}\nFormule : {nom_formule}\nÉchéance : {date_expiration}\nSolde : {credits_restants}\n\nPour toute question, contactez notre équipe.'
 DEFAULTS=dict(DEFAULTS,membership_mail_subject=TEMPLATE_SUBJECT,membership_mail_body=TEMPLATE_BODY,
-              membership_confirmation_enabled='0')
+              membership_confirmation_enabled='0',kiosk_voice_enabled='0',kiosk_voice_volume='65',
+              kiosk_voice_name='')
 BOOLS={key for key,value in DEFAULTS.items() if value in ('0','1')}
 RANGES={'membership_notice_days':(1,365),'membership_low_threshold':(0,100000),
-        'kiosk_sound_volume':(0,100),'discord_sync_delay_minutes':(0,1440)}
+        'kiosk_sound_volume':(0,100),'kiosk_voice_volume':(0,100),'discord_sync_delay_minutes':(0,1440)}
 CHOICES={'membership_control':{'informative','warning','strict'},
          'membership_hourly_shortfall':{'available','manual'},
          'kiosk_sound_ambience':{'auto','classic','halloween','christmas','summer','steampunk','easter','valentine'}}
@@ -19,6 +20,8 @@ def validate(key,value):
     if key in BOOLS and value not in ('0','1'):raise ValueError('Option invalide.')
     if key in RANGES and (not value.isdecimal() or not RANGES[key][0]<=int(value)<=RANGES[key][1]):raise ValueError('Valeur hors limites : '+key)
     if key in CHOICES and value not in CHOICES[key]:raise ValueError('Choix invalide.')
+    if key=='kiosk_voice_name' and (len(value)>240 or any(ord(char)<32 for char in value)):
+        raise ValueError('Choix invalide.')
     if key=='membership_exempt_categories':
         entries=json.loads(value)
         if not isinstance(entries,list) or len(entries)>500 or any(not isinstance(v,str) or len(v)>80 for v in entries):raise ValueError('Catégories invalides.')

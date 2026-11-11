@@ -13,6 +13,19 @@ préparation, importer un ZIP et installer après confirmation. Aucun terminal, 
 montage ou secret fourni par le navigateur. Les opérations de récupération et
 d’installation de l’agent ne sont pas accessibles à cette API.
 
+## Première activation sur une installation 2.16.0
+
+Le [kit générique 2.16.0](../tools/agent-setup/README.md) sépare la
+vérification, la préparation et l’activation. Il exige le SHA-256 du ZIP
+approuvé, le runtime correspondant et une confirmation explicite. Il ne
+modifie pas la base et ne remplace pas un agent déjà connecté.
+Télécharger le kit et l’application depuis la [release 2.16.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.16.0)
+et vérifier leurs deux empreintes. Le kit contient l’agent 1.1.0 (protocole
+local 1) ; la version d’un agent existant ne change pas avec celle du web.
+Réserver l’activation à un administrateur système, après sauvegarde. Le
+parcours nécessite un hôte Linux/DSM avec Docker local, les véritables
+binaires Docker/Compose, un service et des montages conformes au guide du kit.
+
 ## OpenFabLab 2.15.5 et l’agent
 
 Un agent compatible déjà installé et connecté peut mettre à jour une
@@ -128,11 +141,11 @@ examiner le diagnostic. Aucun retour arrière destructeur automatique n’existe
 
 ## Références et limites
 
-Au FougèresLab, l’exploitant confirme la mise à jour 2.15.1 → 2.15.2
-par import du ZIP depuis l’administration sur Synology, sans passer par DSM :
-`UPDATE_SUCCESS`, SQLite 26 inchangé. L’agent était déjà installé et connecté.
-Cela ne valide pas une première activation du kit 2.15.2 sur ce NAS, ni une
-installation réelle de la 2.15.2 par téléchargement depuis GitHub.
+Au FougèresLab, l’exploitant confirme la mise à jour 2.15.5 → 2.16.0
+par import du ZIP depuis l’administration : 20 étapes, PRE/POST, SQLite 28
+et agent toujours connecté. L’activation du nouveau kit n’a pas été rejouée
+sur ce NAS. Le parcours GitHub de cette release reste à vérifier après
+publication ; il n’est pas équivalent à l’essai d’import ZIP.
 
 Le contrôle réel sur votre serveur demeure indispensable. Les essais Mac avec
 Docker modélisé ne certifient pas Container Manager, une architecture CPU ou

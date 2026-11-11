@@ -1,9 +1,9 @@
-## OpenFabLab 2.15.2 — procédure commune
+## OpenFabLab 2.16.0 — procédure commune
 
 Utiliser le ZIP applicatif vérifié et suivre [les étapes initiales](installation.md).
-Une installation neuve crée SQLite 26. L’agent est séparé et facultatif ;
+Une installation neuve crée SQLite 28. L’agent est séparé et facultatif ;
 consulter [ses prérequis et limites](update-agent.md). Sans agent compatible,
-utiliser le [parcours manuel](upgrade.md). [Reservations 2.15.2](wordpress-2.15.2.md)
+utiliser le [parcours manuel](upgrade.md). [Reservations 2.15.3](wordpress-2.15.3.md)
 est facultatif et s’installe séparément.
 Les références numérotées ci-dessous décrivent les versions historiques.
 
@@ -17,7 +17,7 @@ Une application Python/Flask/SQLite, Gunicorn dans Docker, un stockage persistan
 
 Vérifier l’architecture 64 bits et la [matrice de compatibilité](platform-compatibility.md). Construire l’image localement : aucun registre d’images OpenFabLab officielles n’est annoncé. Dans un dossier neuf, vérifier SHA256SUMS avant extraction. Examiner Compose, ses ports et montages avant démarrage.
 
-Le Compose fourni expose 5080 sur les interfaces du serveur. Pour un essai sur le serveur lui-même, remplacer la ligne de port par `127.0.0.1:5080:8000`. Pour une borne sur le réseau local, choisir volontairement l’interface LAN et restreindre l’accès réseau. Jamais de redirection WAN générale. Un accès distant exige VPN ou accès HTTPS contrôlé ; les PIN seuls ne protègent pas une administration Internet. Le relais WordPress n’exige aucun port entrant.
+Le Compose fourni expose 5080 sur les interfaces du serveur. Pour un essai sur le serveur lui-même, remplacer la ligne de port par `127.0.0.1:5080:8000`. Pour une borne sur le réseau local, choisir volontairement l’interface LAN et restreindre l’accès réseau. Jamais de redirection WAN générale. Un accès distant exige VPN ou accès HTTPS contrôlé ; les PIN seuls ne protègent pas une administration Internet. Le relais WordPress n’exige aucun port entrant. Pour la caméra d’un navigateur distant, prévoir un accès HTTPS ; l’identification manuelle reste disponible.
 
 ```sh
 docker compose config --quiet
@@ -27,7 +27,7 @@ docker compose ps
 docker compose logs --tail=100 application
 ```
 
-À exécuter dans le dossier choisi, après adaptation, pas dans une production existante. Ouvrir `/stat/` ; santé `/stat/sante`. Configurer le PIN Administrateur depuis l’accès local autorisé, l’identité, le fuseau, les modules et la protection des données. SMTP et Discord sont facultatifs : voir [configuration](configuration.md), [sécurité](../SECURITY.md), [modèles](email-templates.md), [WordPress](wordpress.md).
+À exécuter dans le dossier choisi, après adaptation, pas dans une production existante. Ouvrir `/stat/` ; santé `/stat/sante`. Créer le PIN par la [commande d’initialisation](installation.md#initialisation), puis régler l’identité, le fuseau, les modules et la borne avec [l’assistant](prise-en-main-2.16.md). [SMTP, Discord et WordPress](integrations.md) restent facultatifs.
 
 Les montages `./data:/data` et `./backups:/nas-backups` conservent base, secrets, PIN, branding et sauvegardes. Ne pas retirer ces répertoires lors d’une recréation. Un `.env` privé n’est ni un asset public ni une sauvegarde complète. Vérifier les droits effectifs sans rendre le stockage accessible à tous.
 

@@ -19,7 +19,7 @@
     {% block page_scripts %}{% endblock %}
     <script src="{{ url_for('static', filename='app.js') }}" defer></script>
     <script src="{{ url_for('static', filename='evolution.js') }}" defer></script>
-    {% if kiosk_audio %}<script type="application/json" id="kiosk-audio">{{ dict(kiosk_audio,token=kiosk_action)|tojson }}</script><script src="{{ url_for('static',filename='kiosk-sound.js') }}" defer></script>{% endif %}
+    {% if kiosk_audio %}<script type="application/json" id="kiosk-audio">{{ dict(kiosk_audio,token=kiosk_action)|tojson }}</script><script src="{{ url_for('static',filename='kiosk-voice.js') }}" defer></script><script src="{{ url_for('static',filename='kiosk-sound.js') }}" defer></script>{% endif %}
     <link rel="stylesheet" href="{{ url_for('static',filename='memberships.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='v214.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='v215.css') }}">
@@ -72,14 +72,17 @@
     {% if admin_access_role in ('admin','moderator') and request.path.startswith('/admin') %}<dialog class="v215-search-dialog" data-admin-search data-url="{{ url_for('v215.search') }}" data-csrf="{{ evolution_csrf }}" aria-labelledby="v215-search-title"><div class="dialog-heading"><h2 id="v215-search-title">Rechercher</h2><button type="button" class="admin-button secondary compact" data-admin-search-close>Fermer</button></div><label class="form-field"><span>Usager, ressource, animation ou dossier</span><input type="search" autocomplete="off" maxlength="80" data-admin-search-input></label><div data-admin-search-results role="region" aria-label="Résultats de recherche"></div><p data-admin-search-message role="status">Saisissez au moins deux caractères.</p></dialog><script src="{{ url_for('static',filename='admin-search.js') }}" defer></script>{% endif %}
     {% if ui_idle_enabled %}<form hidden id="ui-idle-form" method="post" action="{{ url_for('language.idle') }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"></form>{% endif %}
 
-    <main class="page-shell">
+    {# The isolated updater probes the HTML for the exact runtime version. #}
+    <main class="page-shell" data-runtime-version="{{ config.APP_VERSION }}">
         {% block content %}{% endblock %}
     </main>
 
     <footer class="site-footer">
         <span class="footer-group">
             <span>{{ structure.name }} - {{ structure.description }}</span>
-            <span class="footer-version">{{ config.APP_VERSION }}</span>
+            {# Short display only; do not change the version used by the updater. #}
+            {% set version_parts = config.APP_VERSION.split('.') %}
+            <span class="footer-version">{{ version_parts[:2]|join('.') if version_parts|length == 3 and version_parts[2].isdigit() else config.APP_VERSION }}</span>
         </span>
         <span class="footer-group footer-links">
             {% if request.endpoint == 'index' %}

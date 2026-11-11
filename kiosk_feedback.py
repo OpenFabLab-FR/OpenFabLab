@@ -40,6 +40,13 @@ def receipt(db,payload,result):
     return result
 
 
+def committed(result,first_name=''):
+    """Only call after commit; no name is kept in the replay ledger."""
+    if has_request_context() and not result.replayed and result.event in ('arrival','departure','visitor'):
+        first=' '.join(str(first_name or '').split())[:80]
+        g.kiosk_voice=dict(event=result.event,first=first)
+
+
 def register(application,a):
     serializer=URLSafeTimedSerializer(application.secret_key,salt='kiosk-action-v1')
     endpoints={'identification','toggle_presence','quick_departure','add_visitor'}
@@ -67,7 +74,10 @@ def register(application,a):
         if ambience not in themes:ambience='classic'
         return dict(kiosk_audio=dict(enabled=a.read_setting(db,'kiosk_sound_enabled','1')=='1',
             volume=int(a.read_setting(db,'kiosk_sound_volume','50')),ambience=ambience,visual_ambience=visual,
-            countdown=a.read_setting(db,'kiosk_sound_countdown','1')=='1',base=request.script_root),
+            countdown=a.read_setting(db,'kiosk_sound_countdown','1')=='1',base=request.script_root,
+            voice=dict(enabled=a.read_setting(db,'kiosk_voice_enabled','0')=='1',
+                       volume=int(a.read_setting(db,'kiosk_voice_volume','65')),
+                       name=a.read_setting(db,'kiosk_voice_name',''))),
             kiosk_action=serializer.dumps(dict(browser=session['kiosk_browser'],nonce=secrets.token_urlsafe(24))))
 
     @application.after_request
@@ -75,6 +85,9 @@ def register(application,a):
         if request.headers.get('X-OFL-Kiosk')=='1' and request.endpoint in endpoints and request.method=='POST' and response.status_code in (302,303):
             target=response.headers['Location']
             # Narrow response: never a directory, secret, account balance or private URL.
-            response=jsonify(location=target,event=getattr(g,'kiosk_event','error'))
+            result=dict(location=target,event=getattr(g,'kiosk_event','error'))
+            if getattr(g,'kiosk_voice',None) and a.read_setting(a.get_database(),'kiosk_voice_enabled','0')=='1':
+                result['voice']=g.kiosk_voice
+            response=jsonify(**result)
             response.headers['Cache-Control']='no-store'
         return response

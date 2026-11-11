@@ -17,7 +17,8 @@
 </form>
 {% endmacro %}
 <section class="admin-section v214-panel" id="maintenance-planning">
-  <h2>Maintenance planifiée</h2>
+  {% set active_slots=maintenance_slots|rejectattr('cancelled_at')|selectattr('ends_on','ge',today214)|list %}
+  <h2>Maintenance planifiée{% if active_slots %} <span class="status-badge">{{ active_slots|length }}</span>{% endif %}</h2>
   <p class="field-help">Visible dans le calendrier interne. Ne change pas l’état de la ressource ni les réservations.</p>
   {% if not machine.archived_at %}
   <details class="machine-add-form" {% if form_failed('maintenance_slot') %}open{% endif %}>

@@ -1,4 +1,4 @@
-# Sauvegarde et restauration — 2.15.2
+# Sauvegarde et restauration — OpenFabLab 2.16.0
 
 Les sauvegardes PRE et POST de l’agent couvrent SQLite, tutoriels PDF et autres
 données persistantes, configuration et image. Elles sont vérifiées par
@@ -6,6 +6,26 @@ restauration isolée. Garder les archives privées : elles ne sont pas chiffrée
 Sans agent, effectuer la sauvegarde complète manuellement et vérifier sa
 restauration sur une copie isolée avant toute mise à jour. Après réouverture,
 ne jamais restaurer automatiquement une ancienne base. [Procédure et secours](update-agent.md).
+
+1. Conserver la **sauvegarde complète privée**, pas seulement la base :
+   SQLite, documents et tutoriels, logos, clés et paramètres persistants.
+   Archiver à part le Compose, les paramètres du serveur et, si vous en
+   utilisez un, l’état privé de l’agent. Garder le ZIP ou l’image exacte
+   permettant de redémarrer la version correspondante.
+2. Stocker une copie hors du serveur, avec accès restreint et chiffrement
+   du support si nécessaire. Vérifier régulièrement qu’elle reste lisible.
+3. Tester à l’écart : autre répertoire, autres volumes, port privé, actions
+   externes et planificateur neutralisés avant restauration. Vérifier
+   intégrité SQLite, comptes, pièces jointes, réglages et santé.
+4. En cas d’échec, préserver les rapports et les nouvelles écritures.
+   Ne jamais ouvrir une base migrée avec l’ancienne application. Même sans
+   migration, restaurer une PRE après réouverture peut effacer de l’activité.
+
+L’auto-hébergement ne garantit pas à lui seul la conformité au RGPD. La
+structure décide des données nécessaires, des droits, des durées de
+conservation et de l’information des personnes. Restreindre l’accès réseau,
+réserver les droits d’administration, maintenir le serveur à jour et
+ne jamais partager une sauvegarde sur un forum ou dans un ticket public.
 
 ---
 

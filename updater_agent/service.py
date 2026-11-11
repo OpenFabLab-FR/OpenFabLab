@@ -9,6 +9,7 @@ import stat
 import threading
 import tempfile
 import time
+from . import AGENT_PROTOCOL, AGENT_VERSION
 from .local_candidate import LocalCandidate
 from .security import Authentication, Refused, pack
 
@@ -45,7 +46,8 @@ class Service(socketserver.ThreadingUnixStreamServer):
         if operation == 'status':
             value = self.engine.status()
             confirmation = self.confirmations.get(value.get('id'))
-            return value | {'local_zip':1,'history':self.engine.history()} | ({'confirmation': confirmation} if confirmation and value.get('result') == 'ready' else {}) | ({'last_error':self.last_error} if self.last_error else {})
+            return value | {'local_zip':1,'agent_protocol':AGENT_PROTOCOL,'agent_version':AGENT_VERSION,
+                            'history':self.engine.history()} | ({'confirmation': confirmation} if confirmation and value.get('result') == 'ready' else {}) | ({'last_error':self.last_error} if self.last_error else {})
         if operation == 'cancel':
             if set(arguments) != {'id'}:
                 raise Refused('AGENT_ARGUMENTS_FORBIDDEN')

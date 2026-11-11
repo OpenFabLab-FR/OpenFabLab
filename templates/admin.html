@@ -15,7 +15,7 @@
 </a>
 {% endmacro %}
 <section class="v215-overview-cards" aria-label="Indicateurs du jour">
-    {% if modules.frequency %}{{ indicator(url_for('admin_frequency_day'), 'people', present_count, _('Usagers présents')) }}
+    {% if modules.frequency %}{{ indicator(url_for('admin_frequency_day'), 'people', present_count, _('Usagers présents'), _('actuellement')) }}
     {{ indicator(url_for('admin_frequency_day'), 'visitor', visitor_count, _('Visiteurs aujourd’hui')) }}{% endif %}
     {% for card in summary.cards %}
         {% set symbol = {'↔':'loan', '◇':'resource', '▤':'calendar'}.get(card.icon, 'activity') %}

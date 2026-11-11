@@ -83,6 +83,8 @@
  function show(value,operation){
   if(operation==='status'){
    agent.textContent=t('Agent local connecté');
+   if(/^\d+\.\d+\.\d+$/.test(value.agent_version||'') && Number.isInteger(value.agent_protocol))
+    agent.textContent+=' · v'+value.agent_version+' · '+fill('Protocole {0}',value.agent_protocol);
    if(/^V\d+\.\d+\.\d+$/.test(value.web_version||''))root.querySelector('[data-update-installed]').textContent=value.web_version;
    if(following||retries)message.textContent='';
    upload.querySelector('fieldset').disabled=value.local_zip!==1;

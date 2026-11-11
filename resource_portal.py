@@ -151,10 +151,12 @@ def register(application,namespace):
                         slot=save(db,key,request.form,role,cancel=action=='maintenance_slot_cancel')
                     flash('Planning de maintenance enregistré.','success')
                     return redirect(url_for('resource_portal.page',key=key,_anchor='maintenance-'+slot))
-                elif action in ('condition','intervention','reminder','reminder_reschedule','reminder_cancel','reminder_close'):
+                elif action in ('condition','finish_maintenance','intervention','reminder','reminder_reschedule','reminder_cancel','reminder_close'):
                     if not machines.enabled(db):abort(404)
                     with __import__('memberships').atomic(db):
                         if action=='condition':machines.set_condition(db,key,request.form,role,role)
+                        elif action=='finish_maintenance':
+                            identifier=machines.finish_maintenance(db,key,request.form,role,role)
                         elif action=='intervention':machines.intervention(db,key,request.form,role,role,request.form.get('identifier') or None)
                         elif action=='reminder':machines.reminder(db,key,request.form,role,role,request.form.get('identifier') or None)
                         else:machines.reminder_action(db,key,request.form,role,role)
@@ -173,6 +175,8 @@ def register(application,namespace):
                 else:abort(400)
                 flash('Fiche de la ressource enregistrée.','success')
                 if action=='delete':return redirect(url_for('evolution.resource_directory'))
+                if action=='finish_maintenance':
+                    return redirect(url_for('resource_portal.page',key=key,_anchor='intervention-'+identifier))
                 section={'general':'general','booking_settings':'bookings','legacy_prices':'bookings','condition':'availability',
                     'intervention':'interventions','reminder':'reminders','reminder_reschedule':'reminders','reminder_cancel':'reminders','reminder_close':'reminders',
                     'archive':'advanced','restore':'advanced','handover':'loans','return':'loans'}.get(action,'documents')
@@ -192,6 +196,8 @@ def register(application,namespace):
         context=__import__('resource_editor').context(db,key,role,modules,a)
         report_rows,report_page,report_more=reports.list_reports(db,key,max(1,min(100000,request.args.get('reports',1,type=int))),
             request.args.get('report') or retained.get('report_id'))
+        pending_reports=db.execute("SELECT COUNT(*) FROM resource_problem_reports WHERE resource_uuid=? AND state IN ('new','assigned')",(key,)).fetchone()[0]
+        technical_counts=pending_reports+sum(item['due_state'] in ('today','overdue') for item in context.get('reminders',[]))
         edit_resource=dict(context['resource'])
         if error_action=='general':edit_resource.update({k:retained.get(k,'') for k in ('name','type_key','description','color')});edit_resource['color']=None if retained.get('color_default')=='1' else retained.get('color')
         return render_template('resource_page.html',**context,edit_resource=edit_resource,error_action=error_action,submitted=submitted,form_failed=form_failed,category=category[0] if category else '',
@@ -199,7 +205,7 @@ def register(application,namespace):
             library=db.execute('SELECT document_uuid,title,language FROM resource_documents WHERE archived_at IS NULL AND document_uuid NOT IN(SELECT document_uuid FROM resource_document_links WHERE resource_uuid=?) ORDER BY title LIMIT 500',(key,)).fetchall(),
             public_url=url,public_pages_enabled=setting(db,'resource_public_pages_enabled','0')=='1',
             public_visible=context['resource']['public_visible'],evolution_csrf=csrf_token(),
-            reports=report_rows,report_page=report_page,report_more=report_more,report_states=reports.STATES,
+            reports=report_rows,report_page=report_page,report_more=report_more,report_states=reports.STATES,technical_counts=technical_counts,
             report_actions=reports.ACTIONS,report_retained=retained),400 if error_action else 200
 
     @bp.route('/r/<key>',methods=['GET','POST'])

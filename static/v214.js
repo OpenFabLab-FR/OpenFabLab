@@ -31,8 +31,10 @@ document.querySelectorAll('[data-resource-color]').forEach(box=>{
 
 document.querySelectorAll('[data-machine-condition]').forEach(form=>{
  const state=form.elements.status,fields=form.querySelector('.machine-unavailable-fields');
- const refresh=()=>{fields.hidden=state.value==='operational';};
- state.addEventListener('change',()=>{if(state.value==='operational'){form.elements.public_reason.value='';form.elements.return_estimate.value='';}refresh();});refresh();
+ const refresh=()=>{const operational=state.value==='operational';fields.hidden=operational;
+  fields.querySelectorAll('input').forEach(input=>{input.disabled=operational;});
+ };
+ state.addEventListener('change',refresh);refresh();
 });
 document.querySelectorAll('[data-opening-form]').forEach(form=>{
  const refresh=()=>{const closed=form.elements.kind.value==='closed';

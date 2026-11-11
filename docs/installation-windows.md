@@ -1,9 +1,9 @@
-## OpenFabLab 2.15.2 — Windows
+## OpenFabLab 2.16.0 — Windows
 
 Utiliser le ZIP applicatif vérifié et suivre [les étapes initiales](installation.md).
-Une installation neuve crée SQLite 26. L’agent est séparé et facultatif ;
+Une installation neuve crée SQLite 28. L’agent est séparé et facultatif ;
 consulter [ses prérequis et limites](update-agent.md). Sans agent compatible,
-utiliser le [parcours manuel](upgrade.md). [Reservations 2.15.2](wordpress-2.15.2.md)
+utiliser le [parcours manuel](upgrade.md). [Reservations 2.15.3](wordpress-2.15.3.md)
 est facultatif et s’installe séparément.
 Les références numérotées ci-dessous décrivent les versions historiques.
 

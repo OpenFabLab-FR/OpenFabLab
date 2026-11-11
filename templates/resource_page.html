@@ -7,7 +7,8 @@
 {% include '_admin_nav.html' %}{% include '_evolution_nav.html' %}
 <section class="content-heading v215-resource-heading"><div><a class="resource-return" href="{{ url_for('evolution.resource_directory',archived=1 if resource.archived_at else 0) }}">← Retour aux ressources</a><p class="eyebrow">{{ category }}</p><h1>{{ resource.name }}</h1><span class="status-badge" data-resource-status="{{ availability.status }}">{{ _(availability.label) }}</span></div></section>
 {% if resource.archived_at %}<p class="notice">Ressource archivée. Son historique reste consultable.</p>{% endif %}
-<nav class="v215-resource-sections" aria-label="Sections de la ressource"><a href="#general">Informations</a>{% if maintenance_enabled %}<a href="#availability">Disponibilité</a><a href="#interventions">Interventions</a><a href="#reminders">Rappels</a>{% endif %}<a href="#reports">Signalements</a><a href="#bookings">Réservations et locations</a><a href="#qr">QR Code</a><a href="#documents">Documents</a><a href="#advanced">Autres actions</a></nav>
+<nav class="v215-resource-sections" aria-label="Sections de la ressource"><a href="#information">Informations et disponibilité</a><a href="#technical">Maintenance et suivi technique</a><a href="#uses">Réservations, prêts et documents</a><a href="#advanced">Autres actions</a></nav>
+<section class="resource-domain" id="information" aria-labelledby="resource-info-title"><h2 id="resource-info-title">Informations et disponibilité</h2>
 <details class="admin-section v215-fold" id="general" {% if error_action=='general' %}open{% endif %}><summary>Informations générales</summary><div class="v215-fold-content">
 {% if admin_access_role=='admin' and not resource.archived_at %}
 <form method="post" class="admin-form">{{ csrf(evolution_csrf,'general') }}{% set saved_resource=resource %}{% set resource=edit_resource %}
@@ -15,8 +16,20 @@
 <div class="form-field resource-color" data-resource-color><span>Couleur</span><div class="resource-color-controls"><label><input type="checkbox" name="color_default" value="1" {% if not resource.color %}checked{% endif %}> Couleur par défaut</label><input type="color" name="color" aria-label="Couleur spécifique" value="{{ resource.color or '#16849c' }}" {% if not resource.color %}disabled{% endif %}></div></div></div>
 <label class="form-field">Description<textarea name="description" maxlength="2000" rows="3">{{ resource.description or '' }}</textarea></label><button class="admin-button secondary">Enregistrer les informations</button>{% set resource=saved_resource %}</form>
 {% else %}<p>{{ resource.description or 'Aucune description renseignée.' }}</p>{% endif %}</div></details>
-{% if maintenance_enabled %}{% include '_resource_maintenance.html' %}{% else %}<section class="admin-section" id="availability"><h2>Disponibilité</h2><p>{{ _(availability.label) }}</p></section>{% endif %}
-{% include '_resource_reports.html' %}
+{% if maintenance_enabled %}{% with condition_only=true %}{% include '_resource_maintenance.html' %}{% endwith %}{% else %}<section class="admin-section" id="availability"><h3>Disponibilité</h3><p>{{ _(availability.label) }}</p></section>{% endif %}
+</section>
+<details class="admin-section v215-fold resource-domain" id="technical" {% if error_action in ('report','finish_maintenance','intervention','reminder','reminder_reschedule','reminder_cancel','reminder_close','maintenance_slot','maintenance_slot_cancel') or request.args.get('report') or request.args.get('reports') %}open{% endif %}>
+<summary>Maintenance et suivi technique{% if technical_counts %}<span class="status-badge">{{ _('{0} à suivre',technical_counts) }}</span>{% endif %}</summary>
+<div class="v215-fold-content">
+{% if reports or report_page>1 or request.args.get('report') %}{% include '_resource_reports.html' %}
+{% else %}<p class="field-help" id="reports">Aucun signalement enregistré.</p>{% endif %}
+{% if maintenance_enabled %}{% with condition_only=false %}{% include '_resource_maintenance.html' %}{% endwith %}{% endif %}
+{% set team_documents=documents|rejectattr('public')|list %}
+{% if team_documents %}<details><summary>Documents de l’équipe</summary><ul>{% for document in team_documents %}<li><a href="{{ url_for('resource_portal.internal_pdf',key=resource.resource_uuid,document=document.document_uuid) }}">{{ document.title }}</a></li>{% endfor %}</ul></details>{% endif %}
+<p><a href="#advanced">Consulter l’historique des modifications</a></p>
+</div></details>
+<details class="admin-section v215-fold resource-domain" id="uses" {% if error_action in ('booking_settings','legacy_prices','import','attach','update','detach','handover','return') %}open{% endif %}>
+<summary>Réservations, prêts et documents</summary><div class="v215-fold-content">
 <details class="admin-section v215-fold" id="bookings" {% if error_action in ('booking_settings','legacy_prices') %}open{% endif %}><summary>Réservations et locations</summary><div class="v215-fold-content">
 {% if admin_access_role=='admin' and modules.resources and not resource.archived_at %}
 <form method="post" class="admin-form">{{ csrf(evolution_csrf,'booking_settings') }}<div class="resource-options"><label class="checkbox-field"><input type="checkbox" name="active" value="1" {% if submitted('booking_settings','active','1' if resource.active else '')=='1' %}checked{% endif %}> Activer la réservation de cette ressource</label><label class="checkbox-field"><input type="checkbox" name="approval_required" value="1" {% if submitted('booking_settings','approval_required','1' if resource.approval_required else '')=='1' %}checked{% endif %}> Confirmation obligatoire</label></div>
@@ -26,6 +39,7 @@
 {% if modules.resources and resource.active and not resource.archived_at %}<p><a class="admin-button secondary compact" href="{{ url_for('evolution.resource_bookings',resource=resource.resource_uuid) }}">Réserver cette ressource</a></p>{% endif %}
 <section id="loans"><h3>Locations et prêts</h3>{% for loan in operations %}<details class="maintenance-entry" {% if form_failed('handover',loan.key) or form_failed('return',loan.key) %}open{% endif %}><summary>{{ 'Contrat de location' if loan.kind=='contract' else 'Réservation' }} · {{ loan.begin|date_fr }} → {{ loan.due|date_fr }} · {{ 'Terminée' if loan.returned_at else ('Retour en retard' if loan.late else ('En prêt' if loan.handed_over_at else 'Matériel non remis')) }}</summary><div class="v215-fold-content">{% set unified_resource_key=resource.resource_uuid %}{% include '_loan_controls.html' %}<a href="{{ request.script_root ~ loan.url }}">Consulter le dossier</a></div></details>{% else %}<p>Aucune location ni réservation enregistrée.</p>{% endfor %}</section></div></details>
 {% include '_resource_documents.html' %}
+</div></details>
 <details class="admin-section v215-fold" id="advanced" {% if error_action in ('archive','restore','delete') %}open{% endif %}><summary>Autres actions et historique</summary><div class="v215-fold-content">
 {% include '_resource_change_history.html' %}
 {% if admin_access_role=='admin' %}<form method="post" class="compact-form">{{ csrf(evolution_csrf,'restore' if resource.archived_at else 'archive') }}<button class="admin-button secondary">{{ 'Restaurer cette ressource' if resource.archived_at else 'Archiver cette ressource' }}</button></form>

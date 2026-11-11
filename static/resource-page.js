@@ -1,7 +1,7 @@
 /* Local section navigation only; never changes a resource or saves a form. */
 (()=>{'use strict';
  const sections={general:'general',booking_settings:'bookings',legacy_prices:'bookings',condition:'availability',
-  intervention:'interventions',reminder:'reminders',reminder_reschedule:'reminders',reminder_cancel:'reminders',reminder_close:'reminders',
+  intervention:'interventions',finish_maintenance:'finish-maintenance',report:'reports',reminder:'reminders',reminder_reschedule:'reminders',reminder_cancel:'reminders',reminder_close:'reminders',
   maintenance_slot:'maintenance-planning',maintenance_slot_cancel:'maintenance-planning',
   import:'documents',attach:'documents',update:'documents',detach:'documents',archive:'advanced',restore:'advanced',delete:'advanced',handover:'loans',return:'loans'};
  function reveal(){let id='';try{id=decodeURIComponent(location.hash.slice(1));}catch(_){return;}

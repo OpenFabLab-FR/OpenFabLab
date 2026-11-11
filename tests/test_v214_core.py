@@ -11,6 +11,9 @@ class NewVersion(unittest.TestCase):
     def setUp(self):
         self.f=test_families.FamilyTests();self.f.setUp();self.addCleanup(self.f.doCleanups)
         self.db=self.f.db;self.client=self.f.client;self.path=self.f.f.database_path
+        # This populated fixture represents an established FabLab. Fresh
+        # storage and the first-run assistant have separate tests.
+        write_setting(self.db,'setup_completed','1')
         write_setting(self.db,'module_maintenance','1');self.db.commit()
         self.key=machines.directory(self.db)[0]['resource_uuid'];self.db.commit()
     def login(self,role='admin'):

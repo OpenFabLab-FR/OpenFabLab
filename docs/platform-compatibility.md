@@ -1,4 +1,4 @@
-## OpenFabLab 2.15.5 — plateformes et compatibilité
+## OpenFabLab 2.16.0 — plateformes et compatibilité
 
 Utiliser le ZIP applicatif vérifié et suivre [les étapes initiales](installation.md).
 Une installation neuve crée SQLite 28. L’agent est séparé et facultatif ;
@@ -18,7 +18,7 @@ L’image Python de base est décrite dans la [liste officielle docker-library](
 | Environnement | Portée réelle |
 |---|---|
 | macOS ARM64, Python et navigateurs locaux | Environnement des tests applicatifs et simulations. Pas une image Linux. |
-| Synology 64 bits | Fonctionnement 2.14.4 / SQLite 25 et plugin WordPress 2.14.4 confirmés par l’exploitant sur son installation. Validation d'usage, sans nouveau rapport technique final de déploiement reçu. Ce retour ne certifie pas tous les modèles ou architectures. |
+| Synology compatible | Mise à jour réelle par ZIP 2.15.5 → 2.16.0, SQLite 28 et agent déjà connecté, confirmée par le FougèresLab. Ni installation neuve sur chaque modèle ni activation initiale du kit 2.16.0 certifiée. |
 | Linux AMD64 / ARM64 | Guides et métadonnées de dépendances vérifiés ; pas de nouveau build Docker ni essai Linux réel ici. |
 | Raspberry Pi 3/4/5 64 bits | Étude conditionnelle, sans essai physique ni certification. |
 | Windows 11 + WSL2/Docker Desktop | Guide préparé, non exécuté matériellement. |

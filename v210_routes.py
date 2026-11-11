@@ -27,6 +27,7 @@ def register(application,a):
     def settings(section):
         require_team(admin=True);require_csrf();db=a.get_database()
         sets={'sound':({'kiosk_sound_enabled','kiosk_sound_volume','kiosk_sound_ambience','kiosk_sound_countdown'},'admin_settings_kiosk'),
+              'voice':({'kiosk_voice_enabled','kiosk_voice_volume','kiosk_voice_name'},'admin_settings_kiosk'),
               'sync':({'discord_sync_delay_minutes','discord_sync_recovery_enabled'},'admin_notifications')}
         if section not in sets:abort(404)
         keys,dest=sets[section]

@@ -46,9 +46,12 @@ def history(db,key,entity,action,actor,before,after):
 def set_condition(db,key,values,role,actor):
     require(role);before=machine(db,key)
     if before['archived_at']:raise ValueError('Restaurez cette ressource avant de modifier son état.')
-    state=values.get('status','operational');reason=str(values.get('public_reason','')).strip()
+    state=values.get('status','operational')
+    # The previous incident is closed. Its fields are not relevant to this
+    # transition even if an older client still submits them.
+    reason='' if state=='operational' else str(values.get('public_reason','')).strip()
     if state not in STATES or len(reason)>500:raise ValueError('État ou motif public invalide.')
-    estimate=str(values.get('return_estimate') or '').strip() or None
+    estimate=None if state=='operational' else str(values.get('return_estimate') or '').strip() or None
     if estimate:calendar_date(estimate)
     public=lambda key:int(values.get(key) in (True,1,'1'))
     announce,listed,publish_return=(before.get(k) or 0 for k in ('announce','public_listed','publish_return'))
@@ -59,8 +62,6 @@ def set_condition(db,key,values,role,actor):
         announce,listed,publish_return=public('announce'),public('public_listed'),public('publish_return')
     mode=values.get('availability_mode',before['availability_mode'])
     if mode not in ('on_site','rental'):raise ValueError('Choisissez une disponibilité habituelle valide.')
-    # Ended incidents remain in history, never in a future public incident.
-    if state=='operational':reason='';estimate=None
     since=before.get('status_since') if before['status']==state and before.get('status_since') else stamp()
     db.execute('''INSERT INTO machine_condition VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(resource_uuid) DO UPDATE SET
         status=excluded.status,status_since=excluded.status_since,announce=excluded.announce,
@@ -69,6 +70,20 @@ def set_condition(db,key,values,role,actor):
         (key,state,since,announce,listed,reason,estimate,publish_return,stamp()))
     db.execute('UPDATE resources SET availability_mode=? WHERE resource_uuid=?',(mode,key))
     history(db,key,key,'condition',actor,before,machine(db,key))
+
+def finish_maintenance(db,key,values,role,actor):
+    require(role)
+    if machine(db,key)['status']!='maintenance' or values.get('confirm_operational')!='1':
+        raise ValueError('Confirmez explicitement la remise en service après la maintenance.')
+    fields=dict(values)
+    fields.pop('reminder_id',None);fields.pop('reminder_revision',None)
+    if selected:=fields.get('linked_reminder',''):
+        parts=selected.split(':',1)
+        if len(parts)!=2:raise ValueError('Rappel inconnu.')
+        fields['reminder_id'],fields['reminder_revision']=parts
+    identifier=intervention(db,key,fields,role,actor)
+    set_condition(db,key,{'status':'operational'},role,actor)
+    return identifier
 def intervention(db,key,values,role,actor,identifier=None):
     require(role);machine(db,key)
     if not identifier and machine(db,key)['archived_at']:raise ValueError('Restaurez cette ressource avant d’ajouter une intervention.')

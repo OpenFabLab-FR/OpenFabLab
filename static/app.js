@@ -624,6 +624,13 @@ function configureBillingForm() {
         }
     };
     const updateTotal = () => {
+        const customSelect = field("custom_tariff_key");
+        const inline = billingType() !== "rental" && ["@exception", "@catalogue"].includes(customSelect?.value);
+        const inlineFields = form.querySelector("[data-billing-inline-tariff]");
+        if (inlineFields) {
+            inlineFields.hidden = !inline;
+            inlineFields.querySelectorAll("input").forEach(input => {input.disabled = !inline; input.required = inline;});
+        }
         if (billingType() === "rental") {
             const machine = field("rental_machine_key");
             const option = machine?.options[machine.selectedIndex];
@@ -640,7 +647,6 @@ function configureBillingForm() {
             return;
         }
         const category = field("rate_category")?.value;
-        const customSelect = field("custom_tariff_key");
         const customOption = customSelect?.selectedOptions[0];
         const unitField = field("rate_unit");
         if (customSelect?.value && customOption?.dataset.unit && unitField) {
@@ -658,7 +664,11 @@ function configureBillingForm() {
                     hourly: configuredCents("normalHourly", 6000),
                     half_day: configuredCents("normalHalfDay", 12000),
                 };
-        const customCents = customSelect?.value ? Number.parseInt(customOption?.dataset.cents || "0", 10) : null;
+        const entered = field("inline_tariff_amount")?.value.trim().replace(",", ".").match(/^(\d*)(?:\.(\d+))?$/);
+        const amountCents = entered ? Number(entered[1]) * 100 + Number((entered[2] || "").padEnd(2,"0").slice(0,2))
+            + Number((entered[2]?.[2] || "0") >= "5") : 0;
+        const customCents = inline ? amountCents
+            : customSelect?.value ? Number.parseInt(customOption?.dataset.cents || "0", 10) : null;
         let amount = (customCents === null ? (baseRates[unit] || 0) : customCents) * numericValue("rate_quantity");
         amount += configuredCents("travelUnit", 6000) * numericValue("travel_quantity");
         if (field("consumable_mode")?.value === "billed") {
