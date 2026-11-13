@@ -124,7 +124,7 @@ def update_manifest(paths,root=ROOT):
                     runtime[relative]=hashes[relative]
     return dict(format=1,version=__version__,agent_protocol=1,schema=28,source_schemas=[28],migration='family_model.migrate',
         new_tables=[],new_settings={},
-        notes='Transitions des ressources, tarifs depuis le devis, annonces vocales facultatives et préparation de l’agent. SQLite 28 conservé.',
+        notes='Rétablit la gestion des inscriptions et présences aux animations. SQLite 28 conservé, sans migration.',
         base_image='python:3.12-slim-bookworm',files=hashes,runtime_files=runtime)
 
 

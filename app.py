@@ -6086,8 +6086,13 @@ def register_admin_protection(application):
             role = "admin"
         database = get_database()
         from runtime_policy import is_test_instance
+        runtime_version = application.config["APP_VERSION"]
+        version_parts = runtime_version.split(".")
+        footer_version = (".".join(version_parts[:2])
+                          if len(version_parts) == 3 and version_parts[2].isdigit() else runtime_version)
         return {"admin_access_role": role, 'test_instance': is_test_instance(application.config['DATABASE']),
                 "structure": load_structure_settings(database),
+                "runtime_version": runtime_version, "footer_version": footer_version,
                 "modules": load_modules(database), 'user_categories': categories(database, True)}
 
     @application.before_request
@@ -8604,7 +8609,7 @@ def register_routes(application):
         from booking_presentation import sections
         booking_sections,active_offers=sections(bookings,booking_reservation_status)
         return render_template(
-            "animation_bookings.html", service=service, config=config,
+            "animation_bookings.html", service=service, booking_config=config,
             booking_sections=booking_sections,active_offers=active_offers,
             tablet_requests=__import__('tablet_reservations').requests_for(database,service_id),
             bookings=bookings, counts=counts, users=users,

@@ -73,7 +73,7 @@
     {% if ui_idle_enabled %}<form hidden id="ui-idle-form" method="post" action="{{ url_for('language.idle') }}"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"></form>{% endif %}
 
     {# The isolated updater probes the HTML for the exact runtime version. #}
-    <main class="page-shell" data-runtime-version="{{ config.APP_VERSION }}">
+    <main class="page-shell" data-runtime-version="{{ runtime_version }}">
         {% block content %}{% endblock %}
     </main>
 
@@ -81,8 +81,7 @@
         <span class="footer-group">
             <span>{{ structure.name }} - {{ structure.description }}</span>
             {# Short display only; do not change the version used by the updater. #}
-            {% set version_parts = config.APP_VERSION.split('.') %}
-            <span class="footer-version">{{ version_parts[:2]|join('.') if version_parts|length == 3 and version_parts[2].isdigit() else config.APP_VERSION }}</span>
+            <span class="footer-version">{{ footer_version }}</span>
         </span>
         <span class="footer-group footer-links">
             {% if request.endpoint == 'index' %}

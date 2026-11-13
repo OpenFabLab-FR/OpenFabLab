@@ -398,6 +398,7 @@ tests/test_v215_settings.py
 tests/test_v215_views.py
 tests/test_v215_wordpress.php
 tests/test_v2160.py
+tests/test_v2161_bookings.py
 tests/test_visual_report_internal.py
 tests/test_waiting_cards_290.js
 tests/test_waitlist_limits_290.py

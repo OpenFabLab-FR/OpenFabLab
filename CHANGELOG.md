@@ -1,5 +1,14 @@
 # Historique des versions
 
+## 2.16.1 — correctif candidat
+
+- Rétablit l’accès à « Inscriptions » pour les administrateurs et modérateurs,
+  y compris pour les animations sans configuration de réservation.
+- Sépare les réglages de réservation de la configuration Flask dans le rendu.
+  Les pieds de page conservent V2.16, les informations techniques V2.16.1.
+- SQLite 28, sans migration ni modification des inscriptions. Plugin WordPress
+  Reservations 2.15.3 et agent local existant inchangés.
+
 ## 2.16.0 — version stable
 
 - Transitions directes des états et remise en service explicite, sans réutiliser
