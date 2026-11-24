@@ -1,4 +1,65 @@
-# WordPress avec OpenFabLab 2.16.0
+# WordPress avec OpenFabLab 2.18
+
+WordPress et **Mon compte** sont facultatifs. OpenFabLab demeure le seul
+gestionnaire des fiches, familles, places et listes d’attente. Le relais
+sortant reste signé (protocole **4**, révision **3**) ; aucun port entrant
+sur le serveur OpenFabLab n’est requis.
+
+## Installer ou remplacer le plugin
+
+Téléchargez [Reservations 2.18](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.18/openfablab-reservations-2.18.zip)
+et vérifiez son [SHA-256](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.18/SHA256SUMS).
+Mettez **l’application à jour d’abord**. Sauvegardez votre WordPress, puis
+remplacez le ZIP dans **Extensions → Téléverser** sans désinstaller
+l’extension ni régénérer le secret. Les réglages, les pages et le menu
+restent en place. Vérifiez les connexions Normal et Test.
+
+## Les quatre shortcodes
+
+Dans Gutenberg, utilisez un bloc **Code court**. La page de chaque
+environnement doit utiliser l’attribut correspondant :
+
+| Shortcode pour le site public | Usage |
+| --- | --- |
+| `[openfablab_reservations environment="production"]` | Affiche les animations et permet de réserver selon les règles du FabLab. |
+| `[openfablab_calendar environment="production"]` | Affiche le calendrier public : ouvertures et animations publiées. |
+| `[openfablab_machines environment="production"]` | Affiche les ressources que vous choisissez de publier. |
+| `[openfablab_account environment="production"]` | Relie une page Mon compte aux coordonnées, à la famille, aux QR Codes et aux réservations. |
+
+Les variantes **Test** utilisent `environment="test"`. Utilisez une
+installation distincte pour les essais avec des données fictives :
+le shortcode Test ne garantit pas une base distincte. Le sélecteur
+partagé peut proposer FR, EN, DE, ES et FI. Ne placez pas Mon compte ni
+ses routes privées derrière un cache de page/CDN.
+
+## Ouvrir Mon compte
+
+Configurez HTTPS, la notice de confidentialité WordPress et le SMTP
+OpenFabLab. Dans **Réglages → Usagers et permissions → Comptes en ligne**,
+renseignez l’URL HTTPS de la page, activez l’espace puis, si souhaité,
+autorisez les créations. Publiez la page après validation et enregistrez-la
+avec le plugin actif pour associer son URL au bon environnement. Les liens
+de Réservation conservent l’animation sélectionnée, sans imposer un compte.
+
+- **Manuelle** : l’équipe examine chaque nouvelle demande après clic sur
+  le lien de confirmation de l’adresse.
+- **Automatique** : un adulte admissible sans doublon est activé après
+  confirmation. Un cas ambigu n’accorde aucun accès et invite à contacter
+  l’équipe.
+- **Conditionnelle** : même traitement des cas simples ; les cas incertains
+  sont transmis à l’équipe. Une fiche historique n’est pas revendiquée
+  automatiquement grâce à une adresse partagée.
+
+Le choix du mode n’impose pas une validation administrative pour retrouver
+un identifiant. La connexion et les confirmations se font avec un lien
+temporaire, à usage unique, dans le navigateur d’origine et avec un clic
+explicite. Un identifiant ou QR Code de borne n’est pas un mot de passe.
+Pour en savoir plus : [usages et familles](utilisation.md),
+[réglages](configuration.md) et [sécurité](../SECURITY.md).
+
+---
+
+## Référence historique : WordPress avec OpenFabLab 2.16.0
 
 Le plugin facultatif **OpenFabLab Reservations 2.15.3** s’installe
 séparément. [ZIP officiel inchangé](https://github.com/OpenFabLab-FR/OpenFabLab/releases/download/v2.15.5/openfablab-reservations-2.15.3.zip)

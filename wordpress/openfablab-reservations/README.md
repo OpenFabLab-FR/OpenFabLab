@@ -1,9 +1,24 @@
-# OpenFabLab Reservations 2.15.3 — candidate
+# OpenFabLab Reservations 2.18 — développement privé
 
 [Documentation de la version publique précédente](https://github.com/OpenFabLab-FR/OpenFabLab/blob/v2.15.1/docs/wordpress-2.15.0.md).
 Le plugin est facultatif, libre sous licence MIT et se met à jour séparément.
-Compatible avec OpenFabLab 2.15.2 et 2.15.3, sans changement de protocole,
-de révision du relais ni de données.
+Les trois vues historiques conservent le protocole 4, révision 3. Le quatrième
+shortcode, facultatif, nécessite le portail de l’application 2.17 activé.
+Il ne crée pas de comptes WordPress pour les usagers.
+
+La 2.17 regroupe les codes courts et leurs descriptions dans
+**Réglages → OpenFabLab Reservations → Shortcodes à insérer dans vos pages**.
+La 2.18 simplifie le conseil d’isolation dans le volet de test. Elle ne modifie
+ni les pages existantes, ni le relais, ni les inscriptions.
+Le remplacement de l’extension ne nécessite ni désinstallation ni changement
+de clé partagée.
+
+Pour préparer la page dans Gutenberg, enregistrer un **brouillon** contenant
+un bloc Code court : `[openfablab_account environment="production"]`. Ne pas
+l’ajouter au menu public avant validation. Pour les essais, utiliser une paire
+WordPress/OpenFabLab indépendante, avec des clés et une base fictives.
+Une fois la publication autorisée, enregistrer la page avec l’extension active.
+Le guide de l’application est `docs/comptes-en-ligne-217.md`.
 
 ## Affichage de la liste des ressources
 
@@ -34,10 +49,14 @@ Dans Gutenberg, utiliser des blocs Code court :
 [openfablab_reservations environment="production"]
 [openfablab_calendar environment="production" view="week"]
 [openfablab_machines environment="production"]
+[openfablab_account environment="production"]
 ```
 
-Remplacer production par test uniquement pour l’environnement Test, configuré
-séparément. Ne jamais inclure de secret dans un shortcode ou une page.
+Les quatre exemples sont copiables en mode Normal ou Test.
+`openfablab_resources` reste un alias de `openfablab_machines`.
+Pour des essais avec des données fictives, utiliser une installation OpenFabLab
+distincte : le mode Test du shortcode n’isole pas la base. Ne jamais inclure
+de secret dans un shortcode ou une page.
 
 Sélecteur unique intégré à la première ligne des ressources sans titre, menu
 ouvrable/fermable au clic et au clavier, contraste isolé des thèmes, survol des
@@ -244,4 +263,14 @@ Un seul sélecteur pour tous les composants d’une page. La mise à jour NAS n�
 pas le plugin. Cette candidate n’est pas encore une release publique.
 Le guide complet accompagne l’application : `docs/wordpress-2.15.0.md`.
 Les indications2.14.4 ci-dessous restent la référence des comportements conservés.
+
+# Espace usager — Reservations 2.18
+
+En complément des trois vues publiques, un bloc Gutenberg « Code court » peut
+contenir [openfablab_account environment="test"] (ou "production" après accord).
+Cette page requiert un WordPress HTTPS, le relais sortant et l’activation
+explicite de l’espace dans OpenFabLab 2.17. Ne pas publier la page avant les
+essais, ne pas partager la base entre test et production et exclure la page et
+les réponses privées du cache. Les comptes ne sont pas des comptes WordPress.
+Le plugin ne migre pas SQLite et n’installe ni OpenFabLab ni son agent.
 

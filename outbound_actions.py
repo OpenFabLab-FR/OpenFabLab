@@ -15,7 +15,7 @@ import time
 from urllib.parse import urlsplit
 
 ENVIRONMENTS = ('production', 'test')
-ACTION_TYPES = ('identify', 'contact', 'reserve', 'guest', 'view', 'cancel', 'accept', 'decline')
+ACTION_TYPES = ('identify', 'contact', 'reserve', 'guest', 'view', 'cancel', 'accept', 'decline','account')
 IDENTITY_TTL = 1200
 
 
@@ -156,6 +156,9 @@ def dispatch(db, data, action, environment, secret, request_key):
     import family_waitlist as waiting
     from family_reservation_routes import identity
     if data.get('environment')!=environment: raise ValueError('Environnement invalide.')
+    if action=='account':
+        from online_accounts import dispatch as account_dispatch
+        return account_dispatch(db,data,environment,secret,request_key)
     if action in ('view','cancel','accept','decline'):
         link=verify_link(secret,data.get('link'),environment,None if action=='view' else action)
         group=waiting.lookup(db,link['t'])
@@ -226,13 +229,18 @@ def process_action(db, envelope, environment, secret, fail_after=None):
         prior=db.execute('SELECT * FROM wordpress_action_receipts WHERE environment=? AND action_id=?',(environment,action_id)).fetchone()
         if prior:
             if prior['payload_hash']!=digest or prior['action_type']!=kind: raise ValueError('Action déjà utilisée pour un autre choix.')
-            if kind in ('identify','contact') and prior['private_until']<=now:
+            if kind in ('identify','contact','account') and prior['private_until']<=now:
                 return {'ok':False,'message':'Cette vérification a expiré. Identifiez-vous à nouveau.'}
             return json.loads(prior['result_json'])
         # Business mutations may internally need a transaction, but never
         # commit the outer effect+receipt transaction. Savepoint also discards
         # all partial changes on a validation refusal.
         rate_error=None
+        if kind=='account':
+            from online_accounts import rate
+            bucket=data.get('client_bucket')
+            if not isinstance(bucket,str) or not re.fullmatch('[a-f0-9]{64}',bucket) or not rate(db,secret,'client',bucket,100,now):
+                rate_error=ValueError('Patientez avant de réessayer.')
         if kind=='identify':
             import family_reservations as engine
             try: engine.limit_identification(db,data.get('client_bucket',''))
@@ -251,9 +259,12 @@ def process_action(db, envelope, environment, secret, fail_after=None):
         except (ValueError,TypeError) as error:
             db.execute('ROLLBACK TO outbound_business');db.execute('RELEASE outbound_business')
             result={'ok':False,'message':str(error)}
+            if kind=='account':
+                from online_accounts import SESSION_ERROR
+                if str(error)==SESSION_ERROR:result['auth_required']=True
         if fail_after: fail_after(db)
         db.execute('INSERT INTO wordpress_action_receipts VALUES(?,?,?,?,?,?,?,NULL)',
-                   (environment,action_id,digest,kind,json.dumps(result,ensure_ascii=False,separators=(',',':')),now,now+IDENTITY_TTL))
+                   (environment,action_id,digest,kind,json.dumps(result,ensure_ascii=False,separators=(',',':')),now,now+(60 if kind=='account' else IDENTITY_TTL)))
     return result
 
 
@@ -264,6 +275,6 @@ def family_calendar_enabled(db,environment):
 
 def prune_private_receipts(db):
     with transaction(db):
-        db.execute("UPDATE wordpress_action_receipts SET result_json=? WHERE (action_type IN('identify','contact') OR json_extract(result_json,'$.ok')=0) AND private_until<=? AND result_json!=?",
+        db.execute("UPDATE wordpress_action_receipts SET result_json=? WHERE (action_type IN('identify','contact','account') OR json_extract(result_json,'$.ok')=0) AND private_until<=? AND result_json!=?",
                    ('{"ok":false,"message":"Cette vérification a expiré. Identifiez-vous à nouveau."}',int(time.time()),
                     '{"ok":false,"message":"Cette vérification a expiré. Identifiez-vous à nouveau."}'))

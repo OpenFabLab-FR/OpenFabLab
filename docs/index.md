@@ -1,5 +1,9 @@
 # Documentation OpenFabLab
 
+Version courante : **2.18**. Commencez par la
+[mise à jour 2.18](upgrade-2.18.md), notamment depuis 2.16.1 / SQLite 28,
+ou par [le guide des quatre shortcodes](wordpress.md).
+
 | Vous voulez… | Guide |
 |---|---|
 | Démarrer un FabLab | [Installation](installation.md), [premiers usages en 2.16](prise-en-main-2.16.md), [configurer les modules](configuration.md) |

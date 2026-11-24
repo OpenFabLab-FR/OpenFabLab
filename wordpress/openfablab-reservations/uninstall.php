@@ -12,5 +12,7 @@ foreach (['schema_version', 'sync_secret', 'last_sync', 'from_name', 'from_email
     delete_option('openfablab_res_' . $key);
 }
 foreach (['production','test'] as $environment) {
+    delete_option('ofl_account_page_'.$environment);
+    delete_transient('ofl_portal_ready_'.$environment);
     foreach (['catalogue','poll','results'] as $key) { delete_option('openfablab_relay_'.$key.'_'.$environment); }
 }

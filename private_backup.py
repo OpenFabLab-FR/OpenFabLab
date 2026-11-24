@@ -122,13 +122,20 @@ def neutralize(root, bindings=None):
     db_path = root / 'openfablab.db'
     with sqlite3.connect(db_path) as db:
         for key, value in list(db.execute('SELECT key,value FROM app_settings')):
-            if (key in {'module_public_reservations', 'module_discord', 'module_weather', 'welcome_enabled', 'smtp_enabled'}
+            if (key in {'module_public_reservations', 'module_discord', 'module_weather', 'welcome_enabled', 'smtp_enabled','online_accounts_enabled','online_signup_enabled'}
                     or (key.startswith('discord_') and key.endswith('_enabled'))):
                 db.execute('UPDATE app_settings SET value=? WHERE key=?', ('0', key))
             elif key == 'discord_enabled':
                 db.execute('UPDATE app_settings SET value=? WHERE key=?', ('0', key))
-            elif any(word in key.lower() for word in ('webhook', 'secret', 'password', 'token')) or key == 'reservation_wordpress_url':
+            elif any(word in key.lower() for word in ('webhook', 'secret', 'password', 'token')) or key in {'reservation_wordpress_url','online_account_url'}:
                 db.execute('UPDATE app_settings SET value=? WHERE key=?', ('', key))
+        # Only on a staged test clone: a family, a reservation and its history
+        # remain intact, but no live portal login or deferred message survives.
+        tables={r[0] for r in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")}
+        for table in ('online_mail','online_tickets','online_sessions','online_requests','online_identities','online_limits'):
+            if table in tables:db.execute('DELETE FROM '+table)
+        if 'wordpress_action_receipts' in tables:
+            db.execute("DELETE FROM wordpress_action_receipts WHERE action_type='account'")
         db.commit()
     for path in list(root.rglob('*')):
         if not path.is_file():
@@ -260,9 +267,12 @@ def validate_backup(archive_path, destination=None):
                 or manifest.get('kind') not in ('complete', 'test')):
             raise ValueError('Format de sauvegarde inconnu.')
         version = manifest.get('openfablab_version', '')
-        if not isinstance(version,str) or not re.fullmatch(r'2\.(?:[6-9]|1[0-6])\.[0-9]+', version):
+        if not isinstance(version,str) or not re.fullmatch(r'2\.(?:(?:[6-9]|1[0-6])\.[0-9]{1,4}|(?:1[7-9]|[2-9][0-9]|[1-9][0-9]{2,3}))', version):
             raise ValueError('Version OpenFabLab incompatible avec cette restauration.')
-        if tuple(map(int,version.split('.')))>tuple(map(int,__version__.split('.'))):
+        def order(v):
+            parts=tuple(map(int,v.split('.')))
+            return parts if len(parts)==3 else (*parts,0)
+        if order(version)>order(__version__):
             raise ValueError('Sauvegarde plus récente que ce runtime : restauration refusée.')
         records = manifest.get('files')
         if not isinstance(records, list):

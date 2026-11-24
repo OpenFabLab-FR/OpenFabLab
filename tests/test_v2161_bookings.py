@@ -35,11 +35,11 @@ class BookingsHotfix(unittest.TestCase):
     def url(service):
         return f"/admin/animations/{service}/inscriptions"
 
-    def assert_version(self, response, technical="V2.16.1"):
-        self.assertIn('<span class="footer-version">V2.16</span>', response.text)
+    def assert_version(self, response, technical="V2.17"):
+        self.assertIn('<span class="footer-version">'+'.'.join(technical.split('.')[:2])+'</span>', response.text)
         self.assertIn(f'data-runtime-version="{technical}"', response.text)
 
-    def test_bookings_render_for_both_roles_on_schema_28_without_rewriting_history(self):
+    def test_bookings_render_for_both_roles_without_rewriting_history(self):
         from tests.test_families import FamilyTests
 
         empty = self.animation("Atelier fictif sans inscrit")
@@ -61,7 +61,7 @@ class BookingsHotfix(unittest.TestCase):
         result = demo.book([demo.a, demo.c], staff=True)
         self.assertEqual(result["status"], "confirmed")
         with self.database() as db:
-            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 28)
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 29)
             before = [tuple(row) for row in db.execute("SELECT * FROM animation_bookings ORDER BY external_uuid")]
 
         for pin, role in (("1379", "admin"), ("8642", "moderator")):
@@ -136,8 +136,8 @@ class BookingsHotfix(unittest.TestCase):
             page = self.client.get(route, follow_redirects=True)
             self.assertEqual(page.status_code, 200)
             self.assert_version(page)
-        self.assertIn("2.16.1", self.client.get("/admin/reglages/systeme/mises-a-jour").text)
-        self.assertIn('<span data-update-installed>V2.16.1</span>',
+        self.assertIn("2.17", self.client.get("/admin/reglages/systeme/mises-a-jour").text)
+        self.assertIn('<span data-update-installed>V2.17</span>',
                       self.client.get("/admin/reglages/systeme/mises-a-jour").text)
         for version in ("V2.16.0", "V2.16.42"):
             with self.subTest(version=version):

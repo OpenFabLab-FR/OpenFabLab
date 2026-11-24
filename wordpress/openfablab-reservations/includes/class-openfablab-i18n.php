@@ -10,6 +10,8 @@ final class OpenFabLab_I18n {
         static $catalogs=[];
         if (!isset($catalogs[$code])) {
             $catalogs[$code]=json_decode(file_get_contents(__DIR__.'/../languages/'.$code.'.json'),true) ?: [];
+            $settings=json_decode(file_get_contents(__DIR__.'/../languages/admin-shortcodes.json'),true) ?: [];
+            $catalogs[$code]+=$settings[$code] ?? [];
         }
         return $catalogs[$code][$native] ?? $native;
     }

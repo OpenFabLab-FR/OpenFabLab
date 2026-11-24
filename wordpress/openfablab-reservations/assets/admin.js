@@ -8,10 +8,10 @@
       try {
         if (!navigator.clipboard) throw new Error('clipboard unavailable');
         await navigator.clipboard.writeText(input.value);
-        status.textContent = 'Shortcode copié.';
+        status.textContent = status.dataset.copied;
       } catch (_) {
         input.focus(); input.select();
-        status.textContent = 'Shortcode sélectionné : utilisez la commande Copier de votre appareil.';
+        status.textContent = status.dataset.selected;
       }
     });
   });

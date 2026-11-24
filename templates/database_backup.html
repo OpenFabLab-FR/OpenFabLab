@@ -43,7 +43,6 @@
         <div class="form-section-heading"><h2>Modules</h2><p>Un module désactivé masque ses fonctions sans effacer les données. Les réservations publiques nécessitent Activités ; les créneaux et locations nécessitent Facturation.</p></div>
         {% for key, label in module_labels.items() %}
         <label class="checkbox-field"><input name="module_{{ key }}" type="checkbox" value="1" {% if module_settings[key] %}checked{% endif %}><span><strong>{{ label }}</strong></span></label>
-        {% if key=='resources' %}<p id="resources-options"><a href="{{ url_for('resource_portal.settings') }}">Suivi, nom public et fiches QR des ressources</a></p>{% endif %}
         {% endfor %}
         <div class="form-actions structure-save-actions"><button class="admin-button primary" type="submit">Enregistrer la structure et les modules</button></div>
     </section>
@@ -85,6 +84,18 @@
 </section>
 <p><a class="admin-button secondary compact" href="{{ url_for('v215.calendar_settings') }}">Plage visible et horaires du calendrier</a></p>
 <div class="form-actions display-options-actions"><button form="display-options" class="admin-button primary" type="submit">Enregistrer l’affichage</button></div>
+<form method="post" action="{{ url_for('admin_update_options', settings_view='affichage') }}" class="admin-form">
+    <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+    <input type="hidden" name="admin_task_preferences_present" value="1">
+    <section class="form-section" id="affichage-administration" aria-labelledby="admin-display-title">
+        <div class="form-section-heading"><h2 id="admin-display-title">Interface administrative</h2></div>
+        <label class="checkbox-field">
+            <input name="online_header_tasks" type="checkbox" value="1" {% if admin_task_counter_enabled %}checked{% endif %}>
+            <span><strong>Afficher le compteur des éléments à traiter dans l’en-tête</strong><small>Le Résumé reste accessible même si le compteur est masqué.</small></span>
+        </label>
+        <div class="form-actions"><button class="admin-button primary compact" type="submit">Enregistrer les préférences</button></div>
+    </section>
+</form>
 {% elif settings_view == 'borne' %}
 {% include '_home_title.html' %}
 {% include '_sound_settings.html' %}

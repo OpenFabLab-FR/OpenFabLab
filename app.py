@@ -523,6 +523,8 @@ def create_app(test_config=None):
     register_214(application, globals())
     from v215_routes import register as register_215
     register_215(application, globals())
+    from online_admin import register as register_online
+    register_online(application,globals())
     from resource_portal import register as register_resource_portal
     register_resource_portal(application, globals())
     register_error_handlers(application)
@@ -2061,7 +2063,7 @@ def next_available_public_id(database):
     raise RuntimeError("Aucun identifiant public à quatre chiffres disponible")
 
 
-def validate_user_form(form, database, current_user_id=None, public_enrollment=False):
+def validate_user_form(form, database, current_user_id=None, public_enrollment=False, *, online_guardian=None):
     """Nettoie et valide les données saisies dans une fiche usager."""
     data = {
         "public_id": form.get("public_id", "").strip(),
@@ -2164,7 +2166,7 @@ def validate_user_form(form, database, current_user_id=None, public_enrollment=F
     data["nationality_normalized"] = normalize_nationality(data["nationality"])
 
     from family_model import validate_form as validate_family_form
-    validate_family_form(database, form, data, errors, current_user_id, public_enrollment)
+    validate_family_form(database, form, data, errors, current_user_id, public_enrollment, online_guardian=online_guardian)
     if not public_enrollment and ('affiliation_name' in form or 'affiliation_client_id' in form):
         from usability import validate_affiliation
         try:
@@ -6020,7 +6022,7 @@ def register_admin_protection(application):
         "admin_moderator_themes",
         "admin_animation_bookings", "admin_animation_bookings_csv", "admin_animation_bookings_pdf",
         "admin_animation_booking_action", "admin_animation_booking_walkin",
-        'v211.walkins',
+        'v211.walkins','online_admin.counts',
         'v214.directory','v214.machine','v214.openings',
         'v215.user_history','v215.loan_action','v215.search',
         'resource_portal.page','resource_portal.internal_pdf','resource_portal.qr',
@@ -6091,6 +6093,7 @@ def register_admin_protection(application):
         footer_version = (".".join(version_parts[:2])
                           if len(version_parts) == 3 and version_parts[2].isdigit() else runtime_version)
         return {"admin_access_role": role, 'test_instance': is_test_instance(application.config['DATABASE']),
+                "show_task_counter": role in ('admin','moderator') and request.path.startswith('/admin') and read_setting(database,'online_header_tasks','1')=='1',
                 "structure": load_structure_settings(database),
                 "runtime_version": runtime_version, "footer_version": footer_version,
                 "modules": load_modules(database), 'user_categories': categories(database, True)}
@@ -7106,6 +7109,7 @@ def register_routes(application):
         return render_template(
             "database_backup.html",
             settings_view=settings_view,
+            admin_task_counter_enabled=settings_view=="affichage" and read_setting(database,"online_header_tasks","1")=="1",
             installation_diagnostic=__import__('installation_health').diagnostic(database)
                 if settings_view == 'donnees' else None,
             keep_screen_awake=wake_lock["enabled"], wake_lock=wake_lock,
@@ -7692,6 +7696,14 @@ def register_routes(application):
         if settings_view not in {*SETTINGS_ENDPOINTS, "legacy"}:
             abort(404)
         database = get_database()
+        if settings_view=="affichage" and request.form.get("admin_task_preferences_present")=="1":
+            from evolution_routes import require_csrf, require_team
+            require_team(admin=True)
+            require_csrf()
+            write_setting(database,"online_header_tasks","1" if request.form.get("online_header_tasks")=="1" else "0")
+            database.commit()
+            flash("Les préférences de l’administration ont été enregistrées.","success")
+            return redirect(url_for("admin_settings_display",_anchor="affichage-administration"))
         errors = []
         previous_backup = load_automatic_backup_settings(database, application)
         previous_schedule = {day["key"]: day for day in load_openlab_schedule(database)}
@@ -9956,10 +9968,12 @@ def register_routes(application):
     def admin_notifications():
         """Configure les notifications Discord sans afficher le secret."""
         database = get_database()
+        from reservation_notifications import ONLINE_LABELS, ONLINE_DISCORD_EVENTS, ONLINE_DISCORD_DEFAULTS, validate_label
         if request.method == "POST":
             current_settings = load_discord_settings(database)
             webhook_url = request.form.get("webhook_url", "").strip()
-            if request.form.get('sync_preferences_present') == '1':
+            online_present = request.form.get('online_discord_present') == '1'
+            if request.form.get('sync_preferences_present') == '1' or online_present:
                 from evolution_routes import require_csrf
                 require_csrf()
             if request.form.get('webhook_only') == '1':
@@ -10034,8 +10048,15 @@ def register_routes(application):
                     ),
                 }
                 if request.form.get('reservation_presentation_present')=='1':
-                    from reservation_notifications import MESSAGE_KINDS,validate_label
+                    from reservation_notifications import MESSAGE_KINDS
                     message_settings.update({'discord_reservation_message_'+kind:validate_label(request.form.get('reservation_message_'+kind),kind) for kind in MESSAGE_KINDS})
+                if online_present:
+                    existing = current_settings['reservation_presentation']['messages']
+                    message_settings.update({
+                        'discord_reservation_message_'+kind:validate_label(
+                            request.form.get('reservation_message_'+kind,existing[kind]),kind)
+                        for kind in ONLINE_LABELS
+                    })
                 # Older forms do not include this group: retain their saved timing.
                 sync_settings = {}
                 if request.form.get('sync_preferences_present') == '1':
@@ -10081,6 +10102,10 @@ def register_routes(application):
                               "1" if request.form.get(f"reservation_{name}") == "1" else "0")
             for key, value in sync_settings.items():
                 write_setting(database, key, value)
+            if online_present:
+                for key in ONLINE_DISCORD_EVENTS:
+                    option='online_discord_'+key
+                    write_setting(database,option,'1' if request.form.get(option)=='1' else '0')
             if request.form.get('reservation_presentation_present')=='1':
                 from reservation_notifications import DETAILS
                 for key in DETAILS:
@@ -10093,6 +10118,8 @@ def register_routes(application):
             return redirect(url_for("admin_notifications"))
         return render_template(
             "notifications.html", discord=load_discord_settings(database),smtp=__import__('welcome_mail').load_public_config(current_database_path()),
+            online_discord_events=ONLINE_DISCORD_EVENTS,
+            online_discord={key:read_setting(database,'online_discord_'+key,ONLINE_DISCORD_DEFAULTS[key])=='1' for key in ONLINE_DISCORD_EVENTS},
             creation_discord={key:read_setting(database,'discord_new_user_'+key,'0')=='1'
                              for key in ('enabled','first_name','last_name','last_initial','age','category','source','time')}
         )
@@ -10571,6 +10598,9 @@ def register_routes(application):
             database.execute('UPDATE users SET created_source=?,created_by_role=? WHERE id=?', (source,source,cursor.lastrowid))
             from family_model import apply_details
             apply_details(database,cursor.lastrowid,user_data)
+            if read_setting(database,'discord_new_user_enabled','0')!='1':
+                from online_accounts import record_creation
+                record_creation(database,'created_admin',source,int(time.time()))
             from usability import save_affiliation
             save_affiliation(database, cursor.lastrowid, user_data)
             database.commit()

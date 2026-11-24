@@ -190,7 +190,7 @@ final class OpenFabLab_Public {
         }
         echo '</select></label>';
         echo OpenFabLab_I18n::literal('<label>Page de réservation, facultative<input type="url" name="booking_page" value="').esc_attr(get_option('openfablab_booking_page','')).'" placeholder="https://…"></label>';
-        echo OpenFabLab_I18n::literal('<p><code>[openfablab_calendar environment="production" view="week"]</code></p><p><code>[openfablab_machines environment="production"]</code></p><p><button class="button button-primary">Enregistrer</button></p></form></section>');
+        echo OpenFabLab_I18n::literal('<p><button class="button button-primary">Enregistrer</button></p></form></section>');
     }
     public static function save_settings() {
         if (!current_user_can('manage_options')) { wp_die(OpenFabLab_I18n::text('Accès refusé.'),'',['response'=>403]); }

@@ -1,5 +1,9 @@
 # OpenFabLab
 
+**Version stable 2.18** · SQLite **29** · plugin WordPress facultatif **2.18** · agent facultatif **1.2**.
+Depuis 2.16.1 / SQLite 28, suivez la [mise à jour manuelle](docs/upgrade-2.18.md) :
+le ZIP 2.18 ne permet pas un saut OTA direct depuis le schéma 28.
+
 **Le logiciel qui facilite l’accueil, l’organisation et le suivi de votre FabLab.**
 
 Né au FougèresLab, OpenFabLab a été conçu pour les équipes qui accueillent du
@@ -8,7 +12,7 @@ logiciel est libre (MIT), modulaire et auto-hébergeable : vous choisissez les
 fonctions utiles à votre atelier et l’équipement qui héberge vos données.
 
 [Site officiel](https://openfablab.fr) ·
-[Télécharger OpenFabLab 2.16.0](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.16.0) ·
+[Télécharger OpenFabLab 2.18](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.18) ·
 [Documentation](docs/index.md) · [Licence MIT](LICENSE)
 
 ## Pour quels lieux ?
@@ -25,6 +29,9 @@ assuré par des bénévoles, des FabManagers ou les deux.
   ou identifiant ; fréquentation et occupation.
 - **Organiser les activités** : OpenLab, horaires exceptionnels, calendrier,
   animations, inscriptions et listes d’attente.
+- **Proposer un espace usager (facultatif)** : depuis WordPress, les
+  personnes peuvent accéder à leurs coordonnées, leur famille, leur QR Code
+  de borne et leurs réservations, sans compte WordPress.
 - **Réserver et prêter** : créneaux, locations gratuites ou payantes ; une
   réservation ne vaut pas remise du matériel.
 - **Gérer les ressources** : machines, salles, équipements, tutoriels PDF et
@@ -48,7 +55,7 @@ La borne est conçue pour le tactile et l’administration s’adapte aux petits
    [Synology](docs/installation-synology.md), [Linux](docs/installation-linux.md),
    [Raspberry Pi 64 bits](docs/installation-raspberry-pi.md) ou
    [Windows avec environnement Linux](docs/installation-windows.md).
-2. Téléchargez `OpenFabLab-2.16.0.zip`, vérifiez son SHA-256 et suivez le
+2. Téléchargez `OpenFabLab-2.18.zip`, vérifiez son SHA-256 et suivez le
    [démarrage sur un stockage neuf](docs/installation.md).
 3. Créez le premier PIN sur le réseau autorisé, suivez l’assistant, puis
    [configurez la borne et ouvrez les modules utiles](docs/prise-en-main-2.16.md).
@@ -58,11 +65,11 @@ et choisissez [la procédure de mise à jour](docs/upgrade.md). Le kit
 d’activation est séparé ; [l’agent](docs/update-agent.md) est facultatif et le
 service web n’accède pas au socket Docker.
 
-La **2.16.0** conserve SQLite **28**. La mise à jour par ZIP depuis la
-2.15.5 a réussi sur le Synology du FougèresLab avec un agent déjà installé
-et les sauvegardes PRE/POST. Une première installation a été vérifiée
-en environnement isolé, pas sur chaque plateforme.
-[Notes et procédure de version](docs/upgrade-2.16.0.md).
+La **2.18** utilise SQLite **29** ; le trajet OTA depuis la 2.17 a été
+validé sur le Synology du FougèresLab, avec les sauvegardes PRE et POST.
+Pour l’ancienne stable publique, commencez par le
+[guide de mise à jour 2.18](docs/upgrade-2.18.md).
+Le [guide WordPress](docs/wordpress.md) décrit les quatre shortcodes.
 
 ## Participer
 

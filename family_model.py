@@ -13,7 +13,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-SCHEMA = 28
+SCHEMA = 29
 POLICIES = {'none':__ui_native__('Aucun'), 'email':__ui_native__('E-mail'), 'phone':__ui_native__('Téléphone'),
             'either':__ui_native__('E-mail ou téléphone'), 'both':__ui_native__('E-mail et téléphone')}
 DEFAULTS = {'family_autonomy_age':'15', 'family_responsible_age':'18',
@@ -41,7 +41,7 @@ def backup_before(db, path):
     """Coherent offline PRE before *any* initialization writes, not a DB copy."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
     if version==SCHEMA:
-        from maintenance_planning import validate
+        from account_schema import validate
         validate(db)
         return
     if version > SCHEMA:
@@ -51,7 +51,7 @@ def backup_before(db, path):
         return None
     root = Path(path).parent / 'migration-backups'
     root.mkdir(mode=0o700, exist_ok=True)
-    target = root / (('before-2.15.4-schema-' if version==27 else 'before-2.15.3-schema-' if version==26 else 'before-2.15-schema-' if version==25 else 'before-2.14.4-schema-' if version==24 else 'before-2.14.1-schema-' if version==23 else 'before-2.14-schema-' if version==22 else 'before-2.11-schema-' if version==21 else 'before-2.10-schema-' if version==20 else 'before-2.8-schema-') + str(version) + '-' + uuid4().hex + '.db')
+    target = root / (('before-2.17-schema-' if version==28 else 'before-2.15.4-schema-' if version==27 else 'before-2.15.3-schema-' if version==26 else 'before-2.15-schema-' if version==25 else 'before-2.14.4-schema-' if version==24 else 'before-2.14.1-schema-' if version==23 else 'before-2.14-schema-' if version==22 else 'before-2.11-schema-' if version==21 else 'before-2.10-schema-' if version==20 else 'before-2.8-schema-') + str(version) + '-' + uuid4().hex + '.db')
     with sqlite3.connect(target) as copy:
         db.backup(copy)
         if copy.execute('PRAGMA integrity_check').fetchone()[0] != 'ok' or copy.execute('PRAGMA foreign_key_check').fetchall():
@@ -61,10 +61,10 @@ def backup_before(db, path):
 
 
 def migrate(db, fail_after=None):
-    """Existing migration engine through schema 28; business IDs stay intact."""
+    """Existing migration engine through schema 29; business IDs stay intact."""
     version = db.execute('PRAGMA user_version').fetchone()[0]
     if version==SCHEMA:
-        from maintenance_planning import validate
+        from account_schema import validate
         validate(db)
         return
     if version not in range(14, SCHEMA):
@@ -78,7 +78,8 @@ def migrate(db, fail_after=None):
         db.execute('BEGIN IMMEDIATE')
         from maintenance_planning import ensure as ensure_2154
         from v2153_schema import ensure as ensure_2153
-        if version in (24,25,26,27):
+        from account_schema import ensure as ensure_online
+        if version in (24,25,26,27,28):
             # A current source needs only this additive migration. Do not replay
             # older historical seeding (ages/attendance/defaults) on new rows.
             if version < 26:
@@ -87,7 +88,8 @@ def migrate(db, fail_after=None):
                 from v215_schema import ensure as ensure_215
                 ensure_215(db)
             if version<27:ensure_2153(db)
-            ensure_2154(db)
+            if version<28:ensure_2154(db)
+            ensure_online(db)
             if fail_after:fail_after(db)
             if db.execute('PRAGMA foreign_key_check').fetchall() or db.execute('PRAGMA integrity_check').fetchone()[0]!='ok':
                 raise RuntimeError('Migration des ressources refusée : intégrité invalide.')
@@ -166,6 +168,7 @@ def migrate(db, fail_after=None):
         ensure_215(db)
         ensure_2153(db)
         ensure_2154(db)
+        ensure_online(db)
         if fail_after:
             fail_after(db)
         if db.execute('PRAGMA foreign_key_check').fetchall() or db.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
@@ -239,7 +242,7 @@ def members(db, responsible_id):
     return db.execute('SELECT u.*,l.link_uuid FROM user_family_links l JOIN users u ON u.id=l.member_id WHERE l.responsible_id=? AND l.ended_at IS NULL ORDER BY u.last_name,u.first_name', (responsible_id,)).fetchall()
 
 
-def link(db, member_id, responsible_id):
+def link(db, member_id, responsible_id, *, notify=True):
     person = db.execute('SELECT * FROM users WHERE id=?', (responsible_id,)).fetchone()
     if member_id == responsible_id or not person or not eligible(db,person):
         raise ValueError('Responsable non éligible : vérifiez son âge, son activité et ses coordonnées.')
@@ -250,6 +253,10 @@ def link(db, member_id, responsible_id):
         return existing[0]
     key = str(uuid4())
     db.execute('INSERT INTO user_family_links VALUES(?,?,?,?,NULL)', (key,member_id,responsible_id,timestamp()))
+    if notify and db.execute("SELECT 1 FROM sqlite_schema WHERE name='online_events'").fetchone():
+        from online_accounts import event
+        import time
+        event(db,'family_done',key,'admin',int(time.time()))
     return key
 
 
@@ -259,17 +266,17 @@ def end_link(db, key, user_id):
         raise ValueError('Rattachement déjà terminé ou inconnu.')
 
 
-def apply_details(db, user_id, values):
+def apply_details(db, user_id, values, *, notify_links=True):
     db.execute('UPDATE users SET birth_date=?,birth_precision=? WHERE id=?',
                (values.get('birth_date'), 'exact' if values.get('birth_date') else 'year', user_id))
     for responsible_id in values.get('responsible_ids',[]):
-        link(db,user_id,responsible_id)
+        link(db,user_id,responsible_id,notify=notify_links)
     user=db.execute('SELECT * FROM users WHERE id=?',(user_id,)).fetchone()
     db.execute('INSERT OR IGNORE INTO family_age_observations(user_id,was_responsible) VALUES(?,?)',
                (user_id,int(state(db,user)=='responsible')))
 
 
-def validate_form(db, form, data, errors, current_id=None, public=False):
+def validate_form(db, form, data, errors, current_id=None, public=False, *, online_guardian=None):
     """Only new records are required to comply; historical accounts remain usable."""
     current = db.execute('SELECT * FROM users WHERE id=?',(current_id,)).fetchone() if current_id else None
     exact = str(form.get('birth_date','')).strip()
@@ -300,7 +307,7 @@ def validate_form(db, form, data, errors, current_id=None, public=False):
                 raise ValueError
             if public:
                 from enrollment_privacy import guardian_id
-                if key != guardian_id(db):
+                if key != (online_guardian if online_guardian is not None else guardian_id(db)):
                     raise ValueError
             data['responsible_ids'].append(key)
         except (ValueError,TypeError):

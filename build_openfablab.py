@@ -13,6 +13,7 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "dist" / f"OpenFabLab-{__version__}.zip"
 FILES = (
+    'account_schema.py','online_accounts.py','online_mail.py','online_admin.py','static/online-tasks.js','static/online-admin.css',
     'v2153_schema.py','resource_reports.py','admin_activity.py','admin_planning.py','maintenance_planning.py',
     'v215_schema.py','v215_routes.py','resource_loans.py','user_participation.py','admin_search.py','admin_summary.py',
     'updater_client.py','update_wire.py','resource_portal.py','resource_documents.py','pdf_guard.py',
@@ -122,9 +123,12 @@ def update_manifest(paths,root=ROOT):
                     relative=path.relative_to(root).as_posix()
                     if relative not in hashes:raise ValueError('Runtime absent de la distribution : '+relative)
                     runtime[relative]=hashes[relative]
-    return dict(format=1,version=__version__,agent_protocol=1,schema=28,source_schemas=[28],migration='family_model.migrate',
+    # The 2.17 → 2.18 update keeps the existing schema and settings. New
+    # account mail and Discord defaults are resolved on read, not inserted
+    # during startup. Keep the agent's existing supported migration entry.
+    return dict(format=1,version=__version__,agent_protocol=1,schema=29,source_schemas=[29],migration='family_model.migrate',
         new_tables=[],new_settings={},
-        notes='Rétablit la gestion des inscriptions et présences aux animations. SQLite 28 conservé, sans migration.',
+        notes='Améliorations de Mon compte, des familles et de l’administration. SQLite 29 inchangé.',
         base_image='python:3.12-slim-bookworm',files=hashes,runtime_files=runtime)
 
 
@@ -152,7 +156,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Créer l'archive publique de l'application OpenFabLab.")
     parser.add_argument("--version", default=__version__, help="Version à placer dans le nom du ZIP")
     version = parser.parse_args().version
-    if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){2}(?:-[A-Za-z0-9.]+)?", version):
+    if not re.fullmatch(r"[0-9]{1,4}(?:\.[0-9]{1,4}){1,2}", version):
         parser.error("Version invalide.")
     if version != __version__:
         parser.error("Le nom de distribution doit correspondre à la version des sources.")

@@ -128,3 +128,9 @@ Les anciens noms de sauvegardes/base restent reconnus pour migration ; ne pas re
 Depuis 2.6.3, le profil privé inclut le contact DPO libre, son e-mail/téléphone et les cases d’utilisation du logo complémentaire, de la signature et du badge privé. Les ressources configurées mais désactivées sont également exportées/importées. Une sauvegarde complète du dossier `data` conserve leurs fichiers, leurs paramètres et les secrets séparés. Les profils précédents restent importables sans convertir ni effacer leurs données métier.
 
 Conserver également `data/branding/` : logos d’en-tête, de réseau, de documents, signature et éventuel `badge-template.svg`. Une sauvegarde SQLite ne suffit pas à restaurer ces fichiers. Le profil privé exporte l’identité et ces ressources, mais pas les secrets ni les données métier ; il doit rester confidentiel. Voir [Branding](branding.md).
+# Restaurer après une mise à jour 2.18
+
+Voir [la procédure 2.18](upgrade-2.18.md#revenir-en-arrière) : conserver
+le runtime, les montages, la base et les fichiers privés cohérents d’une
+même sauvegarde. Le retour à 2.16.1 exige SQLite **28** ; 2.17 et 2.18 utilisent
+SQLite **29**. Préserver avant toute restauration les écritures récentes.

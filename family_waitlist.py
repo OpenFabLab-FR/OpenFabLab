@@ -74,8 +74,8 @@ def valid_phone(value):
                 and 8<=len(re.sub(r'\D','',value))<=15)
 
 
-def contact(db, owner_id, people=()):
-    """Resolve one notification contact; never copy a parent's details to a child."""
+def contacts(db, owner_id):
+    """All suitable contacts; a booking still has one explicit recipient."""
     owner=db.execute('SELECT * FROM users WHERE id=? AND active=1',(owner_id,)).fetchone()
     if not owner:
         raise ValueError('Le compte responsable de la demande est indisponible.')
@@ -83,11 +83,15 @@ def contact(db, owner_id, people=()):
     if family.state(db,owner) in ('dependent','autonomous'):
         candidates.extend(dict(r) for r in family.responsibles(db,owner_id) if family.eligible(db,r))
     phone_required=family.setting(db,'reservation_phone_required','0')=='1'
+    result=[]
     for person in candidates:
         if valid_email(person.get('email')) and (not phone_required or valid_phone(person.get('phone'))):
-            return {'user_id':person['id'],'email':person['email'].strip(),
-                    'phone':person.get('phone') or '', 'name':person['first_name']+' '+person['last_name']}
-    return None
+            result.append({'user_id':person['id'],'email':person['email'].strip(),
+                           'phone':person.get('phone') or '', 'name':person['first_name']+' '+person['last_name']})
+    return result
+
+def contact(db, owner_id, people=()):
+    return next(iter(contacts(db,owner_id)),None)
 
 
 def require_contact(db, owner_id, people=()):
@@ -283,6 +287,15 @@ def lookup(db, token):
 
 
 def respond(db, token, action, now=None):
+    return _respond(db,action,now,token=token)
+
+
+def respond_as_owner(db, group_id, authenticated_owner, environment, action, now=None):
+    """Private: owner comes from the verified portal session, never a form."""
+    return _respond(db,action,now,group_ref=(group_id,authenticated_owner,environment))
+
+
+def _respond(db,action,now,*,token=None,group_ref=None):
     from family_reservations import effective_service, participants, result
     now=now or utcnow()
     if action not in ('accept','decline','cancel'):
@@ -291,9 +304,13 @@ def respond(db, token, action, now=None):
     owns_transaction = not db.in_transaction
     if owns_transaction: db.execute('BEGIN IMMEDIATE')
     try:
-        settle(db,now);group=lookup(db,token)
+        settle(db,now)
+        if group_ref is None:group=lookup(db,token)
+        else:
+            group=db.execute('SELECT * FROM family_booking_groups WHERE group_uuid=? AND owner_id=? AND environment=?',group_ref).fetchone()
+            if not group:raise ValueError('Réservation indisponible.')
         if action in ('accept','decline'):
-            if group['offer_token_hash']!=digest(token):
+            if group_ref is None and group['offer_token_hash']!=digest(token):
                 raise ValueError('Utilisez le lien de proposition reçu par e-mail.')
             if group['status']=='confirmed' and action=='accept':
                 value=result(db,group['group_uuid'])

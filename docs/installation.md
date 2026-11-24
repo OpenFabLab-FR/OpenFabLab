@@ -1,31 +1,32 @@
 # Installer OpenFabLab
 
-## Nouvelle installation : 2.16.0
+## Nouvelle installation : 2.18
 
-Télécharger [la distribution et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.16.0). Le fichier applicatif
-est `OpenFabLab-2.16.0.zip` : ne pas utiliser le ZIP WordPress, un paquet privé
+Télécharger [la distribution et SHA256SUMS](https://github.com/OpenFabLab-FR/OpenFabLab/releases/tag/v2.18). Le fichier applicatif
+est `OpenFabLab-2.18.zip` : ne pas utiliser le ZIP WordPress, un paquet privé
 DSM ou l’archive de sources automatique GitHub à sa place.
 
 1. Vérifier le SHA-256, extraire dans un dossier neuf et réserver un stockage
    persistant pour les données et les sauvegardes.
 2. Démarrer l’application selon la plateforme ci-dessous. Une nouvelle base
-   SQLite 28 est créée. Garder l’accès initial privé.
+   SQLite 29 est créée. Garder l’accès initial privé.
 3. Créer le PIN administrateur par la commande d’initialisation locale ; suivre
    l’assistant pour choisir les modules, l’identité et les langues.
 4. L’agent séparé est facultatif. L’application fonctionne sans lui et peut
-   être mise à jour manuellement. Pour l’ajouter après le premier démarrage,
-   choisir le kit 2.16.0 et suivre [le guide de l’agent](update-agent.md).
-5. Installer [Reservations 2.15.3](wordpress-2.15.3.md) séparément, uniquement
-   si vous souhaitez publier des réservations, un calendrier ou un catalogue.
+   être mise à jour manuellement. Ne pas transposer un kit d’activation
+   historique à la 2.18 ; voir [le guide de l’agent](update-agent.md).
+5. Installer [Reservations 2.18](wordpress.md) séparément, uniquement si
+   vous souhaitez publier un calendrier, des ressources, des réservations
+   ou un espace usager WordPress.
 
 Guides : [Linux](installation-linux.md), [Raspberry Pi](installation-raspberry-pi.md),
 [Windows](installation-windows.md), [Synology](installation-synology.md).
 Pour des données existantes, suivre [la mise à jour](upgrade.md), pas une installation neuve.
-Pour les commandes, aller directement aux [procédures communes pour 2.16.0](#procédures-communes-pour-2160).
+Pour les commandes, aller directement aux [procédures communes](#procédures-communes-pour-218).
 
 Sous Linux, vérifier l’archive depuis le dossier de téléchargement avec
-`sha256sum OpenFabLab-2.16.0.zip` ; sous macOS, `shasum -a 256 OpenFabLab-2.16.0.zip` ;
-sous PowerShell, `Get-FileHash -Algorithm SHA256 OpenFabLab-2.16.0.zip`.
+`sha256sum OpenFabLab-2.18.zip` ; sous macOS, `shasum -a 256 OpenFabLab-2.18.zip` ;
+sous PowerShell, `Get-FileHash -Algorithm SHA256 OpenFabLab-2.18.zip`.
 Comparer tous les caractères de l’empreinte à `SHA256SUMS`. Ne pas installer
 si elle diffère. Ne pas extraire l’archive par-dessus une installation existante.
 
@@ -80,7 +81,7 @@ guides peuvent conserver des mentions de préparation. La documentation du tag
 
 Prérequis : Python 3.10+ (3.12 dans Docker), navigateur moderne, disque persistant. Le plugin demande WordPress avec PHP 8.1+, OpenSSL AES-GCM, InnoDB, JavaScript et HTTPS ; seul OpenFabLab doit pouvoir joindre WordPress en HTTPS sortant. La borne et l'application fonctionnent sans plugin. Voir [le guide WordPress](wordpress.md) et [les vérifications isolées](candidate-2.8-guide.md).
 
-## Procédures communes pour 2.16.0
+## Procédures communes pour 2.18
 
 ### Python local
 
@@ -98,9 +99,9 @@ docker compose up -d application
 
 Le compose fourni publie `5080:8000`, préfixe `/stat`, `restart: unless-stopped` et healthcheck `/stat/sante`. Il monte **`./data:/data`** et **`${OPENFABLAB_BACKUP_HOST_ROOT:-./backups}:/nas-backups`**. Le sous-dossier de sauvegarde initial est `OpenFabLab`, modifiable dans les réglages. Une racine différente peut être définie dans un `.env` privé à partir de `.env.example`, sans y mettre de secret.
 
-L’archive 2.16.0 utilise l’étiquette Compose locale `openfablab:v2.16.0`.
-Après construction, les informations techniques doivent indiquer **V2.16.0**
-et SQLite **28** ; la pastille en pied de page affiche **V2.16**.
+L’archive 2.18 utilise l’étiquette Compose locale `openfablab:v2.18`.
+Après construction, les informations techniques doivent indiquer **2.18**
+et SQLite **29** ; la pastille en pied de page affiche **V2.18**.
 Une installation existante peut conserver un ancien alias : vérifier la version
 dans l'interface après construction, sans remplacer son Compose personnalisé.
 

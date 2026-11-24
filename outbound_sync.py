@@ -108,17 +108,20 @@ def catalogue(db, database_path, site_url, client=None, environments=actions.ENV
     return {'configured':True,'imported':0,'errors':errors,'notifications':[],'rejected':[]}
 
 
-def poll(db, database_path, site_url, client=None, environments=actions.ENVIRONMENTS):
+def poll(db, database_path, site_url, client=None, environments=actions.ENVIRONMENTS, *, interactive=False):
     from runtime_policy import external_allowed
     if not external_allowed(database_path): return {'isolated':True,'processed':0}
     secret=load_sync_secret(database_path)
     if not secret or not site_url: return {'configured':False,'processed':0}
     client=client or OutboundClient(site_url,secret)
-    processed=0;errors=[]
+    processed=0;errors=[];probes=[]
     for env in environments:
         if env not in actions.ENVIRONMENTS: raise ValueError('Environnement invalide.')
         try:
-            processed+=_poll_environment(db,database_path,client,env,secret)
+            count,supported=_poll_environment(db,database_path,client,env,secret,interactive=interactive)
+            processed+=count
+            if supported:probes.append(env)
+            if interactive and count==0:continue
             with actions.transaction(db):
                 from reservation_notifications import sync_episode
                 sync_episode(db,env,'poll',False)
@@ -130,14 +133,26 @@ def poll(db, database_path, site_url, client=None, environments=actions.ENVIRONM
                 sync_episode(db,env,'poll',True,critical=isinstance(error,ValueError))
                 db.execute('INSERT INTO wordpress_relay_state(environment,last_error) VALUES(?,?) ON CONFLICT(environment) DO UPDATE SET last_error=excluded.last_error',(env,message))
             errors.append({'environment':env,'error':message})
-    return {'configured':True,'processed':processed,'errors':errors}
+    return {'configured':True,'processed':processed,'errors':errors,'interactive':probes}
 
 
-def _poll_environment(db,database_path,client,env,secret):
+def _poll_environment(db,database_path,client,env,secret,*,interactive=False):
     # An idle cycle needs only technical state, never accounts or a catalogue.
-    value=client.post('/outbound/poll',{'environment':env,'protocol_version':4,'relay_revision':3})
+    payload={'environment':env,'protocol_version':4,'relay_revision':3}
+    import os
+    if (family.setting(db,'online_accounts_enabled')=='1' and family.setting(db,'module_users','1')=='1' and family.setting(db,'online_relay_environment','production')==env
+            and os.environ.get('OPENFABLAB_ONLINE_ENVIRONMENT','production')==env):
+        payload['account_portal_v1']=True
+        payload['account_bootstrap_v1']=True
+        payload['account_signup']=family.setting(db,'online_signup_enabled')=='1'
+    if interactive:
+        if 'account_portal_v1' not in payload:return 0,False
+        payload['interactive_only']=True
+    value=client.post('/outbound/poll',payload)
     if value.get('protocol_version')!=4 or value.get('relay_revision')!=3 or value.get('outbound_actions_v1') is not True:
         raise ValueError('Plugin incompatible : aucune action traitée.')
+    supported=('account_portal_v1' in payload and value.get('interactive_probe_v1') is True)
+    if interactive and supported and value.get('idle') is True:return 0,True
     envelopes=value.get('actions',[])
     if not isinstance(envelopes,list) or len(envelopes)>20: raise ValueError('File WordPress invalide.')
     queue=value.get('queue',{})
@@ -159,15 +174,17 @@ def _poll_environment(db,database_path,client,env,secret):
             for r in results:
                 db.execute('UPDATE wordpress_action_receipts SET acknowledged_at=? WHERE environment=? AND action_id=?',(int(time.time()),env,r['id']))
             db.execute('UPDATE wordpress_relay_state SET results_at=?,last_error=NULL WHERE environment=?',(datetime.now(timezone.utc).isoformat(),env))
-    return len(results)
+    return len(results),supported
 
 
 def start_worker(application, get_database, load_modules):
     import threading
     from runtime_policy import storage_guard, external_allowed
     def work():
-        next_catalogue=0;next_prune=0
+        next_catalogue=next_prune=next_full=next_probe=0
+        probe_envs=()
         while True:
+            wait=1
             interval=10
             try:
                 with application.app_context():
@@ -175,16 +192,35 @@ def start_worker(application, get_database, load_modules):
                     interval=actions.action_interval(family.setting(db,'reservation_action_interval_seconds','10'))
                     site=family.setting(db,'reservation_wordpress_url','')
                     if external_allowed(application.config['DATABASE']) and load_modules(db)['public_reservations'] and site:
+                        t=time.monotonic()
+                        if t>=next_full:
+                            next_full=t+interval
+                            result=poll(db,application.config['DATABASE'],site) or {}
+                            probe_envs=tuple(result.get('interactive',()))
+                            next_probe=time.monotonic()+3
+                            from online_mail import deliver_one
+                            with storage_guard(application.config['DATABASE']):
+                                deliver_one(db,application.config['DATABASE'])
+                        elif probe_envs and interval==10 and t>=next_probe:
+                            result=poll(db,application.config['DATABASE'],site,environments=probe_envs,interactive=True)
+                            next_probe=time.monotonic()+(1.5 if result.get('processed') else 3)
+                            if result.get('errors'):probe_envs=()
                         if time.monotonic()>=next_catalogue:
                             catalogue(db,application.config['DATABASE'],site,force=False)
                             from reservations_sync import sync_interval_seconds
                             next_catalogue=time.monotonic()+sync_interval_seconds(family.setting(db,'reservation_sync_interval_minutes','1'))
-                        poll(db,application.config['DATABASE'],site)
+                        t=time.monotonic()
+                        wait=max(.05,min(interval,next_full-t,next_probe-t if probe_envs and interval==10 else interval))
+                    else:
+                        wait=interval
                     if time.monotonic()>=next_prune:
                         with storage_guard(application.config['DATABASE']):
                             actions.prune_private_receipts(db)
+                            from online_accounts import prune
+                            with actions.transaction(db):prune(db,int(time.time()))
                         next_prune=time.monotonic()+300
             except Exception as error:
                 logging.getLogger(__name__).warning('WordPress relay: %s',type(error).__name__)
-            time.sleep(interval)
+                wait=interval
+            time.sleep(wait)
     threading.Thread(target=work,name='openfablab-outbound-actions',daemon=True).start()

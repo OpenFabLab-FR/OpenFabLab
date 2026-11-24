@@ -1,15 +1,27 @@
 {% extends 'base.html' %}
-{% block title %}Modèles d’e-mails de réservation · OpenFabLab{% endblock %}
-{% block body_class %}admin-page{% endblock %}
-{% block header_action %}<a class="header-link" href="{{ url_for('admin_settings_structure',_anchor='smtp') }}">← Structure</a>{% endblock %}
+{% block title %}Modèles d’e-mails automatiques · OpenFabLab{% endblock %}
+{% block body_class %}admin-page settings-page v218-settings-theme mail-templates-page{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('admin_notifications',_anchor='smtp-settings') }}">← Communication</a>{% endblock %}
 {% block content %}
-<section class="content-heading"><h1>Modèles d’e-mails de réservation</h1><p>Adaptez les messages envoyés par OpenFabLab. L’aperçu utilise uniquement des personnes et liens fictifs.</p></section>
+<section class="content-heading"><p class="eyebrow">Communication</p><h1>Modèles d’e-mails automatiques</h1><p>Personnalisez les e-mails de réservation, de comptes et de familles. L’aperçu utilise uniquement des données fictives.</p></section>
+{% include '_admin_nav.html' %}
+{% include '_settings_nav.html' %}
 {% for error in errors %}<p class="flash flash-error" role="alert">{{ error }}</p>{% endfor %}
-<section class="form-section"><form method="get" class="form-grid"><label class="form-field"><span>Message à personnaliser</span><select name="kind">{% for name,description in models.items() %}<option value="{{ name }}" {% if kind==name %}selected{% endif %}>{{ description[0] }}</option>{% endfor %}</select></label><div class="form-actions"><button class="admin-button secondary">Afficher le modèle</button></div></form></section>
+<section class="form-section"><form method="get" class="form-grid mail-template-select"><label class="form-field"><span>Message à personnaliser</span><select name="kind">{% for group,models in model_groups %}<optgroup label="{{ _(group) }}">{% for name,description in models.items() %}<option value="{{ name }}" {% if kind==name %}selected{% endif %}>{{ _(description[0]) }}</option>{% endfor %}</optgroup>{% endfor %}</select></label><div class="form-actions"><button class="admin-button secondary compact">Afficher le modèle</button></div></form></section>
 <section class="form-section"><form method="post" class="admin-form"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
 <label class="form-field"><span>Sujet</span><input name="subject" maxlength="200" value="{{ template.subject }}" required></label>
 <label class="form-field"><span>Contenu du message</span><textarea name="body" rows="12" maxlength="8000" required>{{ template.body }}</textarea></label>
-<details><summary>Variables disponibles</summary><p>{% for variable in variables %}<code>{{ '{' ~ variable ~ '}' }}</code> {% endfor %}</p><p>Utilisez chaque lien une seule fois. Le lien de gestion devient un bouton dans l’e-mail HTML ; le lien d’information n’apparaît que si l’animation en possède un. Le sujet accepte structure, animation, date, horaire et places. La date limite concerne les propositions.</p></details>
+{% if is_account %}<p class="form-help">Vous pouvez écrire votre signature à la fin du contenu. La mention de sécurité reste ajoutée à l’envoi.</p>{% endif %}
+<details class="settings-disclosure"><summary>Variables disponibles</summary>
+<p>Contenu : {% for variable in variables %}<code>{{ '{' ~ variable ~ '}' }}</code> {% endfor %}</p>
+<p>Sujet : {% for variable in subject_variables %}<code>{{ '{' ~ variable ~ '}' }}</code> {% endfor %}</p>
+{% if is_account %}
+{% if account_link %}<p>Placez le lien sécurisé où vous le souhaitez, une seule fois. S’il manque, OpenFabLab l’ajoute automatiquement. L’aperçu n’affiche jamais le lien réel.</p>{% endif %}
+{% if account_id %}<p>L’identifiant de borne est ajouté à la fin si la variable n’est pas utilisée.</p>{% endif %}
+{% else %}
+<p>Utilisez chaque lien une seule fois. Le lien de gestion devient un bouton dans l’e-mail HTML ; le lien d’information n’apparaît que si l’animation en possède un. La date limite concerne les propositions.</p>
+{% endif %}
+</details>
 <div class="form-actions"><button class="admin-button primary" name="action" value="save">Enregistrer le modèle</button><button class="admin-button secondary" name="action" value="preview">Voir l’aperçu</button><button class="admin-button secondary" name="action" value="reset" formnovalidate onclick="return confirm({{ _('Restaurer le modèle par défaut ?')|tojson|forceescape }})">Restaurer le modèle par défaut</button></div></form></section>
 <section class="form-section"><h2>Aperçu fictif</h2><p><strong>{{ preview_subject }}</strong></p><div class="reservation-mail-preview">{{ preview_html }}</div><p class="form-help">Cet aperçu n’envoie aucun e-mail.</p></section>
 {% endblock %}

@@ -24,9 +24,50 @@ INTRO={
  'expired':('Proposition expirée','La proposition pour « {animation} » a expiré. Aucune place n’a été confirmée par cette proposition.'),
  'declined':('Proposition refusée','Votre proposition pour « {animation} » a été refusée. Les places sont libérées.'),
 }
+ONLINE_INTRO={
+ 'online_verify':('Vérifiez votre adresse e-mail','Pour confirmer votre demande, ouvrez le lien dans le navigateur utilisé pour la commencer.'),
+ 'online_login':('Connexion à Mon compte','Pour vous connecter, ouvrez le lien dans le navigateur utilisé pour la demande.'),
+ 'online_recover':('Retrouver votre identifiant','Confirmez votre demande dans le même navigateur.'),
+ 'online_email':('Confirmer la nouvelle adresse','Confirmez la modification dans le navigateur de votre session.'),
+ 'online_activated':('Votre compte est activé','Votre compte OpenFabLab est actif. Votre identifiant de borne :'),
+ 'online_identifier':('Votre identifiant','Votre identifiant de borne :'),
+ 'online_review':('Demande reçue','Votre adresse a été vérifiée. L’équipe va examiner votre demande.'),
+ 'online_denied':('Décision de l’équipe','Votre demande n’a pas été acceptée. Contactez l’équipe pour en discuter.'),
+ 'online_family_done':('Rattachement familial','Votre espace familial a été actualisé.'),
+ 'online_child_welcome':('Identifiant et QR Code de votre enfant','La fiche de {prenom} {nom} est prête. Présentez le QR Code joint ou saisissez son identifiant sur la borne du FabLab. Ce code ne permet pas de se connecter sur Internet.'),
+ 'online_assistance':('Contacter l’équipe','Votre situation nécessite une vérification par l’équipe du FabLab.'),
+}
+ACCOUNT_LINK_MODELS={
+ 'online_verify':'Confirmer mon adresse e-mail',
+ 'online_login':'Me connecter',
+ 'online_recover':'Retrouver mon identifiant',
+ 'online_email':'Confirmer ma nouvelle adresse',
+}
+ACCOUNT_ID_MODELS={'online_activated','online_identifier','online_child_welcome'}
+ACCOUNT_NOTICE='Si vous n’êtes pas à l’origine de cette démarche, contactez votre FabLab.'
 
 
-def default(kind):
+def variables_for(kind,field='body'):
+    if kind not in ONLINE_INTRO:
+        return HEADERS if field=='subject' else VARIABLES
+    return {'structure'} | (
+        ({'lien_compte'} if kind in ACCOUNT_LINK_MODELS else set())
+        | ({'identifiant'} if kind in ACCOUNT_ID_MODELS else set())
+        | ({'prenom','nom'} if kind=='online_child_welcome' else set())
+        if field=='body' else set()
+    )
+
+
+def default(kind,locale='fr'):
+    if kind in ONLINE_INTRO:
+        from i18n import CATALOGS
+        tr=CATALOGS.get(locale,{})
+        subject,body=(tr.get(text,text) for text in ONLINE_INTRO[kind])
+        if kind in ACCOUNT_LINK_MODELS:
+            body+='\n\n{lien_compte}'
+        if kind in ACCOUNT_ID_MODELS:
+            body+=' {identifiant}'
+        return dict(subject=subject,body=body)
     label,intro=INTRO[kind]
     body=intro+'\n\n{date} · {horaire}\n\nParticipants :\n{participants}\n\nNombre de participants : {places}.\n'
     if kind=='offer_pending':
@@ -39,6 +80,10 @@ def default(kind):
 
 
 def key(kind,field):
+    if kind in ONLINE_INTRO:
+        # Local to the installation, like the previous portal signature;
+        # portable profile imports do not replace these texts implicitly.
+        return kind.replace('online_','online_email_',1)+'_'+field
     return 'reservation_email_'+kind+'_'+field
 
 
@@ -46,7 +91,7 @@ def allowed_key(name):
     return name in {key(kind,field) for kind in INTRO for field in ('subject','body')}
 
 
-def validate(value,field):
+def validate(value,field,kind=None):
     if isinstance(value,str) and field=='body':
         # HTML forms submit textarea lines as CRLF. Normalize only legitimate
         # pairs; lone CR and every subject newline remain forbidden.
@@ -56,28 +101,69 @@ def validate(value,field):
     if any(ord(c)<32 and c not in ('\n','\t') for c in value) or (field=='subject' and ('\n' in value or '\r' in value)):
         raise ValueError('Le modèle contient des caractères de contrôle interdits.')
     try:
-        for _,name,spec,conversion in Formatter().parse(value):
-            if name is not None and (name not in (HEADERS if field=='subject' else VARIABLES) or spec or conversion):
+        fields=[(name,spec,conversion) for _,name,spec,conversion in Formatter().parse(value) if name is not None]
+        for name,spec,conversion in fields:
+            if name not in variables_for(kind,field) or spec or conversion:
                 raise ValueError('Variable inconnue ou format non autorisé dans le modèle.')
     except ValueError:
         raise ValueError('Utilisez uniquement les variables documentées, entourées d’accolades.') from None
-    for name in ('lien_reservation','lien_information'):
-        if value.count('{'+name+'}')>1:
+    for name in ('lien_reservation','lien_information','lien_compte'):
+        if sum(field_name==name for field_name,_,_ in fields)>1:
             raise ValueError('Chaque lien ne peut apparaître qu’une seule fois dans un modèle.')
     return value.strip()
 
 
-def load(db,kind):
-    result=default(kind)
+def load(db,kind,locale='fr'):
+    result=default(kind,locale)
     if db is not None:
         for field in result:
             row=db.execute('SELECT value FROM app_settings WHERE key=?',(key(kind,field),)).fetchone()
             if row:
                 try:
-                    result[field]=validate(row[0],field)
+                    result[field]=validate(row[0],field,kind)
                 except ValueError:
                     pass  # Invalid old/imported setting never prevents delivery.
     return result
+
+
+def action_link(url,label):
+    return '<a class="reservation-mail-button" href="'+html.escape(url,quote=True)+'" style="display:inline-block;background:#2e809b;color:white;padding:12px 18px;border-radius:10px;text-decoration:none">'+html.escape(label)+'</a>'
+
+
+def mail_document(body,locale='fr'):
+    return '<!doctype html><html lang="'+html.escape(locale,quote=True)+'"><body><div style="font-family:Arial,sans-serif;line-height:1.6;max-width:640px;margin:auto">'+body+'</div></body></html>'
+
+
+def render_online(kind,template,structure,url='',public_id='',locale='fr',*,first_name='',last_name=''):
+    from i18n import CATALOGS
+    tr=CATALOGS.get(locale,{})
+    values=dict(structure=re.sub(r'[\x00-\x1f]',' ',structure or 'Mon FabLab'),
+                lien_compte=url,identifiant=public_id,prenom=first_name,nom=last_name)
+    subject=validate(template['subject'],'subject',kind).format_map(values)
+    subject=re.sub(r'[\r\n\x00-\x1f]',' ',subject)[:250]
+    raw=validate(template['body'],'body',kind)
+    # Escaped braces are literal text, not a real variable.
+    used={name for _,name,_,_ in Formatter().parse(raw) if name is not None}
+    if kind in ACCOUNT_LINK_MODELS:
+        if not url:
+            raise ValueError('Lien sécurisé de compte manquant.')
+        if 'lien_compte' not in used:
+            raw+='\n\n{lien_compte}'
+    if kind in ACCOUNT_ID_MODELS:
+        if not public_id:
+            raise ValueError('Identifiant usager manquant.')
+        if 'identifiant' not in used:
+            raw+='\n\n'+tr.get('Votre identifiant de borne :','Votre identifiant de borne :')+' {identifiant}'
+    if kind=='online_child_welcome' and not {'prenom','nom'}<=used:
+        raw+='\n\n{prenom} {nom}'
+    notice=tr.get(ACCOUNT_NOTICE,ACCOUNT_NOTICE)
+    body=raw.format_map(values)+'\n\n'+notice
+    marker='\x01ACCOUNT\x01'
+    html_body=html.escape(raw.format_map(dict(values,lien_compte=marker))+'\n\n'+notice).replace('\n','<br>')
+    if kind in ACCOUNT_LINK_MODELS:
+        label=ACCOUNT_LINK_MODELS[kind]
+        html_body=html_body.replace(marker,action_link(url,tr.get(label,label)))
+    return subject,body,mail_document(html_body,locale if locale in CATALOGS else 'fr')
 
 
 def date_label(value):
@@ -108,9 +194,9 @@ def render(payload,kind,template,url):
     # Render link variables as buttons, not duplicated raw technical URLs.
     html_raw=raw.format_map(dict(values,lien_reservation='\x01MANAGE\x01',lien_information='\x01INFO\x01'))
     escaped=html.escape(html_raw).replace('\n','<br>')
-    escaped=escaped.replace('\x01MANAGE\x01','<a class="reservation-mail-button" href="'+html.escape(url,quote=True)+'" style="display:inline-block;background:#2e809b;color:white;padding:12px 18px;border-radius:10px;text-decoration:none">Gérer ma réservation</a>')
+    escaped=escaped.replace('\x01MANAGE\x01',action_link(url,'Gérer ma réservation'))
     escaped=escaped.replace('\x01INFO\x01','<a href="'+html.escape(information,quote=True)+'">En savoir plus sur cette animation</a>')
-    return subject,body,'<!doctype html><html lang="fr"><body><div style="font-family:Arial,sans-serif;line-height:1.6;max-width:640px;margin:auto">'+escaped+'</div></body></html>'
+    return subject,body,mail_document(escaped)
 
 
 def build_message(config,row,base_url,link_url=None,db=None):
@@ -151,7 +237,7 @@ def register(application,a):
         require_team(True)
         db=a.get_database()
         kind=request.values.get('kind','confirmed')
-        if kind not in INTRO:
+        if kind not in INTRO and kind not in ONLINE_INTRO:
             abort(400)
         template=load(db,kind)
         errors=[]
@@ -164,7 +250,7 @@ def register(application,a):
                         db.execute('DELETE FROM app_settings WHERE key IN (?,?)',(key(kind,'subject'),key(kind,'body')))
                     flash('Modèle par défaut restauré.','success')
                     return redirect(url_for('reservation_emails.settings',kind=kind))
-                template={field:validate(request.form.get(field,''),field) for field in ('subject','body')}
+                template={field:validate(request.form.get(field,''),field,kind) for field in ('subject','body')}
                 if action=='save':
                     with db:
                         for field,value in template.items():
@@ -178,7 +264,16 @@ def register(application,a):
         fake=dict(title='Atelier fictif de fabrication',date='2026-11-12',hours='10:00–12:00',
             participants=['Camille EXEMPLE','Alex EXEMPLE'],count=2,structure='Atelier Exemple',
             information_url='https://example.invalid/programme',expires='2026-11-11T12:00:00+00:00',timezone='Europe/Paris')
-        subject,plain,html_body=render(fake,kind,template,'https://example.invalid/reservation-fictive')
-        return render_template('reservation_email_settings.html',kind=kind,models=INTRO,
-            template=template,errors=errors,preview_subject=subject,preview_html=Markup(html_body.split('<body>',1)[1].split('</body>',1)[0]),variables=sorted(VARIABLES))
+        is_account=kind in ONLINE_INTRO
+        if is_account:
+            subject,_,html_body=render_online(kind,template,fake['structure'],
+                'https://example.invalid/mon-compte/#lien-de-demonstration',public_id='0420',first_name='Camille',last_name='EXEMPLE')
+        else:
+            subject,_,html_body=render(fake,kind,template,'https://example.invalid/reservation-fictive')
+        return render_template('reservation_email_settings.html',kind=kind,
+            model_groups=(('Réservations',INTRO),('Comptes et familles',ONLINE_INTRO)),
+            template=template,errors=errors,preview_subject=subject,
+            preview_html=Markup(html_body.split('<body>',1)[1].split('</body>',1)[0]),
+            variables=sorted(variables_for(kind)),subject_variables=sorted(variables_for(kind,'subject')),
+            is_account=is_account,account_link=kind in ACCOUNT_LINK_MODELS,account_id=kind in ACCOUNT_ID_MODELS)
     application.register_blueprint(bp)

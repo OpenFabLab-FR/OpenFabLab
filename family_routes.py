@@ -42,9 +42,8 @@ def register(application, api):
             result['family_responsibles'] = families.responsibles(db,current) if current else []
             result['family_members'] = families.members(db,current) if current else []
             result['family_status'] = families.LABELS[families.state(db,person)] if person else ''
-            from family_waitlist import contact
-            details=contact(db,current) if person and person['active'] else None
-            result['family_managed_contact']=details if details and details['user_id']!=current else None
+            from family_waitlist import contacts
+            result['family_managed_contacts']=[d for d in contacts(db,current) if d['user_id']!=current] if person and person['active'] else []
             result['family_warnings'] = []
             if person:
                 if families.state(db,person)=='dependent' and not result['family_responsibles']:

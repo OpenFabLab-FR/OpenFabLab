@@ -1,4 +1,5 @@
 <!doctype html>
+{% from "_summary_icons.html" import icon %}
 <html class="{% block html_class %}{% endblock %}" lang="{{ ui_language }}" data-service-worker-url="{{ url_for('service_worker') }}" data-keep-screen-awake="{% if keep_screen_awake|default(false) %}1{% else %}0{% endif %}" data-lock-home-scroll="{% if lock_home_scroll|default(false) %}1{% else %}0{% endif %}" data-wake-lock-start="{{ (wake_lock|default({})).start|default('09:00') }}" data-wake-lock-end="{{ (wake_lock|default({})).end|default('17:00') }}">
 <head>
     <meta charset="utf-8">
@@ -24,6 +25,7 @@
     <link rel="stylesheet" href="{{ url_for('static',filename='v214.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='v215.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='i18n.css') }}">
+    {% if admin_access_role in ('admin','moderator') and request.path.startswith('/admin') %}<link rel="stylesheet" href="{{ url_for('static',filename='online-admin.css') }}">{% endif %}
     <script type="application/json" id="ui-language-data">{{ dict(language=ui_language,catalog=ui_catalog,admin=ui_admin,idle=ui_idle_minutes,idleEnabled=ui_idle_enabled)|tojson }}</script>
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -36,7 +38,24 @@
         </a>{% endif %}
             {% if admin_search_available %}<button type="button" class="header-link header-button v215-search-trigger" data-admin-search-open aria-label="Rechercher dans l’administration" aria-keyshortcuts="Control+k Meta+k"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button></div>{% endif %}
         <div class="header-tools">
+            {% if admin_search_available and (show_task_counter or (ui_language_switch and ui_language_choices|length>1)) %}<div class="v218-header-menus">{% endif %}
+            {% if show_task_counter %}
+            <details class="ui-language-menu v218-task-menu" data-online-tasks hidden data-url="{{ url_for('online_admin.counts') }}">
+                <summary aria-labelledby="task-menu-title task-menu-count">{{ icon('tasks') }}<span class="v218-task-badge" id="task-menu-count" data-task-total></span></summary>
+                <div class="ui-language-form v218-task-panel">
+                    <strong id="task-menu-title">{{ _('Éléments à traiter') }}</strong>
+                    <ul data-task-groups></ul>
+                    <p class="muted" data-task-empty hidden>{{ _('Rien à traiter pour le moment') }}</p>
+                    <a class="v218-task-summary" href="{{ url_for('admin',_anchor='summary-tasks') }}">{{ _('Voir le Résumé') }}{{ icon('chevron') }}</a>
+                </div>
+                {% for kind in ('people','resource','maintenance','loan','report','activity','tasks','invoice','quote','calendar') %}
+                <template data-task-icon="{{ kind }}">{{ icon('resource' if kind=='maintenance' else kind) }}</template>
+                {% endfor %}
+            </details>
+            <script defer src="{{ url_for('static',filename='online-tasks.js') }}"></script>
+            {% endif %}
             {% if ui_language_switch and ui_language_choices|length>1 %}<details class="ui-language-menu"><summary aria-label="Choisir la langue"><span class="ui-language-flag" aria-hidden="true">{{ ui_language_registry[ui_language][1] }}</span><span>{{ ui_language|upper }}</span><svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="m1 1 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></summary><form class="ui-language-form" action="{{ url_for('language.select') }}" method="post"><input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}"><input type="hidden" name="scope" value="{{ 'admin' if ui_admin else 'kiosk' }}"><input type="hidden" name="next" value="{{ request.script_root ~ request.full_path }}">{% for lang,label in ui_language_names %}{% if lang in ui_language_choices %}<button type="submit" name="language" value="{{ lang }}" lang="{{ lang }}" {% if lang==ui_language %}aria-current="true"{% endif %}>{{ label }}</button>{% endif %}{% endfor %}</form></details>{% endif %}
+            {% if admin_search_available and (show_task_counter or (ui_language_switch and ui_language_choices|length>1)) %}</div>{% endif %}
             {% if (structure.show_header_institution_logo and structure.logo_status.header_institution) or (structure.show_network_logo and structure.logo_status.network) %}
             <div class="partner-logos" aria-label="Partenaires de {{ structure.name }}">
                 {% if structure.show_header_institution_logo and structure.logo_status.header_institution %}<img src="{{ url_for('structure_logo', kind='header_institution') }}" alt="Logo institutionnel d’en-tête">{% endif %}

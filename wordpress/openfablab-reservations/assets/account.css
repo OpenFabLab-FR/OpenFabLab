@@ -1,0 +1,95 @@
+/* Account-only primitives. Neutral palette; the site theme still owns its page. */
+.openfablab-public.ofl-account {
+  --ofl-bg:#fff; --ofl-muted-bg:#f2f6f7; --ofl-border:#d4e0e4; --ofl-text:#172b34;
+  --ofl-muted:#506570; --ofl-accent:#165e72; --ofl-on-accent:#fff; --ofl-focus:#16799a;
+  --ofl-ok-bg:#e9f6ed; --ofl-ok:#245938; --ofl-error-bg:#fcebe8; --ofl-error:#853c30;
+  box-sizing:border-box; max-width:64rem; padding:clamp(.8rem,2vw,1.4rem);
+  margin:clamp(.8rem,4vw,2.5rem) auto; color:var(--ofl-text); text-align:start; line-height:1.5;
+  background:var(--ofl-muted-bg); border:1px solid var(--ofl-border); border-radius:1.4rem;
+}
+.ofl-account *, .ofl-account *::before, .ofl-account *::after {box-sizing:border-box}
+.ofl-account .ofl-module-toolbar {display:flex;align-items:center;justify-content:space-between;gap:.7rem;min-height:3.25rem;margin:0 0 .85rem}
+.ofl-account .ofl-module-toolbar h2 {margin:0;color:var(--ofl-text);font-weight:750;font-size:clamp(1.55rem,4vw,2.1rem);line-height:1.18}
+.ofl-account :is(h3,h4) {color:var(--ofl-text);line-height:1.28;margin:0;font-weight:700}
+.ofl-account h3 {font-size:clamp(1.1rem,2vw,1.3rem)}
+.ofl-account h4 {font-size:1rem}
+.ofl-account :is(p,small,dl) {margin:0;color:var(--ofl-muted)}
+.ofl-account small {display:block;line-height:1.5}
+.ofl-account [hidden] {display:none!important}
+.ofl-account :is(.ofl-account-body,.ofl-account-section,.ofl-account-card) {display:grid;gap:.85rem;min-width:0}
+.ofl-account .ofl-account-section:empty {display:none}
+.ofl-account .ofl-account-card {background:var(--ofl-bg);padding:clamp(.85rem,3vw,1.35rem);border:1px solid var(--ofl-border);border-radius:1rem;box-shadow:0 3px 10px #122d3910}
+.ofl-account .ofl-account-card .ofl-account-card {box-shadow:none}
+.ofl-account .ofl-account-card > .ofl-account-card {background:var(--ofl-muted-bg)}
+.ofl-account .ofl-account-actions,.ofl-account .ofl-account-tabs {display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+.ofl-account .ofl-account-tabs {padding:.35rem;background:var(--ofl-bg);border:1px solid var(--ofl-border);border-radius:.95rem}
+.openfablab-public.ofl-account .ofl-account-tabs button.is-quiet {margin-inline-start:auto}
+/* Beat generic theme button/submit rules without styling other shortcodes. */
+.openfablab-public.ofl-account button.ofl-account-btn {
+  display:inline-flex;align-items:center;justify-content:center;align-self:start;justify-self:start;
+  width:auto;max-width:100%;min-height:2.7rem;height:auto;line-height:1.3;
+  margin:0;padding:.55rem .9rem;overflow-wrap:anywhere;
+  border:1px solid transparent;border-radius:.65rem;background:transparent;color:var(--ofl-accent);
+  font:inherit;font-size:.94rem;font-weight:680;letter-spacing:normal;text-transform:none;text-decoration:none;
+  text-align:center;box-shadow:none;cursor:pointer;
+}
+.openfablab-public.ofl-account button.is-secondary {background:var(--ofl-bg);border-color:var(--ofl-border)}
+.openfablab-public.ofl-account button:is(.is-secondary,.is-quiet,.is-tab):hover {background:var(--ofl-muted-bg);color:var(--ofl-accent)}
+.openfablab-public.ofl-account button.is-primary,.openfablab-public.ofl-account button.is-tab[aria-current=page] {background:var(--ofl-accent);color:var(--ofl-on-accent)}
+.openfablab-public.ofl-account button.is-primary:hover {filter:brightness(.90)}
+.openfablab-public.ofl-account button:disabled {opacity:.65;cursor:wait}
+.ofl-account .ofl-account-btn svg {width:1.05em;height:1.05em;margin-inline-end:.38em;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ofl-account a {color:var(--ofl-accent)}
+.ofl-account :is(button,a,input,select):focus-visible {outline:2px solid var(--ofl-focus);outline-offset:3px}
+.ofl-account :is(.ofl-account-grid,.ofl-account-phone) {display:grid;gap:.75rem;grid-template-columns:repeat(2,minmax(0,1fr))}
+.ofl-account .ofl-account-phone {grid-template-columns:minmax(5.5rem,.28fr) minmax(0,1fr)}
+.ofl-account .ofl-account-field {display:grid;gap:.33rem;min-width:0;font-weight:600}
+.ofl-account .ofl-account-field > span {overflow-wrap:anywhere}
+.openfablab-public.ofl-account :is(input:not([type=checkbox]),select) {
+  width:100%;min-width:0;max-width:100%;min-height:2.65rem;margin:0;padding:.48rem .65rem;
+  border:1px solid var(--ofl-border);border-radius:.55rem;color:var(--ofl-text);background:var(--ofl-bg);font:inherit;font-weight:400;box-shadow:none
+}
+.openfablab-public.ofl-account select {appearance:none;padding-inline-end:2rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%237a939f' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-size:.75rem;background-position:right .65rem center}
+.ofl-account .ofl-account-date {position:relative;display:block}
+.ofl-account .ofl-account-date small {position:absolute;pointer-events:none;display:none;inset-inline-start:.7rem;top:50%;transform:translateY(-50%);font-weight:400}
+.ofl-account .ofl-account-date[data-empty="1"]:not(:focus-within) small {display:block}
+.openfablab-public.ofl-account .ofl-account-date[data-empty="1"]:not(:focus-within) input {color:transparent}
+.ofl-account .ofl-account-date[data-empty="1"]:not(:focus-within) input::-webkit-datetime-edit {opacity:0}
+.ofl-account .ofl-account-date[data-empty="1"]:not(:focus-within) input::-webkit-date-and-time-value {opacity:0}
+.ofl-account label.ofl-account-check {display:flex;align-items:flex-start;gap:.55rem;cursor:pointer;overflow-wrap:anywhere}
+.ofl-account input[type=checkbox] {flex:none;width:1.1rem;height:1.1rem;margin:.2rem 0 0;accent-color:var(--ofl-accent)}
+.ofl-account .ofl-account-notice {padding:.7rem .85rem;margin:0 0 .8rem;background:var(--ofl-bg);border:1px solid var(--ofl-border);border-radius:.75rem;color:var(--ofl-muted)}
+.ofl-account .ofl-account-notice:empty {display:none}
+.ofl-account .ofl-account-notice[data-kind=success] {color:var(--ofl-ok);background:var(--ofl-ok-bg)}
+.ofl-account .ofl-account-notice[data-kind=error] {color:var(--ofl-error);background:var(--ofl-error-bg)}
+.ofl-account .ofl-account-notice[data-kind=loading]::before {
+  content:"";display:inline-block;width:.85em;height:.85em;margin-inline-end:.55rem;
+  border:2px solid var(--ofl-border);border-top-color:var(--ofl-accent);border-radius:50%;animation:ofl-account-load .8s linear infinite
+}
+@keyframes ofl-account-load {to {transform:rotate(360deg)}}
+.ofl-account .ofl-account-data {display:grid;grid-template-columns:minmax(6rem,.35fr) minmax(0,1fr);gap:.45rem .8rem}
+.ofl-account .ofl-account-data dt {font-weight:650;color:var(--ofl-text)}
+.ofl-account .ofl-account-data dd {margin:0;overflow-wrap:anywhere}
+.ofl-account .ofl-account-qr {display:flex;align-items:flex-start;flex-wrap:wrap;gap:.75rem}
+.ofl-account .ofl-account-qr img {width:9rem;height:9rem;background:#fff;border:1px solid var(--ofl-border);border-radius:.6rem}
+.ofl-account .ofl-account-bookings {display:grid;gap:.65rem;list-style:none;margin:0;padding:0}
+.ofl-account .ofl-account-bookings li {display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;border:1px solid var(--ofl-border);padding:.75rem;border-radius:.7rem;overflow-wrap:anywhere}
+.ofl-account .ofl-account-bookings li strong {flex-basis:100%}
+.ofl-account .ofl-account-badge {border-radius:1rem;background:var(--ofl-muted-bg);color:var(--ofl-accent);padding:.15rem .65rem;font-size:.88rem}
+@media (max-width:44rem) {
+  .openfablab-public.ofl-account .ofl-account-tabs button.is-quiet {margin-inline-start:0}
+}
+@media (max-width:34rem) {
+  .ofl-account .ofl-account-grid {grid-template-columns:minmax(0,1fr)}
+  .ofl-account .ofl-account-tabs {gap:.25rem}
+  .openfablab-public.ofl-account button.is-tab {padding-inline:.58rem}
+}
+@media (prefers-color-scheme:dark) {
+  .openfablab-public.ofl-account {
+    --ofl-bg:#1d3038; --ofl-muted-bg:#15262e; --ofl-border:#415c66; --ofl-text:#edf6f8;
+    --ofl-muted:#c3d4dc; --ofl-accent:#a0d9e7; --ofl-on-accent:#112430; --ofl-focus:#bce9fa;
+    --ofl-ok-bg:#1b392e; --ofl-ok:#a6eac4; --ofl-error-bg:#492c2d; --ofl-error:#ffcdc6;
+    color-scheme:dark;
+  }
+}
+@media (prefers-reduced-motion:reduce) {.ofl-account .ofl-account-notice::before{animation:none}}

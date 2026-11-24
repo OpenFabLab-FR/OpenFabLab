@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) { exit; }
 
 /** Temporary transport only: NO capacity, identity or family business rules. */
 final class OpenFabLab_Relay {
-    private const TYPES = ['identify','contact','reserve','guest','view','cancel','accept','decline'];
+    private const TYPES = ['identify','contact','reserve','guest','view','cancel','accept','decline','account'];
     private static $signed = [];
     private static function secret() { return (string) get_option('openfablab_res_sync_secret', ''); }
     private static function env($data) {
@@ -119,13 +119,24 @@ final class OpenFabLab_Relay {
         try {
             if (!is_ssl() || !self::secret()) { return self::error('La connexion doit être configurée par l’équipe.'); }
             $env=self::env(['environment'=>$request->get_param('environment')]);
+            $account=$request->get_param('account')==='1';
+            $known=$account && !!ofl_account_cookie();
+            if ($account && !$known) {
+                setcookie('__Host-ofl-account',bin2hex(random_bytes(32)),['expires'=>time()+3600,'path'=>'/','secure'=>true,'httponly'=>true,'samesite'=>'Strict']);
+            }
             $cookie=self::cookie();
             if (!$cookie) {
                 $cookie=bin2hex(random_bytes(32));
                 setcookie('ofl_relay_session',$cookie,['expires'=>time()+1200,'path'=>'/','secure'=>true,'httponly'=>true,'samesite'=>'Strict']);
             }
             $until=time()+1200;
-            return self::reply(['csrf'=>$until.'.'.hash_hmac('sha256',"csrf/v1|$cookie|$env|$until",wp_salt('auth'))]);
+            $response=['csrf'=>$until.'.'.hash_hmac('sha256',"csrf/v1|$cookie|$env|$until",wp_salt('auth'))];
+            if ($account) {
+                $portal=get_transient('ofl_portal_options_'.$env);
+                $response['known_browser']=$known;
+                $response['portal']=is_array($portal)?$portal:null;
+            }
+            return self::reply($response);
         } catch (Throwable $error) { return self::error('Session indisponible.'); }
     }
     public static function permission($request) {
@@ -144,7 +155,7 @@ final class OpenFabLab_Relay {
             // Session/IP rate limits: never store an IP or a contact in logs.
             $rate='ofl_relay_rate_'.hash_hmac('sha256',(string)($_SERVER['REMOTE_ADDR'] ?? ''),wp_salt('auth')).'_'.(string)intdiv(time(),60);
             $count=(int)get_transient($rate);
-            if ($count>=120) { return self::error('Patientez avant de réessayer.',429); }
+            if ($count>=120) { return new WP_Error('openfablab_rate','Patientez avant de réessayer.',['status'=>429,'retry_after'=>61-(time()%60)]); }
             set_transient($rate,$count+1,90);
             return true;
         } catch (Throwable $error) { return self::error('Demande invalide.',400); }
@@ -213,13 +224,14 @@ final class OpenFabLab_Relay {
             $raw=wp_json_encode($data,JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             if (strlen($raw)>16384) { return self::error('Demande trop volumineuse.',400); }
             $hash=hash('sha256',$raw); $session=self::session_hash();
+            if ($type==='account') { $session=ofl_account_binding($env); }
             $id=substr(hash_hmac('sha256',"action/v1|$env|$session|$client_key",self::secret()),0,48);
             $table=OpenFabLab_Database::table('relay_actions');
             OpenFabLab_Database::assert_transactional();
             if ((int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE environment=%s AND state IN ('pending','processing') AND expires_at>%d",$env,time()))>=5000) {
                 return self::error('Le service est momentanément occupé. Réessayez plus tard.',429);
             }
-            $ok=$wpdb->query($wpdb->prepare("INSERT IGNORE INTO $table (action_id,environment,action_type,session_hash,request_key,payload_hash,payload_cipher,created_at,expires_at) VALUES(%s,%s,%s,%s,%s,%s,%s,%d,%d)",$id,$env,$type,$session,$client_key,$hash,self::encrypt($raw),time(),time()+86400));
+            $ok=$wpdb->query($wpdb->prepare("INSERT IGNORE INTO $table (action_id,environment,action_type,session_hash,request_key,payload_hash,payload_cipher,created_at,expires_at) VALUES(%s,%s,%s,%s,%s,%s,%s,%d,%d)",$id,$env,$type,$session,$client_key,$hash,self::encrypt($raw),time(),time()+($type==='account'?300:86400)));
             if ($ok===false) { throw new RuntimeException(); }
             $prior=$wpdb->get_row($wpdb->prepare("SELECT action_type,payload_hash FROM $table WHERE action_id=%s AND environment=%s AND session_hash=%s",$id,$env,$session));
             if (!$prior || $prior->action_type!==$type || !hash_equals($prior->payload_hash,$hash)) { return self::error('Cette demande a déjà été utilisée pour un autre choix.',409); }
@@ -232,10 +244,18 @@ final class OpenFabLab_Relay {
         try {
             $data=self::body($request); $env=self::env($data); $key=$data['request_key'] ?? '';
             if (!preg_match('/^[a-f0-9]{48}$/D',(string)$key)) { return self::error('Demande inconnue.',404); }
-            $row=$wpdb->get_row($wpdb->prepare('SELECT * FROM '.OpenFabLab_Database::table('relay_actions').' WHERE environment=%s AND session_hash=%s AND request_key=%s',$env,self::session_hash(),$key));
+            $session=($data['account']??false)===true ? ofl_account_binding($env) : self::session_hash();
+            $row=$wpdb->get_row($wpdb->prepare('SELECT * FROM '.OpenFabLab_Database::table('relay_actions').' WHERE environment=%s AND session_hash=%s AND request_key=%s',$env,$session,$key));
             if (!$row) { return self::error('Demande inconnue.',404); }
             if ($row->expires_at<=time()) { return self::reply(['state'=>'expired','message'=>'Cette demande a expiré. Identifiez-vous à nouveau.']); }
-            if ($row->state==='done' && $row->result_cipher) { return self::reply(['state'=>'done','result'=>json_decode(self::decrypt($row->result_cipher),true)]); }
+            if ($row->state==='done' && $row->result_cipher) {
+                $result=json_decode(self::decrypt($row->result_cipher),true);
+                if ($row->action_type==='account' && ($result['ok']??false)===true && ($result['value']['signed_out']??false)===true) {
+                    $wpdb->query($wpdb->prepare('DELETE FROM '.OpenFabLab_Database::table('relay_actions')." WHERE environment=%s AND session_hash=%s AND action_type='account' AND state='done'",$env,$session));
+                    setcookie('__Host-ofl-account','',['expires'=>1,'path'=>'/','secure'=>true,'httponly'=>true,'samesite'=>'Strict']);
+                }
+                return self::reply(['state'=>'done','result'=>$result]);
+            }
             return self::reply(['state'=>'pending','message'=>'Vérification en cours…']);
         } catch (Throwable $error) { return self::error(); }
     }
@@ -326,10 +346,29 @@ final class OpenFabLab_Relay {
         try {
             $data=self::body($request);$env=self::env($data);
             if (($data['protocol_version'] ?? 0)!==4 || ($data['relay_revision'] ?? 0)!==3) { return self::error('Versions incompatibles.',409); }
+            $table=OpenFabLab_Database::table('relay_actions');
+            $accounts=($data['account_portal_v1']??false)===true;
+            $base=['protocol_version'=>4,'relay_revision'=>3,'outbound_actions_v1'=>true,'interactive_probe_v1'=>true];
+            $fast=$accounts && ($data['interactive_only']??false)===true;
+            if ($fast) {
+                // The signed, nonce-protected idle probe does not run housekeeping
+                // or take a queue write lock. The regular poll still does both.
+                $pending=$wpdb->get_var($wpdb->prepare("SELECT 1 FROM $table WHERE environment=%s AND action_type='account' AND state='pending' AND expires_at>%d LIMIT 1",$env,time()));
+                if ($wpdb->last_error) { throw new RuntimeException(); }
+                if (!$pending) { return $base+['idle'=>true]; }
+            }
             OpenFabLab_Database::assert_transactional();
-            self::prune(); $table=OpenFabLab_Database::table('relay_actions');
+            if (!$fast) {
+                self::prune();
+                if ($accounts) { set_transient('ofl_portal_ready_'.$env,'1',120); }
+                else { delete_transient('ofl_portal_ready_'.$env); }
+                if ($accounts && ($data['account_bootstrap_v1']??false)===true) {
+                    set_transient('ofl_portal_options_'.$env,['signup'=>($data['account_signup']??false)===true,'bootstrap'=>true],120);
+                } else { delete_transient('ofl_portal_options_'.$env); }
+            }
             if ($wpdb->query('START TRANSACTION')===false) { throw new RuntimeException(); }
-            $rows=$wpdb->get_results($wpdb->prepare("SELECT * FROM $table WHERE environment=%s AND expires_at>%d AND (state='pending' OR (state='processing' AND lease_until<%d)) ORDER BY seq LIMIT 20 FOR UPDATE",$env,time(),time()));
+            $filter=$accounts?'':" AND action_type<>'account'";
+            $rows=$wpdb->get_results($wpdb->prepare("SELECT * FROM $table WHERE environment=%s AND expires_at>%d $filter AND (state='pending' OR (state='processing' AND lease_until<%d)) ORDER BY seq LIMIT 20 FOR UPDATE",$env,time(),time()));
             if ($wpdb->last_error) { throw new RuntimeException(); }
             $result=[];
             foreach ($rows as $row) {
@@ -339,7 +378,7 @@ final class OpenFabLab_Relay {
             }
             if ($wpdb->query('COMMIT')===false) { throw new RuntimeException(); }
             update_option('openfablab_relay_poll_'.$env,time(),false);
-            return ['protocol_version'=>4,'relay_revision'=>3,'outbound_actions_v1'=>true,'actions'=>$result,'queue'=>self::queue_state($env)];
+            return $base+['actions'=>$result,'queue'=>self::queue_state($env)];
         } catch (Throwable $error) { $wpdb->query('ROLLBACK'); return self::error('Demandes indisponibles.'); }
     }
     public static function results($request) {
@@ -362,7 +401,7 @@ final class OpenFabLab_Relay {
                     if (!hash_equals($row->result_hash,$digest)) { throw new RuntimeException(); }
                 } else {
                     if ($row->state!=='processing' || !hash_equals($row->lease_id,(string)($item['lease'] ?? ''))) { throw new RuntimeException(); }
-                    $ttl=in_array($row->action_type,['identify','contact','view'],true)?1200:86400;
+                    $ttl=$row->action_type==='account'?60:(in_array($row->action_type,['identify','contact','view'],true)?1200:86400);
                     if ($wpdb->query($wpdb->prepare("UPDATE $table SET state='done',result_cipher=%s,result_hash=%s,result_ok=%d,payload_cipher=NULL,acknowledged_at=%d,expires_at=%d WHERE seq=%d",self::encrypt($json),$digest,$item['result']['ok']?1:0,time(),time()+$ttl,$row->seq))!==1) { throw new RuntimeException(); }
                 }
                 $ack[]=$row->action_id;

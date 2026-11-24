@@ -70,7 +70,7 @@
  function reconcile(){
   scheduled=false;
   for(const root of modules.keys())if(!root.isConnected)modules.delete(root);
-  const ordered=document.querySelectorAll('.openfablab-reservations[data-environment],[data-ofl-public],[data-openfablab-link]');
+  const ordered=document.querySelectorAll('.openfablab-reservations[data-environment],[data-ofl-public],[data-openfablab-link],.ofl-account');
   const first=[...ordered].find(root=>modules.has(root)&&!root.hidden&&root.getClientRects().length&&modules.get(root).isConnected);
   if(!cfg.multilingual||!first){menu?.remove();return;}
   menu=menu||languageMenu();const host=modules.get(first);if(menu.parentElement!==host){closeMenu();host.append(menu);}

@@ -56,10 +56,39 @@ final class OpenFabLab_Admin {
         } elseif ($kind==='error') { echo OpenFabLab_I18n::literal('<p class="ofl-help">Le stockage du relais doit être vérifié. Consultez le diagnostic avancé.</p>'); }
         echo '</div>';
     }
-    private static function shortcode($env) {
-        $id='ofl-shortcode-'.$env;
-        echo '<label for="'.$id.'">'.($env==='production'?OpenFabLab_I18n::text('Page publique'):OpenFabLab_I18n::text('Page de test')).'</label><div class="ofl-copy"><input readonly id="'.$id.'" value="'
-            .esc_attr('[openfablab_reservations environment="'.$env.'"]').'"><button type="button" class="button" data-openfablab-copy="'.$id.OpenFabLab_I18n::literal('">Copier</button></div>');
+    private static function shortcode_examples($env) {
+        $examples=[
+            'reservations'=>['Réservations d’animations','Affiche les animations publiées et permet de s’inscrire lorsque les inscriptions sont ouvertes.',''],
+            'calendar'=>['Calendrier public','Affiche les créneaux OpenLab et les animations publiées, si le calendrier est activé.',' view="week"'],
+            'machines'=>['Machines et ressources','Affiche les ressources rendues publiques et leur disponibilité, si la liste est activée.',''],
+            'account'=>['Mon compte','Permet de créer un compte, de retrouver son identifiant et de gérer sa famille et ses réservations, si l’espace usager est activé dans OpenFabLab.',''],
+        ];
+        $copy=OpenFabLab_I18n::text('Copier');
+        echo '<div class="ofl-shortcodes">';
+        foreach ($examples as $kind=>[$title,$description,$extra]) {
+            $id='ofl-shortcode-'.$env.'-'.$kind;
+            $title=OpenFabLab_I18n::text($title);
+            echo '<div class="ofl-shortcode"><label for="'.$id.'"><strong>'.esc_html($title)
+                .'</strong></label>';
+            if ($env==='production') {
+                echo '<p class="ofl-help">'.esc_html(OpenFabLab_I18n::text($description)).'</p>';
+            }
+            echo '<div class="ofl-copy"><input type="text" readonly class="code" id="'.$id.'" value="'
+                .esc_attr('[openfablab_'.$kind.' environment="'.$env.'"'.$extra.']')
+                .'"><button type="button" class="button" data-openfablab-copy="'.$id
+                .'" aria-label="'.esc_attr($copy.' : '.$title).'">'.esc_html($copy).'</button></div></div>';
+        }
+        echo '</div>';
+    }
+    private static function shortcodes() {
+        echo OpenFabLab_I18n::literal('<section class="ofl-card" aria-labelledby="ofl-shortcodes-title"><h2 id="ofl-shortcodes-title">Shortcodes à insérer dans vos pages</h2><p class="ofl-help">Dans l’éditeur WordPress, ajoutez un bloc « Code court », puis collez le shortcode correspondant à l’affichage souhaité.</p><h3>Environnement Normal</h3>');
+        self::shortcode_examples('production');
+        echo OpenFabLab_I18n::literal('<p class="ofl-help"><code>openfablab_resources</code> est un autre nom pour le shortcode des machines et ressources.</p><details class="ofl-details"><summary>Shortcodes de test</summary><p class="ofl-help">Pour vos essais, utilisez une installation distincte afin de préserver vos données réelles.</p>');
+        self::shortcode_examples('test');
+        echo '</details><p id="openfablab-copy-status" class="ofl-help" role="status" aria-live="polite" data-copied="'
+            .esc_attr(OpenFabLab_I18n::text('Shortcode copié.')).'" data-selected="'
+            .esc_attr(OpenFabLab_I18n::text('Shortcode sélectionné : utilisez la commande Copier de votre appareil.'))
+            .'"></p></section>';
     }
     public static function render() {
         if (!current_user_can('manage_options')) { return; }
@@ -81,11 +110,9 @@ final class OpenFabLab_Admin {
         self::environment('production',$secret,$secure,$storage);
         echo OpenFabLab_I18n::literal('<details class="ofl-details"><summary>Environnement Test</summary>');
         self::environment('test',$secret,$secure,$storage);
-        echo OpenFabLab_I18n::literal('</details></section><section class="ofl-card"><h2>Page de réservation</h2><p class="ofl-help">Ajoutez ce shortcode à votre page WordPress.</p>');
-        self::shortcode('production');
-        echo OpenFabLab_I18n::literal('<details class="ofl-details"><summary>Shortcode de test</summary>');
-        self::shortcode('test');
-        echo '</details><p id="openfablab-copy-status" class="ofl-help" role="status" aria-live="polite"></p>';
+        echo '</details></section>';
+        self::shortcodes();
+        echo OpenFabLab_I18n::literal('<section class="ofl-card"><h2>Confidentialité et données du plugin</h2>');
         echo '<form method="post">';
         wp_nonce_field('openfablab_connection_settings');
         echo OpenFabLab_I18n::literal('<input type="hidden" name="ofl_settings" value="1"><label for="ofl-privacy">Page de confidentialité (facultatif)</label><input type="url" id="ofl-privacy" name="privacy_url" value="')

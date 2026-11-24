@@ -1,5 +1,11 @@
 # Mettre à jour OpenFabLab
 
+La version stable est **2.18**. Consultez le [guide 2.18](upgrade-2.18.md)
+avant toute action : la dernière stable publique 2.16.1 / SQLite 28
+nécessite un passage manuel sur copie éprouvée, pas un saut OTA direct.
+
+## Archives des procédures
+
 ## Choisir le bon parcours vers 2.16.0
 
 | Point de départ | Parcours |

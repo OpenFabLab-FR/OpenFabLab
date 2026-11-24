@@ -55,6 +55,16 @@
             <label class="checkbox-field"><input name="monthly_animations" type="checkbox" value="1"{% if discord.monthly_animations %} checked{% endif %}><span><strong>Rappel mensuel des animations et sauvegarde</strong><small>Le 1er de chaque mois, rappel de renseigner les animations réalisées le mois précédent. Pensez aussi à exporter la base de données ailleurs.</small></span></label>
             <label class="checkbox-field"><input name="invalid_ids" type="checkbox" value="1"{% if discord.invalid_ids %} checked{% endif %}><span><strong>Alerte Discord en cas de tentatives répétées d’identifiant incorrect</strong><small>Le seuil et la fenêtre se règlent dans Borne et horaires. Aucun code saisi ni donnée personnelle n’est envoyé.</small></span></label>
         </div>
+        <section aria-labelledby="discord-comptes-familles">
+            <h3 id="discord-comptes-familles">Comptes et familles</h3>
+            <p class="form-help">Ces notifications ne contiennent ni nom, ni coordonnées, ni lien personnel.</p>
+            <input type="hidden" name="online_discord_present" value="1">
+            <div class="notification-options">
+                {% for key,label in online_discord_events.items() %}
+                <label class="checkbox-field"><input name="online_discord_{{ key }}" type="checkbox" value="1" {% if online_discord[key] %}checked{% endif %}><span><strong>{{ _(label) }}</strong></span></label>
+                {% endfor %}
+            </div>
+        </section>
         <h3>Réservations des animations</h3>
         <p>Choisissez les événements et les informations envoyés dans votre salon Discord. Aucune coordonnée ni aucun lien personnel n’est transmis.</p>
         <div class="notification-options">
@@ -141,6 +151,14 @@
         <label class="form-field"><span>{{ label }}</span><input type="text" name="reservation_message_{{ key }}" maxlength="150" value="{{ discord.reservation_presentation.messages[key] }}"></label>
         {% endfor %}
         </div></details>
+        <details class="reservation-secondary"><summary>Textes des notifications Comptes et familles</summary>
+            <p class="form-help">Utilisez un texte générique, sans nom, coordonnées, lien ni mention Discord. Laissez vide pour rétablir le texte par défaut.</p>
+            <div class="form-grid notification-message-grid">
+                {% for key,label in online_discord_events.items() %}
+                <label class="form-field"><span>{{ _(label) }}</span><input name="reservation_message_online_{{ key }}" type="text" maxlength="150" value="{{ discord.reservation_presentation.messages['online_'+key] }}"></label>
+                {% endfor %}
+            </div>
+        </details>
     </section>
 
     <div class="form-actions"><button class="admin-button primary" type="submit">Enregistrer les options</button></div>

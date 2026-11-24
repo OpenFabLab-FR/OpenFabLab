@@ -83,9 +83,9 @@
  function show(value,operation){
   if(operation==='status'){
    agent.textContent=t('Agent local connecté');
-   if(/^\d+\.\d+\.\d+$/.test(value.agent_version||'') && Number.isInteger(value.agent_protocol))
+   if(/^\d+(?:\.\d+){1,2}$/.test(value.agent_version||'') && Number.isInteger(value.agent_protocol))
     agent.textContent+=' · v'+value.agent_version+' · '+fill('Protocole {0}',value.agent_protocol);
-   if(/^V\d+\.\d+\.\d+$/.test(value.web_version||''))root.querySelector('[data-update-installed]').textContent=value.web_version;
+   if(/^V\d+(?:\.\d+){1,2}$/.test(value.web_version||''))root.querySelector('[data-update-installed]').textContent=value.web_version;
    if(following||retries)message.textContent='';
    upload.querySelector('fieldset').disabled=value.local_zip!==1;
    if(value.local_zip!==1)message.textContent=t('Cet agent ne prend pas encore en charge l’import ZIP.');
@@ -115,7 +115,7 @@
    root.querySelector('[data-update-version]').textContent=value.latest;
    root.querySelector('[data-update-notes]').textContent=value.notes||'';
    const link=root.querySelector('[data-update-release-link]');
-   if(/^https:\/\/github\.com\/OpenFabLab-FR\/OpenFabLab\/releases\/tag\/v\d+\.\d+\.\d+$/.test(value.page||''))link.href=value.page;
+   if(/^https:\/\/github\.com\/OpenFabLab-FR\/OpenFabLab\/releases\/tag\/v\d+(?:\.\d+){1,2}$/.test(value.page||''))link.href=value.page;
    message.textContent=t(value.newer?'Une nouvelle version stable est disponible.':'Aucune version stable plus récente.');
   }
   if(value.accepted){awaiting={operation,job,polls:0};showSuccess(value,false);message.textContent=t('Opération lancée. Le suivi se met à jour automatiquement.');following=true;schedule();return;}

@@ -184,6 +184,20 @@ class OutboundTests(unittest.TestCase):
         self.assertEqual(catalogue_times,[0,90])
         self.assertEqual(poll_times,[0,15,30,45,60,75,90])
 
+    def test_idle_interactive_probe_only_for_an_enabled_account_environment(self):
+        from app import write_setting
+        write_setting(self.db,'online_accounts_enabled','1');self.db.commit()
+        client=mock.Mock()
+        client.post.return_value={'protocol_version':4,'relay_revision':3,'outbound_actions_v1':True,
+                                  'interactive_probe_v1':True,'idle':True}
+        with mock.patch('runtime_policy.external_allowed',return_value=True),mock.patch('outbound_sync.load_sync_secret',return_value=self.secret):
+            response=sync.poll(self.db,self.f.f.database_path,'https://example.invalid',client,interactive=True)
+        self.assertEqual(response['interactive'],['production'])
+        self.assertEqual(response['processed'],0)
+        client.post.assert_called_once()
+        self.assertTrue(client.post.call_args.args[1]['interactive_only'])
+        self.assertFalse(self.db.execute('SELECT * FROM wordpress_relay_state').fetchone())
+
     def test_legacy_worker_cannot_duplicate_schema_sixteen_network(self):
         import app
         from app import write_setting

@@ -1,4 +1,23 @@
-# Utiliser OpenFabLab 2.15.1
+# Utiliser OpenFabLab
+
+## Avec la 2.18 : espace usager et tâches administratives
+
+Si le FabLab a activé [Mon compte sur WordPress](wordpress.md#ouvrir-mon-compte),
+l’usager peut récupérer son identifiant, consulter ses informations
+démographiques et ses réservations, modifier ses coordonnées, gérer
+les fiches de ses enfants et reprendre une animation après connexion.
+L’identifiant et le QR Code sont utilisables à la borne ; seuls les
+responsables admissibles voient ceux de leurs enfants rattachés.
+Une réservation familiale conserve la règle « une personne, une place ».
+
+Le **Répertoire des usagers → Demandes de comptes** permet à
+l’administrateur d’examiner une demande, choisir la fiche historique
+pertinente et révoquer un accès Internet sans supprimer les données.
+Les deux sens d’une relation et les responsables sont visibles sous
+**Liens familiaux**. Le compteur **Éléments à traiter** mène aux demandes
+et aux autres tâches visibles dans le Résumé, selon les droits.
+
+## Repères conservés des versions précédentes
 
 - **Résumé** : personnes présentes, visiteurs du jour, créneaux confirmés
   en cours, matériels remis non rendus, indisponibilités et tâches. Les cinq

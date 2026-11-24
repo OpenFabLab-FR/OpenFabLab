@@ -30,9 +30,10 @@ def private_json(path, value):
 
 
 def version(value):
-    if not isinstance(value, str) or not re.fullmatch(r'[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}', value):
+    if not isinstance(value, str) or not re.fullmatch(r'[0-9]{1,4}(?:\.[0-9]{1,4}){1,2}', value):
         raise Refused('INVALID_STABLE_VERSION')
-    return tuple(map(int, value.split('.')))
+    parts = tuple(map(int, value.split('.')))
+    return parts if len(parts) == 3 else (*parts, 0)
 
 
 def digest(value):

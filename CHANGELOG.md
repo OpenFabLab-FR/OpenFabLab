@@ -1,5 +1,34 @@
 # Historique des versions
 
+## 2.18 — stable, 24 novembre 2026
+
+Première version publique depuis 2.16.1 : elle reprend les nouveautés de
+la 2.17 (étape privée) détaillées ci-dessous. OpenFabLab et le plugin
+facultatif Reservations sont tous deux en **2.18**. Le ZIP OTA ne prend
+que SQLite 29 en entrée : lire le [guide depuis SQLite 28](docs/upgrade-2.18.md).
+
+- Intégration des demandes de comptes dans le Répertoire et finition du panneau « Éléments à traiter ».
+- Demandes de comptes harmonisées, avec recherche d’un accès à révoquer par nom ou identifiant public et accès depuis le suivi de l’usager.
+- Réglages des comptes en ligne harmonisés avec la navigation historique ;
+  notifications des comptes et familles dans Communication, compteur dans Apparence et affichage.
+- Liste des modules allégée : réglages des ressources accessibles par « Ressources et maintenance », sans raccourci redondant.
+- Modèles de comptes et familles dans l’éditeur d’e-mails existant :
+  objet, contenu, signature et aperçu fictif ; liens sécurisés ajoutés si omis.
+- Mon compte : accueil rapide, navigation et formulaires adaptés aux mobiles ;
+  récupération d’identifiant indépendante de l’activation d’un accès ;
+  confirmation des liens dans un écran dédié et dans le navigateur initial.
+- Fiches usagers et enfants enrichies dans les champs historiques, QR Code
+  pour la borne, e-mail d’accueil au responsable et notifications Discord
+  distinctes pour les créations, activations et rattachements.
+- SQLite 29 et agent 1.2 inchangés. Plugin Reservations 2.18.
+
+## 2.17 — étape privée, changements inclus dans la stable 2.18
+
+- Espace WordPress « Mon compte », facultatif : confirmation d’adresse, accès par lien temporaire et récupération de l’identifiant de borne. Aucune création de compte WordPress.
+- Comptes individuels et famille : ajout d’un enfant, examen des rapprochements incertains, choix des participants et confirmation atomique de leurs places.
+- Demandes à examiner dans le Répertoire, le Résumé et le compteur de l’en-tête ; avis Discord facultatifs sans identité de mineur.
+- Schéma SQLite 29, migration additive depuis 28 au démarrage manuel de la 2.18. Les anciennes fiches ne sont pas automatiquement activées sur Internet. Numéro technique à deux composants : l’ancien agent doit être adapté avant tout usage de l’OTA 2.18 sur une installation compatible.
+
 ## 2.16.1 — correctif candidat
 
 - Rétablit l’accès à « Inscriptions » pour les administrateurs et modérateurs,

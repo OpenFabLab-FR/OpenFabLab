@@ -1,12 +1,14 @@
 {% extends "base.html" %}
+{% from "_summary_icons.html" import icon %}
 
 {% block title %}Répertoire des usagers · OpenFabLab{% endblock %}
 {% block body_class %}admin-page directory-page{% endblock %}
 {% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
 
 {% block content %}
-<section class="content-heading">
+<section class="content-heading{% if admin_access_role=='admin' %} directory-heading{% endif %}">
     <h1>Répertoire des usagers</h1>
+    {% if admin_access_role=='admin' %}<a class="admin-button secondary compact directory-requests" href="{{ url_for('online_admin.queue') }}">{{ icon('people') }} {{ _('Demandes de comptes') }}</a>{% endif %}
     <p>Recherchez un usager et classez le répertoire selon l'information utile.</p>
 </section>
 {% include "_admin_nav.html" %}

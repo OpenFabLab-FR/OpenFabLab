@@ -12,7 +12,7 @@ from admin_activity import journal
 from admin_planning import billing_confirmed,billing_events,booking_time
 
 
-def build(db,modules,role,current=None,schedule=None):
+def build(db,modules,role,current=None,schedule=None,actions_only=False):
     current=(current or datetime.now(timezone.utc)).astimezone(timezone.utc)
     zone=ZoneInfo(setting(db,'structure_timezone','Europe/Paris'));today=current.astimezone(zone).date()
     horizon=today+timedelta(days=14)
@@ -160,10 +160,14 @@ def build(db,modules,role,current=None,schedule=None):
                           'Début de location' if rental else 'Prestation client',link,'loan' if rental else 'quote',not billing_confirmed(row))
             if rental and row['rental_end_date'] and not row['returned_at']:
                 schedule_item(row['title'],row['rental_end_date'],'Retour prévu',link,'loan',not billing_confirmed(row))
+    if role=='admin' and modules.get('users'):
+        for kind,count in db.execute("SELECT kind,count(*) FROM online_requests WHERE state='review' AND expires>? GROUP BY kind",(int(current.timestamp()),)):
+            action(native({'child':'Rattachements familiaux à vérifier','claim':'Accès usagers à examiner','signup':'Demandes de création de compte'}[kind]),count,url_for('online_admin.queue'),kind='accounts')
     groups=[dict(title=items[0]['title'],count=sum(i['count'] for i in items),kind='resource',
                  url=url_for('resource_portal.page',key=key),tasks=sorted(items,key=lambda i:not i['late']),
                  late=any(i['late'] for i in items)) for key,items in grouped.items()]
     actions=sorted(groups+actions,key=lambda item:(not item['late'],item['title'].casefold()))
+    if actions_only:return dict(actions=actions,action_count=sum(item['count'] for item in actions))
     recent=journal(db,modules,role)
     # Render a bounded pool. The dashboard starts at six and reveals only
     # the rows that fit beside the measured task and activity stack.

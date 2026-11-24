@@ -1,5 +1,19 @@
 # Agent local de mise à jour — installation et secours
 
+## Compatibilité de la stable 2.18
+
+L’agent **1.2**, protocole local **1**, comprend les versions à deux
+composants. Il ne rend pas le ZIP 2.18 compatible avec le schéma 28 :
+voir le [choix du parcours de mise à jour](upgrade-2.18.md).
+L’adaptation d’un agent **1.1.0 public** peut commencer par le
+[kit générique de préparation 1.2](../tools/agent-transition/README.md),
+sur un hôte de test. Il valide les empreintes et construit une image,
+mais ne bascule aucun conteneur et n’est ni un installateur vierge ni
+un kit universel DSM. Les adaptations historiques d’un FabLab ne sont
+pas interchangeables avec le kit générique et ne sont pas distribuées.
+Sans recette de remplacement et de restauration adaptée à votre hôte,
+conservez le parcours manuel. Ne recopiez pas les reçus d’un autre hôte.
+
 ## Choisir son mode
 
 La mise à jour manuelle reste possible. Le web fonctionne sans agent. Pour les

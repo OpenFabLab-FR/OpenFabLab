@@ -1,5 +1,22 @@
 # OpenFabLab — Roadmap
 
+## 2.19 — Intégration MCP à cadrer
+
+Étudier un module Model Context Protocol facultatif pour des assistants
+compatibles et certaines actions administratives, par exemple la création
+d’animations. Prévoir une authentification, des permissions configurables,
+une journalisation et la réutilisation des services métier existants.
+Aucun développement engagé ; périmètre à définir dans un cahier des charges séparé.
+
+### Cohérence visuelle
+
+Rétablir l’interface claire historique dans **Comptes en ligne** et
+**Mon compte** sur WordPress, sans perdre les mises en page de la 2.18.
+Ne pas ajouter de mode sombre propre à ces écrans. Une éventuelle
+évolution globale, homogène et facultative ferait l’objet d’un choix
+séparé. Autre piste déjà identifiée : actualiser l’écran de préparation
+OTA pour faire apparaître la confirmation dès que le ZIP est prêt.
+
 ## Intégrations et paiements externes (à l’étude)
 
 OpenFabLab envisage des connecteurs facultatifs vers des plateformes de

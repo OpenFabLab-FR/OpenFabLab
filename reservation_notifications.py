@@ -33,7 +33,7 @@ MESSAGE_KINDS=tuple(kind for kind in LABELS if kind not in ('email_error','sync_
 
 def presentation(db):
     return dict(details={key:setting(db,'discord_reservation_detail_'+key,default)=='1' for key,(_,default) in DETAILS.items()},
-                messages={key:setting(db,'discord_reservation_message_'+key,LABELS[key]) for key in MESSAGE_KINDS})
+                messages={key:setting(db,'discord_reservation_message_'+key,LABELS[key]) for key in (*MESSAGE_KINDS,*ONLINE_LABELS)})
 
 
 def validate_label(value,kind):
@@ -168,8 +168,31 @@ def readable_date(value,hours):
     return result
 
 
+ONLINE_DISCORD_EVENTS={'signup_review':'Demande de compte à vérifier',
+                       'family_review':'Rattachement familial à vérifier',
+                       'created':'Nouvelle fiche usager créée',
+                       'created_admin':'Nouvelle fiche créée par l’équipe',
+                       'activated':'Compte activé',
+                       'child_created':'Enfant créé et rattaché',
+                       'family_done':'Rattachement familial validé',
+                       'creation_volume':'Volume inhabituel de créations',
+                       'denied':'Demande refusée'}
+ONLINE_LABELS={'online_signup_review':'Une demande de compte nécessite une vérification.',
+               'online_activated':'Un accès usager a été activé.',
+               'online_family_review':'Un rattachement familial nécessite une vérification.',
+               'online_created':'👤 Un compte usager a été créé depuis le site Internet.',
+               'online_created_admin':'👤 Une fiche usager a été créée par l’équipe.',
+               'online_child_created':'👨‍👩‍👧 Un compte enfant a été créé et rattaché à une famille.',
+               'online_family_done':'🔗 Un nouveau rattachement familial a été validé.',
+               'online_creation_volume':'⚠️ Plusieurs créations de comptes ont été détectées en peu de temps.',
+               'online_denied':'Une demande d’accès a été refusée.'}
+ONLINE_DISCORD_DEFAULTS={k:('1' if k in ('created','created_admin','child_created','family_done','creation_volume') else '0') for k in ONLINE_DISCORD_EVENTS}
+LABELS.update(ONLINE_LABELS)
+
 def message(db,row):
     kind=row['event_type'];options=presentation(db);details=options['details']
+    # Custom static label only: do not read or append personal data.
+    if kind in ONLINE_LABELS:return plain(options['messages'][kind],150) or ONLINE_LABELS[kind]
     # Technical/global notices never identify a person, regardless of settings.
     if kind in ('email_error','sync_error','sync_recovered'):
         return LABELS[kind]
@@ -262,6 +285,7 @@ def deliver(db,database_path,sender=None,now=None):
             db.commit();continue
         enabled=(setting(db,'module_discord','1')=='1' and setting(db,'discord_notifications_enabled','0')=='1'
                  and setting(db,'discord_reservation_'+row['event_type'],'1')=='1'
+                 and (row['event_type'] not in ONLINE_LABELS or setting(db,'online_discord_'+row['event_type'][7:],ONLINE_DISCORD_DEFAULTS[row['event_type'][7:]])=='1')
                  and (row['event_type']!='sync_recovered' or setting(db,'discord_sync_recovery_enabled','0')=='1'))
         db.execute('UPDATE reservation_discord_events SET state=?,claimed_at=? WHERE event_key=?',
                    ('sending' if enabled else 'skipped',now.isoformat(),event[0]))

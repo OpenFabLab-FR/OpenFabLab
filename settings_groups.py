@@ -7,7 +7,7 @@ GROUPS=[
  ('resources','Ressources et maintenance','resource_portal.settings',{'resource_portal.settings'}),
  ('communication','Communication','admin_notifications',{'admin_notifications','reservation_emails.settings'}),
  ('wordpress','WordPress','v215.wordpress_settings',{'v215.wordpress_settings','admin_settings_reservations','evolution.integrations'}),
- ('users','Usagers et permissions','evolution.users_settings',{'evolution.users_settings'}),
+ ('users','Usagers et permissions','evolution.users_settings',{'evolution.users_settings','online_admin.settings'}),
  ('system','Système et sauvegardes','v215.updates',{'v215.updates','admin_settings_data'}),
 ]
 
@@ -20,7 +20,7 @@ def secondary(endpoint):
         choices={
           'kiosk':[('admin_settings_kiosk','Borne et sécurité'),('admin_settings_display','Apparence et affichage')],
           'activities':[('v215.calendar_settings','Calendrier et inscriptions'),('admin_settings_tariffs','Tarifs de facturation')],
-          'users':[('evolution.users_settings','Comptes et catégories'),('admin_settings_kiosk','Codes d’accès à l’administration')],
+          'users':[('evolution.users_settings','Comptes et catégories'),('admin_settings_kiosk','Codes d’accès à l’administration'),('online_admin.settings','Comptes en ligne')],
           'system':[('v215.updates','Mises à jour'),('admin_settings_data','Santé, sauvegardes et données')],
         }.get(key,[])
         return [dict(label=label,url=url_for(target)+('#sensitive-access' if key=='users' and target=='admin_settings_kiosk' else ''),active=endpoint==target) for target,label in choices]

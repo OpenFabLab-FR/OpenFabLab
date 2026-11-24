@@ -2,13 +2,13 @@
 /**
  * Plugin Name: OpenFabLab Reservations
  * Description: Catalogue public et relais sécurisé sortant du moteur OpenFabLab.
- * Version: 2.15.3
+ * Version: 2.18
  * Requires PHP: 8.1
  * License: MIT
  * Text Domain: openfablab-reservations
  */
 if (!defined('ABSPATH')) { exit; }
-define('OPENFABLAB_RES_VERSION','2.15.3');
+define('OPENFABLAB_RES_VERSION','2.18');
 define('OPENFABLAB_RES_SCHEMA_VERSION','2.8.2-relay3');
 define('OPENFABLAB_RES_FILE',__FILE__);
 define('OPENFABLAB_RES_PATH',plugin_dir_path(__FILE__));
@@ -16,6 +16,7 @@ foreach (['database','relay','api','admin','public'] as $name) {
     require_once OPENFABLAB_RES_PATH.'includes/class-openfablab-'.$name.'.php';
 }
 require_once OPENFABLAB_RES_PATH.'includes/public-link.php';
+require_once OPENFABLAB_RES_PATH.'includes/account.php';
 add_filter('rest_pre_serve_request',['OpenFabLab_Relay','serve'],20,4);
 add_filter('cron_schedules',function($schedules) {
     $schedules['openfablab_five_minutes']=['interval'=>300,'display'=>'Toutes les 5 minutes'];
@@ -62,11 +63,14 @@ function openfablab_res_shortcode($attributes) {
         'api' => esc_url_raw(rest_url('openfablab/v1/public/')),
         'privacy' => esc_url_raw(get_option('openfablab_res_privacy_url', '')),
         'family' => true,
+        'accountLabels' => array_map(static function($catalog) {
+            return $catalog['Mon compte · Créer un compte · Identifiant oublié ?'];
+        }, ofl_account_languages()),
     ]) . ';', 'before');
     $id = 'openfablab-res-' . wp_generate_password(8, false, false);
     ob_start();
     ?>
-    <section id="<?php echo esc_attr($id); ?>" class="openfablab-reservations" data-environment="<?php echo esc_attr($environment); ?>" aria-label="Réservations des animations">
+    <section id="<?php echo esc_attr($id); ?>" class="openfablab-reservations" data-environment="<?php echo esc_attr($environment); ?>" data-account="<?php echo esc_url(ofl_account_page($environment)); ?>" aria-label="Réservations des animations">
         <?php if ($environment === 'test') : ?><p class="openfablab-test-label">Environnement de test OpenFabLab</p><?php endif; ?>
         <div class="openfablab-status" role="status" aria-live="polite">Chargement des animations…</div>
         <div class="openfablab-animation-list"></div>

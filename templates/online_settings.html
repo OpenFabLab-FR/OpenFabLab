@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Comptes en ligne · OpenFabLab{% endblock %}
+{% block body_class %}admin-page settings-page v218-settings-theme{% endblock %}
+{% block header_action %}<a class="header-link" href="{{ url_for('index') }}">← Accueil tablette</a>{% endblock %}
+
+{% block content %}
+<section class="content-heading">
+    <p class="eyebrow">Réglages</p>
+    <h1>Comptes en ligne</h1>
+    <p>Configurez l’accès à « Mon compte » sur le site WordPress de votre FabLab.</p>
+</section>
+{% include "_admin_nav.html" %}
+{% include "_settings_nav.html" %}
+
+<form method="post" class="admin-form online-settings">
+    <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+    <div class="online-settings-grid">
+        <section class="form-section" aria-labelledby="portal-title">
+            <div class="form-section-heading">
+                <h2 id="portal-title">Espace usager WordPress</h2>
+            </div>
+            <label class="checkbox-field">
+                <input name="online_accounts_enabled" type="checkbox" value="1" {% if options.online_accounts_enabled=='1' %}checked{% endif %}>
+                <span><strong>Activer l’espace usager WordPress</strong></span>
+            </label>
+            <label class="form-field">
+                <span>Adresse de la page « Mon compte »</span>
+                <input name="online_account_url" type="url" maxlength="500" value="{{ options.online_account_url }}" autocomplete="url">
+                <small>Utilisez l’adresse HTTPS de la page sur le site WordPress connecté à OpenFabLab.</small>
+            </label>
+            <p class="form-help online-portal-help">Les usagers peuvent consulter leurs informations, leur famille et leurs réservations sur votre site.</p>
+        </section>
+
+        <section class="form-section" aria-labelledby="signup-title">
+            <div class="form-section-heading"><h2 id="signup-title">Création de comptes</h2></div>
+            <label class="checkbox-field">
+                <input name="online_signup_enabled" type="checkbox" value="1" {% if options.online_signup_enabled=='1' %}checked{% endif %}>
+                <span><strong>Autoriser la création de comptes depuis WordPress</strong></span>
+            </label>
+            <label class="form-field">
+                <span>Mode de validation</span>
+                <select name="online_approval" aria-describedby="validation-modes">
+                    {% for value,label in [('manual','Manuelle'),('automatic','Automatique'),('conditional','Conditionnelle')] %}<option value="{{ value }}" {% if options.online_approval==value %}selected{% endif %}>{{ _(label) }}</option>{% endfor %}
+                </select>
+            </label>
+            <dl class="form-help online-validation-modes" id="validation-modes">
+                <div><dt>Manuelle</dt><dd>L’équipe valide chaque nouvelle création après confirmation de l’adresse e-mail.</dd></div>
+                <div><dt>Automatique</dt><dd>Après confirmation de l’adresse e-mail, les nouveaux comptes admissibles sont activés. En cas de doute, l’usager est invité à contacter l’équipe.</dd></div>
+                <div><dt>Conditionnelle</dt><dd>Les demandes simples sont validées automatiquement. En cas de doute, une demande est transmise à l’équipe.</dd></div>
+            </dl>
+            <p class="form-help">{{ _('Ce choix ne change pas la connexion à un accès déjà activé ni la récupération d’un identifiant.') }}</p>
+        </section>
+    </div>
+
+    <section class="form-section" aria-labelledby="mail-security-title">
+        <div class="form-section-heading"><h2 id="mail-security-title">E-mails et sécurité</h2><p>Les liens de connexion et de récupération sont envoyés par OpenFabLab.</p></div>
+        <div class="form-grid online-session-grid">
+            <label class="form-field"><span>Durée de session (minutes)</span><input name="online_session_minutes" type="number" min="5" max="60" value="{{ options.online_session_minutes }}" required><small>De 5 à 60 minutes.</small></label>
+            <label class="form-field"><span>Validité des liens (minutes)</span><input name="online_ticket_minutes" type="number" min="5" max="30" value="{{ options.online_ticket_minutes }}" required><small>De 5 à 30 minutes.</small></label>
+        </div>
+    </section>
+
+    <details class="settings-disclosure online-settings-advanced">
+        <summary>Paramètres avancés</summary>
+        <div class="online-advanced-fields">
+            <label class="form-field"><span>Environnement de cette installation</span><select name="online_relay_environment" aria-describedby="online-test-help">
+                <option value="production" {% if options.online_relay_environment=='production' %}selected{% endif %}>Normal</option>
+                <option value="test" {% if options.online_relay_environment=='test' %}selected{% endif %}>Test</option>
+            </select></label>
+            <p class="form-help" id="online-test-help">Pour vos essais, utilisez une installation distincte afin de préserver vos données réelles.</p>
+        </div>
+    </details>
+
+    <div class="form-actions"><button class="admin-button primary compact" type="submit">Enregistrer</button></div>
+</form>
+{% endblock %}

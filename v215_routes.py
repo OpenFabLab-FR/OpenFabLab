@@ -85,12 +85,14 @@ def register(application, namespace):
 
     @bp.route('/admin/usagers/<int:user_id>/suivi')
     def user_history(user_id):
-        require_team()
+        role=require_team()
         db=module('users')
         user=db.execute('SELECT id,first_name,last_name FROM users WHERE id=?',(user_id,)).fetchone()
         if not user:
             abort(404)
-        return render_template('user_followup.html',user=user,followup=followup(user_id),evolution_csrf=csrf_token())
+        online_access=role=='admin' and db.execute('SELECT 1 FROM online_identities WHERE user_id=?',(user_id,)).fetchone()
+        return render_template('user_followup.html',user=user,followup=followup(user_id),
+            evolution_csrf=csrf_token(),online_access=bool(online_access))
 
     @bp.post('/admin/recherche')
     def search():

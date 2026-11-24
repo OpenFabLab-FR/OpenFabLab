@@ -165,6 +165,12 @@
       if (animation) value.appendChild(node('p', 'openfablab-selected-summary', __oflT_65ea7041("Réservation pour : ") + animation.title + ' · ' + animation.date + ' · ' + animation.hours));
       const heading = node('h3', '', __oflT_65ea7041(title)); heading.tabIndex = -1;
       value.appendChild(heading);
+      if (animation && root.dataset.account && new URL(root.dataset.account,location.href).origin===location.origin) {
+        const label=config.accountLabels?.[window.OpenFabLabPublicI18n?.language] || 'Mon compte · Créer un compte · Identifiant oublié ?';
+        const link=node('a','openfablab-information',label);
+        const url=new URL(root.dataset.account,location.href);url.searchParams.set('ofl_animation',animation.service_id);
+        link.href=url.href;value.appendChild(link);
+      }
       const feedback = node('p', 'openfablab-verification'); feedback.setAttribute('role', 'status');
       value.appendChild(feedback);host.appendChild(value);heading.focus();
       return [value, feedback];

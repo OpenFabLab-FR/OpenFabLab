@@ -11,6 +11,7 @@ README.md
 ROADMAP.md
 SECURITY.md
 THIRD_PARTY_NOTICES.md
+account_schema.py
 admin_activity.py
 admin_planning.py
 admin_search.py
@@ -41,6 +42,7 @@ docs/architecture.md
 docs/backup-restore.md
 docs/branding.md
 docs/candidate-2.8-guide.md
+docs/comptes-en-ligne-217.md
 docs/configuration.md
 docs/consolidation-2.12.0.md
 docs/corrections-2.10.1.md
@@ -90,6 +92,7 @@ docs/upgrade-2.15.3.md
 docs/upgrade-2.15.4.md
 docs/upgrade-2.15.5.md
 docs/upgrade-2.16.0.md
+docs/upgrade-2.18.md
 docs/upgrade.md
 docs/usability-2.8.3.md
 docs/utilisation.md
@@ -118,6 +121,9 @@ machine_maintenance.py
 maintenance_planning.py
 membership_notices.py
 memberships.py
+online_accounts.py
+online_admin.py
+online_mail.py
 openfablab/__init__.py
 openfablab/__main__.py
 openlab_openings.py
@@ -174,6 +180,8 @@ static/icons/OpenFabLab-icon.svg
 static/kiosk-sound.js
 static/kiosk-voice.js
 static/memberships.css
+static/online-admin.css
+static/online-tasks.js
 static/overview.js
 static/participant-picker.js
 static/public-enrollment.js
@@ -266,6 +274,8 @@ templates/machine_maintenance.html
 templates/memberships.html
 templates/moderator_themes.html
 templates/notifications.html
+templates/online_requests.html
+templates/online_settings.html
 templates/openlab_exceptions.html
 templates/reservation_email_settings.html
 templates/resource_bookings.html
@@ -314,6 +324,7 @@ tests/schema12_fixture.py
 tests/schema_fixtures.py
 tests/slots_artifact_fixture.py
 tests/source25_fixture.py
+tests/test_agent_short_version.py
 tests/test_analysis_290.py
 tests/test_animation_deletion.py
 tests/test_animation_slots.py
@@ -343,6 +354,9 @@ tests/test_memberships_210.py
 tests/test_micro_286.py
 tests/test_migration_restore.py
 tests/test_naming.py
+tests/test_online_accounts.py
+tests/test_online_admin_218.py
+tests/test_online_settings_218.py
 tests/test_outbound_actions.py
 tests/test_participants_ui.js
 tests/test_plugin_distribution.py
@@ -427,6 +441,9 @@ tools/agent-setup/README.md
 tools/agent-setup/activate.py
 tools/agent-setup/activate.sh
 tools/agent-setup/build_kit.py
+tools/agent-transition/README.md
+tools/agent-transition/build.py
+tools/agent-transition/prepare.py
 tools/check_candidate_215.py
 tools/check_public_tree.py
 tools/run_checks.py
@@ -437,6 +454,7 @@ translations/de/v2153.json
 translations/de/v2154.json
 translations/de/v2155.json
 translations/de/v216.json
+translations/de/v217.json
 translations/en/common.json
 translations/en/consolidation-2141.json
 translations/en/domain.json
@@ -453,6 +471,7 @@ translations/en/v2153.json
 translations/en/v2154.json
 translations/en/v2155.json
 translations/en/v216.json
+translations/en/v217.json
 translations/en/zz-resources-2141.json
 translations/es/v215.json
 translations/es/v2151.json
@@ -461,6 +480,7 @@ translations/es/v2153.json
 translations/es/v2154.json
 translations/es/v2155.json
 translations/es/v216.json
+translations/es/v217.json
 translations/fi/v215.json
 translations/fi/v2151.json
 translations/fi/v2152.json
@@ -468,6 +488,7 @@ translations/fi/v2153.json
 translations/fi/v2154.json
 translations/fi/v2155.json
 translations/fi/v216.json
+translations/fi/v217.json
 update_wire.py
 updater_agent/__init__.py
 updater_agent/__main__.py
@@ -511,6 +532,8 @@ wordpress/openfablab-reservations/LICENSE
 wordpress/openfablab-reservations/README.md
 wordpress/openfablab-reservations/THIRD_PARTY_NOTICES.md
 wordpress/openfablab-reservations/assets/OpenFabLab-logo-horizontal.svg
+wordpress/openfablab-reservations/assets/account.css
+wordpress/openfablab-reservations/assets/account.js
 wordpress/openfablab-reservations/assets/admin.css
 wordpress/openfablab-reservations/assets/admin.js
 wordpress/openfablab-reservations/assets/family.js
@@ -522,6 +545,7 @@ wordpress/openfablab-reservations/assets/public.js
 wordpress/openfablab-reservations/assets/qr-scanner.js
 wordpress/openfablab-reservations/assets/reservations.css
 wordpress/openfablab-reservations/assets/translations.js
+wordpress/openfablab-reservations/includes/account.php
 wordpress/openfablab-reservations/includes/class-openfablab-admin.php
 wordpress/openfablab-reservations/includes/class-openfablab-api.php
 wordpress/openfablab-reservations/includes/class-openfablab-database.php
@@ -529,6 +553,8 @@ wordpress/openfablab-reservations/includes/class-openfablab-i18n.php
 wordpress/openfablab-reservations/includes/class-openfablab-public.php
 wordpress/openfablab-reservations/includes/class-openfablab-relay.php
 wordpress/openfablab-reservations/includes/public-link.php
+wordpress/openfablab-reservations/languages/account.json
+wordpress/openfablab-reservations/languages/admin-shortcodes.json
 wordpress/openfablab-reservations/languages/de.json
 wordpress/openfablab-reservations/languages/en.json
 wordpress/openfablab-reservations/languages/es.json

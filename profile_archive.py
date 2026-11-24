@@ -97,6 +97,11 @@ def allowed_setting(key):
     """Use a narrow allowlist; never export a newly added secret by accident."""
     from reservation_email_templates import allowed_key
     from v210_config import DEFAULTS
+    from account_schema import SETTINGS as account_settings
+    # Portable preferences only: never activate Internet access by importing
+    # another structure's profile, switch relay tenancy or copy its URLs.
+    if key in account_settings and key not in ('online_accounts_enabled','online_signup_enabled','online_relay_environment','online_account_url','online_mail_signature'):
+        return True
     if key in DEFAULTS:return True
     if allowed_key(key):
         return True
@@ -213,6 +218,9 @@ def parse_profile(raw):
                 if not isinstance(key, str) or not allowed_setting(key) or not isinstance(value, str) or len(value) > 8000:
                     raise ValueError("Le profil contient un réglage non autorisé.")
                 from v210_config import DEFAULTS,validate as validate_210
+                if key.startswith('online_'):
+                    from online_admin import valid_option
+                    valid_option(key,value)
                 if key in DEFAULTS:validate_210(key,value)
                 if key=='resource_public_name' and value not in ('resources','machines','equipment','rooms'):
                     raise ValueError('Nom public des ressources invalide.')

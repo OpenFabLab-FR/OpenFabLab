@@ -4,10 +4,11 @@ from datetime import datetime, timezone
 from evolution_schema import now, category_label
 
 SOURCES = {'admin':'Administrateur', 'moderator':'Modérateur', 'kiosk':'Auto-inscription sur borne',
-           'import':'Migration / import', 'historical':'Historique / inconnue', 'technical':'Technique'}
+           'import':'Migration / import', 'historical':'Historique / inconnue', 'technical':'Technique',
+           'online':'Espace usager en ligne'}
 
 
-def create_user(database, values, source, creator=None):
+def create_user(database, values, source, creator=None, *, notify_links=True):
     if source not in SOURCES:
         raise ValueError('Origine de création inconnue.')
     keys = ('public_id','first_name','last_name','active','category','birth_year','gender','city','city_normalized',
@@ -15,7 +16,7 @@ def create_user(database, values, source, creator=None):
     cursor = database.execute('INSERT INTO users(' + ','.join(keys) + ',statistics_key,created_at,updated_at,created_source,created_by_role) VALUES(' + ','.join('?' for _ in range(len(keys)+5)) + ')',
                               tuple(values.get(key) for key in keys) + (secrets.token_hex(16),now(),now(),source,creator))
     from family_model import apply_details
-    apply_details(database,cursor.lastrowid,values)
+    apply_details(database,cursor.lastrowid,values,notify_links=notify_links)
     return cursor.lastrowid
 
 

@@ -144,3 +144,15 @@ compte et se transportent dans le profil de structure. **Nom et messages →
 Textes principaux des réservations** permet de personnaliser les libellés sans
 variables : les informations cochées sont ajoutées automatiquement. Les erreurs
 techniques restent courtes et sans identité. [Détails et limites](corrections-2.8.6.md).
+## Réglages de l’espace usager en 2.18
+
+- **Usagers et permissions → Comptes en ligne** : URL de la page,
+  activation, créations autorisées, mode de validation et durées.
+- **Accueil et borne → Apparence et affichage** : activer ou masquer
+  le compteur de l’administration.
+- **Communication → E-mails SMTP → Modèles automatiques** : onglet
+  Comptes et familles, aperçu fictif, dont le modèle QR Code de l’enfant.
+- **Communication → Discord → Comptes et familles** : choix et
+  textes de chaque événement. N’insérez ni nom, ni contact, ni lien
+  personnel. Les préférences en place restent inchangées lors
+  d’une mise à jour.

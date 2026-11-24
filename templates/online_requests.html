@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% from "_summary_icons.html" import icon %}
+{% block title %}Demandes de comptes · OpenFabLab{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block content %}
+<section class="content-heading directory-heading">
+    <h1>{{ _('Demandes de comptes') }}</h1>
+    <a class="admin-button secondary compact directory-requests" href="{{ url_for('admin_users_directory') }}"><span aria-hidden="true">←</span> {{ _('Répertoire des usagers') }}</a>
+    <p>{{ _('Examinez les demandes de création de comptes et de rattachement familial avant de donner un accès en ligne.') }}</p>
+</section>
+{% if failures %}<div class="form-errors" role="alert">{{ _('Des messages n’ont pas pu être envoyés. Vérifiez la configuration SMTP.') }}</div>{% endif %}
+<section class="admin-section online-request-section" aria-labelledby="pending-title">
+    <div class="section-heading"><h2 id="pending-title">{{ _('Demandes en attente') }}</h2></div>
+    {% for row in pending %}
+    <article class="online-request-card">
+        <header class="online-request-title">
+            <span class="v218-task-icon">{{ icon('people') }}</span>
+            <div>
+                <h3>{{ (row.first ~ ' ' ~ row.last)|trim or _('Usager à identifier') }}</h3>
+                <span class="muted">{{ _('Rattachement familial' if row.kind=='child' else 'Activation d’un accès existant' if row.kind=='claim' else 'Création de compte') }} · {{ row.email }}{% if row.birth %} · {{ row.birth|date_fr }}{% endif %}</span>
+            </div>
+        </header>
+        <form method="post" class="admin-form online-request-form">
+            <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+            <input type="hidden" name="id" value="{{ row.id }}">
+            {% if row.candidates %}
+            <p class="form-help">{{ _('Fiches à vérifier :') }}
+                {% for person in row.candidates %}<a href="{{ url_for('v215.user_history',user_id=person.id) }}">{{ person.first_name }} {{ person.last_name }} · {{ person.public_id }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+            </p>
+            {% endif %}
+            <label class="form-field">
+                <span>{{ _('Fiche usager à utiliser') }}</span>
+                <select name="user_id" aria-describedby="attach-help-{{ row.id }}">
+                    <option value="">{{ _('Sélectionner une fiche vérifiée' if row.kind=='claim' else 'Créer une nouvelle fiche') }}</option>
+                    {% for person in row.candidates %}
+                    <option value="{{ person.id }}" {% if row.kind=='claim' and row.candidates|length==1 %}selected{% endif %}>{{ person.first_name }} {{ person.last_name }} · {{ person.public_id }}</option>
+                    {% endfor %}
+                </select>
+                <small id="attach-help-{{ row.id }}">{{ _('L’identifiant à quatre chiffres sert à reconnaître la fiche ; vérifiez l’identité avant de valider.') }}</small>
+            </label>
+            {% if row.reason %}<p class="form-help" role="status">{{ _(row.reason) }}</p>{% endif %}
+            {% if row.searched and not row.candidates %}<p class="form-help" role="status">{{ _('Aucune fiche admissible. Vérifiez le nom, l’identifiant et les coordonnées de la fiche.') }}</p>{% endif %}
+            <details {% if row.searched %}open{% endif %}>
+                <summary>{{ _('Rechercher une fiche existante') }}</summary>
+                <label class="form-field"><span>{{ _('Prénom, nom ou identifiant OpenFabLab') }}</span><input type="search" name="lookup" maxlength="80" autocomplete="off" value="{{ row.lookup }}"></label>
+                <button class="admin-button secondary compact" name="decision" value="find_for_review">{{ _('Rechercher') }}</button>
+            </details>
+            <label class="checkbox-field"><input type="checkbox" name="checked" value="1"><span>{{ _('J’ai vérifié la fiche et, si nécessaire, l’autorité du responsable par un canal indépendant.') }}</span></label>
+            <div class="online-request-actions">
+                <button class="admin-button primary compact" name="decision" value="accept">{{ _('Accepter') }}</button>
+                <button class="admin-button secondary compact" name="decision" value="refuse">{{ _('Refuser') }}</button>
+            </div>
+        </form>
+    </article>
+    {% else %}
+    <div class="overview-empty online-request-empty">{{ icon('empty') }}<div><strong>{{ _('Aucune demande en attente') }}</strong><p>{{ _('Les demandes qui nécessitent votre validation apparaîtront ici.') }}</p></div></div>
+    {% endfor %}
+</section>
+<details class="admin-section v215-fold online-revoke" id="revocation"{% if search or selected or selection_missing %} open{% endif %}>
+    <summary>{{ icon('people') }} {{ _('Révoquer un accès en ligne') }}</summary>
+    <div class="v215-fold-content">
+        <p class="form-help">{{ _('La révocation met fin aux sessions et invalide les liens de connexion. Les demandes en cours associées à cet accès sont retirées. La fiche usager, les réservations, les liens familiaux et l’historique sont conservés.') }}</p>
+        {% if selected %}
+        <form method="post" action="{{ url_for('online_admin.queue') }}" class="admin-form online-request-form">
+            <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+            <input type="hidden" name="user_id" value="{{ selected.id }}">
+            <p><strong>{{ selected.first_name }} {{ selected.last_name }}</strong> · {{ _('Identifiant') }} <span class="identifier-code">{{ selected.public_id }}</span></p>
+            <label class="checkbox-field"><input type="checkbox" name="checked" value="1" required><span>{{ _('Je confirme la révocation de l’accès Internet de cet usager.') }}</span></label>
+            <div class="online-request-actions">
+                <button class="admin-button danger compact" name="decision" value="revoke">{{ _('Révoquer l’accès') }}</button>
+                <a class="admin-button secondary compact" href="{{ url_for('online_admin.queue',_anchor='revocation') }}">{{ _('Annuler') }}</a>
+            </div>
+        </form>
+        {% else %}
+        {% if selection_missing %}<p class="form-help" role="status">{{ _('Cet usager n’a plus d’accès en ligne à révoquer.') }}</p>{% endif %}
+        <form method="post" action="{{ url_for('online_admin.queue',_anchor='revocation') }}" class="online-access-search">
+            <input type="hidden" name="evolution_csrf" value="{{ evolution_csrf }}">
+            <label class="form-field"><span>{{ _('Prénom, nom ou identifiant OpenFabLab') }}</span><input type="search" name="q" value="{{ search_term }}" minlength="2" maxlength="80" required autocomplete="off"></label>
+            <button class="admin-button secondary compact" name="decision" value="find_access">{{ _('Rechercher') }}</button>
+        </form>
+        {% if search %}
+            {% if access_candidates %}
+            <ul class="online-access-results">
+                {% for person in access_candidates %}
+                <li><a href="{{ url_for('online_admin.queue',revoke=person.id,_anchor='revocation') }}"><strong>{{ person.first_name }} {{ person.last_name }}</strong><span class="identifier-code">{{ person.public_id }}</span>{{ icon('chevron') }}</a></li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="form-help" role="status">{{ _('Aucun accès en ligne ne correspond à cette recherche.') }}</p>
+            {% endif %}
+        {% endif %}
+        {% endif %}
+    </div>
+</details>
+{% endblock %}
